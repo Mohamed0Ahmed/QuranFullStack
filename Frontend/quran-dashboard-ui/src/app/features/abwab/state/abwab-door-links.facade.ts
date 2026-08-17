@@ -22,31 +22,12 @@ export class AbwabDoorLinksFacade {
   readonly openDoorId = this.store.openDoorId;
   readonly doorVersion = this.store.doorVersion;
   readonly recordViews = this.store.recordViews;
-  readonly records = this.store.records;
   readonly selectedCount = this.store.selectedCount;
   readonly interactionLocked = computed(() =>
     this.state().edit.status === 'saving'
     || this.state().deletion.status === 'writing'
     || this.state().copy.open && this.state().copy.status !== 'choosing',
   );
-  readonly selectedRecord = computed(() => {
-    const state = this.state();
-    const selection = state.selection;
-    if (this.selectedCount() !== 1) {
-      return null;
-    }
-    if (selection.mode === 'only') {
-      const unitId = selection.unitIds[0];
-      return this.records().find((record) => record.unitId === unitId) ?? null;
-    }
-    const records = this.records();
-    if (records.length !== state.records.totalCount) {
-      return null;
-    }
-    const excluded = new Set(selection.unitIds);
-    return records.find((record) => !excluded.has(record.unitId)) ?? null;
-  });
-
   toggleDoor(doorId: number): void {
     if (this.interactionLocked()) {
       return;
@@ -111,32 +92,33 @@ export class AbwabDoorLinksFacade {
     this.store.clearSelection();
   }
 
-  startEdit(): boolean {
-    const record = this.selectedRecord();
-    const recordView = record === null
-      ? null
-      : this.recordViews().find((candidate) => candidate.summary.unitId === record.unitId) ?? null;
+  startEdit(unitId: number): boolean {
+    const recordView = this.recordViews().find((candidate) => candidate.summary.unitId === unitId) ?? null;
     const state = this.state();
     if (
-      record === null
-      || recordView === null
+      recordView === null
       || state.openDoorId === null
       || state.doorVersion === null
       || state.deletion.status === 'writing'
+      || state.deletion.confirmationOpen
+      || state.copy.open
       || !['idle', 'load-error'].includes(state.edit.status)
     ) {
       return false;
     }
     this.editController.start(
       state.doorVersion,
-      record.unitId,
+      unitId,
       recordView.ayahs,
     );
     return true;
   }
 
   retryEdit(): void {
-    this.startEdit();
+    const unitId = this.state().edit.unitId;
+    if (unitId !== null) {
+      this.startEdit(unitId);
+    }
   }
 
   cancelEdit(): void {

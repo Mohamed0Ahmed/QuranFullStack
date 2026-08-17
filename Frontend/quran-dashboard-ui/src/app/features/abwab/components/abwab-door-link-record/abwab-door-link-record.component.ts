@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { DoorLinkAyahDto } from '../../../../core/api/generated/models/door-link-ayah-dto';
 import { DoorLinkRecordSummaryDto } from '../../../../core/api/generated/models/door-link-record-summary-dto';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { LinkingAyahCardComponent } from '../../../linking/components/linking-ayah-card/linking-ayah-card.component';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -15,6 +16,7 @@ import { AbwabDoorLinkEditorComponent } from '../abwab-door-link-editor/abwab-do
     LinkingAyahCardComponent,
     AbwabDoorLinkEditorComponent,
     QdEmptyStateComponent,
+    QdActionDirective,
   ],
   templateUrl: './abwab-door-link-record.component.html',
   styleUrl: './abwab-door-link-record.component.scss',
@@ -29,14 +31,22 @@ export class AbwabDoorLinkRecordComponent {
   readonly editing = input(false);
   readonly selectable = input(false);
   readonly interactionDisabled = input(false);
+  readonly canEdit = input(false);
+  readonly editDisabled = input(false);
 
   readonly selectionToggled = output<number>();
+  readonly editRequested = output<number>();
 
   protected readonly displayAyahs = computed<readonly ReturnType<typeof toAbwabLinkingAyah>[]>(() =>
     this.ayahs().map((ayah) => toAbwabLinkingAyah(ayah)),
   );
 
   protected get emptyLabel(): string { return ABWAB_LABELS.doorLinksAyahsEmpty; }
+  protected get editLabel(): string { return ABWAB_LABELS.doorLinksEdit; }
+
+  protected editAriaLabel(surahName: string, ayahNumber: number): string {
+    return ABWAB_LABELS.doorLinksEditRecordAriaLabel(surahName, ayahNumber);
+  }
 
   protected kindLabel(): string {
     return this.record().isGrouped ? ABWAB_LABELS.doorLinksGrouped : ABWAB_LABELS.doorLinksIndependent;
@@ -48,4 +58,10 @@ export class AbwabDoorLinkRecordComponent {
     }
   }
 
+  protected requestEdit(event: Event): void {
+    event.stopPropagation();
+    if (this.canEdit() && !this.editDisabled()) {
+      this.editRequested.emit(this.record().unitId);
+    }
+  }
 }

@@ -113,8 +113,8 @@ export class AbwabPageComponent implements OnInit {
   protected readonly reveal = inject(AbwabRevealController);
   protected readonly interactions = inject(AbwabPageInteractionsController);
   protected readonly doorLinks = inject(AbwabDoorLinksFacade);
-
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
+  protected readonly labels = ABWAB_LABELS;
 
   private readonly doorParam = signal<number | null>(null);
   protected readonly activeSectionId = signal<number | null>(null);
@@ -125,7 +125,7 @@ export class AbwabPageComponent implements OnInit {
 
   private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
   private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
-
+  protected readonly tree = viewChild(AbwabTreeComponent);
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
 

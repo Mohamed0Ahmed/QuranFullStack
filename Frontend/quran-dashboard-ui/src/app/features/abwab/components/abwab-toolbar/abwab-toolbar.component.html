@@ -49,6 +49,31 @@
       }
     </div>
 
+    @if (!hideSectionControls() && !searchOnly() && view() === 'tree') {
+      <div class="abwab-toolbar__tree-expansion qd-toolbar__actions" role="group" [attr.aria-label]="treeExpansionGroupAriaLabel">
+        <button
+          type="button"
+          qdAction="toolbar"
+          [disabled]="treeExpansionDisabled() || !canExpandTree()"
+          [title]="treeExpansionDisabled() ? treeExpansionSearchDisabledHint : treeExpandAllLabel"
+          data-testid="abwab-toolbar-tree-expand-all"
+          (click)="expandAllRequested.emit()"
+        >
+          {{ treeExpandAllLabel }}
+        </button>
+        <button
+          type="button"
+          qdAction="toolbar"
+          [disabled]="treeExpansionDisabled() || !canCollapseTree()"
+          [title]="treeExpansionDisabled() ? treeExpansionSearchDisabledHint : treeCollapseAllLabel"
+          data-testid="abwab-toolbar-tree-collapse-all"
+          (click)="collapseAllRequested.emit()"
+        >
+          {{ treeCollapseAllLabel }}
+        </button>
+      </div>
+    }
+
     @if (!hideSectionControls() && !searchOnly()) {
       <div class="abwab-toolbar__view-toggle qd-toolbar__actions" role="group" [attr.aria-label]="viewToggleAriaLabel">
         <button

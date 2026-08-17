@@ -27,8 +27,22 @@
             [resultCount]="totalRecords()"
             (click)="toggleSelection()"
           >
-            @if (isFirst && (selectable() || record().isGrouped)) {
+            @if (isFirst && (canEdit() || selectable() || record().isGrouped)) {
               <ng-container qdLinkingAyahCardMetaStart>
+                @if (canEdit()) {
+                  <button
+                    type="button"
+                    qdAction="warning"
+                    size="sm"
+                    class="abwab-door-link-record__edit"
+                    [disabled]="editDisabled()"
+                    [attr.aria-label]="editAriaLabel(ayah.surahNameArabic, ayah.ayahNumber)"
+                    [attr.data-testid]="'abwab-door-link-record-edit-' + record().unitId"
+                    (click)="requestEdit($event)"
+                  >
+                    {{ editLabel }}
+                  </button>
+                }
                 @if (selectable()) {
                   <input
                     type="checkbox"
