@@ -38,9 +38,8 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             db.LinkingPreparedUnits.AddRange(rows.Select(item => item.Row));
             await db.SaveChangesAsync(cancellationToken);
 
-            foreach (var item in rows)
-            {
-                var ayahs = item.Unit.Unit.Ayahs.Select((ayah, index) => new PersistedAyah(
+            var ayahs = rows.SelectMany(item =>
+                item.Unit.Unit.Ayahs.Select((ayah, index) => new PersistedAyah(
                     new LinkingPreparedAyah
                     {
                         PreflightId = lease.PreflightId,
@@ -61,17 +60,16 @@ internal sealed partial class EfLinkingPreparedPreflightStore
                     },
                     ayah.SourceMatchedWordIds,
                     requests[ayah.AyahId].SelectedWordIds,
-                    ayah.Descriptions));
-                foreach (var ayahBatch in ayahs.Chunk(policy.PersistenceBatchSize))
-                {
-                    processedAyahs = await PersistAyahBatchAsync(
-                        ayahBatch,
-                        processedSources,
-                        processedAyahs,
-                        totalAyahs,
-                        publishProgress,
-                        cancellationToken);
-                }
+                    ayah.Descriptions))).ToList();
+            foreach (var ayahBatch in ayahs.Chunk(policy.PersistenceBatchSize))
+            {
+                processedAyahs = await PersistAyahBatchAsync(
+                    ayahBatch,
+                    processedSources,
+                    processedAyahs,
+                    totalAyahs,
+                    publishProgress,
+                    cancellationToken);
             }
 
             Detach(rows.Select(item => item.Row));
@@ -146,12 +144,6 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             db.LinkingPreparedAyahWords.AddRange(wordBatch);
             await db.SaveChangesAsync(cancellationToken);
             Detach(wordBatch);
-            await RequireProgressAsync(
-                processedSources,
-                processedAyahs,
-                totalAyahs,
-                publishProgress,
-                cancellationToken);
         }
 
         var descriptions = batch.SelectMany(DescriptionsOf).ToList();
@@ -160,12 +152,6 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             db.LinkingPreparedAyahDescriptions.AddRange(descriptionBatch);
             await db.SaveChangesAsync(cancellationToken);
             Detach(descriptionBatch);
-            await RequireProgressAsync(
-                processedSources,
-                processedAyahs,
-                totalAyahs,
-                publishProgress,
-                cancellationToken);
         }
 
         processedAyahs += batch.Count;
