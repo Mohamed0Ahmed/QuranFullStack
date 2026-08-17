@@ -176,10 +176,6 @@ export class LinkingWorkflowFacade {
     void this.startWorkspaceAfterFlush();
   }
 
-  directPageReady(linkingDataRevision: number, totalAyahCount: number): void {
-    this.inlineSource.pageReady(linkingDataRevision, totalAyahCount, this.selectedDoorId());
-  }
-
   toggleDirectAyah(ayahId: number): void {
     this.inlineSource.toggleAyah(ayahId, this.selectedDoorId());
   }

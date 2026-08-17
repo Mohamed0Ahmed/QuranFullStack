@@ -11,6 +11,12 @@ export interface LinkingWorkspaceRepository {
     workspaceVersion: number | null,
   ): Observable<LinkingWorkspaceSnapshot>;
   removeSource(sourceId: number, workspaceVersion: number | null): Observable<LinkingWorkspaceSnapshot>;
+  updateSourceTypes(
+    sourceId: number,
+    typeCodes: readonly string[],
+    sourceVersion: number,
+    workspaceVersion: number | null,
+  ): Observable<LinkingWorkspaceSnapshot>;
   reorderSources(
     sourceIds: readonly number[],
     workspaceVersion: number | null,

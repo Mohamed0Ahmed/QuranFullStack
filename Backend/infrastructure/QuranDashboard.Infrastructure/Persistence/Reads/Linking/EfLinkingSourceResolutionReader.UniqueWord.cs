@@ -9,6 +9,7 @@ public sealed partial class EfLinkingSourceResolutionReader
         CancellationToken cancellationToken)
     {
         var tashkeel = source.Mode == LinkingUniqueWordMode.Tashkeel;
+        var typeCodes = source.TypeCodes.ToArray();
 
         var wordExists = tashkeel
             ? await _dbContext.QuranWordsUniqueTashkeel
@@ -24,9 +25,19 @@ public sealed partial class EfLinkingSourceResolutionReader
 
         var readableMatches = tashkeel
             ? _dbContext.QuranWords.AsNoTracking()
-                .Where(word => !word.IsAyahMarker && word.UniqueTashkeelWordId == source.WordId)
+                .Where(word =>
+                    !word.IsAyahMarker
+                    && word.UniqueTashkeelWordId == source.WordId
+                    && (typeCodes.Length == 0 || _dbContext.WordMorphologies.Any(
+                        morphology => morphology.QuranWordId == word.Id
+                            && typeCodes.Contains(morphology.HeadPos))))
             : _dbContext.QuranWords.AsNoTracking()
-                .Where(word => !word.IsAyahMarker && word.UniqueSimpleWordId == source.WordId);
+                .Where(word =>
+                    !word.IsAyahMarker
+                    && word.UniqueSimpleWordId == source.WordId
+                    && (typeCodes.Length == 0 || _dbContext.WordMorphologies.Any(
+                        morphology => morphology.QuranWordId == word.Id
+                            && typeCodes.Contains(morphology.HeadPos))));
 
         return await readableMatches
             .Select(word => new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))

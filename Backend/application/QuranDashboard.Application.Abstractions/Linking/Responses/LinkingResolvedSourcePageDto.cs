@@ -5,7 +5,11 @@ public sealed record LinkingResolvedSourcePageDto(
     string SourceViewIdentity,
     long LinkingDataRevision,
     int TotalAyahCount,
+    int LinkingAyahCount,
     int Page,
     int PageSize,
     int TotalPages,
+    IReadOnlyList<LinkingSourceTypeDto> AvailableTypes,
+    IReadOnlyList<int> LinkingAyahIds,
+    IReadOnlyDictionary<int, IReadOnlyList<int>> LinkingMatchedWordIdsByAyahId,
     IReadOnlyList<LinkingResolvedAyahDto> Items);

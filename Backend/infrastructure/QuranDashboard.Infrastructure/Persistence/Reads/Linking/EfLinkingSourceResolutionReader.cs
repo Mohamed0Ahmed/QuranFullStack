@@ -60,6 +60,7 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
                 group => group.Key,
                 group => (IReadOnlyList<int>)[.. group.Select(word => word.QuranWordId)]);
         var matchesByAyah = GroupMatchedWordIds(references.Matches);
+        var availableTypes = await ResolveAvailableTypesAsync(descriptor, cancellationToken);
         var compactAyahs = orderedAyahIds
             .Select(ayahId => new LinkingResolvedSourceCompact.CompactAyah(
                 ayahId,
@@ -70,6 +71,7 @@ public sealed partial class EfLinkingSourceResolutionReader(QuranDashboardDbCont
         return LinkingResolvedSourceCompact.Create(
             LinkingSourceIdentity.For(descriptor),
             compactAyahs,
+            availableTypes,
             references.IncludeAyahMarkers);
     }
 

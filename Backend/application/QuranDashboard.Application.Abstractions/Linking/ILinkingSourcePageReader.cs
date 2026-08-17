@@ -18,7 +18,8 @@ public interface ILinkingSourcePageReader
 public sealed record LinkingSourcePageView(
     LinkingSourcePageSegment Segment,
     LinkingInclusionMode? InclusionMode,
-    IReadOnlyList<int> AyahOverrideIds);
+    IReadOnlyList<int> AyahOverrideIds,
+    IReadOnlyList<string> TypeCodes);
 
 public enum LinkingSourcePageSegment
 {

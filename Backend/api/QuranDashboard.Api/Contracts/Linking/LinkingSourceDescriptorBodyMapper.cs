@@ -37,15 +37,18 @@ internal static class LinkingSourceDescriptorBodyMapper
         return kind switch
         {
             LinkingSourceKind.Root => TryMapDimension(
-                body.RootId, "rootId", id => new LinkingSourceDescriptor.Root(id, label),
+                body.RootId,
+                "rootId",
+                TypeCodes(body),
+                (id, typeCodes) => new LinkingSourceDescriptor.Root(id, typeCodes, label),
                 out descriptor, out violation),
-            LinkingSourceKind.Lemma => TryMapTypedDimension(
-                body.LemmaId, "lemmaId", body.TypeCode,
-                (id, typeCode) => new LinkingSourceDescriptor.Lemma(id, typeCode, label),
+            LinkingSourceKind.Lemma => TryMapDimension(
+                body.LemmaId, "lemmaId", TypeCodes(body),
+                (id, typeCodes) => new LinkingSourceDescriptor.Lemma(id, typeCodes, label),
                 out descriptor, out violation),
-            LinkingSourceKind.Stem => TryMapTypedDimension(
-                body.StemId, "stemId", body.TypeCode,
-                (id, typeCode) => new LinkingSourceDescriptor.Stem(id, typeCode, label),
+            LinkingSourceKind.Stem => TryMapDimension(
+                body.StemId, "stemId", TypeCodes(body),
+                (id, typeCodes) => new LinkingSourceDescriptor.Stem(id, typeCodes, label),
                 out descriptor, out violation),
             LinkingSourceKind.UniqueWord => TryMapUniqueWord(body, label, out descriptor, out violation),
             LinkingSourceKind.WordType => TryMapWordType(body.Selection, label, out descriptor, out violation),
@@ -58,7 +61,8 @@ internal static class LinkingSourceDescriptorBodyMapper
     private static bool TryMapDimension(
         int? id,
         string field,
-        Func<int, LinkingSourceDescriptor> create,
+        IReadOnlyList<string> typeCodes,
+        Func<int, IReadOnlyList<string>, LinkingSourceDescriptor> create,
         out LinkingSourceDescriptor descriptor,
         out LinkingDescriptorViolation violation)
     {
@@ -69,32 +73,13 @@ internal static class LinkingSourceDescriptorBodyMapper
             return false;
         }
 
-        descriptor = create(id!.Value);
-        return true;
-    }
-
-    private static bool TryMapTypedDimension(
-        int? id,
-        string field,
-        string? typeCode,
-        Func<int, string?, LinkingSourceDescriptor> create,
-        out LinkingSourceDescriptor descriptor,
-        out LinkingDescriptorViolation violation)
-    {
-        descriptor = null!;
-
-        if (!LinkingBodyViolations.TryIdentifier(id, field, out violation))
+        if (LinkingSourceDescriptorValidation.TypeCodesError(typeCodes) is not null)
         {
+            violation = LinkingBodyViolations.Malformed("typeCodes");
             return false;
         }
 
-        if (LinkingSourceDescriptorValidation.OptionalTextError(typeCode, "typeCode") is not null)
-        {
-            violation = LinkingBodyViolations.Malformed("typeCode", typeCode);
-            return false;
-        }
-
-        descriptor = create(id!.Value, typeCode);
+        descriptor = create(id!.Value, typeCodes);
         return true;
     }
 
@@ -118,7 +103,15 @@ internal static class LinkingSourceDescriptorBodyMapper
             return false;
         }
 
-        descriptor = new LinkingSourceDescriptor.UniqueWord(mode, body.WordId!.Value, label);
+        var typeCodes = TypeCodes(body);
+        if (LinkingSourceDescriptorValidation.TypeCodesError(typeCodes) is not null)
+        {
+            violation = LinkingBodyViolations.Malformed("typeCodes");
+            return false;
+        }
+
+        descriptor = new LinkingSourceDescriptor.UniqueWord(
+            mode, body.WordId!.Value, typeCodes, label);
         return true;
     }
 
@@ -178,4 +171,7 @@ internal static class LinkingSourceDescriptorBodyMapper
         violation = LinkingBodyViolations.Malformed(field, value);
         return false;
     }
+
+    private static IReadOnlyList<string> TypeCodes(LinkingSourceDescriptorBody body) =>
+        body.TypeCodes ?? (body.TypeCode is null ? [] : [body.TypeCode]);
 }

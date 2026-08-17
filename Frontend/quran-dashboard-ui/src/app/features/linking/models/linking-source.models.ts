@@ -17,6 +17,12 @@ export type LinkingWordTypeCase = 'all' | 'nominative' | 'accusative' | 'genitiv
 export type LinkingWordTypeTense = 'all' | 'past' | 'present' | 'imperative';
 export type LinkingWordTypeVoice = 'all' | 'active' | 'passive';
 
+export interface LinkingSourceTypeOption {
+  code: string;
+  arabicLabel: string;
+  occurrencesCount: number;
+}
+
 export interface LinkingWordTypeScope {
   type: LinkingWordTypeMainType;
   childCode: string | null;
@@ -41,10 +47,16 @@ export type LinkingWordTypeSelection =
 
 export type LinkingSourceDescriptor =
   | ({ kind: 'manual-mushaf-ayahs'; label: string } & LinkingManualMushafAyahSource)
-  | { kind: 'unique-word'; mode: LinkingUniqueWordMode; wordId: number; label: string }
-  | { kind: 'root'; rootId: number; label: string }
-  | { kind: 'lemma'; lemmaId: number; typeCode: string | null; label: string }
-  | { kind: 'stem'; stemId: number; typeCode: string | null; label: string }
+  | {
+      kind: 'unique-word';
+      mode: LinkingUniqueWordMode;
+      wordId: number;
+      typeCodes: readonly string[];
+      label: string;
+    }
+  | { kind: 'root'; rootId: number; typeCodes: readonly string[]; label: string }
+  | { kind: 'lemma'; lemmaId: number; typeCodes: readonly string[]; label: string }
+  | { kind: 'stem'; stemId: number; typeCodes: readonly string[]; label: string }
   | { kind: 'word-type'; selection: LinkingWordTypeSelection; label: string };
 
 const wordTypeMainTypes: readonly LinkingWordTypeMainType[] = ['noun', 'verb', 'particle', 'inl'];
@@ -63,14 +75,15 @@ export function isLinkingSourceDescriptor(value: unknown): value is LinkingSourc
     case 'unique-word':
       return (
         (value['mode'] === 'simple' || value['mode'] === 'tashkeel') &&
-        isPositiveSafeInteger(value['wordId'])
+        isPositiveSafeInteger(value['wordId']) &&
+        isTypeCodes(value['typeCodes'])
       );
     case 'root':
-      return isPositiveSafeInteger(value['rootId']);
+      return isPositiveSafeInteger(value['rootId']) && isTypeCodes(value['typeCodes']);
     case 'lemma':
-      return isPositiveSafeInteger(value['lemmaId']) && isNullableTypeCode(value['typeCode']);
+      return isPositiveSafeInteger(value['lemmaId']) && isTypeCodes(value['typeCodes']);
     case 'stem':
-      return isPositiveSafeInteger(value['stemId']) && isNullableTypeCode(value['typeCode']);
+      return isPositiveSafeInteger(value['stemId']) && isTypeCodes(value['typeCodes']);
     case 'word-type':
       return isLinkingWordTypeSelection(value['selection']);
     default:
@@ -141,8 +154,8 @@ function isNonBlankString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function isNullableTypeCode(value: unknown): value is string | null {
-  return value === null || isNonBlankString(value);
+function isTypeCodes(value: unknown): value is readonly string[] {
+  return Array.isArray(value) && value.every(isNonBlankString);
 }
 
 function isWordTypeMainType(value: unknown): value is LinkingWordTypeMainType {

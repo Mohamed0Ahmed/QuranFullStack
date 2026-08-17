@@ -116,7 +116,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     return {
       kind: 'stem',
       stemId: state.selectedStemId,
-      typeCode: state.ayahTypeCode,
+      typeCodes: state.ayahTypeCode === null ? [] : [state.ayahTypeCode],
       label: state.summary.stemText,
     };
   });

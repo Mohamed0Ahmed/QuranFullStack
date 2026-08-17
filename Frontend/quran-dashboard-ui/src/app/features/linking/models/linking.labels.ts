@@ -92,7 +92,7 @@ export const LINKING_LABELS = {
   directSourceAyahPreview: 'معاينة آيات المصدر',
   directSourceAyahCount: 'عدد آيات المصدر',
   totalAyahs: 'إجمالي الآيات',
-  resultPosition: 'النتيجة',
+  displayedAyahs: 'الآيات المعروضة',
   of: 'من',
   mushafSelectionMode: 'تحديد',
   mushafSelectionInstruction: 'اختر آية أو أكثر من المصحف للربط.',

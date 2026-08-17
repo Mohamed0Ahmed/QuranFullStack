@@ -26,12 +26,14 @@ public static class LinkingSourceDescriptorValidation
 
     private static string? DescriptorError(LinkingSourceDescriptor descriptor) => descriptor switch
     {
-        LinkingSourceDescriptor.UniqueWord source => IdentifierError(source.WordId, "wordId"),
-        LinkingSourceDescriptor.Root source => IdentifierError(source.RootId, "rootId"),
+        LinkingSourceDescriptor.UniqueWord source =>
+            IdentifierError(source.WordId, "wordId") ?? TypeCodesError(source.TypeCodes),
+        LinkingSourceDescriptor.Root source =>
+            IdentifierError(source.RootId, "rootId") ?? TypeCodesError(source.TypeCodes),
         LinkingSourceDescriptor.Lemma source =>
-            IdentifierError(source.LemmaId, "lemmaId") ?? TypeCodeError(source.TypeCode),
+            IdentifierError(source.LemmaId, "lemmaId") ?? TypeCodesError(source.TypeCodes),
         LinkingSourceDescriptor.Stem source =>
-            IdentifierError(source.StemId, "stemId") ?? TypeCodeError(source.TypeCode),
+            IdentifierError(source.StemId, "stemId") ?? TypeCodesError(source.TypeCodes),
         LinkingSourceDescriptor.WordType source => SelectionError(source.Selection),
         LinkingSourceDescriptor.ManualMushafAyahs source => ManualAyahsError(source.VerseKeys),
         _ => "Unknown source kind.",
@@ -129,5 +131,8 @@ public static class LinkingSourceDescriptorValidation
     private static string InvalidVerseKeyError(string? verseKey) =>
         $"The verse key '{verseKey}' is not a valid Quran verse reference.";
 
-    private static string? TypeCodeError(string? typeCode) => OptionalTextError(typeCode, "typeCode");
+    public static string? TypeCodesError(IEnumerable<string>? typeCodes) =>
+        typeCodes?.Any(string.IsNullOrWhiteSpace) == true
+            ? "The typeCodes must contain only non-blank values."
+            : null;
 }

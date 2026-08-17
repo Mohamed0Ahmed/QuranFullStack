@@ -12,7 +12,7 @@
     [class.linking-ayah-card__meta--start]="metaAlignment() === 'start'"
   >
     <ng-content select="[qdLinkingAyahCardMetaStart]" />
-    <span>{{ labels.resultPosition }} {{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
+    <span>{{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
     <span aria-hidden="true">·</span>
     <span>{{ ayah().surahNameArabic }}</span>
     <span aria-hidden="true">—</span>
@@ -33,6 +33,7 @@
         <span
           class="linking-ayah-card__word"
           [class.linking-ayah-card__word--selected]="word.highlight === 'selected'"
+          [class.linking-ayah-card__word--excluded]="word.highlight === 'excluded'"
           [class.linking-ayah-card__word--added]="word.highlight === 'added'"
           [class.linking-ayah-card__word--existing]="word.highlight === 'existing'"
           [class.linking-ayah-card__word--removed]="word.highlight === 'removed'"

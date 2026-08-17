@@ -20,14 +20,24 @@ public sealed class CachedLinkingSourcePageReader(
         CancellationToken cancellationToken)
     {
         var resolutionIdentity = LinkingSourceIdentity.For(descriptor);
-        var key = LinkingSourceCacheKeys.For(descriptor.Kind, resolutionIdentity, linkingDataRevision);
-        var compact = await sourceCache.GetOrLoadAsync(
-            key,
+        var compact = await ResolveCompactAsync(
+            descriptor,
             resolutionIdentity,
-            token => efReader.ResolveCompactAsync(descriptor, token),
+            linkingDataRevision,
             cancellationToken);
+        var displayDescriptor = LinkingSourceTypeFilter.Supports(descriptor)
+            ? LinkingSourceTypeFilter.Apply(descriptor, view.TypeCodes)
+            : descriptor;
+        var displayIdentity = LinkingSourceIdentity.For(displayDescriptor);
+        var displayCompact = string.Equals(displayIdentity, resolutionIdentity, StringComparison.Ordinal)
+            ? compact
+            : await ResolveCompactAsync(
+                displayDescriptor,
+                displayIdentity,
+                linkingDataRevision,
+                cancellationToken);
         var compactPage = await efReader.ResolveCompactPageAsync(
-            compact,
+            displayCompact,
             view,
             page,
             pageSize,
@@ -44,7 +54,7 @@ public sealed class CachedLinkingSourcePageReader(
         if (items is null)
         {
             items = await efReader.HydrateAsync(
-                compact,
+                displayCompact,
                 [.. pageAyahs.Select(ayah => ayah.AyahId)],
                 cancellationToken);
             foreach (var ayah in items)
@@ -53,14 +63,34 @@ public sealed class CachedLinkingSourcePageReader(
             }
         }
 
+        var linkingMatchesByAyahId = pageAyahs
+            .Where(ayah => compact.AyahsById.ContainsKey(ayah.AyahId))
+            .ToDictionary(
+                ayah => ayah.AyahId,
+                ayah => compact.AyahsById[ayah.AyahId].MatchedQuranWordIds);
+
         return new LinkingResolvedSourcePageDto(
             resolutionIdentity,
             sourceViewIdentity,
             linkingDataRevision,
             total,
+            compact.AyahCount,
             page,
             pageSize,
             totalPages,
+            compact.AvailableTypes,
+            [.. linkingMatchesByAyahId.Keys],
+            linkingMatchesByAyahId,
             items);
     }
+
+    private Task<LinkingResolvedSourceCompact> ResolveCompactAsync(
+        LinkingSourceDescriptor descriptor,
+        string resolutionIdentity,
+        long linkingDataRevision,
+        CancellationToken cancellationToken) => sourceCache.GetOrLoadAsync(
+            LinkingSourceCacheKeys.For(descriptor.Kind, resolutionIdentity, linkingDataRevision),
+            resolutionIdentity,
+            token => efReader.ResolveCompactAsync(descriptor, token),
+            cancellationToken);
 }

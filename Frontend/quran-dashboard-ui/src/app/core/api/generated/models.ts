@@ -138,6 +138,7 @@ export type { LinkingSelectedWordBody } from './models/linking-selected-word-bod
 export type { LinkingSourceDescriptorBody } from './models/linking-source-descriptor-body';
 export type { LinkingSourcePageBody } from './models/linking-source-page-body';
 export type { LinkingSourcePageViewBody } from './models/linking-source-page-view-body';
+export type { LinkingSourceTypeDto } from './models/linking-source-type-dto';
 export type { LinkingWordChangesDto } from './models/linking-word-changes-dto';
 export type { LinkingWordTypeScopeBody } from './models/linking-word-type-scope-body';
 export type { LinkingWordTypeSelectionBody } from './models/linking-word-type-selection-body';
@@ -153,6 +154,7 @@ export type { LinkingWorkspaceReorderBody } from './models/linking-workspace-reo
 export type { LinkingWorkspaceResponse } from './models/linking-workspace-response';
 export type { LinkingWorkspaceResponseApiResponse } from './models/linking-workspace-response-api-response';
 export type { LinkingWorkspaceSourceResponse } from './models/linking-workspace-source-response';
+export type { LinkingWorkspaceSourceTypesBody } from './models/linking-workspace-source-types-body';
 export type { LocalizedLabel } from './models/localized-label';
 export type { LogtoSubjectRelinkPreview } from './models/logto-subject-relink-preview';
 export type { LogtoSubjectRelinkPreviewApiResponse } from './models/logto-subject-relink-preview-api-response';

@@ -7,6 +7,7 @@ namespace QuranDashboard.Infrastructure.Background;
 
 internal sealed class LinkingConfirmationJobCleanupService(
     IServiceScopeFactory scopeFactory,
+    LinkingJobQueueSignal queueSignal,
     LinkingScalabilityOptions options,
     ILogger<LinkingConfirmationJobCleanupService> logger) : BackgroundService
 {
@@ -20,6 +21,7 @@ internal sealed class LinkingConfirmationJobCleanupService(
                 await using var scope = scopeFactory.CreateAsyncScope();
                 await scope.ServiceProvider.GetRequiredService<ILinkingConfirmationJobStore>()
                     .RunMaintenanceAsync(stoppingToken);
+                queueSignal.NotifyConfirmationJobQueued();
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {

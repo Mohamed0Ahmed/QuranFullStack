@@ -3,19 +3,33 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
 import { LinkingSourcePageRequest } from '../models/linking-page.models';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import {
+  LinkingSourceDescriptor,
+  LinkingSourceTypeOption,
+} from '../models/linking-source.models';
+import { linkingSourceKey } from '../utils/linking-source-key';
+import {
+  linkingSourceSupportsTypeFilters,
+  withLinkingSourceTypeCodes,
+} from '../utils/linking-source-types';
 import { LinkingOperationDraftStore, createInlineLinkingDraft } from './linking-operation-draft.store';
 
 interface LinkingInlineSourceState {
   readonly draft: LinkingOperationSourceDraft | null;
   readonly totalAyahCount: number;
+  readonly displayedAyahCount: number;
+  readonly viewTypeCode: string | null;
   readonly operationGeneration: number;
+  readonly availableTypes: readonly LinkingSourceTypeOption[];
 }
 
 const INITIAL_STATE: LinkingInlineSourceState = {
   draft: null,
   totalAyahCount: 0,
+  displayedAyahCount: 0,
+  viewTypeCode: null,
   operationGeneration: 0,
+  availableTypes: [],
 };
 
 @Injectable({ providedIn: 'root' })
@@ -25,8 +39,12 @@ export class LinkingInlineSourceWorkflowController {
 
   readonly draft = computed(() => this.stateSignal().draft);
   readonly totalAyahCount = computed(() => this.stateSignal().totalAyahCount);
+  readonly displayedAyahCount = computed(() => this.stateSignal().displayedAyahCount);
+  readonly viewTypeCode = computed(() => this.stateSignal().viewTypeCode);
+  readonly availableTypes = computed(() => this.stateSignal().availableTypes);
   readonly sourceRequest = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
-    const draft = this.stateSignal().draft;
+    const state = this.stateSignal();
+    const draft = state.draft;
     if (draft === null) {
       return null;
     }
@@ -38,9 +56,12 @@ export class LinkingInlineSourceWorkflowController {
         segment: 'all',
         inclusionMode: null,
         ayahOverrideIds: [],
+        typeCodes: state.viewTypeCode === null
+          ? []
+          : [state.viewTypeCode],
       },
       pageSize: 100,
-      draftGeneration: this.stateSignal().operationGeneration,
+      draftGeneration: state.operationGeneration,
     };
   });
   readonly selectedCount = computed(() => {
@@ -61,21 +82,79 @@ export class LinkingInlineSourceWorkflowController {
     this.stateSignal.set({
       draft: createInlineLinkingDraft(source),
       totalAyahCount: 0,
+      displayedAyahCount: 0,
+      viewTypeCode: null,
       operationGeneration,
+      availableTypes: [],
     });
   }
 
-  pageReady(linkingDataRevision: number, totalAyahCount: number, doorId: number | null): void {
+  pageReady(
+    linkingDataRevision: number,
+    displayedAyahCount: number,
+    linkingAyahCount: number,
+    availableTypes: readonly LinkingSourceTypeOption[],
+    doorId: number | null,
+  ): void {
     const draft = this.stateSignal().draft;
     if (draft === null) {
       return;
     }
-    if (draft.linkingDataRevision === linkingDataRevision && this.totalAyahCount() === totalAyahCount) {
+    const revisionChanged = draft.linkingDataRevision !== linkingDataRevision;
+    this.stateSignal.update((state) => ({
+      ...state,
+      totalAyahCount: linkingAyahCount,
+      displayedAyahCount,
+      availableTypes,
+    }));
+    if (!revisionChanged) {
       return;
     }
     const updated = { ...draft, linkingDataRevision };
-    this.stateSignal.update((state) => ({ ...state, draft: updated, totalAyahCount }));
+    this.stateSignal.update((state) => ({ ...state, draft: updated }));
     this.drafts.replace([updated], linkingDataRevision, doorId);
+  }
+
+  setViewTypeCode(typeCode: string | null): void {
+    const state = this.stateSignal();
+    if (
+      typeCode === state.viewTypeCode
+      || (typeCode !== null && !state.availableTypes.some((item) => item.code === typeCode))
+    ) {
+      return;
+    }
+    this.stateSignal.set({
+      ...state,
+      viewTypeCode: typeCode,
+      displayedAyahCount: 0,
+      operationGeneration: state.operationGeneration + 1,
+    });
+  }
+
+  setTypeCodes(typeCodes: readonly string[]): void {
+    const state = this.stateSignal();
+    const draft = state.draft;
+    if (draft === null || !linkingSourceSupportsTypeFilters(draft.descriptor)) {
+      return;
+    }
+    const descriptor = withLinkingSourceTypeCodes(draft.descriptor, typeCodes);
+    if (linkingSourceKey(descriptor) === linkingSourceKey(draft.descriptor)) {
+      return;
+    }
+    this.drafts.requireFreshGeneration();
+    this.stateSignal.set({
+      ...state,
+      draft: {
+        ...draft,
+        descriptor,
+        linkingDataRevision: 0,
+        selection: { mode: 'all-except', ayahIds: [] },
+        selectedWordIdsByAyahId: {},
+      },
+      totalAyahCount: 0,
+      displayedAyahCount: 0,
+      operationGeneration: state.operationGeneration + 1,
+    });
   }
 
   toggleAyah(ayahId: number, doorId: number | null): void {
@@ -145,7 +224,10 @@ export class LinkingInlineSourceWorkflowController {
             selectedWordIdsByAyahId: {},
           },
       totalAyahCount: 0,
+      displayedAyahCount: 0,
+      viewTypeCode: this.stateSignal().viewTypeCode,
       operationGeneration,
+      availableTypes: this.stateSignal().availableTypes,
     });
   }
 

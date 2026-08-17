@@ -5,7 +5,13 @@ import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.com
 import { LinkingAyah } from '../../models/linking-ayah.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
 
-type LinkingAyahWordHighlight = 'selected' | 'added' | 'existing' | 'removed' | null;
+type LinkingAyahWordHighlight =
+  | 'selected'
+  | 'excluded'
+  | 'added'
+  | 'existing'
+  | 'removed'
+  | null;
 
 interface LinkingDoorWordImpact {
   added: readonly number[];
@@ -55,12 +61,23 @@ export class LinkingAyahCardComponent {
         textUthmani: toQuranWordDisplayText(word.textUthmani),
         highlight:
           impactByWordId === null
-            ? this.highlightSourceWords() && word.isSourceMatch
-              ? 'selected'
-              : null
+            ? sourceHighlight(word, this.highlightSourceWords())
             : (impactByWordId.get(word.canonicalQuranWordId) ?? null),
       }));
   });
+}
+
+function sourceHighlight(
+  word: LinkingAyah['words'][number],
+  highlightSourceWords: boolean,
+): LinkingAyahWordHighlight {
+  if (!highlightSourceWords) {
+    return null;
+  }
+  if (word.isExcludedSourceMatch) {
+    return 'excluded';
+  }
+  return word.isSourceMatch ? 'selected' : null;
 }
 
 function localizeAyahClassification(classification: string | null): string | null {
@@ -77,7 +94,7 @@ function localizeAyahClassification(classification: string | null): string | nul
 
 function toImpactByWordId(
   impact: LinkingDoorWordImpact,
-): ReadonlyMap<number, Exclude<LinkingAyahWordHighlight, 'selected' | null>> {
+): ReadonlyMap<number, 'added' | 'existing' | 'removed'> {
   return new Map([
     ...impact.added.map((wordId) => [wordId, 'added'] as const),
     ...impact.existing.map((wordId) => [wordId, 'existing'] as const),

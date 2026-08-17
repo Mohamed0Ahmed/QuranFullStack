@@ -16,13 +16,18 @@ public static class LinkingSourceIdentity
         return descriptor switch
         {
             LinkingSourceDescriptor.UniqueWord source =>
-                Join(KindToken(source.Kind), ModeToken(source.Mode), Number(source.WordId)),
+                Join([
+                    KindToken(source.Kind),
+                    ModeToken(source.Mode),
+                    Number(source.WordId),
+                    .. source.TypeCodes,
+                ]),
             LinkingSourceDescriptor.Root source =>
-                Join(KindToken(source.Kind), Number(source.RootId)),
+                Join([KindToken(source.Kind), Number(source.RootId), .. source.TypeCodes]),
             LinkingSourceDescriptor.Lemma source =>
-                Join(KindToken(source.Kind), Number(source.LemmaId), source.TypeCode),
+                DimensionIdentity(source.Kind, source.LemmaId, source.TypeCodes),
             LinkingSourceDescriptor.Stem source =>
-                Join(KindToken(source.Kind), Number(source.StemId), source.TypeCode),
+                DimensionIdentity(source.Kind, source.StemId, source.TypeCodes),
             LinkingSourceDescriptor.WordType source => WordTypeIdentity(source),
             LinkingSourceDescriptor.ManualMushafAyahs source =>
                 Join([KindToken(source.Kind), .. source.VerseKeys.Select(verseKey => verseKey.Value)]),
@@ -71,6 +76,14 @@ public static class LinkingSourceIdentity
                 "Unknown word type selection kind."),
         };
     }
+
+    private static string DimensionIdentity(
+        LinkingSourceKind kind,
+        int id,
+        IReadOnlyList<string> typeCodes) =>
+        typeCodes.Count == 0
+            ? Join(KindToken(kind), Number(id), null)
+            : Join([KindToken(kind), Number(id), .. typeCodes]);
 
     private static string KindToken(LinkingSourceKind kind) => LinkingSourceTokens.ToToken(kind);
 

@@ -1,5 +1,4 @@
 using QuranDashboard.Domain.Linking;
-using QuranDashboard.Infrastructure.Persistence.Reads.Quran.Words.Stems;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 
@@ -9,6 +8,7 @@ public sealed partial class EfLinkingSourceResolutionReader
         LinkingSourceDescriptor.Root source,
         CancellationToken cancellationToken)
     {
+        var typeCodes = source.TypeCodes.ToArray();
         var rootExists = await _dbContext.QuranRoots
             .AsNoTracking()
             .AnyAsync(root => root.Id == source.RootId, cancellationToken);
@@ -20,7 +20,9 @@ public sealed partial class EfLinkingSourceResolutionReader
         return await (
             from morphology in _dbContext.WordMorphologies.AsNoTracking()
             join word in _dbContext.QuranWords.AsNoTracking() on morphology.QuranWordId equals word.Id
-            where morphology.RootId == source.RootId && !word.IsAyahMarker
+            where morphology.RootId == source.RootId
+                && (typeCodes.Length == 0 || typeCodes.Contains(morphology.HeadPos))
+                && !word.IsAyahMarker
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
             .ToListAsync(cancellationToken);
@@ -30,7 +32,7 @@ public sealed partial class EfLinkingSourceResolutionReader
         LinkingSourceDescriptor.Lemma source,
         CancellationToken cancellationToken)
     {
-        var typeCode = StemsAyahTypeCode.Normalize(source.TypeCode);
+        var typeCodes = source.TypeCodes.ToArray();
 
         var lemmaExists = await _dbContext.QuranLemmas
             .AsNoTracking()
@@ -44,7 +46,7 @@ public sealed partial class EfLinkingSourceResolutionReader
             from segment in _dbContext.WordMorphologySegments.AsNoTracking()
             join word in _dbContext.QuranWords.AsNoTracking() on segment.QuranWordId equals word.Id
             where segment.LemmaId == source.LemmaId
-                && (typeCode == null || segment.Pos == typeCode)
+                && (typeCodes.Length == 0 || typeCodes.Contains(segment.Pos))
                 && !word.IsAyahMarker
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()
@@ -55,7 +57,7 @@ public sealed partial class EfLinkingSourceResolutionReader
         LinkingSourceDescriptor.Stem source,
         CancellationToken cancellationToken)
     {
-        var typeCode = StemsAyahTypeCode.Normalize(source.TypeCode);
+        var typeCodes = source.TypeCodes.ToArray();
 
         var stemExists = await _dbContext.QuranStems
             .AsNoTracking()
@@ -70,7 +72,7 @@ public sealed partial class EfLinkingSourceResolutionReader
             join word in _dbContext.QuranWords.AsNoTracking() on segment.QuranWordId equals word.Id
             where segment.Kind == StemSegmentKind
                 && segment.StemId == source.StemId
-                && (typeCode == null || segment.Pos == typeCode)
+                && (typeCodes.Length == 0 || typeCodes.Contains(segment.Pos))
                 && !word.IsAyahMarker
             select new LinkingMatchedWordRow(word.AyahId, word.Id, word.WordNumber))
             .Distinct()

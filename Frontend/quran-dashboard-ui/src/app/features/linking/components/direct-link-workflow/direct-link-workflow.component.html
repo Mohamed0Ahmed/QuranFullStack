@@ -72,6 +72,13 @@
       @case ('configure-source') {
         @if (directDraft(); as draft) {
           <section class="direct-link-workflow__configuration">
+            <qd-linking-source-type-filters
+              [items]="directAvailableTypes()"
+              [selectedTypeCodes]="directSelectedTypeCodes()"
+              [viewTypeCode]="directViewTypeCode()"
+              (typeCodesChange)="setDirectTypeCodes($event)"
+              (viewTypeCodeChange)="setDirectViewTypeCode($event)"
+            />
             <header class="direct-link-workflow__configuration-toolbar">
               @if (isAutomatic()) {
                 <button
@@ -103,6 +110,11 @@
                 <span aria-hidden="true">·</span>
                 {{ labels.selectedCount }}:
                 <strong class="qd-ltr-isolate tabular-nums">{{ directSelectedCount() }}</strong>
+                @if (directViewTypeCode() !== null) {
+                  <span aria-hidden="true">·</span>
+                  {{ labels.displayedAyahs }}:
+                  <strong class="qd-ltr-isolate tabular-nums">{{ directDisplayedAyahCount() || '—' }}</strong>
+                }
               </p>
             </header>
             @if (directRequest(); as request) {
@@ -119,7 +131,7 @@
                 [listLabel]="labels.sourceEditorAyahList"
                 (ayahToggled)="workflow.toggleDirectAyah($event)"
                 (wordToggled)="toggleManualWord($event)"
-                (pageReady)="workflow.directPageReady($event.linkingDataRevision, $event.totalItems)"
+                (pageReady)="directPageReady($event)"
               />
             }
           </section>
