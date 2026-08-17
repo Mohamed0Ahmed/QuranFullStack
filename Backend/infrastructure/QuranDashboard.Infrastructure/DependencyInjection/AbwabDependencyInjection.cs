@@ -1,7 +1,9 @@
 using QuranDashboard.Application.Abstractions.Abwab;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Infrastructure.Caching.Abwab;
 using QuranDashboard.Infrastructure.Persistence.Reads.Abwab;
 using QuranDashboard.Infrastructure.Persistence.Writes.Abwab;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
@@ -53,6 +55,7 @@ internal static class AbwabDependencyInjection
             sp.GetRequiredService<AbwabCacheGeneration>()));
 
         services.AddScoped<IAbwabRelationsReader, EfAbwabRelationsReader>();
+        services.AddScoped<IAbwabDoorInclusionSynchronizer, EfAbwabDoorInclusionSynchronizer>();
 
         return services;
     }

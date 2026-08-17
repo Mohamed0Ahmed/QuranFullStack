@@ -41,6 +41,8 @@ public static class LinkingSourceTokens
 
     public static IReadOnlyList<string> WordTypeSelectionTokens { get; } = [.. SelectionToTokenMap.Values];
 
+    public static bool IsPublicKind(LinkingSourceKind kind) => KindToTokenMap.ContainsKey(kind);
+
     public static string ToToken(LinkingSourceKind kind) =>
         KindToTokenMap.TryGetValue(kind, out var token)
             ? token

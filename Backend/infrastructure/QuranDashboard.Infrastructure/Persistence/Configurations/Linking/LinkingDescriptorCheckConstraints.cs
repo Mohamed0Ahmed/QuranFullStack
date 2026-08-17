@@ -23,6 +23,42 @@ internal static class LinkingDescriptorCheckConstraints
             AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
         """;
 
+    public const string ContributionKindReferenceCoherence =
+        """
+        (source_kind = 'root'
+            AND root_id IS NOT NULL
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
+        OR (source_kind = 'lemma'
+            AND lemma_id IS NOT NULL
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(root_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
+        OR (source_kind = 'stem'
+            AND stem_id IS NOT NULL
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(root_id, lemma_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
+        OR (source_kind = 'unique_word'
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 1
+            AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 0)
+        OR (source_kind = 'word_type'
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 1
+            AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 0)
+        OR (source_kind = 'manual_mushaf_ayahs'
+            AND door_inclusion_id IS NULL
+            AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
+        OR (source_kind = 'door_inclusion'
+            AND door_inclusion_id IS NOT NULL
+            AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)
+        """;
+
+    public const string OperationOwnershipCoherence =
+        """
+        (source_kind = 'door_inclusion' AND operation_id IS NULL AND door_inclusion_id IS NOT NULL)
+        OR (source_kind <> 'door_inclusion' AND operation_id IS NOT NULL AND door_inclusion_id IS NULL)
+        """;
+
     public static string JsonbSchemaVersion(string column) =>
         $"""
         jsonb_typeof({column}) = 'object'

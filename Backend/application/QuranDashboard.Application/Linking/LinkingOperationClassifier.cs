@@ -185,7 +185,9 @@ public static class LinkingOperationClassifier
         index.ContributionsByAyahId.TryGetValue(ayahId, out var contributions)
             ? [
                 .. contributions
-                    .Where(contribution => contribution.Id != live?.Id)
+                    .Where(contribution =>
+                        contribution.Id != live?.Id
+                        && LinkingSourceTokens.IsPublicKind(contribution.SourceKind))
                     .Select(contribution => new LinkingOverlappingSource(
                         contribution.SourceIdentity,
                         contribution.Label,
@@ -275,11 +277,14 @@ public static class LinkingOperationClassifier
             LinkingOperationIntent intent,
             LinkingConfirmedDoorState state)
         {
-            var contributionsBySourceIdentity = state.Contributions.ToDictionary(
+            var authoredContributions = state.Contributions
+                .Where(contribution => LinkingSourceTokens.IsPublicKind(contribution.SourceKind))
+                .ToArray();
+            var contributionsBySourceIdentity = authoredContributions.ToDictionary(
                 contribution => contribution.SourceIdentity,
                 StringComparer.Ordinal);
-            var contributionsByAyahId = BuildContributionsByAyahId(state.Contributions);
-            var unitIndexes = state.Contributions
+            var contributionsByAyahId = BuildContributionsByAyahId(authoredContributions);
+            var unitIndexes = authoredContributions
                 .SelectMany(contribution => contribution.Units)
                 .GroupBy(unit => unit.Id)
                 .Select(group => group.First())

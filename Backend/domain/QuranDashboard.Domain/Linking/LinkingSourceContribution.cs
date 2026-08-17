@@ -4,7 +4,9 @@ public sealed class LinkingSourceContribution
 {
     public long Id { get; set; }
 
-    public long OperationId { get; set; }
+    public long? OperationId { get; set; }
+
+    public int? DoorInclusionId { get; set; }
 
     public int DoorId { get; set; }
 

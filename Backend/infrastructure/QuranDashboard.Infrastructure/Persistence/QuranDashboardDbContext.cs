@@ -62,6 +62,8 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<AbwabDoor> AbwabDoors => Set<AbwabDoor>();
     public DbSet<AbwabDoorAlias> AbwabDoorAliases => Set<AbwabDoorAlias>();
     public DbSet<AbwabDoorRelation> AbwabDoorRelations => Set<AbwabDoorRelation>();
+    public DbSet<AbwabDoorInclusion> AbwabDoorInclusions => Set<AbwabDoorInclusion>();
+    public DbSet<AbwabDoorInclusionUnitSync> AbwabDoorInclusionUnitSyncs => Set<AbwabDoorInclusionUnitSync>();
     public DbSet<AbwabTemplate> AbwabTemplates => Set<AbwabTemplate>();
     public DbSet<AbwabTemplateNode> AbwabTemplateNodes => Set<AbwabTemplateNode>();
 

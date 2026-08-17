@@ -192,77 +192,13 @@ internal sealed partial class EfDoorLinkRecordsWriter
         IReadOnlyList<int> affectedAyahIds,
         int actorUserId,
         bool deleteEmptyAyahs,
-        CancellationToken cancellationToken)
-    {
-        if (affectedAyahIds.Count == 0)
-        {
-            return;
-        }
-
-        var ayahIds = affectedAyahIds.Distinct().ToArray();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO linking_door_ayahs (door_id, ayah_id, created_at, created_by)
-            SELECT DISTINCT {doorId}, unit_ayah.ayah_id, CURRENT_TIMESTAMP, {actorUserId}
-            FROM linking_unit_ayahs unit_ayah
-            JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-            JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-            JOIN linking_source_contributions contribution
-              ON contribution.id = mapping.source_contribution_id
-             AND contribution.deleted_at IS NULL
-            WHERE unit.door_id = {doorId}
-              AND contribution.door_id = {doorId}
-              AND unit_ayah.ayah_id = ANY ({ayahIds})
-            ON CONFLICT (door_id, ayah_id) DO NOTHING;
-
-            DELETE FROM linking_door_ayah_words word
-            USING linking_door_ayahs door_ayah
-            WHERE word.door_ayah_id = door_ayah.id
-              AND door_ayah.door_id = {doorId}
-              AND door_ayah.ayah_id = ANY ({ayahIds});
-
-            INSERT INTO linking_door_ayah_words (
-                door_ayah_id, quran_word_id, ayah_id, created_at, created_by)
-            SELECT DISTINCT door_ayah.id, unit_word.quran_word_id, unit_ayah.ayah_id,
-                   CURRENT_TIMESTAMP, {actorUserId}
-            FROM linking_door_ayahs door_ayah
-            JOIN linking_unit_ayahs unit_ayah ON unit_ayah.ayah_id = door_ayah.ayah_id
-            JOIN linking_unit_ayah_words unit_word ON unit_word.unit_ayah_id = unit_ayah.id
-            JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-            JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-            JOIN linking_source_contributions contribution
-              ON contribution.id = mapping.source_contribution_id
-             AND contribution.deleted_at IS NULL
-            WHERE door_ayah.door_id = {doorId}
-              AND unit.door_id = {doorId}
-              AND contribution.door_id = {doorId}
-              AND door_ayah.ayah_id = ANY ({ayahIds})
-            ON CONFLICT (door_ayah_id, quran_word_id) DO NOTHING;
-            """,
+        CancellationToken cancellationToken) =>
+        await new RelationalDoorStateRebuilder(db).RebuildAsync(
+            doorId,
+            affectedAyahIds,
+            actorUserId,
+            deleteEmptyAyahs,
             cancellationToken);
-
-        if (deleteEmptyAyahs)
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                DELETE FROM linking_door_ayahs door_ayah
-                WHERE door_ayah.door_id = {doorId}
-                  AND door_ayah.ayah_id = ANY ({ayahIds})
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM linking_unit_ayahs unit_ayah
-                      JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-                      JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-                      JOIN linking_source_contributions contribution
-                        ON contribution.id = mapping.source_contribution_id
-                       AND contribution.deleted_at IS NULL
-                      WHERE unit_ayah.ayah_id = door_ayah.ayah_id
-                        AND unit.door_id = {doorId}
-                        AND contribution.door_id = {doorId})
-                """,
-                cancellationToken);
-        }
-    }
 
     private sealed record LockedUnitState(LinkingUnit Unit, IReadOnlyList<LinkingUnitAyah> Ayahs);
 }

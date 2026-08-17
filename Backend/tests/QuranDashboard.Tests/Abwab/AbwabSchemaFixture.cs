@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Domain.Linking;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Abwab;
@@ -51,7 +52,7 @@ public sealed class AbwabSchemaFixture : IAsyncLifetime
         await using var scope = Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var truncate = "TRUNCATE TABLE "
-            + string.Join(", ", AbwabTableNames(dbContext))
+            + string.Join(", ", AbwabResetTableNames(dbContext))
             + " RESTART IDENTITY CASCADE";
 
         await dbContext.Database.ExecuteSqlRawAsync(truncate);
@@ -63,7 +64,7 @@ public sealed class AbwabSchemaFixture : IAsyncLifetime
         cache.InvalidateTemplates();
     }
 
-    private static IEnumerable<string> AbwabTableNames(QuranDashboardDbContext dbContext)
+    private static IEnumerable<string> AbwabResetTableNames(QuranDashboardDbContext dbContext)
     {
         Type[] abwabEntities =
         [
@@ -71,8 +72,27 @@ public sealed class AbwabSchemaFixture : IAsyncLifetime
             typeof(AbwabDoor),
             typeof(AbwabDoorAlias),
             typeof(AbwabDoorRelation),
+            typeof(AbwabDoorInclusion),
+            typeof(AbwabDoorInclusionUnitSync),
             typeof(AbwabTemplate),
-            typeof(AbwabTemplateNode)
+            typeof(AbwabTemplateNode),
+            typeof(LinkingConfirmationJob),
+            typeof(LinkingOperation),
+            typeof(LinkingPreparedAffectedContribution),
+            typeof(LinkingPreparedAyahDescription),
+            typeof(LinkingPreparedAyahWord),
+            typeof(LinkingPreparedAyah),
+            typeof(LinkingPreparedUnit),
+            typeof(LinkingPreparedSource),
+            typeof(LinkingPreparedPreflight),
+            typeof(LinkingSourceContributionUnit),
+            typeof(LinkingSourceContribution),
+            typeof(LinkingUnitAyahDescription),
+            typeof(LinkingUnitAyahWord),
+            typeof(LinkingUnitAyah),
+            typeof(LinkingUnit),
+            typeof(LinkingDoorAyahWord),
+            typeof(LinkingDoorAyah)
         ];
 
         return abwabEntities.Select(entity =>

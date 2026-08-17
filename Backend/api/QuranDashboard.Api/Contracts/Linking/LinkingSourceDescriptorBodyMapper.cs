@@ -20,7 +20,8 @@ internal static class LinkingSourceDescriptorBodyMapper
             return false;
         }
 
-        if (!LinkingSourceTokens.TryParseKind(body.Kind, out var kind))
+        if (!LinkingSourceTokens.TryParseKind(body.Kind, out var kind)
+            || !LinkingSourceTokens.IsPublicKind(kind))
         {
             violation = LinkingBodyViolations.Malformed("kind", body.Kind);
             return false;

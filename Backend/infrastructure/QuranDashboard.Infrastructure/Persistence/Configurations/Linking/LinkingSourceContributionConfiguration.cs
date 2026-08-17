@@ -15,7 +15,8 @@ public sealed class LinkingSourceContributionConfiguration : IEntityTypeConfigur
         {
             table.HasCheckConstraint(
                 "ck_linking_source_contributions_source_kind",
-                LinkingDescriptorCheckConstraints.TokenIn("source_kind", LinkingSourceKindColumn.Tokens));
+                LinkingDescriptorCheckConstraints.TokenIn(
+                    "source_kind", LinkingSourceKindColumn.ContributionTokens));
             table.HasCheckConstraint(
                 "ck_linking_source_contributions_contribution_mode",
                 LinkingDescriptorCheckConstraints.TokenIn(
@@ -34,7 +35,10 @@ public sealed class LinkingSourceContributionConfiguration : IEntityTypeConfigur
                 LinkingDescriptorCheckConstraints.JsonbSchemaVersion("scope"));
             table.HasCheckConstraint(
                 "ck_linking_source_contributions_kind_reference_coherence",
-                LinkingDescriptorCheckConstraints.KindReferenceCoherence);
+                LinkingDescriptorCheckConstraints.ContributionKindReferenceCoherence);
+            table.HasCheckConstraint(
+                "ck_linking_source_contributions_operation_ownership_coherence",
+                LinkingDescriptorCheckConstraints.OperationOwnershipCoherence);
         });
 
         builder.HasKey(contribution => contribution.Id);
@@ -43,8 +47,10 @@ public sealed class LinkingSourceContributionConfiguration : IEntityTypeConfigur
             .HasColumnName("id");
 
         builder.Property(contribution => contribution.OperationId)
-            .IsRequired()
             .HasColumnName("operation_id");
+
+        builder.Property(contribution => contribution.DoorInclusionId)
+            .HasColumnName("door_inclusion_id");
 
         builder.Property(contribution => contribution.DoorId)
             .IsRequired()
@@ -143,6 +149,12 @@ public sealed class LinkingSourceContributionConfiguration : IEntityTypeConfigur
             .HasForeignKey(contribution => contribution.OperationId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasOne<AbwabDoorInclusion>()
+            .WithMany()
+            .HasForeignKey(contribution => contribution.DoorInclusionId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .HasConstraintName("FK_linking_source_contributions_door_inclusion");
+
         builder.HasOne<AbwabDoor>()
             .WithMany()
             .HasForeignKey(contribution => contribution.DoorId)
@@ -198,6 +210,10 @@ public sealed class LinkingSourceContributionConfiguration : IEntityTypeConfigur
             .HasFilter("deleted_at IS NULL");
 
         builder.HasIndex(contribution => new { contribution.OperationId, contribution.OrderValue });
+
+        builder.HasIndex(contribution => contribution.DoorInclusionId)
+            .IsUnique()
+            .HasFilter("door_inclusion_id IS NOT NULL AND deleted_at IS NULL");
 
         builder.HasIndex(contribution => contribution.DoorId)
             .HasFilter("deleted_at IS NULL");
