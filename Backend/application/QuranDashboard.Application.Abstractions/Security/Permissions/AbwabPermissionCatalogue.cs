@@ -22,7 +22,9 @@ public static class AbwabPermissionCatalogue
         new(AbwabPermissions.TemplateNodes.Create, "إضافة عناصر القوالب", "Add a child node to a template.", "عناصر القوالب", 5, 16),
         new(AbwabPermissions.TemplateNodes.Edit, "تعديل عناصر القوالب", "Edit a template node; root edit also renames the template.", "عناصر القوالب", 5, 17),
         new(AbwabPermissions.TemplateNodes.Reorder, "إعادة ترتيب عناصر القوالب", "Reorder a non-root template node.", "عناصر القوالب", 5, 18),
-        new(AbwabPermissions.TemplateNodes.Delete, "حذف عناصر القوالب", "Retire a non-root node and its subtree.", "عناصر القوالب", 5, 19)
+        new(AbwabPermissions.TemplateNodes.Delete, "حذف عناصر القوالب", "Retire a non-root node and its subtree.", "عناصر القوالب", 5, 19),
+        new(AbwabPermissions.Inclusions.Create, "إنشاء تضمينات الأبواب", "Include one or more source doors in one aggregate target.", "تضمين الأبواب", 6, 20),
+        new(AbwabPermissions.Inclusions.Delete, "حذف تضمينات الأبواب", "Detach a source door from an aggregate target.", "تضمين الأبواب", 6, 21)
     ];
 
     static AbwabPermissionCatalogue()
@@ -32,7 +34,7 @@ public static class AbwabPermissionCatalogue
             || codes.Distinct(StringComparer.Ordinal).Count() != codes.Length
             || !All.Select(permission => permission.DisplayOrder).SequenceEqual(Enumerable.Range(1, All.Count))
             || !All.Select(permission => permission.GroupDisplayOrder).Distinct().OrderBy(order => order)
-                .SequenceEqual(Enumerable.Range(1, 5))
+                .SequenceEqual(Enumerable.Range(1, 6))
             || All.GroupBy(permission => permission.GroupDisplayOrder)
                 .Any(group => group.Select(permission => permission.GroupArabicLabel)
                     .Distinct(StringComparer.Ordinal).Count() != 1))

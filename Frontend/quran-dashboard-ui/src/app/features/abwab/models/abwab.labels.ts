@@ -121,6 +121,10 @@ export const ABWAB_LABELS = {
     `مواضع الكلمات المحددة في «${doorName}» — ${count}`,
   rowOrderEditAriaLabel: (doorName: string, order: number): string =>
     `تعديل ترتيب «${doorName}» — الترتيب الحالي ${order}`,
+  inclusionsContextMenuLabel: (sourceCount: number, consumerCount: number): string =>
+    `تضمين الأبواب، مصادر مباشرة: ${sourceCount}، أبواب جامعة: ${consumerCount}`,
+  inclusionsContextMenuCounts: (sourceCount: number, consumerCount: number): string =>
+    `مصادر: ${sourceCount}، جامعة: ${consumerCount}`,
 
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
@@ -299,6 +303,7 @@ export const ABWAB_LABELS = {
     move: 'نقل الباب',
     sections: 'إدارة الأقسام',
     relations: 'علاقات الباب',
+    inclusions: 'تضمينات الباب',
   } satisfies Record<AbwabModalKind, string>,
   relationsOfDoorKindName: (doorName: string): string => `علاقات «${doorName}»`,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
@@ -332,6 +337,32 @@ export const ABWAB_LABELS = {
   relationAddButton: (count: number): string =>
     count <= 1 ? 'أضف العلاقة' : `أضف ${countPhrase(count, RELATION_FORMS)}`,
   relationsCloseButton: 'إغلاق',
+
+  inclusionsOp: 'تضمين الأبواب',
+  inclusionsModalTitle: 'تضمين الأبواب',
+  inclusionsModalDescription: 'اختر بابًا أو أكثر ليصبح محتواها الحالي جزءًا من الباب الجامع في عملية واحدة.',
+  inclusionsTargetLabel: 'الباب الجامع',
+  inclusionsSourcesHeading: 'مصادر الباب',
+  inclusionsConsumersHeading: 'يُستخدم في أبواب جامعة',
+  inclusionsSourcePickerHeading: 'إضافة مصادر محتوى',
+  inclusionsSourceSearch: 'ابحث واختر بابًا أو أكثر…',
+  inclusionsTargetTag: 'الباب الجامع',
+  inclusionsExistingSourceTag: 'مُضمَّن مباشرة',
+  inclusionsPickerEmpty: 'لا توجد أبواب حية متاحة للتضمين.',
+  inclusionsSourcesEmpty: 'لا توجد مصادر مباشرة لهذا الباب بعد.',
+  inclusionsConsumersEmpty: 'لا يُستخدم هذا الباب في باب جامع آخر.',
+  inclusionsArchivedStatus: 'مؤرشف',
+  inclusionsArchiveExplanation: 'يبقى المحتوى المتزامن محفوظًا عند أرشفة أحد الأبواب.',
+  inclusionsLoading: 'جارٍ تحميل تضمينات الباب…',
+  inclusionsRefreshing: 'جارٍ تحديث التضمينات',
+  inclusionsLoadError: 'تعذر تحميل تضمينات الباب.',
+  inclusionsAddError: 'تعذر تضمين الأبواب المحددة.',
+  inclusionsAddedNotice: 'تم تضمين الأبواب بنجاح.',
+  inclusionsConflictRefreshed: 'تغير الباب الجامع. تم تحديث التضمينات، فراجع اختيارك قبل المحاولة مجددًا.',
+  inclusionsNoneSelected: 'لم تختر مصدرًا بعد.',
+  inclusionsSelectedSummary: (count: number): string => `تم اختيار ${countPhrase(count, DOOR_FORMS)}`,
+  inclusionsAddButton: (count: number): string => count <= 1 ? 'تضمين الباب' : `تضمين ${countPhrase(count, DOOR_FORMS)}`,
+  inclusionsCloseButton: 'إغلاق',
 
   relationsBulkAddOp: 'إضافة علاقة',
   relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${countPhrase(count, DOOR_FORMS)}`,

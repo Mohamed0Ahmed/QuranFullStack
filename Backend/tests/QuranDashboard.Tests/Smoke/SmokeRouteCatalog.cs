@@ -484,6 +484,16 @@ internal static class SmokeRouteCatalog
             Access = SmokeRouteAccess.Permission(AbwabPermissions.Relations.Delete),
             ParityOnly = true,
         },
+        new("api/abwab/doors/{targetDoorId:int}/inclusions", "/api/abwab/doors/1/inclusions", HttpStatusCode.NotFound)
+        {
+            ParityOnly = true,
+        },
+        new("api/abwab/doors/{targetDoorId:int}/inclusions", "/api/abwab/doors/1/inclusions", HttpStatusCode.NotFound)
+        {
+            Method = HttpMethod.Post,
+            Access = SmokeRouteAccess.Permission(AbwabPermissions.Inclusions.Create),
+            ParityOnly = true,
+        },
 
         // abwab-relations: the response contract gained AbwabTreeDoorDto.RelationCount. DerivedStatus is
         // unchanged at 200 — re-checked, not assumed: the handler still has no NotFound branch, so an

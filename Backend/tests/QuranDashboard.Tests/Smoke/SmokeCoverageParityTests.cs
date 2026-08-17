@@ -12,7 +12,7 @@ namespace QuranDashboard.Tests.Smoke;
 [Collection(nameof(SmokeCollection))]
 public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
 {
-    private static readonly IReadOnlyList<AbwabWritePermission> PhaseFiveAbwabWriteMatrix =
+    private static readonly IReadOnlyList<AbwabWritePermission> AbwabWriteMatrix =
     [
         new("POST", "api/abwab/sections", AbwabPermissions.Sections.Create),
         new("PUT", "api/abwab/sections/{id:int}", AbwabPermissions.Sections.Edit),
@@ -28,6 +28,7 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
         new("POST", "api/abwab/doors/{id:int}/restore", AbwabPermissions.Doors.Restore),
         new("POST", "api/abwab/doors/{doorId:int}/relations", AbwabPermissions.Relations.Create),
         new("DELETE", "api/abwab/relations/{relationId:int}", AbwabPermissions.Relations.Delete),
+        new("POST", "api/abwab/doors/{targetDoorId:int}/inclusions", AbwabPermissions.Inclusions.Create),
         new("POST", "api/abwab/templates", AbwabPermissions.Templates.Create),
         new("DELETE", "api/abwab/templates/{templateId:int}", AbwabPermissions.Templates.Delete),
         new("POST", "api/abwab/templates/{templateId:int}/apply", AbwabPermissions.Templates.Apply),
@@ -120,7 +121,7 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
     }
 
     [Fact]
-    public void LiveAbwabWrites_MatchTheCompletePhaseFivePermissionMatrix()
+    public void LiveAbwabWrites_MatchTheCompletePermissionMatrix()
     {
         var actual = LiveRoutes()
             .Where(pair =>
@@ -136,7 +137,7 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
             })
             .ToArray();
 
-        actual.Should().BeEquivalentTo(PhaseFiveAbwabWriteMatrix);
+        actual.Should().BeEquivalentTo(AbwabWriteMatrix);
     }
 
     private static void AssertAccessClassification(RouteEndpoint endpoint, SmokeRoute route, string key)

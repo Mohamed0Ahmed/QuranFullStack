@@ -195,6 +195,15 @@ public static class ApiMessages
     public const string AbwabDoorRelationDuplicate = "توجد علاقة من هذا النوع بالفعل مع هذا الباب";
     public const string AbwabDoorRelationNotFound = "العلاقة غير موجودة";
 
+    public const string AbwabDoorInclusionsLoaded = "تم تحميل تضمينات الباب";
+    public const string AbwabDoorInclusionsCreated = "تم تضمين الأبواب بنجاح";
+    public const string AbwabDoorInclusionsInvalidRequest = "طلب تضمين الأبواب غير صالح";
+    public const string AbwabDoorInclusionsArchivedDoor = "لا يمكن إنشاء تضمين لباب مؤرشف";
+    public const string AbwabDoorInclusionsDuplicate = "الباب المصدر مُضمَّن مباشرة بالفعل";
+    public const string AbwabDoorInclusionsCycle = "سيؤدي هذا التضمين إلى دورة غير صالحة بين الأبواب";
+    public const string AbwabDoorInclusionsStaleTarget = "تغيّر الباب الجامع؛ حدّث التضمينات ثم حاول مجددًا";
+    public const string AbwabDoorInclusionsUnavailable = "تعذّر إكمال مزامنة التضمينات بأمان. حاول لاحقًا.";
+
     private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
 
     public static string AbwabDoorRelationDuplicateWith(IReadOnlyList<string> doorNames) =>

@@ -40,4 +40,10 @@ public static class AbwabPermissions
         public const string Reorder = "abwab.template_nodes.reorder";
         public const string Delete = "abwab.template_nodes.delete";
     }
+
+    public static class Inclusions
+    {
+        public const string Create = "abwab.inclusions.create";
+        public const string Delete = "abwab.inclusions.delete";
+    }
 }

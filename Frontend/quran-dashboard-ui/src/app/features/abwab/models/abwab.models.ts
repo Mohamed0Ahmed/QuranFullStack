@@ -5,7 +5,7 @@ import { AbwabRelationDirection } from '../../../core/api/generated/models/abwab
 
 export type AbwabView = 'tree' | 'cards';
 
-export type AbwabModalKind = 'create' | 'child' | 'edit' | 'move' | 'sections' | 'relations';
+export type AbwabModalKind = 'create' | 'child' | 'edit' | 'move' | 'sections' | 'relations' | 'inclusions';
 
 export interface AbwabModalState {
   readonly kind: AbwabModalKind;
@@ -103,6 +103,7 @@ const ABWAB_MODAL_KINDS: ReadonlySet<string> = new Set<AbwabModalKind>([
   'move',
   'sections',
   'relations',
+  'inclusions',
 ]);
 
 export function isAbwabModalKind(value: unknown): value is AbwabModalKind {
@@ -114,6 +115,7 @@ const ABWAB_DOOR_DEPENDENT_MODAL_KINDS: ReadonlySet<AbwabModalKind> = new Set<Ab
   'edit',
   'move',
   'relations',
+  'inclusions',
 ]);
 
 export function isDoorDependentAbwabModalKind(kind: AbwabModalKind): boolean {
@@ -140,6 +142,8 @@ export interface AbwabNode {
   readonly relationCount: number;
   readonly linkCount: number;
   readonly selectedWordCount: number;
+  readonly inclusionSourceCount: number;
+  readonly inclusionConsumerCount: number;
   readonly children: readonly AbwabNode[];
 }
 

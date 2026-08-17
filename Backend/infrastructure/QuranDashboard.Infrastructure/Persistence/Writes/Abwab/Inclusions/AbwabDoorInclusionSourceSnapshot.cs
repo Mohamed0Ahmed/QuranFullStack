@@ -2,6 +2,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 internal sealed record AbwabDoorInclusionSourceAyahSnapshot(
     int AyahId,
+    int OrderValue,
     IReadOnlyList<int> SelectedWordIds,
     IReadOnlyList<string> Descriptions);
 
@@ -33,9 +34,10 @@ internal sealed record AbwabDoorInclusionSourceSnapshot(
         var ayahs = await db.LinkingUnitAyahs.AsNoTracking()
             .Where(ayah => ids.Contains(ayah.UnitId))
             .OrderBy(ayah => ayah.UnitId)
-            .ThenBy(ayah => ayah.AyahId)
             .ThenBy(ayah => ayah.OrderValue)
-            .Select(ayah => new { ayah.Id, ayah.UnitId, ayah.AyahId })
+            .ThenBy(ayah => ayah.AyahId)
+            .ThenBy(ayah => ayah.Id)
+            .Select(ayah => new { ayah.Id, ayah.UnitId, ayah.AyahId, ayah.OrderValue })
             .ToListAsync(cancellationToken);
 
         var unitAyahIds = ayahs.Select(ayah => ayah.Id).ToArray();
@@ -68,6 +70,7 @@ internal sealed record AbwabDoorInclusionSourceSnapshot(
                 group => (IReadOnlyList<AbwabDoorInclusionSourceAyahSnapshot>)group
                     .Select(ayah => new AbwabDoorInclusionSourceAyahSnapshot(
                         ayah.AyahId,
+                        ayah.OrderValue,
                         wordsByAyah.GetValueOrDefault(ayah.Id, []),
                         descriptionsByAyah.GetValueOrDefault(ayah.Id, [])))
                     .ToArray());
