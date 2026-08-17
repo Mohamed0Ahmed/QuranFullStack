@@ -21,6 +21,7 @@ import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
+import { AbwabManagementPickerSessionStore } from '../../state/abwab-management-picker-session.store';
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
@@ -65,6 +66,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
 })
 export class AbwabManagementPickerComponent {
   private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly session = inject(AbwabManagementPickerSessionStore);
 
   readonly selectedDoorId = input<number | null>(null);
   readonly excludedDoorIds = input<readonly number[]>([]);
@@ -80,6 +82,7 @@ export class AbwabManagementPickerComponent {
 
   private readonly pendingCreatedDoorId = signal<number | null>(null);
   private readonly revealSeedId = signal<number | null>(null);
+  private sessionContextRestored = false;
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -98,11 +101,11 @@ export class AbwabManagementPickerComponent {
     return ids.size === 0 ? NO_IDS : ids;
   });
   protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+    const result = new Set(this.session.expandedDoorIds());
     const id = this.revealSeedId();
     if (id === null) {
-      return NO_IDS;
+      return result.size === 0 ? NO_IDS : result;
     }
-    const result = new Set<number>();
     let parentId = this.byId().get(id)?.parentId ?? null;
     while (parentId !== null && !result.has(parentId)) {
       result.add(parentId);
@@ -148,6 +151,27 @@ export class AbwabManagementPickerComponent {
     });
 
     effect(() => {
+      const snapshot = this.facade.snapshot();
+      const anchorDoorId = this.selectedDoorId() ?? this.session.anchorDoorId();
+      if (!snapshot || this.sessionContextRestored) {
+        return;
+      }
+      const node = anchorDoorId === null ? undefined : snapshot.byId.get(anchorDoorId);
+      const excluded = anchorDoorId !== null && this.excludedIds().has(anchorDoorId);
+      untracked(() => {
+        this.sessionContextRestored = true;
+        if (anchorDoorId === null || excluded) {
+          return;
+        }
+        if (!node || node.isArchived || node.sectionRetired) {
+          this.session.forgetAnchorDoor(anchorDoorId);
+          return;
+        }
+        this.revealContext(node.id);
+      });
+    });
+
+    effect(() => {
       const pendingId = this.pendingCreatedDoorId();
       const node = pendingId === null ? undefined : this.byId().get(pendingId);
       if (!this.isSelectable(node)) {
@@ -177,7 +201,12 @@ export class AbwabManagementPickerComponent {
       return;
     }
     this.selection.select(node.id, node.version);
+    this.session.rememberAnchorDoor(node.id);
     this.selectionChanged.emit(node.id);
+  }
+
+  protected rememberExpandedDoorIds(ids: ReadonlySet<number>): void {
+    this.session.rememberExpandedDoorIds(ids);
   }
 
   protected openMenu(request: AbwabTreeMenuRequest): void {
@@ -223,15 +252,8 @@ export class AbwabManagementPickerComponent {
     if (!this.isSelectable(node)) {
       return;
     }
-    this.revealSeedId.set(node.id);
-    this.revealedId.set(node.id);
     this.chooseDoor(node.id);
-    queueMicrotask(() => {
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-testid="abwab-tree-row-${node.id}"]`)
-        ?.scrollIntoView({ block: 'nearest' });
-    });
-    setTimeout(() => this.clearReveal(), 3000);
+    this.revealContext(node.id);
   }
 
   protected onDoorSaved(door: AbwabDoorDto | null): void {
@@ -244,7 +266,11 @@ export class AbwabManagementPickerComponent {
     if (!this.canArchiveSelected()) {
       return;
     }
+    const archivedDoorId = this.selectedDoor()?.id ?? null;
     this.overlays.confirmArchive(() => {
+      if (archivedDoorId !== null) {
+        this.session.forgetAnchorDoor(archivedDoorId);
+      }
       this.selectionChanged.emit(null);
       this.focusTree();
     });
@@ -260,6 +286,17 @@ export class AbwabManagementPickerComponent {
         .querySelector<HTMLElement>('[data-testid="abwab-tree"] [tabindex="0"]')
         ?.focus();
     });
+  }
+
+  private revealContext(doorId: number): void {
+    this.revealSeedId.set(doorId);
+    this.revealedId.set(doorId);
+    setTimeout(() => {
+      this.elementRef.nativeElement
+        .querySelector<HTMLElement>(`[data-testid="abwab-tree-row-${doorId}"]`)
+        ?.scrollIntoView({ block: 'nearest' });
+    });
+    setTimeout(() => this.clearReveal(), 3000);
   }
 
   private clearReveal(): void {
