@@ -15,29 +15,58 @@ import { normalizeSelectedSourceTypeCodes } from '../../utils/linking-source-typ
 export class LinkingSourceTypeFiltersComponent {
   readonly items = input.required<readonly LinkingSourceTypeOption[]>();
   readonly selectedTypeCodes = input<readonly string[]>([]);
+  readonly viewTypeCode = input<string | null>(null);
   readonly disabled = input(false);
   readonly typeCodesChange = output<readonly string[]>();
+  readonly viewTypeCodeChange = output<string | null>();
 
-  protected readonly sectionLabel = 'تحديد أنواع الكلمات التي تدخل في الربط';
+  protected readonly sectionLabel = 'عرض الآيات وتحديد أنواع الكلمات التي تدخل في الربط';
   protected readonly allLabel = 'الكل';
-  protected readonly isAllSelected = computed(() => this.selectedTypeCodes().length === 0);
+  protected readonly inclusionLabel = 'ضمن الربط';
+  protected readonly isAllIncluded = computed(() => this.selectedTypeCodes().length === 0);
 
-  protected isSelected(code: string): boolean {
-    return this.selectedTypeCodes().includes(code);
+  protected isVisible(code: string): boolean {
+    return this.viewTypeCode() === code;
   }
 
-  protected selectAll(): void {
-    if (!this.disabled() && !this.isAllSelected()) {
+  protected isIncluded(code: string): boolean {
+    return this.isAllIncluded() || this.selectedTypeCodes().includes(code);
+  }
+
+  protected isOnlyIncluded(code: string): boolean {
+    const selected = this.selectedTypeCodes();
+    return selected.length === 1 && selected[0] === code;
+  }
+
+  protected showAll(): void {
+    if (this.viewTypeCode() !== null) {
+      this.viewTypeCodeChange.emit(null);
+    }
+  }
+
+  protected showType(code: string): void {
+    if (!this.isVisible(code)) {
+      this.viewTypeCodeChange.emit(code);
+    }
+  }
+
+  protected includeAll(): void {
+    if (!this.disabled() && !this.isAllIncluded()) {
       this.typeCodesChange.emit([]);
     }
   }
 
-  protected toggle(code: string): void {
+  protected toggleIncluded(code: string): void {
     if (this.disabled()) {
       return;
     }
-    const selected = this.isAllSelected() ? new Set<string>() : new Set(this.selectedTypeCodes());
+    const selected = this.isAllIncluded()
+      ? new Set(this.items().map((item) => item.code))
+      : new Set(this.selectedTypeCodes());
     selected.has(code) ? selected.delete(code) : selected.add(code);
+    if (selected.size === 0) {
+      return;
+    }
     this.typeCodesChange.emit(normalizeSelectedSourceTypeCodes([...selected], this.items()));
   }
 }

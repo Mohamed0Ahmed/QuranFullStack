@@ -109,7 +109,8 @@ export class LinkingSourcePagesFacade {
     if (ayah === null) {
       return null;
     }
-    const matches = new Set(page.matchedWordIdsByAyahId[ayahId] ?? []);
+    const displayMatches = new Set(page.matchedWordIdsByAyahId[ayahId] ?? []);
+    const linkingMatches = new Set(page.linkingMatchedWordIdsByAyahId[ayahId] ?? []);
     const words = (page.wordIdsByAyahId[ayahId] ?? [])
       .map((wordId) => this.entities.word(page.linkingDataRevision, wordId))
       .filter((word) => word !== null)
@@ -118,7 +119,8 @@ export class LinkingSourcePagesFacade {
         canonicalQuranWordId: word.id,
         textUthmani: word.textUthmani,
         isAyahMarker: word.isAyahMarker,
-        isSourceMatch: matches.has(word.id),
+        isSourceMatch: displayMatches.has(word.id) && linkingMatches.has(word.id),
+        isExcludedSourceMatch: displayMatches.has(word.id) && !linkingMatches.has(word.id),
       }));
     return {
       verseKey: ayah.verseKey,
@@ -285,6 +287,7 @@ function sourceRequestKey(request: LinkingSourcePageRequest): string {
     request.view.segment,
     request.view.inclusionMode,
     request.view.ayahOverrideIds,
+    request.view.typeCodes,
     request.pageSize,
     request.page,
   ]);
@@ -306,6 +309,11 @@ function validatePage(dto: LinkingResolvedSourcePageDto, request: LinkingSourceP
     dto.linkingDataRevision <= 0 ||
     dto.totalPages < 0 ||
     dto.totalAyahCount < 0 ||
+    dto.linkingAyahCount < 0 ||
+    dto.linkingAyahIds.some((ayahId) => ayahId <= 0) ||
+    Object.entries(dto.linkingMatchedWordIdsByAyahId).some(
+      ([ayahId, wordIds]) => Number(ayahId) <= 0 || wordIds.some((wordId) => wordId <= 0),
+    ) ||
     dto.availableTypes.some(
       (type) => !type.code.trim() || !type.arabicLabel.trim() || type.occurrencesCount < 0,
     ) ||
@@ -328,7 +336,14 @@ function toPage(dto: LinkingResolvedSourcePageDto): LinkingSourcePage {
     0,
   );
   const wordCount = dto.items.reduce((sum, ayah) => sum + ayah.words.length, 0);
-  const matchCount = dto.items.reduce((sum, ayah) => sum + ayah.matchedQuranWordIds.length, 0);
+  const displayMatchCount = dto.items.reduce(
+    (sum, ayah) => sum + ayah.matchedQuranWordIds.length,
+    0,
+  );
+  const linkingMatchCount = Object.values(dto.linkingMatchedWordIdsByAyahId).reduce(
+    (sum, wordIds) => sum + wordIds.length,
+    0,
+  );
   return Object.freeze({
     linkingDataRevision: dto.linkingDataRevision,
     resolutionIdentity: dto.resolutionIdentity,
@@ -336,8 +351,18 @@ function toPage(dto: LinkingResolvedSourcePageDto): LinkingSourcePage {
     page: dto.page,
     pageSize: dto.pageSize,
     totalAyahCount: dto.totalAyahCount,
+    linkingAyahCount: dto.linkingAyahCount,
     totalPages: dto.totalPages,
     availableTypes: Object.freeze(dto.availableTypes.map((type) => Object.freeze({ ...type }))),
+    linkingAyahIds: Object.freeze([...dto.linkingAyahIds]),
+    linkingMatchedWordIdsByAyahId: Object.freeze(
+      Object.fromEntries(
+        Object.entries(dto.linkingMatchedWordIdsByAyahId).map(([ayahId, wordIds]) => [
+          Number(ayahId),
+          Object.freeze([...wordIds]),
+        ]),
+      ),
+    ),
     ayahIds: Object.freeze(dto.items.map((ayah) => ayah.ayahId)),
     wordIdsByAyahId: Object.freeze(
       Object.fromEntries(
@@ -350,7 +375,12 @@ function toPage(dto: LinkingResolvedSourcePageDto): LinkingSourcePage {
     matchedWordIdsByAyahId: Object.freeze(
       Object.fromEntries(dto.items.map((ayah) => [ayah.ayahId, Object.freeze([...ayah.matchedQuranWordIds])])),
     ),
-    weight: dto.items.length + wordCount + matchCount + Math.ceil(textUnits / 64),
+    weight:
+      dto.items.length +
+      wordCount +
+      displayMatchCount +
+      linkingMatchCount +
+      Math.ceil(textUnits / 64),
   });
 }
 

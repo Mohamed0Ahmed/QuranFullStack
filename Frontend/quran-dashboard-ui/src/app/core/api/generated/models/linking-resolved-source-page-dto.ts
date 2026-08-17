@@ -6,7 +6,12 @@ import { LinkingSourceTypeDto } from '../models/linking-source-type-dto';
 export interface LinkingResolvedSourcePageDto {
   availableTypes: Array<LinkingSourceTypeDto>;
   items: Array<LinkingResolvedAyahDto>;
+  linkingAyahCount: number;
+  linkingAyahIds: Array<number>;
   linkingDataRevision: number;
+  linkingMatchedWordIdsByAyahId: {
+[key: string]: Array<number>;
+};
   page: number;
   pageSize: number;
   resolutionIdentity: string;

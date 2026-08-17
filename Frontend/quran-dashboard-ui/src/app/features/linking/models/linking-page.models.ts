@@ -19,8 +19,11 @@ export interface LinkingSourcePage {
   page: number;
   pageSize: number;
   totalAyahCount: number;
+  linkingAyahCount: number;
   totalPages: number;
   availableTypes: readonly LinkingSourceTypeOption[];
+  linkingAyahIds: readonly number[];
+  linkingMatchedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   ayahIds: readonly number[];
   wordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   matchedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;

@@ -10,6 +10,11 @@
         <span aria-hidden="true">·</span>
         {{ labels.selectedCount }}:
         <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
+        @if (facade.viewTypeCode() !== null) {
+          <span aria-hidden="true">·</span>
+          {{ labels.displayedAyahs }}:
+          <strong class="qd-ltr-isolate tabular-nums">{{ facade.displayedAyahCount() || '—' }}</strong>
+        }
       </p>
     </div>
     <button
@@ -28,8 +33,10 @@
     <qd-linking-source-type-filters
       [items]="facade.availableTypes()"
       [selectedTypeCodes]="facade.selectedTypeCodes()"
+      [viewTypeCode]="facade.viewTypeCode()"
       [disabled]="facade.typeUpdatePending()"
       (typeCodesChange)="facade.setSourceTypeCodes($event)"
+      (viewTypeCodeChange)="facade.setViewTypeCode($event)"
     />
     <div class="linking-source-ayah-editor__toolbar">
       @if (item.configuration.kind === 'manual') {
@@ -71,7 +78,12 @@
         [listLabel]="labels.sourceEditorAyahList"
         (ayahToggled)="facade.toggleAyah($event)"
         (wordToggled)="toggleWord($event)"
-        (pageReady)="facade.pageReady($event.linkingDataRevision, $event.totalItems, $event.availableTypes)"
+        (pageReady)="facade.pageReady(
+          $event.linkingDataRevision,
+          $event.totalItems,
+          $event.linkingTotalItems,
+          $event.availableTypes
+        )"
       />
     }
   }

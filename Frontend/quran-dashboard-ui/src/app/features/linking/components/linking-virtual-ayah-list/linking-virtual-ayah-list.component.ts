@@ -48,6 +48,8 @@ interface LinkingVirtualAyahRow {
   linkingDataRevision: number | null;
   wordIds: readonly number[];
   matchedWordIds: readonly number[];
+  linkingMatchedWordIds: readonly number[];
+  linkingSourceAyah: boolean;
   overlays: readonly LinkingPreparedAyahOverlayDto[];
   groupLabel: string | null;
 }
@@ -103,6 +105,7 @@ export class LinkingVirtualAyahListComponent {
   readonly pageReady = output<{
     linkingDataRevision: number;
     totalItems: number;
+    linkingTotalItems: number;
     availableTypes: readonly LinkingSourceTypeOption[];
   }>();
 
@@ -126,10 +129,10 @@ export class LinkingVirtualAyahListComponent {
     if (ayah === null) {
       return null;
     }
-    const selectedWords = this.selectedWordIdsByAyahId()[row.ayahId];
-    const matches = new Set(
-      this.wordSelectable() ? selectedWords ?? [] : selectedWords ?? row.matchedWordIds,
-    );
+    const selectedWords = new Set(this.selectedWordIdsByAyahId()[row.ayahId] ?? []);
+    const displayMatches = new Set(row.matchedWordIds);
+    const linkingMatches = new Set(row.linkingMatchedWordIds);
+    const wordsAreSelectable = this.wordSelectable();
     const words = row.wordIds.flatMap((wordId) => {
       const word = this.entities.word(row.linkingDataRevision!, wordId);
       return word === null
@@ -139,7 +142,11 @@ export class LinkingVirtualAyahListComponent {
             canonicalQuranWordId: word.id,
             textUthmani: word.textUthmani,
             isAyahMarker: word.isAyahMarker,
-            isSourceMatch: matches.has(word.id),
+            isSourceMatch: wordsAreSelectable
+              ? selectedWords.has(word.id)
+              : displayMatches.has(word.id) && linkingMatches.has(word.id),
+            isExcludedSourceMatch:
+              !wordsAreSelectable && displayMatches.has(word.id) && !linkingMatches.has(word.id),
           }];
     });
     return {
@@ -162,13 +169,16 @@ export class LinkingVirtualAyahListComponent {
     return this.overlayFor(row)?.classification ?? null;
   }
 
-  protected isSelected(ayahId: number): boolean {
-    const overridden = this.selectedAyahIds().includes(ayahId);
+  protected isSelected(row: LinkingVirtualAyahRow): boolean {
+    if (row.ayahId === null || !row.linkingSourceAyah) {
+      return false;
+    }
+    const overridden = this.selectedAyahIds().includes(row.ayahId);
     return this.selectionMode() === 'all-except' ? !overridden : overridden;
   }
 
   protected isGroupedRow(row: LinkingVirtualAyahRow): boolean {
-    return this.grouped() && row.ayahId !== null && this.isSelected(row.ayahId);
+    return this.grouped() && this.isSelected(row);
   }
 
   protected isGroupedStart(index: number): boolean {
@@ -188,9 +198,9 @@ export class LinkingVirtualAyahListComponent {
     return this.grouped() ? null : row.groupLabel;
   }
 
-  protected toggleAyah(ayahId: number): void {
-    if (this.selectionEnabled()) {
-      this.ayahToggled.emit(ayahId);
+  protected toggleAyah(row: LinkingVirtualAyahRow): void {
+    if (this.selectionEnabled() && row.linkingSourceAyah && row.ayahId !== null) {
+      this.ayahToggled.emit(row.ayahId);
     }
   }
 
@@ -284,6 +294,7 @@ export class LinkingVirtualAyahListComponent {
     const rows = ensureRows([], totalItems);
     for (const page of range.pages) {
       const offset = (page.page - 1) * page.pageSize;
+      const linkingAyahIds = 'linkingAyahIds' in page ? new Set(page.linkingAyahIds) : null;
       page.ayahIds.forEach((ayahId, index) => {
         const overlays = 'overlaysByAyahId' in page ? page.overlaysByAyahId[ayahId] ?? [] : [];
         rows[offset + index] = {
@@ -293,6 +304,11 @@ export class LinkingVirtualAyahListComponent {
           wordIds: page.wordIdsByAyahId[ayahId] ?? [],
           matchedWordIds:
             'matchedWordIdsByAyahId' in page ? page.matchedWordIdsByAyahId[ayahId] ?? [] : [],
+          linkingMatchedWordIds:
+            'linkingMatchedWordIdsByAyahId' in page
+              ? page.linkingMatchedWordIdsByAyahId[ayahId] ?? []
+              : [],
+          linkingSourceAyah: linkingAyahIds?.has(ayahId) ?? true,
           overlays,
           groupLabel: groupLabel(overlays, index, this.grouped()),
         };
@@ -303,6 +319,7 @@ export class LinkingVirtualAyahListComponent {
     this.pageReady.emit({
       linkingDataRevision: first.linkingDataRevision,
       totalItems,
+      linkingTotalItems: 'linkingAyahCount' in first ? first.linkingAyahCount : totalItems,
       availableTypes: 'availableTypes' in first ? first.availableTypes : [],
     });
   }
@@ -350,6 +367,8 @@ function ensureRows(
       linkingDataRevision: null,
       wordIds: [],
       matchedWordIds: [],
+      linkingMatchedWordIds: [],
+      linkingSourceAyah: true,
       overlays: [],
       groupLabel: null,
     },

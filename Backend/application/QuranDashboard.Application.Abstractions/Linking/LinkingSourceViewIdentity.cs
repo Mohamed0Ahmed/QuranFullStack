@@ -16,7 +16,13 @@ public static class LinkingSourceViewIdentity
             Encode(resolutionIdentity),
             SegmentToken(view.Segment),
             view.InclusionMode is null ? "-" : InclusionToken(view.InclusionMode.Value),
-            string.Join(',', view.AyahOverrideIds.Distinct().Order()));
+            string.Join(',', view.AyahOverrideIds.Distinct().Order()),
+            string.Join(
+                ',',
+                view.TypeCodes
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal)
+                    .Select(Encode)));
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(canonical)));
     }
 

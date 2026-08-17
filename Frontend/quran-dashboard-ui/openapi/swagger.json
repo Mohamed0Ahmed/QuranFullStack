@@ -12084,7 +12084,10 @@
         "required": [
           "availableTypes",
           "items",
+          "linkingAyahCount",
+          "linkingAyahIds",
           "linkingDataRevision",
+          "linkingMatchedWordIdsByAyahId",
           "page",
           "pageSize",
           "resolutionIdentity",
@@ -12108,6 +12111,10 @@
             "type": "integer",
             "format": "int32"
           },
+          "linkingAyahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
           "page": {
             "type": "integer",
             "format": "int32"
@@ -12124,6 +12131,23 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/LinkingSourceTypeDto"
+            }
+          },
+          "linkingAyahIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "linkingMatchedWordIdsByAyahId": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
             }
           },
           "items": {
@@ -12345,7 +12369,8 @@
         "required": [
           "ayahOverrideIds",
           "inclusionMode",
-          "segment"
+          "segment",
+          "typeCodes"
         ],
         "type": "object",
         "properties": {
@@ -12362,6 +12387,13 @@
             "items": {
               "type": "integer",
               "format": "int32"
+            },
+            "nullable": true
+          },
+          "typeCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
             },
             "nullable": true
           }

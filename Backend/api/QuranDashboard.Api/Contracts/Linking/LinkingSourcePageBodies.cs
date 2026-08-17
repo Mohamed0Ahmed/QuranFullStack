@@ -17,6 +17,7 @@ public sealed record LinkingSourcePageViewBody
     public string? Segment { get; init; }
     public string? InclusionMode { get; init; }
     public IReadOnlyList<int>? AyahOverrideIds { get; init; }
+    public IReadOnlyList<string>? TypeCodes { get; init; }
 }
 
 internal static class LinkingSourcePageBodyMapper
@@ -57,7 +58,8 @@ internal static class LinkingSourcePageBodyMapper
         view = new LinkingSourcePageView(
             segment.Value,
             inclusionMode,
-            [.. body.AyahOverrideIds ?? []]);
+            [.. body.AyahOverrideIds ?? []],
+            [.. body.TypeCodes ?? []]);
         return true;
     }
 }

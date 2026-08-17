@@ -7,20 +7,26 @@ import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
 interface LinkingSourceEditorState {
+  sourceId: number | null;
   sourceKey: string | null;
   sourceLabel: string | null;
   status: 'idle' | 'preparing' | 'ready' | 'error';
   totalAyahCount: number;
+  displayedAyahCount: number;
+  viewTypeCode: string | null;
   errorMessage: string | null;
   generation: number;
   availableTypes: readonly LinkingSourceTypeOption[];
 }
 
 const INITIAL_STATE: LinkingSourceEditorState = {
+  sourceId: null,
   sourceKey: null,
   sourceLabel: null,
   status: 'idle',
   totalAyahCount: 0,
+  displayedAyahCount: 0,
+  viewTypeCode: null,
   errorMessage: null,
   generation: 0,
   availableTypes: [],
@@ -38,6 +44,7 @@ export class LinkingSourceEditorFacade {
     return sourceKey === null ? null : this.workspace.item(sourceKey);
   });
   readonly request = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
+    const state = this.stateSignal();
     const item = this.currentItem();
     if (item === null) {
       return null;
@@ -50,9 +57,12 @@ export class LinkingSourceEditorFacade {
         segment: 'all',
         inclusionMode: null,
         ayahOverrideIds: [],
+        typeCodes: state.viewTypeCode === null
+          ? []
+          : [state.viewTypeCode],
       },
       pageSize: 100,
-      draftGeneration: this.stateSignal().generation,
+      draftGeneration: state.generation,
     };
   });
   readonly selectedCount = computed(() => {
@@ -66,6 +76,8 @@ export class LinkingSourceEditorFacade {
       : item.ayahOverrideIds.length;
   });
   readonly availableTypes = computed(() => this.stateSignal().availableTypes);
+  readonly displayedAyahCount = computed(() => this.stateSignal().displayedAyahCount);
+  readonly viewTypeCode = computed(() => this.stateSignal().viewTypeCode);
   readonly selectedTypeCodes = computed(() => {
     const item = this.currentItem();
     return item === null ? [] : linkingSourceTypeCodes(item.source);
@@ -83,11 +95,26 @@ export class LinkingSourceEditorFacade {
     if (this.stateSignal().sourceKey === sourceKey) {
       return;
     }
+    const state = this.stateSignal();
+    if (state.sourceId !== null && state.sourceId === item.sourceId) {
+      this.stateSignal.set({
+        ...state,
+        sourceKey,
+        sourceLabel: item.source.label,
+        status: 'preparing',
+        totalAyahCount: item.lastResolvedCount ?? 0,
+        displayedAyahCount: 0,
+        generation: state.generation + 1,
+      });
+      return;
+    }
     this.stateSignal.set({
       ...INITIAL_STATE,
+      sourceId: item.sourceId,
       sourceKey,
       sourceLabel: item.source.label,
       status: 'preparing',
+      totalAyahCount: item.lastResolvedCount ?? 0,
       generation: this.stateSignal().generation + 1,
     });
   }
@@ -109,20 +136,39 @@ export class LinkingSourceEditorFacade {
 
   pageReady(
     linkingDataRevision: number,
-    totalAyahCount: number,
+    displayedAyahCount: number,
+    linkingAyahCount: number,
     availableTypes: readonly LinkingSourceTypeOption[],
   ): void {
     const sourceKey = this.stateSignal().sourceKey;
     if (sourceKey === null) {
       return;
     }
-    this.workspace.reconcilePage(sourceKey, linkingDataRevision, totalAyahCount);
+    this.workspace.reconcilePage(sourceKey, linkingDataRevision, linkingAyahCount);
     this.stateSignal.update((state) => ({
       ...state,
       status: 'ready',
-      totalAyahCount,
+      totalAyahCount: linkingAyahCount,
+      displayedAyahCount,
       availableTypes,
     }));
+  }
+
+  setViewTypeCode(typeCode: string | null): void {
+    const state = this.stateSignal();
+    if (
+      typeCode === state.viewTypeCode
+      || (typeCode !== null && !state.availableTypes.some((item) => item.code === typeCode))
+    ) {
+      return;
+    }
+    this.stateSignal.set({
+      ...state,
+      status: 'preparing',
+      displayedAyahCount: 0,
+      viewTypeCode: typeCode,
+      generation: state.generation + 1,
+    });
   }
 
   setSourceTypeCodes(typeCodes: readonly string[]): void {

@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Linking;
+using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Application.Linking.Queries.ResolveLinkingSourcePage;
 
@@ -30,6 +31,13 @@ public sealed class ResolveLinkingSourcePageHandler(
         var normalizedView = query.View with
         {
             AyahOverrideIds = [.. query.View.AyahOverrideIds.Distinct().Order()],
+            TypeCodes =
+            [
+                .. query.View.TypeCodes
+                    .Select(typeCode => typeCode.Trim())
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal)
+            ],
         };
         var resolutionIdentity = LinkingSourceIdentity.For(query.Descriptor);
         var sourceViewIdentity = LinkingSourceViewIdentity.Compute(resolutionIdentity, normalizedView);
@@ -107,6 +115,12 @@ public sealed class ResolveLinkingSourcePageHandler(
         if (query.View.AyahOverrideIds.Any(id => id <= 0))
         {
             return "view.ayahOverrideIds";
+        }
+
+        if (LinkingSourceDescriptorValidation.TypeCodesError(query.View.TypeCodes) is not null
+            || (query.View.TypeCodes.Count > 0 && !LinkingSourceTypeFilter.Supports(query.Descriptor)))
+        {
+            return "view.typeCodes";
         }
 
         var all = query.View.Segment == LinkingSourcePageSegment.All;

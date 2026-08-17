@@ -50,7 +50,9 @@ export class DirectLinkWorkflowComponent {
   protected readonly isCopy = this.workflow.isCopy;
   protected readonly directRequest = this.workflow.directSourceRequest;
   protected readonly directTotalAyahCount = this.workflow.directTotalAyahCount;
+  protected readonly directDisplayedAyahCount = this.inlineSource.displayedAyahCount;
   protected readonly directAvailableTypes = this.inlineSource.availableTypes;
+  protected readonly directViewTypeCode = this.inlineSource.viewTypeCode;
   protected readonly directSelectedTypeCodes = computed(() => {
     const draft = this.inlineSource.draft();
     return draft === null ? [] : linkingSourceTypeCodes(draft.descriptor);
@@ -111,14 +113,20 @@ export class DirectLinkWorkflowComponent {
     this.inlineSource.setTypeCodes(typeCodes);
   }
 
+  protected setDirectViewTypeCode(typeCode: string | null): void {
+    this.inlineSource.setViewTypeCode(typeCode);
+  }
+
   protected directPageReady(page: {
     linkingDataRevision: number;
     totalItems: number;
+    linkingTotalItems: number;
     availableTypes: readonly LinkingSourceTypeOption[];
   }): void {
     this.inlineSource.pageReady(
       page.linkingDataRevision,
       page.totalItems,
+      page.linkingTotalItems,
       page.availableTypes,
       this.workflow.selectedDoorId(),
     );

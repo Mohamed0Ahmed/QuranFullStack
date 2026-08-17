@@ -17,6 +17,8 @@ import { LinkingOperationDraftStore, createInlineLinkingDraft } from './linking-
 interface LinkingInlineSourceState {
   readonly draft: LinkingOperationSourceDraft | null;
   readonly totalAyahCount: number;
+  readonly displayedAyahCount: number;
+  readonly viewTypeCode: string | null;
   readonly operationGeneration: number;
   readonly availableTypes: readonly LinkingSourceTypeOption[];
 }
@@ -24,6 +26,8 @@ interface LinkingInlineSourceState {
 const INITIAL_STATE: LinkingInlineSourceState = {
   draft: null,
   totalAyahCount: 0,
+  displayedAyahCount: 0,
+  viewTypeCode: null,
   operationGeneration: 0,
   availableTypes: [],
 };
@@ -35,9 +39,12 @@ export class LinkingInlineSourceWorkflowController {
 
   readonly draft = computed(() => this.stateSignal().draft);
   readonly totalAyahCount = computed(() => this.stateSignal().totalAyahCount);
+  readonly displayedAyahCount = computed(() => this.stateSignal().displayedAyahCount);
+  readonly viewTypeCode = computed(() => this.stateSignal().viewTypeCode);
   readonly availableTypes = computed(() => this.stateSignal().availableTypes);
   readonly sourceRequest = computed<Omit<LinkingSourcePageRequest, 'page'> | null>(() => {
-    const draft = this.stateSignal().draft;
+    const state = this.stateSignal();
+    const draft = state.draft;
     if (draft === null) {
       return null;
     }
@@ -49,9 +56,12 @@ export class LinkingInlineSourceWorkflowController {
         segment: 'all',
         inclusionMode: null,
         ayahOverrideIds: [],
+        typeCodes: state.viewTypeCode === null
+          ? []
+          : [state.viewTypeCode],
       },
       pageSize: 100,
-      draftGeneration: this.stateSignal().operationGeneration,
+      draftGeneration: state.operationGeneration,
     };
   });
   readonly selectedCount = computed(() => {
@@ -72,6 +82,8 @@ export class LinkingInlineSourceWorkflowController {
     this.stateSignal.set({
       draft: createInlineLinkingDraft(source),
       totalAyahCount: 0,
+      displayedAyahCount: 0,
+      viewTypeCode: null,
       operationGeneration,
       availableTypes: [],
     });
@@ -79,7 +91,8 @@ export class LinkingInlineSourceWorkflowController {
 
   pageReady(
     linkingDataRevision: number,
-    totalAyahCount: number,
+    displayedAyahCount: number,
+    linkingAyahCount: number,
     availableTypes: readonly LinkingSourceTypeOption[],
     doorId: number | null,
   ): void {
@@ -87,12 +100,35 @@ export class LinkingInlineSourceWorkflowController {
     if (draft === null) {
       return;
     }
-    if (draft.linkingDataRevision === linkingDataRevision && this.totalAyahCount() === totalAyahCount) {
+    const revisionChanged = draft.linkingDataRevision !== linkingDataRevision;
+    this.stateSignal.update((state) => ({
+      ...state,
+      totalAyahCount: linkingAyahCount,
+      displayedAyahCount,
+      availableTypes,
+    }));
+    if (!revisionChanged) {
       return;
     }
     const updated = { ...draft, linkingDataRevision };
-    this.stateSignal.update((state) => ({ ...state, draft: updated, totalAyahCount, availableTypes }));
+    this.stateSignal.update((state) => ({ ...state, draft: updated }));
     this.drafts.replace([updated], linkingDataRevision, doorId);
+  }
+
+  setViewTypeCode(typeCode: string | null): void {
+    const state = this.stateSignal();
+    if (
+      typeCode === state.viewTypeCode
+      || (typeCode !== null && !state.availableTypes.some((item) => item.code === typeCode))
+    ) {
+      return;
+    }
+    this.stateSignal.set({
+      ...state,
+      viewTypeCode: typeCode,
+      displayedAyahCount: 0,
+      operationGeneration: state.operationGeneration + 1,
+    });
   }
 
   setTypeCodes(typeCodes: readonly string[]): void {
@@ -116,6 +152,7 @@ export class LinkingInlineSourceWorkflowController {
         selectedWordIdsByAyahId: {},
       },
       totalAyahCount: 0,
+      displayedAyahCount: 0,
       operationGeneration: state.operationGeneration + 1,
     });
   }
@@ -187,6 +224,8 @@ export class LinkingInlineSourceWorkflowController {
             selectedWordIdsByAyahId: {},
           },
       totalAyahCount: 0,
+      displayedAyahCount: 0,
+      viewTypeCode: this.stateSignal().viewTypeCode,
       operationGeneration,
       availableTypes: this.stateSignal().availableTypes,
     });

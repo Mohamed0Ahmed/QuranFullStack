@@ -14,4 +14,5 @@ export interface LinkingAyahWord {
   textUthmani: string;
   isAyahMarker: boolean;
   isSourceMatch: boolean;
+  isExcludedSourceMatch: boolean;
 }

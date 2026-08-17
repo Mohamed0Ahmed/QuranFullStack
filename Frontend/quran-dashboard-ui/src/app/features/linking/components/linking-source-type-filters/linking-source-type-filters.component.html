@@ -1,33 +1,64 @@
 @if (items().length > 1) {
   <section class="linking-source-type-filters" [attr.aria-label]="sectionLabel">
     <div class="linking-source-type-filters__grid" role="group">
-      <button
-        qdAction="secondary"
-        size="sm"
-        type="button"
+      <article
         class="linking-source-type-filters__option"
-        [class.qd-is-selected]="isAllSelected()"
-        [attr.aria-pressed]="isAllSelected()"
-        [disabled]="disabled()"
-        (click)="selectAll()"
+        [class.linking-source-type-filters__option--visible]="viewTypeCode() === null"
       >
-        {{ allLabel }}
-      </button>
-
-      @for (item of items(); track item.code) {
         <button
           qdAction="secondary"
           size="sm"
           type="button"
-          class="linking-source-type-filters__option"
-          [class.qd-is-selected]="isSelected(item.code)"
-          [attr.aria-pressed]="isSelected(item.code)"
-          [disabled]="disabled()"
-          (click)="toggle(item.code)"
+          class="linking-source-type-filters__view"
+          [class.qd-is-selected]="viewTypeCode() === null"
+          [attr.aria-pressed]="viewTypeCode() === null"
+          (click)="showAll()"
         >
-          <span class="linking-source-type-filters__label">{{ item.arabicLabel }}</span>
-          <span class="linking-source-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+          {{ allLabel }}
         </button>
+        <label class="linking-source-type-filters__inclusion">
+          <input
+            class="qd-checkbox"
+            type="checkbox"
+            [checked]="isAllIncluded()"
+            [disabled]="disabled() || isAllIncluded()"
+            [attr.aria-label]="'تحديد كل أنواع الكلمات للربط'"
+            (change)="includeAll()"
+          />
+          <span>{{ inclusionLabel }}</span>
+        </label>
+      </article>
+
+      @for (item of items(); track item.code) {
+        <article
+          class="linking-source-type-filters__option"
+          [class.linking-source-type-filters__option--visible]="isVisible(item.code)"
+        >
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            class="linking-source-type-filters__view"
+            [class.qd-is-selected]="isVisible(item.code)"
+            [attr.aria-pressed]="isVisible(item.code)"
+            [attr.aria-label]="'عرض آيات ' + item.arabicLabel"
+            (click)="showType(item.code)"
+          >
+            <span class="linking-source-type-filters__label">{{ item.arabicLabel }}</span>
+            <span class="linking-source-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+          </button>
+          <label class="linking-source-type-filters__inclusion">
+            <input
+              class="qd-checkbox"
+              type="checkbox"
+              [checked]="isIncluded(item.code)"
+              [disabled]="disabled() || isOnlyIncluded(item.code)"
+              [attr.aria-label]="'تحديد ' + item.arabicLabel + ' للربط'"
+              (change)="toggleIncluded(item.code)"
+            />
+            <span>{{ inclusionLabel }}</span>
+          </label>
+        </article>
       }
     </div>
   </section>
