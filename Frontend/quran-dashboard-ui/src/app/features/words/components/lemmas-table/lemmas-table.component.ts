@@ -1,6 +1,8 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
 
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
 import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
@@ -14,8 +16,6 @@ import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../uti
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
-import { buildRootsDeepLink } from '../../state/roots-url-sync';
 
 import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -47,7 +47,7 @@ export interface LemmaCountOpenedEvent {
 @Component({
   selector: 'qd-lemmas-table',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [DetailOverlayLinkDirective, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './lemmas-table.component.html',
   styleUrl: './lemmas-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -181,10 +181,16 @@ export class LemmasTableComponent {
     });
   }
 
-  protected rootHref(rootId: number): string {
-    return deepLinkToHref(
-      buildRootsDeepLink({ rootId, view: 'words', wordView: 'simple' }),
-    );
+  protected rootDetailFrame(rootId: number): RootDetailFrame {
+    return {
+      kind: 'root',
+      id: rootId,
+      view: 'words',
+      wordView: 'simple',
+      surahView: 'mentioned',
+      detailPage: 1,
+      typeCode: null,
+    };
   }
 
   protected onTableKeydown(event: KeyboardEvent): void {

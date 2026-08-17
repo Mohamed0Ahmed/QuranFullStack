@@ -123,7 +123,7 @@
 
 <ng-template #rootCell let-row="row">
   @if (row.rootId !== null && row.rootText) {
-    <a class="lemmas-table__root-link qd-interactive-surface" data-testid="lemmas-table-root-link" [href]="rootHref(row.rootId)" target="_blank" rel="noopener noreferrer" [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText">
+    <a class="lemmas-table__root-link qd-interactive-surface" data-testid="lemmas-table-root-link" [qdDetailLink]="rootDetailFrame(row.rootId)" [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText">
       <span class="lemmas-table__root-text">{{ row.rootText }}</span>
     </a>
   } @else {

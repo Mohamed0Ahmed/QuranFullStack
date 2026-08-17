@@ -124,7 +124,7 @@
 
 <ng-template #rootCell let-row="row">
   @if (hasRoot(row)) {
-    <a class="unique-words-table__root-link qd-interactive-surface" data-testid="unique-words-table-root-link" [href]="rootHref(row)" target="_blank" rel="noopener noreferrer">{{ row.rootText }}</a>
+    <a class="unique-words-table__root-link qd-interactive-surface" data-testid="unique-words-table-root-link" [qdDetailLink]="rootDetailFrame(row.rootId)">{{ row.rootText }}</a>
   } @else {
     <span class="unique-words-table__text">{{ nullPlaceholder }}</span>
   }
@@ -136,7 +136,7 @@
     <span>{{ wordTypeLabel(row) }}</span>
   </span>
   @if (hasRoot(row)) {
-    <a class="qd-explorer-mobile-meta qd-interactive-surface unique-words-table__mobile-meta-item" [href]="rootHref(row)" target="_blank" rel="noopener noreferrer">
+    <a class="qd-explorer-mobile-meta qd-interactive-surface unique-words-table__mobile-meta-item" [qdDetailLink]="rootDetailFrame(row.rootId)">
       <span class="qd-explorer-mobile-meta-label">{{ rootHeader }}:</span>
       <span>{{ row.rootText }}</span>
     </a>
