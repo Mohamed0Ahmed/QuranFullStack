@@ -110,7 +110,7 @@ export class LemmaDetailOverlayAdapterComponent {
     return {
       kind: 'lemma',
       lemmaId: frame.id,
-      typeCode: frame.typeCode,
+      typeCodes: frame.typeCode === null ? [] : [frame.typeCode],
       label: summary.lemmaText,
     };
   });

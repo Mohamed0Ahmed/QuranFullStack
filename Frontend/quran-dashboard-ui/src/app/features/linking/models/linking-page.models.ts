@@ -1,6 +1,6 @@
 import { LinkingPreparedAyahOverlayDto } from '../../../core/api/generated/models/linking-prepared-ayah-overlay-dto';
 import { LinkingSourcePageViewBody } from '../../../core/api/generated/models/linking-source-page-view-body';
-import { LinkingSourceDescriptor } from './linking-source.models';
+import { LinkingSourceDescriptor, LinkingSourceTypeOption } from './linking-source.models';
 
 export interface LinkingSourcePageRequest {
   source: LinkingSourceDescriptor;
@@ -19,7 +19,11 @@ export interface LinkingSourcePage {
   page: number;
   pageSize: number;
   totalAyahCount: number;
+  linkingAyahCount: number;
   totalPages: number;
+  availableTypes: readonly LinkingSourceTypeOption[];
+  linkingAyahIds: readonly number[];
+  linkingMatchedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   ayahIds: readonly number[];
   wordIdsByAyahId: Readonly<Record<number, readonly number[]>>;
   matchedWordIdsByAyahId: Readonly<Record<number, readonly number[]>>;

@@ -31,9 +31,12 @@
             <input
               class="qd-checkbox"
               type="checkbox"
-              [checked]="isSelected(ayah.ayahId)"
-              [attr.aria-label]="'تحديد سورة ' + ayah.surahNameArabic + '، الآية ' + ayah.ayahNumber"
-              (change)="ayahToggled.emit(ayah.ayahId)"
+              [checked]="isSelected(row)"
+              [disabled]="!row.linkingSourceAyah"
+              [attr.aria-label]="row.linkingSourceAyah
+                ? 'تحديد سورة ' + ayah.surahNameArabic + '، الآية ' + ayah.ayahNumber
+                : 'نوع الكلمة غير محدد للربط في سورة ' + ayah.surahNameArabic + '، الآية ' + ayah.ayahNumber"
+              (change)="toggleAyah(row)"
             />
           }
           <qd-linking-ayah-card
@@ -41,11 +44,11 @@
             [resultPosition]="row.position + 1"
             [resultCount]="rows().length"
             [highlightSourceWords]="highlightSourceWords()"
-            [wordSelectable]="wordSelectable()"
+            [wordSelectable]="wordSelectable() && row.linkingSourceAyah"
             [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"
             [statusLabel]="statusLabel(row)"
             [grouped]="isGroupedRow(row)"
-            (click)="toggleAyah(ayah.ayahId)"
+            (click)="toggleAyah(row)"
             (wordToggled)="wordToggled.emit({ ayahId: ayah.ayahId, quranWordId: $event })"
           />
         </div>

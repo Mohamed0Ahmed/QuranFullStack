@@ -14,6 +14,15 @@ public sealed record LinkingWorkspaceReorderBody
     public uint? WorkspaceVersion { get; init; }
 }
 
+public sealed record LinkingWorkspaceSourceTypesBody
+{
+    public IReadOnlyList<string>? TypeCodes { get; init; }
+
+    public uint? WorkspaceVersion { get; init; }
+
+    public uint? SourceVersion { get; init; }
+}
+
 public sealed record LinkingWorkspaceConfigurationBody
 {
     public string? Label { get; init; }

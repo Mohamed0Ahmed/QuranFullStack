@@ -7,6 +7,17 @@
   class="linking-workspace-source-row"
   (click)="toggleMembershipFromRow($event)"
 >
+  <input
+    type="checkbox"
+    class="linking-workspace-source-row__membership"
+    [checked]="row().checked"
+    [attr.aria-label]="row().checked ? 'إلغاء تحديد المصدر للعملية' : 'تحديد المصدر للعملية'"
+    (change)="membershipChanged.emit(!row().checked)"
+  />
+  @if (row().checked) {
+    <span class="linking-workspace-source-row__selection-check" aria-hidden="true">✓</span>
+  }
+
   <div class="linking-workspace-source-row__identity">
     <p>{{ sourceKind() }}</p>
     <h3>{{ row().item.source.label }}</h3>
@@ -27,8 +38,8 @@
     </button>
   </div>
 
-  <div class="linking-workspace-source-row__toggles">
-    @if (automaticConfiguration(); as configuration) {
+  @if (automaticConfiguration(); as configuration) {
+    <div class="linking-workspace-source-row__toggles">
       <button
         qdAction="secondary"
         size="sm"
@@ -43,23 +54,8 @@
         </span>
         <span>{{ labels.highlightStep }}</span>
       </button>
-    }
-
-    <button
-      qdAction="secondary"
-      size="sm"
-      type="button"
-      class="linking-workspace-source-row__toggle"
-      [class.linking-workspace-source-row__toggle--active]="row().checked"
-      [attr.aria-pressed]="row().checked"
-      (click)="membershipChanged.emit(!row().checked)"
-    >
-      <span class="linking-workspace-source-row__toggle-mark" aria-hidden="true">
-        {{ row().checked ? '✓' : '' }}
-      </span>
-      <span>{{ labels.selectForOperation }}</span>
-    </button>
-  </div>
+    </div>
+  }
 
   <button
     qdAction="danger"

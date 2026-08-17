@@ -103,7 +103,12 @@ export class RootDetailOverlayAdapterComponent {
     if (summary === null || summary.id !== frame.id) {
       return null;
     }
-    return { kind: 'root', rootId: frame.id, label: summary.rootText };
+    return {
+      kind: 'root',
+      rootId: frame.id,
+      typeCodes: frame.typeCode === null ? [] : [frame.typeCode],
+      label: summary.rootText,
+    };
   });
 
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;

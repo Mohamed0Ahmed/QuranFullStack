@@ -46,6 +46,7 @@ export class UniqueDetailOverlayAdapterComponent {
 
   protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
     const state = this.drilldownState();
+    const frame = this.frame();
     if (!state.isOpen || state.summary === null || state.selectedWordId === null) {
       return null;
     }
@@ -53,6 +54,7 @@ export class UniqueDetailOverlayAdapterComponent {
       kind: 'unique-word',
       mode: state.summary.kind,
       wordId: state.selectedWordId,
+      typeCodes: frame.typeCode === null ? [] : [frame.typeCode],
       label: mapUniqueWordSummaryDisplayText(state.summary).displayText,
     };
   });

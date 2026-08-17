@@ -19,6 +19,7 @@ export function toAbwabLinkingAyah(
       textUthmani: word.textUthmani,
       isAyahMarker: word.isAyahMarker,
       isSourceMatch: selectedIds.has(word.quranWordId),
+      isExcludedSourceMatch: false,
     })),
   };
 }

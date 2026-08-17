@@ -21,6 +21,7 @@ export function toLinkingSourceDescriptorBody(
     selection: null,
     stemId: null,
     typeCode: null,
+    typeCodes: null,
     wordId: null,
   };
 
@@ -31,13 +32,13 @@ export function toLinkingSourceDescriptorBody(
         manualAyahs: manualMushafVerseKeys(source).map((verseKey) => ({ verseKey })),
       };
     case 'unique-word':
-      return { ...body, mode: source.mode, wordId: source.wordId };
+      return { ...body, mode: source.mode, wordId: source.wordId, typeCodes: [...source.typeCodes] };
     case 'root':
-      return { ...body, rootId: source.rootId };
+      return { ...body, rootId: source.rootId, typeCodes: [...source.typeCodes] };
     case 'lemma':
-      return { ...body, lemmaId: source.lemmaId, typeCode: source.typeCode };
+      return { ...body, lemmaId: source.lemmaId, typeCodes: [...source.typeCodes] };
     case 'stem':
-      return { ...body, stemId: source.stemId, typeCode: source.typeCode };
+      return { ...body, stemId: source.stemId, typeCodes: [...source.typeCodes] };
     case 'word-type':
       return { ...body, selection: toSelectionBody(source.selection) };
   }
@@ -60,18 +61,31 @@ function toDescriptorCandidate(
     case 'manual-mushaf-ayahs':
       return { kind: body.kind, label, manualAyahs };
     case 'unique-word':
-      return { kind: body.kind, label, mode: body.mode, wordId: body.wordId };
+      return {
+        kind: body.kind,
+        label,
+        mode: body.mode,
+        wordId: body.wordId,
+        typeCodes: readTypeCodes(body),
+      };
     case 'root':
-      return { kind: body.kind, label, rootId: body.rootId };
+      return { kind: body.kind, label, rootId: body.rootId, typeCodes: readTypeCodes(body) };
     case 'lemma':
-      return { kind: body.kind, label, lemmaId: body.lemmaId, typeCode: body.typeCode };
+      return { kind: body.kind, label, lemmaId: body.lemmaId, typeCodes: readTypeCodes(body) };
     case 'stem':
-      return { kind: body.kind, label, stemId: body.stemId, typeCode: body.typeCode };
+      return { kind: body.kind, label, stemId: body.stemId, typeCodes: readTypeCodes(body) };
     case 'word-type':
       return { kind: body.kind, label, selection: toSelectionCandidate(body.selection) };
     default:
       return null;
   }
+}
+
+function readTypeCodes(body: LinkingSourceDescriptorBody): readonly string[] {
+  if (body.typeCodes !== null) {
+    return body.typeCodes;
+  }
+  return typeof body.typeCode === 'string' ? [body.typeCode] : [];
 }
 
 function toSelectionCandidate(selection: LinkingWordTypeSelectionBody | null): unknown {

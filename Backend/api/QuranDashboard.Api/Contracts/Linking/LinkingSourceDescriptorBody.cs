@@ -18,6 +18,8 @@ public sealed record LinkingSourceDescriptorBody
 
     public string? TypeCode { get; init; }
 
+    public IReadOnlyList<string>? TypeCodes { get; init; }
+
     public LinkingWordTypeSelectionBody? Selection { get; init; }
 
     public IReadOnlyList<LinkingManualAyahBody>? ManualAyahs { get; init; }

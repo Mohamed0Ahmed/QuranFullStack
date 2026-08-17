@@ -8,6 +8,7 @@ using QuranDashboard.Application.Linking.Commands.ClearLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.RemoveLinkingWorkspaceSource;
 using QuranDashboard.Application.Linking.Commands.ReorderLinkingWorkspaceSources;
 using QuranDashboard.Application.Linking.Commands.ApplyLinkingWorkspaceSourceDelta;
+using QuranDashboard.Application.Linking.Commands.UpdateLinkingWorkspaceSourceTypes;
 using QuranDashboard.Application.Linking.Queries.GetLinkingWorkspace;
 
 namespace QuranDashboard.Api.Controllers.Linking;
@@ -21,6 +22,7 @@ public sealed class LinkingWorkspaceController(
     RemoveLinkingWorkspaceSourceHandler removeHandler,
     ReorderLinkingWorkspaceSourcesHandler reorderHandler,
     ApplyLinkingWorkspaceSourceDeltaHandler deltaHandler,
+    UpdateLinkingWorkspaceSourceTypesHandler updateTypesHandler,
     ClearLinkingWorkspaceSourcesHandler clearHandler) : ControllerBase
 {
     [HttpGet]
@@ -83,6 +85,39 @@ public sealed class LinkingWorkspaceController(
             cancellationToken);
 
         return Respond(outcome, ApiMessages.LinkingWorkspaceSourceRemoved);
+    }
+
+    [HttpPatch("sources/{id:long}/types")]
+    [RequireOwner]
+    [ProducesResponseType(typeof(ApiResponse<LinkingWorkspaceResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ApiResponse<LinkingWorkspaceResponse>>> UpdateSourceTypes(
+        long id,
+        [FromBody] LinkingWorkspaceSourceTypesBody? body,
+        CancellationToken cancellationToken)
+    {
+        if (body?.WorkspaceVersion is null or 0
+            || body.SourceVersion is null or 0
+            || body.TypeCodes is null
+            || LinkingSourceDescriptorValidation.TypeCodesError(body.TypeCodes) is not null)
+        {
+            return BadRequest(ApiResponse<LinkingWorkspaceResponse>.Fail(
+                ApiMessages.LinkingSourcePageInvalid));
+        }
+
+        var userId = await ResolveUserIdAsync();
+        var outcome = await updateTypesHandler.HandleAsync(
+            new UpdateLinkingWorkspaceSourceTypesCommand(
+                userId,
+                id,
+                body.TypeCodes,
+                body.WorkspaceVersion.Value,
+                body.SourceVersion.Value),
+            cancellationToken);
+
+        return Respond(outcome, ApiMessages.LinkingWorkspaceConfigurationSaved);
     }
 
     [HttpPut("sources/order")]

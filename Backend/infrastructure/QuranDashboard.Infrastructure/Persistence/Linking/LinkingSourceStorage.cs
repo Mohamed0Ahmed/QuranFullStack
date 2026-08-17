@@ -57,17 +57,21 @@ internal static class LinkingSourceStorage
         return source.SourceKind switch
         {
             LinkingSourceKind.Root => new LinkingSourceDescriptor.Root(
-                Require(source.RootId, nameof(source.RootId)), source.Label),
+                Require(source.RootId, nameof(source.RootId)), TypeCodes(scope), source.Label),
             LinkingSourceKind.Lemma => new LinkingSourceDescriptor.Lemma(
-                Require(source.LemmaId, nameof(source.LemmaId)), scope.TypeCode, source.Label),
+                Require(source.LemmaId, nameof(source.LemmaId)), TypeCodes(scope), source.Label),
             LinkingSourceKind.Stem => new LinkingSourceDescriptor.Stem(
-                Require(source.StemId, nameof(source.StemId)), scope.TypeCode, source.Label),
+                Require(source.StemId, nameof(source.StemId)), TypeCodes(scope), source.Label),
             LinkingSourceKind.UniqueWord => source.UniqueSimpleWordId.HasValue
                 ? new LinkingSourceDescriptor.UniqueWord(
-                    LinkingUniqueWordMode.Simple, source.UniqueSimpleWordId.Value, source.Label)
+                    LinkingUniqueWordMode.Simple,
+                    source.UniqueSimpleWordId.Value,
+                    TypeCodes(scope),
+                    source.Label)
                 : new LinkingSourceDescriptor.UniqueWord(
                     LinkingUniqueWordMode.Tashkeel,
                     Require(source.UniqueTashkeelWordId, nameof(source.UniqueTashkeelWordId)),
+                    TypeCodes(scope),
                     source.Label),
             LinkingSourceKind.WordType => new LinkingSourceDescriptor.WordType(
                 DecodeWordTypeSelection(source, scope), source.Label),
@@ -141,8 +145,22 @@ internal static class LinkingSourceStorage
     private static LinkingSourceScopeDocument ScopeOf(LinkingSourceDescriptor descriptor) =>
         descriptor switch
         {
-            LinkingSourceDescriptor.Lemma source => new LinkingSourceScopeDocument { TypeCode = source.TypeCode },
-            LinkingSourceDescriptor.Stem source => new LinkingSourceScopeDocument { TypeCode = source.TypeCode },
+            LinkingSourceDescriptor.UniqueWord source => new LinkingSourceScopeDocument
+            {
+                TypeCodes = source.TypeCodes,
+            },
+            LinkingSourceDescriptor.Root source => new LinkingSourceScopeDocument
+            {
+                TypeCodes = source.TypeCodes,
+            },
+            LinkingSourceDescriptor.Lemma source => new LinkingSourceScopeDocument
+            {
+                TypeCodes = source.TypeCodes,
+            },
+            LinkingSourceDescriptor.Stem source => new LinkingSourceScopeDocument
+            {
+                TypeCodes = source.TypeCodes,
+            },
             LinkingSourceDescriptor.WordType source => new LinkingSourceScopeDocument
             {
                 WordType = WordTypeScopeOf(source.Selection),
@@ -185,6 +203,9 @@ internal static class LinkingSourceStorage
         value ?? throw new InvalidOperationException(
             $"Stored word type source {sourceId} carries no '{name}' token.");
 
+    private static IReadOnlyList<string> TypeCodes(LinkingSourceScopeDocument scope) =>
+        scope.TypeCodes ?? (scope.TypeCode is null ? [] : [scope.TypeCode]);
+
     private static string Serialize(LinkingSourceScopeDocument scope) =>
         JsonSerializer.Serialize(scope, ScopeSerializerOptions);
 
@@ -197,6 +218,8 @@ internal static class LinkingSourceStorage
         public int SchemaVersion { get; init; } = CurrentSchemaVersion;
 
         public string? TypeCode { get; init; }
+
+        public IReadOnlyList<string>? TypeCodes { get; init; }
 
         public LinkingWordTypeScopeDocument? WordType { get; init; }
     }

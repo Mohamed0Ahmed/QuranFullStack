@@ -127,6 +127,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
     return {
       kind: 'root',
       rootId: state.selectedRootId,
+      typeCodes: state.ayahTypeCode === null ? [] : [state.ayahTypeCode],
       label: state.summary.rootText,
     };
   });

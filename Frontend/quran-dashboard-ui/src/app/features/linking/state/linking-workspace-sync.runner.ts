@@ -26,6 +26,8 @@ export interface LinkingWorkspaceSyncBindings {
   restoreConfiguration(removed: LinkingRemovedWorkspaceItem): Promise<void>;
   warn(message: string): void;
   invalidateLinkingDataRevision(): void;
+  remapSourceKey(sourceId: number, previousSourceKey: string, wasChecked: boolean): void;
+  completeSourceTypeUpdate(sourceId: number): void;
 }
 
 export type LinkingWorkspaceOperation = (
@@ -66,6 +68,29 @@ export class LinkingWorkspaceSyncRunner {
       const snapshot = await firstValueFrom(operation(bindings.workspaceVersion()));
       if (bindings.isCurrentActor(actorSub, actorGeneration)) {
         bindings.applySnapshot(snapshot);
+      }
+    });
+  }
+
+  replaceSourceTypes(
+    actorSub: string,
+    actorGeneration: number,
+    sourceId: number,
+    previousSourceKey: string,
+    wasChecked: boolean,
+    operation: LinkingWorkspaceOperation,
+  ): void {
+    this.enqueue(actorSub, actorGeneration, async (bindings) => {
+      try {
+        const snapshot = await firstValueFrom(operation(bindings.workspaceVersion()));
+        if (bindings.isCurrentActor(actorSub, actorGeneration)) {
+          bindings.applySnapshot(snapshot);
+          bindings.remapSourceKey(sourceId, previousSourceKey, wasChecked);
+        }
+      } finally {
+        if (bindings.isCurrentActor(actorSub, actorGeneration)) {
+          bindings.completeSourceTypeUpdate(sourceId);
+        }
       }
     });
   }

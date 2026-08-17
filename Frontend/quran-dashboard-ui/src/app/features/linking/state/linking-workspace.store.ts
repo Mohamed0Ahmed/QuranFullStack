@@ -5,7 +5,6 @@ import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { HttpLinkingWorkspaceRepository } from '../data-access/http-linking-workspace.repository';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
-import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
   LinkingRemovedWorkspaceItem,
@@ -19,11 +18,13 @@ import { LinkingOperationDraftStore } from './linking-operation-draft.store';
 import { LinkingRecoveryStore } from './linking-recovery.store';
 import { LinkingSourcePagesFacade } from './linking-source-pages.facade';
 import { mergeWorkspaceSnapshot } from './linking-workspace-merge';
+import { toLinkingOperationDraft } from './linking-workspace-item-draft';
 import { LinkingWorkspaceConfigurationSyncRunner } from './linking-workspace-configuration-sync.runner';
 import {
   LinkingWorkspaceOperation,
   LinkingWorkspaceSyncRunner,
 } from './linking-workspace-sync.runner';
+import { LinkingWorkspaceSourceTypesUpdater } from './linking-workspace-source-types.updater';
 
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkspaceStore {
@@ -34,6 +35,7 @@ export class LinkingWorkspaceStore {
   private readonly operationDraft = inject(LinkingOperationDraftStore);
   private readonly recovery = inject(LinkingRecoveryStore);
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
+  private readonly sourceTypes = inject(LinkingWorkspaceSourceTypesUpdater);
   private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
   private readonly itemsSignal = signal<readonly LinkingWorkspaceItem[]>([]);
   private readonly workspaceVersionSignal = signal<number | null>(null);
@@ -84,6 +86,23 @@ export class LinkingWorkspaceStore {
       restoreConfiguration: (removed) => this.restoreConfiguration(removed),
       warn: (message) => this.persistenceWarningSignal.set(message),
       invalidateLinkingDataRevision: () => this.invalidateLinkingDataRevision(),
+      remapSourceKey: (sourceId, previousSourceKey, wasChecked) =>
+        this.sourceTypes.remap(sourceId, previousSourceKey, wasChecked),
+      completeSourceTypeUpdate: (sourceId) => this.sourceTypes.complete(sourceId),
+    });
+    this.sourceTypes.connect({
+      canMutate: () => this.canMutate(),
+      findItem: (sourceKey) => this.findItem(sourceKey),
+      actor: () => {
+        const sub = this.currentActorSub();
+        return sub === null ? null : { sub, generation: this.actorGeneration };
+      },
+      isChecked: (sourceKey) => this.checkedSourceKeysSignal().includes(sourceKey),
+      items: this.itemsSignal,
+      checkedSourceKeys: this.checkedSourceKeysSignal,
+      editorSourceKey: this.editorSourceKeySignal,
+      cancelPage: (scope) => this.sourcePages.cancel(scope),
+      warn: (message) => this.persistenceWarningSignal.set(message),
     });
     this.configurationSync.connect({
       reload: async (sourceId) => {
@@ -92,7 +111,9 @@ export class LinkingWorkspaceStore {
         const item = mergeWorkspaceSnapshot(snapshot, current === undefined ? [] : [current]).items.find(
           (candidate) => candidate.sourceId === sourceId,
         ) ?? null;
-        return item === null || item.linkingDataRevision === null ? null : toOperationDraft(item);
+        return item === null || item.linkingDataRevision === null
+          ? null
+          : toLinkingOperationDraft(item);
       },
       acknowledge: (sourceKey, response) => {
         const item = this.findItem(sourceKey);
@@ -280,6 +301,14 @@ export class LinkingWorkspaceStore {
     );
   }
 
+  setSourceTypeCodes(sourceKey: string, typeCodes: readonly string[]): void {
+    this.sourceTypes.set(sourceKey, typeCodes);
+  }
+
+  isSourceTypeUpdatePending(sourceId: number | null): boolean {
+    return this.sourceTypes.isPending(sourceId);
+  }
+
   setManualLinkShape(sourceKey: string, linkShape: LinkingManualLinkShape): void {
     this.updateItem(sourceKey, (item) =>
       item.configuration.kind === 'manual'
@@ -365,7 +394,7 @@ export class LinkingWorkspaceStore {
     this.replaceItem(sourceKey, reconciled);
     if (reconciled.sourceVersion !== null) {
       this.configurationSync.resume();
-      this.configurationSync.track(toOperationDraft(reconciled));
+      this.configurationSync.track(toLinkingOperationDraft(reconciled));
     }
   }
 
@@ -427,6 +456,7 @@ export class LinkingWorkspaceStore {
     this.removedItemSignal.set(null);
     this.clearAllRequestedSignal.set(false);
     this.persistenceWarningSignal.set(null);
+    this.sourceTypes.reset();
   }
 
   private leaveEditor(surface: 'closed' | 'workspace'): Promise<boolean> {
@@ -469,14 +499,14 @@ export class LinkingWorkspaceStore {
     if (restored?.sourceId == null || restored.sourceVersion === null || linkingDataRevision === null) {
       return;
     }
-    const acknowledged = toOperationDraft({ ...restored, linkingDataRevision });
+    const acknowledged = toLinkingOperationDraft({ ...restored, linkingDataRevision });
     const desiredItem: LinkingWorkspaceItem = {
       ...removed.item,
       sourceId: restored.sourceId,
       sourceVersion: restored.sourceVersion,
       linkingDataRevision,
     };
-    await this.configurationSync.restore(acknowledged, toOperationDraft(desiredItem));
+    await this.configurationSync.restore(acknowledged, toLinkingOperationDraft(desiredItem));
     const current = this.findItem(desiredItem.sourceKey);
     this.replaceItem(desiredItem.sourceKey, {
       ...desiredItem,
@@ -502,7 +532,7 @@ export class LinkingWorkspaceStore {
     };
     this.replaceItem(sourceKey, next);
     if (next.linkingDataRevision !== null && next.sourceVersion !== null) {
-      this.configurationSync.schedule(toOperationDraft(next));
+      this.configurationSync.schedule(toLinkingOperationDraft(next));
     }
   }
 
@@ -518,7 +548,7 @@ export class LinkingWorkspaceStore {
     this.itemsSignal.set(merged.items);
     for (const item of merged.items) {
       if (item.linkingDataRevision !== null && item.sourceVersion !== null) {
-        this.configurationSync.track(toOperationDraft(item));
+        this.configurationSync.track(toLinkingOperationDraft(item));
       }
     }
     this.workspaceVersionSignal.set(merged.workspaceVersion);
@@ -565,30 +595,4 @@ export class LinkingWorkspaceStore {
       actorSub === this.hydratedActorSub()
     );
   }
-}
-
-function toOperationDraft(item: LinkingWorkspaceItem): LinkingOperationSourceDraft {
-  if (item.linkingDataRevision === null) {
-    throw new Error('مراجعة بيانات الربط غير متاحة للمصدر.');
-  }
-  return {
-    sourceKey: item.sourceKey,
-    sourceId: item.sourceId,
-    sourceVersion: item.sourceVersion,
-    linkingDataRevision: item.linkingDataRevision,
-    descriptor: item.source,
-    label: item.source.label,
-    selection: {
-      mode: item.configuration.ayahInclusion.mode,
-      ayahIds: item.ayahOverrideIds,
-    },
-    selectedWordIdsByAyahId: item.selectedWordIdsByAyahId,
-    descriptions: [],
-    automaticWordMatchesEnabled:
-      item.configuration.kind === 'automatic'
-        ? item.configuration.automaticWordMatchesEnabled
-        : null,
-    manualLinkShape:
-      item.configuration.kind === 'manual' ? item.configuration.linkShape : null,
-  };
 }

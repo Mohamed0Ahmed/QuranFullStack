@@ -66,21 +66,28 @@ internal static class LinkingWorkspaceResponseMapper
 
         return descriptor switch
         {
-            LinkingSourceDescriptor.Root source => body with { RootId = source.RootId },
+            LinkingSourceDescriptor.Root source => body with
+            {
+                RootId = source.RootId,
+                TypeCodes = source.TypeCodes,
+            },
             LinkingSourceDescriptor.Lemma source => body with
             {
                 LemmaId = source.LemmaId,
-                TypeCode = source.TypeCode,
+                TypeCode = source.TypeCodes.Count == 1 ? source.TypeCodes[0] : null,
+                TypeCodes = source.TypeCodes,
             },
             LinkingSourceDescriptor.Stem source => body with
             {
                 StemId = source.StemId,
-                TypeCode = source.TypeCode,
+                TypeCode = source.TypeCodes.Count == 1 ? source.TypeCodes[0] : null,
+                TypeCodes = source.TypeCodes,
             },
             LinkingSourceDescriptor.UniqueWord source => body with
             {
                 Mode = LinkingSourceTokens.ToToken(source.Mode),
                 WordId = source.WordId,
+                TypeCodes = source.TypeCodes,
             },
             LinkingSourceDescriptor.WordType source => body with
             {

@@ -7,6 +7,7 @@ namespace QuranDashboard.Infrastructure.Background;
 
 internal sealed class LinkingPreparedPreflightProcessorService(
     IServiceScopeFactory scopeFactory,
+    LinkingJobQueueSignal queueSignal,
     LinkingScalabilityOptions options,
     ILogger<LinkingPreparedPreflightProcessorService> logger) : BackgroundService
 {
@@ -20,12 +21,9 @@ internal sealed class LinkingPreparedPreflightProcessorService(
         {
             try
             {
-                await using var scope = scopeFactory.CreateAsyncScope();
-                var processor = scope.ServiceProvider
-                    .GetRequiredService<ILinkingPreparedPreflightProcessor>();
-                if (!await processor.ProcessOneAsync(cancellationToken))
+                if (!await ProcessOneAsync(cancellationToken))
                 {
-                    await Task.Delay(options.PollAfterMilliseconds, cancellationToken);
+                    await queueSignal.WaitForPreparedPreflightAsync(cancellationToken);
                 }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -38,5 +36,13 @@ internal sealed class LinkingPreparedPreflightProcessorService(
                 await Task.Delay(options.PollAfterMilliseconds, cancellationToken);
             }
         }
+    }
+
+    private async Task<bool> ProcessOneAsync(CancellationToken cancellationToken)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        return await scope.ServiceProvider
+            .GetRequiredService<ILinkingPreparedPreflightProcessor>()
+            .ProcessOneAsync(cancellationToken);
     }
 }

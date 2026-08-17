@@ -5,4 +5,5 @@ export interface LinkingSourcePageViewBody {
   ayahOverrideIds: Array<number> | null;
   inclusionMode: string | null;
   segment: string | null;
+  typeCodes: Array<string> | null;
 }
