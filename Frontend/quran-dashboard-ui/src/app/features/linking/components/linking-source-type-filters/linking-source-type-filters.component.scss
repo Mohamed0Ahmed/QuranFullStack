@@ -1,0 +1,33 @@
+:host {
+  display: block;
+}
+
+.linking-source-type-filters {
+  padding-block-end: var(--qd-space-3);
+  border-block-end: var(--qd-hairline);
+}
+
+.linking-source-type-filters__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--qd-space-2);
+}
+
+.linking-source-type-filters__option {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-inline-size: 0;
+  text-align: start;
+}
+
+.linking-source-type-filters__label {
+  font-family: var(--qd-font-naskh);
+  font-weight: 700;
+}
+
+.linking-source-type-filters__count {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  font-variant-numeric: tabular-nums;
+}

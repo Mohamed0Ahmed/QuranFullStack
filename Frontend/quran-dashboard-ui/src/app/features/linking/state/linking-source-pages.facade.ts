@@ -306,6 +306,9 @@ function validatePage(dto: LinkingResolvedSourcePageDto, request: LinkingSourceP
     dto.linkingDataRevision <= 0 ||
     dto.totalPages < 0 ||
     dto.totalAyahCount < 0 ||
+    dto.availableTypes.some(
+      (type) => !type.code.trim() || !type.arabicLabel.trim() || type.occurrencesCount < 0,
+    ) ||
     dto.items.some((ayah) => ayah.ayahId <= 0 || !ayah.verseKey || ayah.words.length === 0)
   ) {
     throw new Error('استجابة صفحة المصدر غير صالحة.');
@@ -334,6 +337,7 @@ function toPage(dto: LinkingResolvedSourcePageDto): LinkingSourcePage {
     pageSize: dto.pageSize,
     totalAyahCount: dto.totalAyahCount,
     totalPages: dto.totalPages,
+    availableTypes: Object.freeze(dto.availableTypes.map((type) => Object.freeze({ ...type }))),
     ayahIds: Object.freeze(dto.items.map((ayah) => ayah.ayahId)),
     wordIdsByAyahId: Object.freeze(
       Object.fromEntries(

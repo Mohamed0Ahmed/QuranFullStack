@@ -1,6 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { LinkingSourcePageRequest } from '../models/linking-page.models';
+import { LinkingSourceTypeOption } from '../models/linking-source.models';
+import { linkingSourceTypeCodes } from '../utils/linking-source-types';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
 
@@ -11,6 +13,7 @@ interface LinkingSourceEditorState {
   totalAyahCount: number;
   errorMessage: string | null;
   generation: number;
+  availableTypes: readonly LinkingSourceTypeOption[];
 }
 
 const INITIAL_STATE: LinkingSourceEditorState = {
@@ -20,6 +23,7 @@ const INITIAL_STATE: LinkingSourceEditorState = {
   totalAyahCount: 0,
   errorMessage: null,
   generation: 0,
+  availableTypes: [],
 };
 
 @Injectable({ providedIn: 'root' })
@@ -61,6 +65,14 @@ export class LinkingSourceEditorFacade {
       ? Math.max(total - item.ayahOverrideIds.length, 0)
       : item.ayahOverrideIds.length;
   });
+  readonly availableTypes = computed(() => this.stateSignal().availableTypes);
+  readonly selectedTypeCodes = computed(() => {
+    const item = this.currentItem();
+    return item === null ? [] : linkingSourceTypeCodes(item.source);
+  });
+  readonly typeUpdatePending = computed(() =>
+    this.workspace.isSourceTypeUpdatePending(this.currentItem()?.sourceId ?? null),
+  );
 
   open(sourceKey: string | null): void {
     const item = sourceKey === null ? null : this.workspace.item(sourceKey);
@@ -95,13 +107,29 @@ export class LinkingSourceEditorFacade {
     }
   }
 
-  pageReady(linkingDataRevision: number, totalAyahCount: number): void {
+  pageReady(
+    linkingDataRevision: number,
+    totalAyahCount: number,
+    availableTypes: readonly LinkingSourceTypeOption[],
+  ): void {
     const sourceKey = this.stateSignal().sourceKey;
     if (sourceKey === null) {
       return;
     }
     this.workspace.reconcilePage(sourceKey, linkingDataRevision, totalAyahCount);
-    this.stateSignal.update((state) => ({ ...state, status: 'ready', totalAyahCount }));
+    this.stateSignal.update((state) => ({
+      ...state,
+      status: 'ready',
+      totalAyahCount,
+      availableTypes,
+    }));
+  }
+
+  setSourceTypeCodes(typeCodes: readonly string[]): void {
+    const item = this.currentItem();
+    if (item !== null) {
+      this.workspace.setSourceTypeCodes(item.sourceKey, typeCodes);
+    }
   }
 
   toggleAyah(ayahId: number): void {

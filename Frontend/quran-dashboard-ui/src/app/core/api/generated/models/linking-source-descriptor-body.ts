@@ -13,5 +13,6 @@ export interface LinkingSourceDescriptorBody {
   selection: LinkingWordTypeSelectionBody | null;
   stemId: number | null;
   typeCode: string | null;
+  typeCodes: Array<string> | null;
   wordId: number | null;
 }

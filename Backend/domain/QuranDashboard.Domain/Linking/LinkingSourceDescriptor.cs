@@ -15,50 +15,60 @@ public abstract class LinkingSourceDescriptor
 
     public sealed class UniqueWord : LinkingSourceDescriptor
     {
-        public UniqueWord(LinkingUniqueWordMode mode, int wordId, string label)
+        public UniqueWord(
+            LinkingUniqueWordMode mode,
+            int wordId,
+            IEnumerable<string>? typeCodes,
+            string label)
             : base(LinkingSourceKind.UniqueWord, label)
         {
             Mode = mode;
             WordId = LinkingGuard.RequirePositive(wordId, nameof(wordId));
+            TypeCodes = NormalizeTypeCodes(typeCodes);
         }
 
         public LinkingUniqueWordMode Mode { get; }
         public int WordId { get; }
+        public IReadOnlyList<string> TypeCodes { get; }
     }
 
     public sealed class Root : LinkingSourceDescriptor
     {
-        public Root(int rootId, string label)
-            : base(LinkingSourceKind.Root, label) =>
+        public Root(int rootId, IEnumerable<string>? typeCodes, string label)
+            : base(LinkingSourceKind.Root, label)
+        {
             RootId = LinkingGuard.RequirePositive(rootId, nameof(rootId));
+            TypeCodes = NormalizeTypeCodes(typeCodes);
+        }
 
         public int RootId { get; }
+        public IReadOnlyList<string> TypeCodes { get; }
     }
 
     public sealed class Lemma : LinkingSourceDescriptor
     {
-        public Lemma(int lemmaId, string? typeCode, string label)
+        public Lemma(int lemmaId, IEnumerable<string>? typeCodes, string label)
             : base(LinkingSourceKind.Lemma, label)
         {
             LemmaId = LinkingGuard.RequirePositive(lemmaId, nameof(lemmaId));
-            TypeCode = LinkingGuard.RequireAbsentOrNonBlank(typeCode, nameof(typeCode));
+            TypeCodes = NormalizeTypeCodes(typeCodes);
         }
 
         public int LemmaId { get; }
-        public string? TypeCode { get; }
+        public IReadOnlyList<string> TypeCodes { get; }
     }
 
     public sealed class Stem : LinkingSourceDescriptor
     {
-        public Stem(int stemId, string? typeCode, string label)
+        public Stem(int stemId, IEnumerable<string>? typeCodes, string label)
             : base(LinkingSourceKind.Stem, label)
         {
             StemId = LinkingGuard.RequirePositive(stemId, nameof(stemId));
-            TypeCode = LinkingGuard.RequireAbsentOrNonBlank(typeCode, nameof(typeCode));
+            TypeCodes = NormalizeTypeCodes(typeCodes);
         }
 
         public int StemId { get; }
-        public string? TypeCode { get; }
+        public IReadOnlyList<string> TypeCodes { get; }
     }
 
     public sealed class WordType : LinkingSourceDescriptor
@@ -100,4 +110,14 @@ public abstract class LinkingSourceDescriptor
 
         public IReadOnlyList<VerseKey> VerseKeys { get; }
     }
+
+    private static IReadOnlyList<string> NormalizeTypeCodes(IEnumerable<string>? typeCodes) =>
+        typeCodes is null
+            ? []
+            : [
+                .. typeCodes
+                    .Select(typeCode => LinkingGuard.RequireNonBlank(typeCode, nameof(typeCodes)).Trim())
+                    .Distinct(StringComparer.Ordinal)
+                    .Order(StringComparer.Ordinal)
+            ];
 }

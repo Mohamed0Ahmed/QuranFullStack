@@ -4739,6 +4739,137 @@
         }
       }
     },
+    "/api/linking/workspace/sources/{id}/types": {
+      "patch": {
+        "tags": [
+          "LinkingWorkspace"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceSourceTypesBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceSourceTypesBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/LinkingWorkspaceSourceTypesBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LinkingWorkspaceResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/linking/workspace/sources/order": {
       "put": {
         "tags": [
@@ -11951,6 +12082,7 @@
       },
       "LinkingResolvedSourcePageDto": {
         "required": [
+          "availableTypes",
           "items",
           "linkingDataRevision",
           "page",
@@ -11987,6 +12119,12 @@
           "totalPages": {
             "type": "integer",
             "format": "int32"
+          },
+          "availableTypes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingSourceTypeDto"
+            }
           },
           "items": {
             "type": "array",
@@ -12088,6 +12226,7 @@
           "selection",
           "stemId",
           "typeCode",
+          "typeCodes",
           "wordId"
         ],
         "type": "object",
@@ -12126,6 +12265,13 @@
           },
           "typeCode": {
             "type": "string",
+            "nullable": true
+          },
+          "typeCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
             "nullable": true
           },
           "selection": {
@@ -12218,6 +12364,27 @@
               "format": "int32"
             },
             "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingSourceTypeDto": {
+        "required": [
+          "arabicLabel",
+          "code",
+          "occurrencesCount"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "arabicLabel": {
+            "type": "string"
+          },
+          "occurrencesCount": {
+            "type": "integer",
+            "format": "int32"
           }
         },
         "additionalProperties": false
@@ -12829,6 +12996,34 @@
           "lastResolvedAtUtc": {
             "type": "string",
             "format": "date-time",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceSourceTypesBody": {
+        "required": [
+          "sourceVersion",
+          "typeCodes",
+          "workspaceVersion"
+        ],
+        "type": "object",
+        "properties": {
+          "typeCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          },
+          "workspaceVersion": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "sourceVersion": {
+            "type": "integer",
+            "format": "int32",
             "nullable": true
           }
         },

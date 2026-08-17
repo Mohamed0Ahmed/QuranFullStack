@@ -72,6 +72,11 @@
       @case ('configure-source') {
         @if (directDraft(); as draft) {
           <section class="direct-link-workflow__configuration">
+            <qd-linking-source-type-filters
+              [items]="directAvailableTypes()"
+              [selectedTypeCodes]="directSelectedTypeCodes()"
+              (typeCodesChange)="setDirectTypeCodes($event)"
+            />
             <header class="direct-link-workflow__configuration-toolbar">
               @if (isAutomatic()) {
                 <button
@@ -119,7 +124,7 @@
                 [listLabel]="labels.sourceEditorAyahList"
                 (ayahToggled)="workflow.toggleDirectAyah($event)"
                 (wordToggled)="toggleManualWord($event)"
-                (pageReady)="workflow.directPageReady($event.linkingDataRevision, $event.totalItems)"
+                (pageReady)="directPageReady($event)"
               />
             }
           </section>

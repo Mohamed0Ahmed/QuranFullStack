@@ -23,6 +23,7 @@ import { Observable, Subscription } from 'rxjs';
 import { LinkingPreparedAyahOverlayDto } from '../../../../core/api/generated/models/linking-prepared-ayah-overlay-dto';
 import { LinkingAyah } from '../../models/linking-ayah.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
+import { LinkingSourceTypeOption } from '../../models/linking-source.models';
 import {
   LinkingPageRange,
   LinkingPreparedDetailPage,
@@ -99,7 +100,11 @@ export class LinkingVirtualAyahListComponent {
 
   readonly ayahToggled = output<number>();
   readonly wordToggled = output<LinkingVirtualWordToggle>();
-  readonly pageReady = output<{ linkingDataRevision: number; totalItems: number }>();
+  readonly pageReady = output<{
+    linkingDataRevision: number;
+    totalItems: number;
+    availableTypes: readonly LinkingSourceTypeOption[];
+  }>();
 
   protected readonly rows = this.rowsSignal.asReadonly();
   protected readonly labels = LINKING_LABELS;
@@ -295,7 +300,11 @@ export class LinkingVirtualAyahListComponent {
     }
     this.rowsSignal.set(rows);
     this.statusSignal.set('ready');
-    this.pageReady.emit({ linkingDataRevision: first.linkingDataRevision, totalItems });
+    this.pageReady.emit({
+      linkingDataRevision: first.linkingDataRevision,
+      totalItems,
+      availableTypes: 'availableTypes' in first ? first.availableTypes : [],
+    });
   }
 
   private disposeRequests(): void {

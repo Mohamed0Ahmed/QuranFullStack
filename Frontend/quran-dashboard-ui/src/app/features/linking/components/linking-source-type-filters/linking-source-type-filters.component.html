@@ -1,0 +1,34 @@
+@if (items().length > 1) {
+  <section class="linking-source-type-filters" [attr.aria-label]="sectionLabel">
+    <div class="linking-source-type-filters__grid" role="group">
+      <button
+        qdAction="secondary"
+        size="sm"
+        type="button"
+        class="linking-source-type-filters__option"
+        [class.qd-is-selected]="isAllSelected()"
+        [attr.aria-pressed]="isAllSelected()"
+        [disabled]="disabled()"
+        (click)="selectAll()"
+      >
+        {{ allLabel }}
+      </button>
+
+      @for (item of items(); track item.code) {
+        <button
+          qdAction="secondary"
+          size="sm"
+          type="button"
+          class="linking-source-type-filters__option"
+          [class.qd-is-selected]="isSelected(item.code)"
+          [attr.aria-pressed]="isSelected(item.code)"
+          [disabled]="disabled()"
+          (click)="toggle(item.code)"
+        >
+          <span class="linking-source-type-filters__label">{{ item.arabicLabel }}</span>
+          <span class="linking-source-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+        </button>
+      }
+    </div>
+  </section>
+}

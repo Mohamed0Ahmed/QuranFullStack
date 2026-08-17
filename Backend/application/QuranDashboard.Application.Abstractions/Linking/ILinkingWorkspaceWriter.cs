@@ -17,6 +17,14 @@ public interface ILinkingWorkspaceWriter
         uint expectedWorkspaceVersion,
         CancellationToken cancellationToken);
 
+    Task<LinkingWorkspaceDto> UpdateSourceTypesAsync(
+        int userId,
+        long sourceId,
+        IReadOnlyList<string> typeCodes,
+        uint expectedWorkspaceVersion,
+        uint expectedSourceVersion,
+        CancellationToken cancellationToken);
+
     Task<LinkingWorkspaceDto> ReorderSourcesAsync(
         int userId,
         IReadOnlyList<long> orderedSourceIds,

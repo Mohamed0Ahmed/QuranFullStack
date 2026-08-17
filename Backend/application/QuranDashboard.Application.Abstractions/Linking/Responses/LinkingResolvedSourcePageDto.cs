@@ -8,4 +8,5 @@ public sealed record LinkingResolvedSourcePageDto(
     int Page,
     int PageSize,
     int TotalPages,
+    IReadOnlyList<LinkingSourceTypeDto> AvailableTypes,
     IReadOnlyList<LinkingResolvedAyahDto> Items);

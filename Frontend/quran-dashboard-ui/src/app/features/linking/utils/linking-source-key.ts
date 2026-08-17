@@ -6,16 +6,22 @@ export function linkingSourceKey(source: LinkingSourceDescriptor): string {
     case 'manual-mushaf-ayahs':
       return joinKey(source.kind, ...manualMushafVerseKeys(source));
     case 'unique-word':
-      return joinKey(source.kind, source.mode, source.wordId);
+      return joinKey(source.kind, source.mode, source.wordId, ...source.typeCodes);
     case 'root':
-      return joinKey(source.kind, source.rootId);
+      return joinKey(source.kind, source.rootId, ...source.typeCodes);
     case 'lemma':
-      return joinKey(source.kind, source.lemmaId, source.typeCode);
+      return dimensionKey(source.kind, source.lemmaId, source.typeCodes);
     case 'stem':
-      return joinKey(source.kind, source.stemId, source.typeCode);
+      return dimensionKey(source.kind, source.stemId, source.typeCodes);
     case 'word-type':
       return linkingWordTypeKey(source);
   }
+}
+
+function dimensionKey(kind: 'lemma' | 'stem', id: number, typeCodes: readonly string[]): string {
+  return typeCodes.length === 0
+    ? joinKey(kind, id, null)
+    : joinKey(kind, id, ...typeCodes);
 }
 
 function linkingWordTypeKey(source: Extract<LinkingSourceDescriptor, { kind: 'word-type' }>): string {

@@ -25,6 +25,12 @@
   </header>
 
   @if (currentItem(); as item) {
+    <qd-linking-source-type-filters
+      [items]="facade.availableTypes()"
+      [selectedTypeCodes]="facade.selectedTypeCodes()"
+      [disabled]="facade.typeUpdatePending()"
+      (typeCodesChange)="facade.setSourceTypeCodes($event)"
+    />
     <div class="linking-source-ayah-editor__toolbar">
       @if (item.configuration.kind === 'manual') {
         <qd-linking-manual-shape-selector
@@ -65,7 +71,7 @@
         [listLabel]="labels.sourceEditorAyahList"
         (ayahToggled)="facade.toggleAyah($event)"
         (wordToggled)="toggleWord($event)"
-        (pageReady)="facade.pageReady($event.linkingDataRevision, $event.totalItems)"
+        (pageReady)="facade.pageReady($event.linkingDataRevision, $event.totalItems, $event.availableTypes)"
       />
     }
   }

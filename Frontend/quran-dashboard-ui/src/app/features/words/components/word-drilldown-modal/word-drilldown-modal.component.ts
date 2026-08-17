@@ -124,6 +124,7 @@ export class WordDrilldownModalComponent {
       kind: 'unique-word',
       mode: state.summary.kind,
       wordId: state.selectedWordId,
+      typeCodes: state.ayahTypeCode === null ? [] : [state.ayahTypeCode],
       label: mapUniqueWordSummaryDisplayText(state.summary).displayText,
     };
   });

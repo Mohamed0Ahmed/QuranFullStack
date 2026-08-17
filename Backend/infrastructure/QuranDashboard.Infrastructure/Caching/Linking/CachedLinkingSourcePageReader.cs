@@ -61,6 +61,7 @@ public sealed class CachedLinkingSourcePageReader(
             page,
             pageSize,
             totalPages,
+            compact.AvailableTypes,
             items);
     }
 }

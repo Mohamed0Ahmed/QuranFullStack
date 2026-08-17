@@ -110,7 +110,7 @@ export class StemDetailOverlayAdapterComponent {
     return {
       kind: 'stem',
       stemId: frame.id,
-      typeCode: frame.typeCode,
+      typeCodes: frame.typeCode === null ? [] : [frame.typeCode],
       label: summary.stemText,
     };
   });

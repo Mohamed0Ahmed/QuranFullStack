@@ -54,6 +54,24 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
     );
   }
 
+  updateSourceTypes(
+    sourceId: number,
+    typeCodes: readonly string[],
+    sourceVersion: number,
+    workspaceVersion: number | null,
+  ): Observable<LinkingWorkspaceSnapshot> {
+    return this.request(
+      this.http.patch<ApiResponse<LinkingWorkspaceResponse>>(
+        `${this.baseUrl}/sources/${sourceId}/types`,
+        {
+          typeCodes: [...typeCodes],
+          sourceVersion,
+          workspaceVersion,
+        },
+      ),
+    );
+  }
+
   reorderSources(
     sourceIds: readonly number[],
     workspaceVersion: number | null,

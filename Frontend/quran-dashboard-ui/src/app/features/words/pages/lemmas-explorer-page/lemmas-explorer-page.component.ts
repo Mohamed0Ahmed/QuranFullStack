@@ -141,7 +141,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
     return {
       kind: 'lemma',
       lemmaId: state.selectedLemmaId,
-      typeCode: state.ayahTypeCode,
+      typeCodes: state.ayahTypeCode === null ? [] : [state.ayahTypeCode],
       label: state.summary.lemmaText,
     };
   });
