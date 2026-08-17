@@ -2,12 +2,12 @@
 
 .abwab-tree-frame {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(4, var(--abwab-tree-count-col)) auto auto;
+  grid-template-columns: minmax(0, 1fr) repeat(5, var(--abwab-tree-count-col)) auto auto;
   column-gap: var(--qd-space-2);
 }
 
 .abwab-tree-frame--bulk {
-  grid-template-columns: minmax(0, 1fr) repeat(4, var(--abwab-tree-count-col)) auto;
+  grid-template-columns: minmax(0, 1fr) repeat(5, var(--abwab-tree-count-col)) auto;
 }
 
 .abwab-tree-frame {
@@ -58,6 +58,10 @@
   display: flex;
   justify-content: center;
   min-inline-size: 0;
+}
+
+.abwab-tree__positions {
+  margin-inline-end: var(--qd-space-4);
 }
 
 .abwab-tree__header {
@@ -182,11 +186,11 @@
   }
 
   .abwab-tree-frame {
-    grid-template-columns: minmax(0, 1fr) repeat(2, var(--abwab-tree-count-col)) auto auto;
+    grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto auto;
   }
 
   .abwab-tree-frame--bulk {
-    grid-template-columns: minmax(0, 1fr) repeat(2, var(--abwab-tree-count-col)) auto;
+    grid-template-columns: minmax(0, 1fr) repeat(3, var(--abwab-tree-count-col)) auto;
   }
 }
 

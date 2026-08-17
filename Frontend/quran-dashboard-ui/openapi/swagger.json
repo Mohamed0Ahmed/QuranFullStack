@@ -8147,6 +8147,7 @@
           "representativeAyahText",
           "sectionId",
           "sectionRetired",
+          "selectedWordCount",
           "version"
         ],
         "type": "object",
@@ -8203,6 +8204,10 @@
             "format": "int32"
           },
           "linkCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedWordCount": {
             "type": "integer",
             "format": "int32"
           },

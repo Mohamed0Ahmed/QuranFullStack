@@ -1,6 +1,9 @@
 <div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
   <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
     <span></span>
+    <span class="abwab-tree__header-cell abwab-tree__positions relative end-qd-8">
+      {{ headerPositionsLabel }}
+    </span>
     <span class="abwab-tree__header-cell">{{ headerLinksLabel }}</span>
     <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
     <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
@@ -110,6 +113,18 @@
             {{ node.name }}
           </span>
         </span>
+        </span>
+
+        <span class="abwab-tree__count-cell abwab-tree__positions">
+          <span
+            class="abwab-tree__count qd-chip__count"
+            [class.text-qd-ink-muted]="node.selectedWordCount === 0"
+            [class.text-qd-green-text]="node.selectedWordCount !== 0"
+            [attr.aria-label]="positionsAriaLabel(node)"
+            [attr.data-testid]="'abwab-tree-positions-' + node.id"
+          >
+            {{ node.selectedWordCount }}
+          </span>
         </span>
 
         <span class="abwab-tree__count-cell">

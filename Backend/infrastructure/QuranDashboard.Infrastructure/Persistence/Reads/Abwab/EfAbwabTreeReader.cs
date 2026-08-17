@@ -38,21 +38,24 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         var retiredSections = retiredSectionIds.ToHashSet();
 
         var relationCounts = await GetLiveRelationCountsAsync(cancellationToken);
-        var linkCounts = await GetLiveLinkCountsAsync(cancellationToken);
+        var linkMetrics = await GetLiveLinkMetricsAsync(cancellationToken);
 
         var sectionDtos = sections
             .Select(s => new AbwabTreeSectionDto(
                 s.Id, s.Name, s.OrderValue, s.Version, liveSectionCounts.GetValueOrDefault(s.Id)))
             .ToList();
 
-        var doorDtos = doors
-            .Select(d => new AbwabTreeDoorDto(
+        var doorDtos = doors.Select(d =>
+        {
+            var metrics = linkMetrics.GetValueOrDefault(d.Id);
+            return new AbwabTreeDoorDto(
                 d.Id, d.SectionId, retiredSections.Contains(d.SectionId), d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
                 d.OrderValue, d.GlobalOrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
                 relationCounts.GetValueOrDefault(d.Id),
-                linkCounts.GetValueOrDefault(d.Id),
-                aliasesByDoor.GetValueOrDefault(d.Id, [])))
-            .ToList();
+                metrics.LinkCount,
+                metrics.SelectedWordCount,
+                aliasesByDoor.GetValueOrDefault(d.Id, []));
+        }).ToList();
 
         var version = await GetSnapshotVersionAsync(cancellationToken);
 
@@ -81,22 +84,42 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         return counts;
     }
 
-    private async Task<Dictionary<int, int>> GetLiveLinkCountsAsync(CancellationToken cancellationToken) =>
-        await (
-            from unit in db.LinkingUnits.AsNoTracking()
-            join mapping in db.LinkingSourceContributionUnits.AsNoTracking()
-                on unit.Id equals mapping.UnitId
-            join contribution in db.LinkingSourceContributions.AsNoTracking()
-                on mapping.SourceContributionId equals contribution.Id
-            where contribution.DeletedAtUtc == null && contribution.DoorId == unit.DoorId
-            group unit by unit.DoorId
-            into unitsByDoor
-            select new
-            {
-                DoorId = unitsByDoor.Key,
-                Count = unitsByDoor.Select(unit => unit.Id).Distinct().Count(),
-            })
-        .ToDictionaryAsync(count => count.DoorId, count => count.Count, cancellationToken);
+    private async Task<Dictionary<int, DoorLinkMetrics>> GetLiveLinkMetricsAsync(
+        CancellationToken cancellationToken)
+    {
+        var linkCounts = await LiveUnits()
+            .GroupBy(unit => unit.DoorId)
+            .Select(units => new { DoorId = units.Key, Count = units.Count() })
+            .ToDictionaryAsync(count => count.DoorId, count => count.Count, cancellationToken);
+
+        var selectedWordCounts = await (
+                from unit in LiveUnits()
+                join unitAyah in db.LinkingUnitAyahs.AsNoTracking() on unit.Id equals unitAyah.UnitId
+                join word in db.LinkingUnitAyahWords.AsNoTracking() on unitAyah.Id equals word.UnitAyahId
+                group word by unit.DoorId
+                into wordsByDoor
+                select new { DoorId = wordsByDoor.Key, Count = wordsByDoor.Count() })
+            .ToDictionaryAsync(count => count.DoorId, count => count.Count, cancellationToken);
+
+        return linkCounts.ToDictionary(
+            count => count.Key,
+            count => new DoorLinkMetrics(count.Value, selectedWordCounts.GetValueOrDefault(count.Key)));
+    }
+
+    private IQueryable<Domain.Linking.LinkingUnit> LiveUnits() =>
+        db.LinkingUnits.AsNoTracking()
+            .Where(unit =>
+                db.LinkingSourceContributionUnits.AsNoTracking()
+                    .Where(mapping => mapping.UnitId == unit.Id)
+                    .Join(
+                        db.LinkingSourceContributions.AsNoTracking()
+                            .Where(contribution =>
+                                contribution.DoorId == unit.DoorId
+                                && contribution.DeletedAtUtc == null),
+                        mapping => mapping.SourceContributionId,
+                        contribution => contribution.Id,
+                        (_, _) => 1)
+                    .Any());
 
     private async Task<DateTimeOffset?> GetSnapshotVersionAsync(CancellationToken cancellationToken)
     {
@@ -113,4 +136,6 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         DateTimeOffset?[] candidates = [sectionsMax, doorsMax, aliasesMax];
         return candidates.Max();
     }
+
+    private readonly record struct DoorLinkMetrics(int LinkCount, int SelectedWordCount);
 }

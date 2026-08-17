@@ -111,6 +111,8 @@ export const ABWAB_LABELS = {
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
   rowLinksAriaLabel: (doorName: string, count: number): string =>
     `عرض روابط «${doorName}» — ${count} سجل`,
+  rowPositionsAriaLabel: (doorName: string, count: number): string =>
+    `مواضع الكلمات المحددة في «${doorName}» — ${count}`,
   rowOrderEditAriaLabel: (doorName: string, order: number): string =>
     `تعديل ترتيب «${doorName}» — الترتيب الحالي ${order}`,
 
@@ -121,6 +123,7 @@ export const ABWAB_LABELS = {
   rowDepthBadge: (depth: number): string => `${depth}`,
 
   rowHeaderDirect: 'مباشر',
+  rowHeaderPositions: 'المواضع',
   rowHeaderLinks: 'الروابط',
   rowHeaderTotal: 'الكل',
   rowHeaderDepth: 'عمق',

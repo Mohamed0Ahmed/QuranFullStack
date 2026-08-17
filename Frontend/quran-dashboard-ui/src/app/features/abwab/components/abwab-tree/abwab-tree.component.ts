@@ -154,6 +154,7 @@ export class AbwabTreeComponent {
   }
 
   protected get headerDirectLabel(): string { return ABWAB_LABELS.rowHeaderDirect; }
+  protected get headerPositionsLabel(): string { return ABWAB_LABELS.rowHeaderPositions; }
   protected get headerLinksLabel(): string { return ABWAB_LABELS.rowHeaderLinks; }
   protected get headerTotalLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
   protected get headerDepthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
@@ -179,6 +180,9 @@ export class AbwabTreeComponent {
 
   protected linksAriaLabel(node: AbwabNode): string {
     return ABWAB_LABELS.rowLinksAriaLabel(node.name, node.linkCount);
+  }
+  protected positionsAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.rowPositionsAriaLabel(node.name, node.selectedWordCount);
   }
 
   protected addChildAriaLabel(name: string): string {

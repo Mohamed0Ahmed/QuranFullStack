@@ -139,6 +139,7 @@ export interface AbwabNode {
   readonly maxRelativeDepth: number;
   readonly relationCount: number;
   readonly linkCount: number;
+  readonly selectedWordCount: number;
   readonly children: readonly AbwabNode[];
 }
 
