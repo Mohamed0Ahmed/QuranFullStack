@@ -16,5 +16,6 @@ export interface AbwabTreeDoorDto {
   representativeAyahText: string | null;
   sectionId: number;
   sectionRetired: boolean;
+  selectedWordCount: number;
   version: number;
 }
