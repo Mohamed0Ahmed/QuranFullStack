@@ -66,6 +66,6 @@ heading when changing production-source code.
 
 ## Active Spec Kit Feature
 
-None.
+`specs/001-abwab-door-inclusions/`
 
 <!-- SPECKIT END -->

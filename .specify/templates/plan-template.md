@@ -42,6 +42,12 @@
 
 [Gates determined based on constitution file]
 
+## Testing Decision
+
+[State the exact verification selected under TESTING_CONSTITUTION.md. The default is no new
+automated test. Name any explicitly authorized exception and keep migration, database application,
+destructive data operations, and deployment behind separate authorization.]
+
 ## Project Structure
 
 ### Documentation (this feature)
