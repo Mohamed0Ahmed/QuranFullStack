@@ -17,7 +17,6 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
-import { AbwabDoorLinksPanelComponent } from '../abwab-door-links-panel/abwab-door-links-panel.component';
 import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
 import {
   AbwabTreeRow,
@@ -36,7 +35,7 @@ export interface AbwabTreeMenuRequest {
 @Component({
   selector: 'qd-abwab-tree',
   standalone: true,
-  imports: [AbwabDoorLinksPanelComponent, AbwabTreeBranchesComponent, QdActionDirective, QdHierarchyKeyboardDirective],
+  imports: [AbwabTreeBranchesComponent, QdActionDirective, QdHierarchyKeyboardDirective],
   templateUrl: './abwab-tree.component.html',
   styleUrl: './abwab-tree.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

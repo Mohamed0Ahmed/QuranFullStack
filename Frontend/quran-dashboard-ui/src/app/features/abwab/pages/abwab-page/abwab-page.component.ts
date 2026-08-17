@@ -39,6 +39,7 @@ import {
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabToolbarComponent } from '../../components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent } from '../../components/abwab-tree/abwab-tree.component';
+import { AbwabDoorLinksPanelComponent } from '../../components/abwab-door-links-panel/abwab-door-links-panel.component';
 import { AbwabCardsComponent } from '../../components/abwab-cards/abwab-cards.component';
 import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/abwab-archive-view.component';
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
@@ -59,7 +60,6 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 const NO_IDS: ReadonlySet<number> = new Set<number>();
-
 const NO_ROOTS: readonly AbwabNode[] = [];
 
 @Component({
@@ -69,6 +69,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     RouterLink,
     AbwabToolbarComponent,
     AbwabTreeComponent,
+    AbwabDoorLinksPanelComponent,
     AbwabCardsComponent,
     AbwabArchiveViewComponent,
     AbwabSidePanelComponent,

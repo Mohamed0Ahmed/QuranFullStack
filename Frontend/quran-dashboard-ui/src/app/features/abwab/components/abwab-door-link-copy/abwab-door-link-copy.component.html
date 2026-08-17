@@ -14,25 +14,10 @@
 
   @if (state().copy.status === 'choosing') {
     <div class="abwab-door-link-copy__target">
-      <div>
-        <strong>{{ labels.doorLinksCopyTarget }}</strong>
-        <p class="qd-text-muted">{{ labels.doorLinksCopyTargetHint }}</p>
-      </div>
-      <qd-abwab-door-picker
-        [nodes]="snapshot()?.liveRoots ?? []"
-        [pickedIds]="pickedIds()"
-        [excludedIds]="excludedIds()"
-        [disabledIds]="disabledIds()"
-        [excludedTag]="labels.doorLinksCopySourceDoorTag"
-        [disabledTag]="labels.doorLinksCopyUnavailableTag"
-        [single]="true"
-        [status]="pickerStatus()"
-        [errorMessage]="doors.errorMessage() ?? ''"
-        [emptyMessage]="labels.doorLinksCopyTargetEmpty"
-        [searchPlaceholder]="labels.doorLinksCopyTargetSearch"
-        testIdPrefix="abwab-door-links-copy-target"
-        (toggled)="controller.selectTarget($event)"
-        (retry)="retryDoors()"
+      <qd-abwab-management-picker
+        [selectedDoorId]="state().copy.targetDoorId"
+        [excludedDoorIds]="excludedIds()"
+        (selectionChanged)="controller.selectTarget($event)"
       />
     </div>
 

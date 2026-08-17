@@ -31,6 +31,7 @@ export class AbwabToolbarComponent {
   readonly rootCountBySectionId = input<ReadonlyMap<number, number>>(new Map());
   readonly totalRootCount = input(0);
   readonly hideSectionControls = input(false);
+  readonly searchOnly = input(false);
 
   readonly sectionChanged = output<number | null>();
   readonly viewChanged = output<AbwabView>();

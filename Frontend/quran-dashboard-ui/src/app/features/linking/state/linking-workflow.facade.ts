@@ -213,6 +213,11 @@ export class LinkingWorkflowFacade {
     }
   }
 
+  clearDoor(): void {
+    this.stateSignal.update((state) => ({ ...state, selectedDoorId: null }));
+    this.drafts.setDoor(null);
+  }
+
   next(): void {
     if (this.step() === 'configure-source' && this.canAdvanceSource()) {
       this.doors.ensureLoaded();

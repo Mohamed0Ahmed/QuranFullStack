@@ -1,44 +1,24 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 
-import { AbwabDoorPickerComponent } from '../../../abwab/components/abwab-door-picker/abwab-door-picker.component';
-import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
-import { LINKING_LABELS } from '../../models/linking.labels';
+import { AbwabManagementPickerComponent } from '../../../abwab/components/abwab-management-picker/abwab-management-picker.component';
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 
 @Component({
   selector: 'qd-linking-door-step',
   standalone: true,
-  imports: [AbwabDoorPickerComponent],
+  imports: [AbwabManagementPickerComponent],
   templateUrl: './linking-door-step.component.html',
   styleUrl: './linking-door-step.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LinkingDoorStepComponent {
-  private readonly doors = inject(AbwabSnapshotFacade);
-  private readonly workflow = inject(LinkingWorkflowFacade);
+  protected readonly workflow = inject(LinkingWorkflowFacade);
 
-  protected readonly labels = LINKING_LABELS;
-  protected readonly snapshot = this.doors.snapshot;
-  protected readonly errorMessage = this.doors.errorMessage;
-  protected readonly pickedIds = computed(() => {
-    const id = this.workflow.selectedDoorId();
-    return id === null ? [] : [id];
-  });
-  protected readonly status = computed(() => {
-    if (this.doors.isLoading()) {
-      return 'loading' as const;
+  protected changeDoor(doorId: number | null): void {
+    if (doorId === null) {
+      this.workflow.clearDoor();
+      return;
     }
-    if (this.doors.errorMessage() !== null) {
-      return 'error' as const;
-    }
-    return this.doors.isEmpty() ? 'empty' as const : 'ready' as const;
-  });
-
-  protected selectDoor(doorId: number): void {
     this.workflow.selectDoor(doorId);
-  }
-
-  protected retry(): void {
-    this.workflow.loadDoors();
   }
 }

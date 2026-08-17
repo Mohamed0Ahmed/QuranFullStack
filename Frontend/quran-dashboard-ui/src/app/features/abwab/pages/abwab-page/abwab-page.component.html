@@ -226,6 +226,14 @@
   </div>
 </div>
 
+@if (byId().get(doorLinks.openDoorId() ?? -1); as openLinksDoor) {
+  <qd-abwab-door-links-panel
+    [doorId]="openLinksDoor.id"
+    [doorName]="openLinksDoor.name"
+    (dismissed)="doorLinks.close()"
+  />
+}
+
 <qd-abwab-door-modal
   [open]="overlays.modalOpen()"
   [door]="overlays.modalDoor()"
