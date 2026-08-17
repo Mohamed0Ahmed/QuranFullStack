@@ -212,14 +212,6 @@
           </span>
         }
       </div>
-      @if (openLinksDoorId() === node.id) {
-        <qd-abwab-door-links-panel
-          [doorId]="node.id"
-          [doorName]="node.name"
-          (dismissed)="linksToggled.emit(node.id)"
-          (keydown)="$event.stopPropagation()"
-        />
-      }
     }
   }
 </div>

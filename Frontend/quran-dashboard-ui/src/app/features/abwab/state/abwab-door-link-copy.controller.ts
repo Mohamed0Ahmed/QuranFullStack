@@ -40,11 +40,11 @@ export class AbwabDoorLinkCopyController {
     this.store.closeCopy();
   }
 
-  selectTarget(targetDoorId: number): void {
+  selectTarget(targetDoorId: number | null): void {
     if (this.state().copy.status !== 'choosing') {
       return;
     }
-    this.store.setCopyTarget(this.isValidTarget(targetDoorId) ? targetDoorId : null);
+    this.store.setCopyTarget(targetDoorId !== null && this.isValidTarget(targetDoorId) ? targetDoorId : null);
   }
 
   start(): void {

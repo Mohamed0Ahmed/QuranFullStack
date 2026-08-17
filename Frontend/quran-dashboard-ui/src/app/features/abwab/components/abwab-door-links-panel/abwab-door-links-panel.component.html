@@ -11,6 +11,7 @@
 >
   <section
     class="abwab-door-links-panel"
+    [class.abwab-door-links-panel--copy]="state().copy.open"
     role="region"
     [id]="'abwab-door-links-panel-' + doorId()"
     [attr.aria-label]="modalTitle()"
@@ -75,29 +76,31 @@
       />
     }
 
-    @if (initialLoading()) {
-      <qd-skeleton-rows [count]="3" rowTemplate="auto 1fr auto auto" [loadingLabel]="loadingLabel" />
-    } @else if (state().records.status === 'empty') {
-      <qd-empty-state [message]="emptyLabel" testId="abwab-door-links-empty" />
-    } @else {
-      <qd-refreshing-indicator [active]="refreshing()" testId="abwab-door-links-refreshing" />
+    @if (!state().copy.open) {
+      @if (initialLoading()) {
+        <qd-skeleton-rows [count]="3" rowTemplate="auto 1fr auto auto" [loadingLabel]="loadingLabel" />
+      } @else if (state().records.status === 'empty') {
+        <qd-empty-state [message]="emptyLabel" testId="abwab-door-links-empty" />
+      } @else {
+        <qd-refreshing-indicator [active]="refreshing()" testId="abwab-door-links-refreshing" />
 
-      @if (state().records.status === 'error') {
-        <qd-error-state
-          severity="read"
-          [message]="state().records.errorMessage ?? ''"
-          [actionLabel]="facade.interactionLocked() ? null : retryLabel"
-          testId="abwab-door-links-error"
-          actionTestId="abwab-door-links-retry"
-          (action)="facade.retryRecords()"
-        />
-      }
+        @if (state().records.status === 'error') {
+          <qd-error-state
+            severity="read"
+            [message]="state().records.errorMessage ?? ''"
+            [actionLabel]="facade.interactionLocked() ? null : retryLabel"
+            testId="abwab-door-links-error"
+            actionTestId="abwab-door-links-retry"
+            (action)="facade.retryRecords()"
+          />
+        }
 
-      @if (facade.recordViews().length > 0) {
-        <qd-abwab-door-links-list
-          class="abwab-door-links-panel__records"
-          [canSelect]="permissions.isOwner()"
-        />
+        @if (facade.recordViews().length > 0) {
+          <qd-abwab-door-links-list
+            class="abwab-door-links-panel__records"
+            [canSelect]="permissions.isOwner()"
+          />
+        }
       }
     }
   </section>

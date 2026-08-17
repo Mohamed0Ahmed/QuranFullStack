@@ -2,23 +2,3 @@
   display: block;
   min-block-size: 0;
 }
-
-.linking-door-step {
-  display: grid;
-  gap: var(--qd-space-4);
-  min-block-size: 0;
-}
-
-.linking-door-step__header {
-  display: grid;
-  gap: var(--qd-space-1);
-}
-
-.linking-door-step__header h2,
-.linking-door-step__header p {
-  margin: 0;
-}
-
-.linking-door-step__header p {
-  color: var(--qd-color-text-muted);
-}

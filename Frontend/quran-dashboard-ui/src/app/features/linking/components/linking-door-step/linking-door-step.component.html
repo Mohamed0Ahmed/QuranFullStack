@@ -1,18 +1,4 @@
-<section class="linking-door-step" aria-labelledby="linking-door-step-title">
-  <header class="linking-door-step__header">
-    <h2 id="linking-door-step-title">{{ labels.chooseDoor }}</h2>
-    <p>{{ labels.chooseDoorHint }}</p>
-  </header>
-  <qd-abwab-door-picker
-    [nodes]="snapshot()?.liveRoots ?? []"
-    [pickedIds]="pickedIds()"
-    [single]="true"
-    [status]="status()"
-    [errorMessage]="errorMessage() ?? ''"
-    [emptyMessage]="labels.doorsEmpty"
-    [searchPlaceholder]="labels.searchDoors"
-    testIdPrefix="linking-door"
-    (toggled)="selectDoor($event)"
-    (retry)="retry()"
-  />
-</section>
+<qd-abwab-management-picker
+  [selectedDoorId]="workflow.selectedDoorId()"
+  (selectionChanged)="changeDoor($event)"
+/>

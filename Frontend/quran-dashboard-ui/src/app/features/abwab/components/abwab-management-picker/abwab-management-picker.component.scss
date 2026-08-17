@@ -1,0 +1,17 @@
+@use '../../pages/abwab-page/abwab-page.component';
+
+:host {
+  display: block;
+  min-block-size: 0;
+}
+
+.abwab-management-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--qd-space-3);
+  min-block-size: 100%;
+}
+
+.abwab-management-picker__tree-card {
+  flex: 1;
+}
