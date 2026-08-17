@@ -65,6 +65,7 @@ export class AbwabTreeComponent {
   readonly orderCommitted = output<{ id: number; position: number; scope: AbwabOrderScope }>();
   readonly relationsRequested = output<number>();
   readonly linksToggled = output<number>();
+  readonly expandedIdsChanged = output<ReadonlySet<number>>();
 
   private readonly manuallyExpandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
@@ -366,15 +367,14 @@ export class AbwabTreeComponent {
   }
 
   private setExpanded(id: number, expanded: boolean): void {
-    this.manuallyExpandedIds.update((current) => {
-      const next = new Set(current);
-      if (expanded) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    const next = new Set(this.manuallyExpandedIds());
+    if (expanded) {
+      next.add(id);
+    } else {
+      next.delete(id);
+    }
+    this.manuallyExpandedIds.set(next);
+    this.expandedIdsChanged.emit(next);
     const openLinksDoorId = this.openLinksDoorId();
     if (!expanded && openLinksDoorId !== null && !this.visibleRows().some((row) => row.id === openLinksDoorId)) {
       this.linksToggled.emit(openLinksDoorId);

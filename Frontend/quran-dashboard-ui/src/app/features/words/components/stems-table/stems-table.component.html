@@ -129,7 +129,7 @@
 
 <ng-template #lemmaCell let-row="row">
   @if (row.lemmaId !== null && row.lemmaText) {
-    <a class="stems-table__lemma-link qd-interactive-surface" data-testid="stems-table-lemma-link" [href]="lemmaHref(row.lemmaId)" target="_blank" rel="noopener noreferrer" [attr.aria-label]="lemmaLinkPrefix + ' ' + row.lemmaText">
+    <a class="stems-table__lemma-link qd-interactive-surface" data-testid="stems-table-lemma-link" [qdDetailLink]="lemmaDetailFrame(row.lemmaId)" [attr.aria-label]="lemmaLinkPrefix + ' ' + row.lemmaText">
       <span class="stems-table__relation-text">{{ row.lemmaText }}</span>
     </a>
   } @else {
@@ -140,7 +140,7 @@
 
 <ng-template #rootCell let-row="row">
   @if (row.rootId !== null && row.rootText) {
-    <a class="stems-table__root-link qd-interactive-surface" data-testid="stems-table-root-link" [href]="rootHref(row.rootId)" target="_blank" rel="noopener noreferrer" [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText">
+    <a class="stems-table__root-link qd-interactive-surface" data-testid="stems-table-root-link" [qdDetailLink]="rootDetailFrame(row.rootId)" [attr.aria-label]="rootLinkPrefix + ' ' + row.rootText">
       <span class="stems-table__relation-text">{{ row.rootText }}</span>
     </a>
   } @else {

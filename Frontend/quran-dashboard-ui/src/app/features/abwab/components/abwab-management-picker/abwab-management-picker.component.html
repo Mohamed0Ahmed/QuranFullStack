@@ -54,6 +54,7 @@
           (orderCommitted)="commitOrder($event)"
           (relationsRequested)="openRelations($event)"
           (linksToggled)="chooseDoor($event)"
+          (expandedIdsChanged)="rememberExpandedDoorIds($event)"
         />
       }
       @if (permissions.canCreateDoor()) {

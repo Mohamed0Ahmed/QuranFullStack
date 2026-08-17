@@ -13,6 +13,8 @@ import {
   viewChild,
 } from '@angular/core';
 
+import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
+import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
 import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
@@ -53,8 +55,6 @@ import {
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { buildRootsDeepLink } from '../../state/roots-url-sync';
-import { deepLinkToHref } from '../../../../shared/url/deep-link-href';
 
 import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
@@ -80,7 +80,7 @@ export interface UniqueWordsDrilldownOpenEvent {
 @Component({
   selector: 'qd-unique-words-table',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [DetailOverlayLinkDirective, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './unique-words-table.component.html',
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -230,18 +230,22 @@ export class UniqueWordsTableComponent {
     return row.primaryWordTypeBroadArabicLabel ?? this.nullPlaceholder;
   }
 
-  protected hasRoot(row: UniqueWordListItemViewModel): boolean {
+  protected hasRoot(
+    row: UniqueWordListItemViewModel,
+  ): row is UniqueWordListItemViewModel & { rootId: number; rootText: string } {
     return row.rootId !== null && Boolean(row.rootText);
   }
 
-  protected rootHref(row: UniqueWordListItemViewModel): string {
-    return deepLinkToHref(
-      buildRootsDeepLink({
-        rootId: row.rootId ?? undefined,
-        view: 'words',
-        wordView: 'simple',
-      }),
-    );
+  protected rootDetailFrame(rootId: number): RootDetailFrame {
+    return {
+      kind: 'root',
+      id: rootId,
+      view: 'words',
+      wordView: 'simple',
+      surahView: 'mentioned',
+      detailPage: 1,
+      typeCode: null,
+    };
   }
 
   protected selectRow(row: UniqueWordListItemViewModel): void {
