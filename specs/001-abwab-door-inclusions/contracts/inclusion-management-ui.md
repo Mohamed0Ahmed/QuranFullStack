@@ -5,7 +5,8 @@
 ## Entry and Direction
 
 1. The flow always starts from one aggregate target door.
-2. Pointer users right-click the target in the live Abwab tree and select `تضمين الأبواب`.
+2. Pointer users select `إدارة مصادر الباب` from either the selected-door side panel or the target's
+   context menu in the live Abwab tree.
 3. Keyboard users invoke the same target context menu through the existing `ContextMenu` or
    `Shift+F10` path and select the same action.
 4. There is no source-first entry and no flow that targets several aggregate doors.
@@ -17,8 +18,8 @@ permission-gated. Archived targets can open read-only topology but cannot mutate
 
 ## Modal Identity and Restoration
 
-- Title: `تضمين الأبواب`.
-- Fixed target label: `الباب الجامع` with target identity visible in the header/body.
+- Title: `إدارة مصادر الباب`.
+- Fixed target label: `الباب المستهدف` with target identity visible in the header/body.
 - Use the existing wide `qd-modal-shell`: one body scroller, sticky header/footer, focus trap,
   labelled title, Escape handling, and focus return.
 - Encode the target in modal URL state, for example `modal=inclusions-<doorId>`, so refresh/back and
@@ -31,14 +32,17 @@ permission-gated. Archived targets can open read-only topology but cannot mutate
 
 The modal shows two direct-topology views:
 
-- `مصادر الباب`: active direct sources of the fixed target. Rows show door name and archive status.
+- `أبواب المصدر`: active direct sources of the fixed target. Rows show door name and archive status.
   Detach appears only on these rows and only with inclusion-delete permission and a live target.
-- `يُستخدم في أبواب جامعة`: active direct consumer doors. This view is read-only.
+- `الأبواب المستفيدة`: active direct consumer doors. This view is read-only.
+- Compact topology counts use `مصادر: <count>، مستفيدة: <count>`.
 
 Archived participants remain visible with text/icon status and an explanation that existing
 synchronized records remain present. Status never relies on color alone.
 
 ## Source Picker
+
+The picker section heading is `إضافة أبواب مصدر`.
 
 Reuse `components/abwab-door-picker/*` and the same `liveRoots` snapshot rendered on the main Abwab
 page.

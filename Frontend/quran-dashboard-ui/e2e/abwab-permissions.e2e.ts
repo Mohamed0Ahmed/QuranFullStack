@@ -12,6 +12,16 @@ test('anonymous visitors retain Abwab reads while write controls and restored wr
   await expect(page.getByTestId('abwab-door-modal')).toHaveCount(0);
   await expect(page).not.toHaveURL(/modal=/);
 
+  const firstDoor = page.locator('[data-testid^="abwab-tree-row-"]').first();
+  await expect(firstDoor).toBeVisible();
+  await firstDoor.click({ button: 'right' });
+  await page.getByTestId('abwab-page-ctx-inclusions').click();
+
+  await expect(page.getByTestId('abwab-inclusions-modal')).toBeVisible();
+  await expect(page.getByTestId('abwab-inclusions-modal-submit')).toHaveCount(0);
+  await expect(page.locator('[data-testid^="abwab-inclusions-modal-detach-"]')).toHaveCount(0);
+  await page.getByTestId('abwab-inclusions-modal-close').click();
+
   await page.getByTestId('abwab-page-templates').click();
 
   await expect(page.getByTestId('abwab-templates-page')).toBeVisible();
@@ -19,8 +29,11 @@ test('anonymous visitors retain Abwab reads while write controls and restored wr
 });
 
 test('a handcrafted anonymous Abwab write remains independently forbidden', async ({ request }) => {
-  const response = await request.post(`${API_BASE}/api/abwab/sections`, {
-    data: { name: 'phase-9-anonymous-write-must-not-persist' },
+  const response = await request.post(`${API_BASE}/api/abwab/doors/999999/inclusions`, {
+    data: {
+      expectedTargetDoorVersion: 0,
+      sourceDoorIds: [999998],
+    },
   });
 
   expect(response.status()).toBe(401);

@@ -195,17 +195,17 @@ public static class ApiMessages
     public const string AbwabDoorRelationDuplicate = "توجد علاقة من هذا النوع بالفعل مع هذا الباب";
     public const string AbwabDoorRelationNotFound = "العلاقة غير موجودة";
 
-    public const string AbwabDoorInclusionsLoaded = "تم تحميل تضمينات الباب";
-    public const string AbwabDoorInclusionsCreated = "تم تضمين الأبواب بنجاح";
-    public const string AbwabDoorInclusionsInvalidRequest = "طلب تضمين الأبواب غير صالح";
-    public const string AbwabDoorInclusionsArchivedDoor = "لا يمكن إنشاء تضمين لباب مؤرشف";
-    public const string AbwabDoorInclusionsDuplicate = "الباب المصدر مُضمَّن مباشرة بالفعل";
-    public const string AbwabDoorInclusionsCycle = "سيؤدي هذا التضمين إلى دورة غير صالحة بين الأبواب";
-    public const string AbwabDoorInclusionsStaleTarget = "تغيّر الباب الجامع؛ حدّث التضمينات ثم حاول مجددًا";
-    public const string AbwabDoorInclusionsUnavailable = "تعذّر إكمال مزامنة التضمينات بأمان. حاول لاحقًا.";
-    public const string AbwabDoorInclusionDetached = "تم فصل الباب المُضمَّن";
-    public const string AbwabDoorInclusionNotFound = "لم يتم العثور على التضمين النشط لهذا الباب";
-    public const string AbwabDoorInclusionArchivedTarget = "لا يمكن فصل تضمين من باب جامع مؤرشف";
+    public const string AbwabDoorInclusionsLoaded = "تم تحميل مصادر الباب";
+    public const string AbwabDoorInclusionsCreated = "تمت إضافة أبواب المصدر بنجاح";
+    public const string AbwabDoorInclusionsInvalidRequest = "طلب إضافة أبواب المصدر غير صالح";
+    public const string AbwabDoorInclusionsArchivedDoor = "لا يمكن إضافة باب مصدر مؤرشف";
+    public const string AbwabDoorInclusionsDuplicate = "باب المصدر مُضاف مباشرة بالفعل";
+    public const string AbwabDoorInclusionsCycle = "ستؤدي إضافة أبواب المصدر إلى دورة غير صالحة بين الأبواب";
+    public const string AbwabDoorInclusionsStaleTarget = "تغيّر الباب المستهدف؛ حدّث مصادر الباب ثم حاول مجددًا";
+    public const string AbwabDoorInclusionsUnavailable = "تعذّر إكمال مزامنة مصادر الباب بأمان. حاول لاحقًا.";
+    public const string AbwabDoorInclusionDetached = "تم فصل باب المصدر";
+    public const string AbwabDoorInclusionNotFound = "لم يتم العثور على مصدر نشط لهذا الباب";
+    public const string AbwabDoorInclusionArchivedTarget = "لا يمكن فصل مصدر من باب مستهدف مؤرشف";
 
     private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
 

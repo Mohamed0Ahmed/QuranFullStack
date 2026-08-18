@@ -6,13 +6,26 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 internal sealed partial class EfLinkingConfirmationWriter
 {
     private async Task<IReadOnlyDictionary<long, AbwabDoorInclusionSourceSnapshot>>
-        LoadPreviousUnitSnapshotsAsync(CancellationToken cancellationToken)
+        LoadPreviousUnitSnapshotsAsync(
+            Guid preflightId,
+            int doorId,
+            CancellationToken cancellationToken)
     {
         var unitIds = await db.Database.SqlQuery<long>(
                 $"""
-                SELECT DISTINCT unit_id AS "Value"
-                FROM linking_confirmation_previous_units
-                ORDER BY unit_id
+                SELECT DISTINCT previous.unit_id AS "Value"
+                FROM linking_confirmation_previous_units previous
+                UNION
+                SELECT existing.id AS "Value"
+                FROM linking_prepared_units prepared
+                JOIN linking_confirmation_sources source
+                  ON source.prepared_source_id = prepared.source_id
+                JOIN linking_units existing
+                  ON existing.door_id = {doorId}
+                 AND existing.identity_hash = prepared.unit_identity_hash
+                 AND existing.identity = prepared.unit_identity
+                WHERE prepared.preflight_id = {preflightId}
+                ORDER BY "Value"
                 """)
             .ToListAsync(cancellationToken);
         return await AbwabDoorInclusionSourceSnapshot.LoadAsync(db, unitIds, cancellationToken);

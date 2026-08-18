@@ -222,3 +222,42 @@ Record later execution evidence with:
   and
 - explicit confirmation that no Quran data, hierarchy, relation semantics, content attribution, or
   deployment boundary changed.
+
+### Execution record — 2026-08-18
+
+- Branch/current state: `feat/abwab-chapter-inclusion` at `e1126fcc` plus the current working-tree
+  changes.
+- The authorized generated migration is present as
+  `20260817163513_AddAbwabDoorInclusionSynchronization`; migration generation was not repeated and
+  `Backend/scripts/update-db` was not run. Playwright used its disposable database clone.
+- Command results:
+  - `Backend/scripts/qd-build`: passed with 0 errors and the existing `SSH.NET 2024.2.0` advisory
+    warning. An initial sandboxed attempt failed before compilation because local process access was
+    restricted; the unrestricted documented command passed.
+  - `Backend/scripts/test-backend tier-b --no-build`: passed, 349/349.
+  - `Backend/scripts/test-backend smoke --no-build`: failed, 88/90. The failures are outside this
+    feature's allowed reconciliation scope: the unrelated
+    `PATCH api/linking/workspace/sources/{id:long}/types` route lacks a smoke-catalog row, and the
+    authentication-scheme baseline does not include `ApplicationAuthentication` and `DeviceSession`.
+  - `npm run check:no-unit-specs`: passed.
+  - `npm run typecheck:app`: passed.
+  - `npm run build:verify`: passed with existing unrelated bundle/style budget warnings.
+  - `npm run check:golden-ui`: passed.
+  - `npx playwright test e2e/abwab-permissions.e2e.ts --project=abwab --workers=1`: passed, 2/2.
+- Retained exact protection was minimally updated in `SmokeRouteBaselineTests.cs` and the existing
+  `abwab-permissions.e2e.ts` journey; no test method, test class, unit spec, or Playwright journey was
+  added. Test Guard found no issue in the changed Playwright assertions.
+- Manual matrix result: blocked. The anonymous topology/hidden-control and anonymous-write subset
+  passed through the retained Playwright journey, but the Owner mutations, archive/detach/reattach,
+  propagation/fault/concurrency, existing-link compatibility, responsive viewport, focus, and RTL
+  cases were not executed because no supported authenticated manual session or authorized fault
+  injection was available. No pass is inferred for those cases.
+- Golden browser evidence: not produced. The static Golden UI contract passed, but no authenticated
+  responsive browser evidence was captured.
+- Pre-delivery self-check result: failed. Comment policy, layer ownership, generated-file scope, and
+  forbidden visual-effect checks were clean, but `abwab.labels.ts` is 477 lines and remains above
+  the 300-line hard helper threshold.
+- Final diff boundary check: passed statically. No Quran source/resource mutation, hierarchy or
+  semantic-relation behavior change, source attribution in link content, hard graph/product cap,
+  timing SLA, background propagation, database application, deployment change, or unauthorized new
+  test was found.

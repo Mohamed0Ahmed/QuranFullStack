@@ -19,7 +19,10 @@ internal sealed partial class EfLinkingConfirmationWriter
             actorUserId,
             cancellationToken);
         await CreateRelationalWorksetsAsync(preflightId, doorId, cancellationToken);
-        var previousSnapshots = await LoadPreviousUnitSnapshotsAsync(cancellationToken);
+        var previousSnapshots = await LoadPreviousUnitSnapshotsAsync(
+            preflightId,
+            doorId,
+            cancellationToken);
         await ValidateUnitIdentitiesAsync(preflightId, doorId, cancellationToken);
         await InsertPreparedUnitsAsync(doorId, actorUserId, cancellationToken);
         await MapPreparedUnitsAsync(preflightId, doorId, cancellationToken);

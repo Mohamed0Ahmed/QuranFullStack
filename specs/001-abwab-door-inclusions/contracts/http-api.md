@@ -60,7 +60,7 @@ Returns the requested door's direct topology in both directions.
 ```json
 {
   "isSuccess": true,
-  "message": "تم تحميل تضمينات الباب",
+  "message": "تم تحميل مصادر الباب",
   "data": {
     "doorId": 930001,
     "doorVersion": 123456,
@@ -76,7 +76,7 @@ Returns the requested door's direct topology in both directions.
       {
         "inclusionId": 52,
         "doorId": 930099,
-        "doorName": "اسم الباب الجامع",
+        "doorName": "اسم الباب المستهدف",
         "isArchived": true
       }
     ]
@@ -136,7 +136,7 @@ The response is returned only after all initial and transitive synchronization h
 ```json
 {
   "isSuccess": true,
-  "message": "تم تضمين الأبواب بنجاح",
+  "message": "تمت إضافة أبواب المصدر بنجاح",
   "data": {
     "targetDoorId": 930001,
     "targetDoorVersion": 123457,
@@ -255,7 +255,7 @@ POST   /api/abwab/doors/{doorId}/links/bulk-delete
 
 ## Permission Catalogue Contract
 
-Add the independent Arabic group `تضمين الأبواب`:
+Add the independent Arabic group `إدارة مصادر الباب`:
 
 ```text
 abwab.inclusions.create

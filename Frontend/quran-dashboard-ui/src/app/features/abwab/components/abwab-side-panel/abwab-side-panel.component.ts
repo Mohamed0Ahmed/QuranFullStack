@@ -28,6 +28,7 @@ export class AbwabSidePanelComponent {
   readonly addChildRequested = output<void>();
   readonly editRequested = output<void>();
   readonly moveRequested = output<void>();
+  readonly inclusionsRequested = output<number>();
   readonly relationsRequested = output<void>();
   readonly archiveRequested = output<void>();
   readonly clearRequested = output<void>();
@@ -45,6 +46,7 @@ export class AbwabSidePanelComponent {
   protected get addChildLabel(): string { return ABWAB_LABELS.addChildOp; }
   protected get editLabel(): string { return ABWAB_LABELS.editOp; }
   protected get moveLabel(): string { return ABWAB_LABELS.moveOp; }
+  protected get inclusionsLabel(): string { return ABWAB_LABELS.inclusionsOp; }
   protected get relationsLabel(): string { return ABWAB_LABELS.relationsOp; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected readonly bulkCountText = computed(() => ABWAB_LABELS.bulkSelectedCount(this.bulkCount()));
@@ -58,5 +60,12 @@ export class AbwabSidePanelComponent {
       return;
     }
     this.bulkModeToggled.emit(!this.bulkMode());
+  }
+
+  protected requestInclusions(): void {
+    const door = this.selectedDoor();
+    if (door !== null && !this.bulkMode()) {
+      this.inclusionsRequested.emit(door.id);
+    }
   }
 }

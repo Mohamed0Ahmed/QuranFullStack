@@ -146,6 +146,14 @@ export class AbwabModalUrlController {
     this.openInclusions(node, false);
   }
 
+  openInclusionsFromSidePanel(doorId: number): void {
+    const node = this.facade.snapshot()?.byId.get(doorId);
+    if (!node || node.isArchived) {
+      return;
+    }
+    this.openInclusions(node, false);
+  }
+
   closeInclusions(): void {
     const kind = this.urlBackedKind(['inclusions']);
     const subjectDoorId = this.inclusions.target()?.id ?? this.opened?.doorId ?? null;

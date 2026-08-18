@@ -52,7 +52,7 @@ public sealed class AbwabPermissionCatalogueTests
         AbwabPermissionCatalogue.All
             .GroupBy(permission => permission.GroupDisplayOrder)
             .Select(group => group.Select(permission => permission.GroupArabicLabel).Distinct().Single())
-            .Should().Equal("الأبواب", "الأقسام", "العلاقات", "القوالب", "عناصر القوالب", "تضمين الأبواب");
+            .Should().Equal("الأبواب", "الأقسام", "العلاقات", "القوالب", "عناصر القوالب", "إدارة مصادر الباب");
     }
 
     [Fact]
