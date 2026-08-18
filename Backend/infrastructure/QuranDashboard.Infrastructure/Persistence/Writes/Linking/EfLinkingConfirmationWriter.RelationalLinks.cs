@@ -137,8 +137,7 @@ internal sealed partial class EfLinkingConfirmationWriter
         }
     }
 
-    private async Task RemoveRelationalOrphanUnitsAsync(CancellationToken cancellationToken)
-    {
+    private async Task CreateRelationalOrphanWorksetAsync(CancellationToken cancellationToken) =>
         await db.Database.ExecuteSqlInterpolatedAsync(
             $"""
             CREATE TEMP TABLE linking_confirmation_orphans ON COMMIT DROP AS
@@ -154,6 +153,8 @@ internal sealed partial class EfLinkingConfirmationWriter
             """,
             cancellationToken);
 
+    private async Task RemoveRelationalOrphanUnitsAsync(CancellationToken cancellationToken)
+    {
         await ExecuteBatchesAsync(
             () => db.Database.ExecuteSqlInterpolatedAsync(
                 $"""

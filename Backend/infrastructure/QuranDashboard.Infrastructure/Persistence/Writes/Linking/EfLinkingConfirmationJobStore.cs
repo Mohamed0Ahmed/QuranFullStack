@@ -6,6 +6,7 @@ using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -13,7 +14,8 @@ internal sealed partial class EfLinkingConfirmationJobStore(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore,
     ILinkingScalabilityPolicy policy,
-    LinkingJobQueueSignal queueSignal) : ILinkingConfirmationJobStore
+    LinkingJobQueueSignal queueSignal,
+    AbwabDoorInclusionSyncLock syncLock) : ILinkingConfirmationJobStore
 {
     private const int ActorLockNamespace = 193648317;
     private const int IdempotencyLockNamespace = 193648319;

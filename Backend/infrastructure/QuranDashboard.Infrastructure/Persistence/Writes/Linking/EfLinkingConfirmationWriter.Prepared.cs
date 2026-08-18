@@ -31,6 +31,7 @@ internal sealed partial class EfLinkingConfirmationWriter
             throw new LinkingIdempotencyConflictException();
         }
 
+        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
         var door = await LockDoorAsync(lease.DoorId, cancellationToken);
         if (door is null)
         {

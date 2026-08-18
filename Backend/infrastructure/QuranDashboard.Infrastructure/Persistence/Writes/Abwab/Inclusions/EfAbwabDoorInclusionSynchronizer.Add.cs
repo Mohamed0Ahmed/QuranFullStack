@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
@@ -129,53 +130,12 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         db.LinkingUnits.AddRange(clonesBySourceUnitId.Values);
         await SaveChangesAsync(cancellationToken);
 
-        var ayahsBySourceUnitAndAyah = new Dictionary<(long SourceUnitId, int AyahId), LinkingUnitAyah>();
-        foreach (var sourceUnitId in orderedSourceUnitIds)
-        {
-            var snapshot = snapshots[sourceUnitId];
-            var clone = clonesBySourceUnitId[sourceUnitId];
-            foreach (var ayah in snapshot.Ayahs)
-            {
-                ayahsBySourceUnitAndAyah.Add(
-                    (sourceUnitId, ayah.AyahId),
-                    new LinkingUnitAyah
-                    {
-                        UnitId = clone.Id,
-                        AyahId = ayah.AyahId,
-                        OrderValue = ayah.OrderValue,
-                    });
-            }
-        }
-
-        db.LinkingUnitAyahs.AddRange(ayahsBySourceUnitAndAyah.Values);
-        await SaveChangesAsync(cancellationToken);
-
-        foreach (var sourceUnitId in orderedSourceUnitIds)
-        {
-            var snapshot = snapshots[sourceUnitId];
-            foreach (var ayah in snapshot.Ayahs)
-            {
-                var cloneAyah = ayahsBySourceUnitAndAyah[(sourceUnitId, ayah.AyahId)];
-                db.LinkingUnitAyahWords.AddRange(ayah.SelectedWordIds.Select(wordId =>
-                    new LinkingUnitAyahWord
-                    {
-                        UnitAyahId = cloneAyah.Id,
-                        QuranWordId = wordId,
-                        AyahId = ayah.AyahId,
-                    }));
-                db.LinkingUnitAyahDescriptions.AddRange(ayah.Descriptions.Select((body, index) =>
-                    new LinkingUnitAyahDescription
-                    {
-                        UnitAyahId = cloneAyah.Id,
-                        OrderValue = index + 1,
-                        Body = body,
-                        CreatedAtUtc = now,
-                        CreatedBy = actorUserId,
-                        UpdatedAtUtc = now,
-                        UpdatedBy = actorUserId,
-                    }));
-            }
-        }
+        await AddCloneShapesAsync(
+            clonesBySourceUnitId,
+            snapshots,
+            actorUserId,
+            now,
+            cancellationToken);
 
         db.LinkingSourceContributionUnits.AddRange(orderedSourceUnitIds.Select((sourceUnitId, index) =>
             new LinkingSourceContributionUnit
@@ -300,6 +260,62 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         addedUnitIds.AddRange(unitIds);
     }
 
+    private async Task AddCloneShapesAsync(
+        IReadOnlyDictionary<long, LinkingUnit> clonesBySourceUnitId,
+        IReadOnlyDictionary<long, AbwabDoorInclusionSourceSnapshot> snapshots,
+        int actorUserId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        var ayahsBySourceUnitAndAyah = new Dictionary<(long SourceUnitId, int AyahId), LinkingUnitAyah>();
+        foreach (var sourceUnitId in clonesBySourceUnitId.Keys.Order())
+        {
+            var snapshot = snapshots[sourceUnitId];
+            var clone = clonesBySourceUnitId[sourceUnitId];
+            foreach (var ayah in snapshot.Ayahs)
+            {
+                ayahsBySourceUnitAndAyah.Add(
+                    (sourceUnitId, ayah.AyahId),
+                    new LinkingUnitAyah
+                    {
+                        UnitId = clone.Id,
+                        AyahId = ayah.AyahId,
+                        OrderValue = ayah.OrderValue,
+                    });
+            }
+        }
+
+        db.LinkingUnitAyahs.AddRange(ayahsBySourceUnitAndAyah.Values);
+        await SaveChangesAsync(cancellationToken);
+
+        foreach (var sourceUnitId in clonesBySourceUnitId.Keys.Order())
+        {
+            var snapshot = snapshots[sourceUnitId];
+            foreach (var ayah in snapshot.Ayahs)
+            {
+                var cloneAyah = ayahsBySourceUnitAndAyah[(sourceUnitId, ayah.AyahId)];
+                db.LinkingUnitAyahWords.AddRange(ayah.SelectedWordIds.Select(wordId =>
+                    new LinkingUnitAyahWord
+                    {
+                        UnitAyahId = cloneAyah.Id,
+                        QuranWordId = wordId,
+                        AyahId = ayah.AyahId,
+                    }));
+                db.LinkingUnitAyahDescriptions.AddRange(ayah.Descriptions.Select((body, index) =>
+                    new LinkingUnitAyahDescription
+                    {
+                        UnitAyahId = cloneAyah.Id,
+                        OrderValue = index + 1,
+                        Body = body,
+                        CreatedAtUtc = now,
+                        CreatedBy = actorUserId,
+                        UpdatedAtUtc = now,
+                        UpdatedBy = actorUserId,
+                    }));
+            }
+        }
+    }
+
     private async Task SaveChangesAsync(CancellationToken cancellationToken)
     {
         try
@@ -311,8 +327,4 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             throw new AbwabDoorInclusionSynchronizationUnavailableException();
         }
     }
-}
-
-internal sealed class AbwabDoorInclusionSynchronizationUnavailableException : Exception
-{
 }

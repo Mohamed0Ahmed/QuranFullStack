@@ -6,8 +6,10 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfDoorLinkRecordsWriter
 {
-    private async Task<AbwabDoor?> LockDoorAsync(int doorId, CancellationToken cancellationToken) =>
-        (await db.AbwabDoors.FromSqlInterpolated(
+    private async Task<AbwabDoor?> LockDoorAsync(int doorId, CancellationToken cancellationToken)
+    {
+        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        return (await db.AbwabDoors.FromSqlInterpolated(
                 $"""
                 SELECT id, section_id, parent_id, name, description, representative_ayah_text,
                        order_value, global_order_value, created_at, created_by, updated_at, updated_by,
@@ -18,6 +20,7 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 """)
             .ToListAsync(cancellationToken))
         .SingleOrDefault();
+    }
 
     private static DoorLinkMutationWriteResult? ValidateDoor(AbwabDoor? door, uint expectedDoorVersion)
     {

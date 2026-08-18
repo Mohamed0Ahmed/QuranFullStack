@@ -122,6 +122,7 @@ internal sealed partial class EfLinkingConfirmationJobStore
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         await TakeAdvisoryLockAsync(JobLockNamespace, LockKey(lease.JobId), cancellationToken);
+        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
         var changed = await db.Database.ExecuteSqlInterpolatedAsync(
             $"""
             UPDATE linking_confirmation_jobs

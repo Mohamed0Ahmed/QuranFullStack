@@ -1,13 +1,17 @@
 using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore.Storage;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingConfirmationWriter(
     QuranDashboardDbContext db,
-    ILinkingDataRevisionWriterStore revisionStore) : ILinkingConfirmationWriter
+    ILinkingDataRevisionWriterStore revisionStore,
+    AbwabDoorInclusionSyncLock syncLock,
+    IAbwabDoorInclusionSynchronizer inclusionSynchronizer) : ILinkingConfirmationWriter
 {
     private const int IdempotencyLockNamespace = 193648319;
     private const int JobLockNamespace = 193648321;

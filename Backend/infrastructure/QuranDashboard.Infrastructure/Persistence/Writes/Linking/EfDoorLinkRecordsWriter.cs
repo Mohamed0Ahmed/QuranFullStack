@@ -1,9 +1,14 @@
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
-internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db) : IDoorLinkRecordsWriter
+internal sealed partial class EfDoorLinkRecordsWriter(
+    QuranDashboardDbContext db,
+    AbwabDoorInclusionSyncLock syncLock,
+    IAbwabDoorInclusionSynchronizer inclusionSynchronizer) : IDoorLinkRecordsWriter
 {
     public async Task<DoorLinkMutationWriteResult> ReplaceWordsAsync(
         int doorId,
@@ -64,6 +69,11 @@ internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db
             unitState.Ayahs.Select(ayah => ayah.AyahId).ToList(),
             actorUserId,
             false,
+            cancellationToken);
+        await inclusionSynchronizer.SynchronizeAsync(
+            doorId,
+            AbwabDoorInclusionMutationSet.Create([], [unitId], [], []),
+            actorUserId,
             cancellationToken);
         await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
         await transaction.CommitAsync(cancellationToken);

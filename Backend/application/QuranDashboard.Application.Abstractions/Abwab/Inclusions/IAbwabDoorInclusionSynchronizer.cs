@@ -8,3 +8,11 @@ public interface IAbwabDoorInclusionSynchronizer
         int actorUserId,
         CancellationToken cancellationToken);
 }
+
+public sealed class AbwabDoorInclusionSynchronizationConflictException : Exception
+{
+}
+
+public sealed class AbwabDoorInclusionSynchronizationUnavailableException : Exception
+{
+}

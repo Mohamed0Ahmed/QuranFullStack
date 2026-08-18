@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
@@ -70,6 +71,12 @@ internal sealed partial class EfDoorLinkRecordsWriter
             .Distinct()
             .OrderBy(id => id)
             .ToListAsync(cancellationToken);
+
+        await inclusionSynchronizer.SynchronizeAsync(
+            doorId,
+            AbwabDoorInclusionMutationSet.Create([], [], selectedIds, []),
+            actorUserId,
+            cancellationToken);
 
         var selectedIdArray = selectedIds.ToArray();
         await db.Database.ExecuteSqlInterpolatedAsync(

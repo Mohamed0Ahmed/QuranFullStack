@@ -1,4 +1,5 @@
 using System.Runtime.ExceptionServices;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Domain.Linking;
@@ -50,6 +51,24 @@ public sealed class ProcessLinkingConfirmationJobHandler(
                 lease,
                 LinkingConfirmationJobStatus.Failed,
                 LinkingConfirmationJobFailureCode.IdempotencyConflict,
+                false,
+                cancellationToken);
+        }
+        catch (AbwabDoorInclusionSynchronizationConflictException)
+        {
+            await store.CompleteFailureAsync(
+                lease,
+                LinkingConfirmationJobStatus.Stale,
+                LinkingConfirmationJobFailureCode.PreflightStale,
+                false,
+                cancellationToken);
+        }
+        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        {
+            await store.CompleteFailureAsync(
+                lease,
+                LinkingConfirmationJobStatus.Failed,
+                LinkingConfirmationJobFailureCode.ConfirmationFailed,
                 false,
                 cancellationToken);
         }
