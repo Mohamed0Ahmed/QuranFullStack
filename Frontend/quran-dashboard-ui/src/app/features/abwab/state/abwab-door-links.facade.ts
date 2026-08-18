@@ -1,5 +1,5 @@
 import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, computed, effect, inject, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { AbwabDoorLinksApi } from '../data-access/abwab-door-links.api';
@@ -17,6 +17,8 @@ export class AbwabDoorLinksFacade {
   private snapshotRequest: Subscription | null = null;
   private mutationRequest: Subscription | null = null;
   private generation = 0;
+  private observedTreeDoorId: number | null = null;
+  private observedTreeDoorVersion: number | null = null;
 
   readonly state = this.store.state;
   readonly openDoorId = this.store.openDoorId;
@@ -28,6 +30,25 @@ export class AbwabDoorLinksFacade {
     || this.state().deletion.status === 'writing'
     || this.state().copy.open && this.state().copy.status !== 'choosing',
   );
+
+  constructor() {
+    effect(() => {
+      const doorId = this.openDoorId();
+      const panelDoorVersion = this.doorVersion();
+      const treeDoorVersion = doorId === null
+        ? null
+        : this.tree.snapshot()?.byId.get(doorId)?.version ?? null;
+      const interactionLocked = this.interactionLocked();
+
+      untracked(() => this.reconcileTreeDoorVersion(
+        doorId,
+        panelDoorVersion,
+        treeDoorVersion,
+        interactionLocked,
+      ));
+    });
+  }
+
   toggleDoor(doorId: number): void {
     if (this.interactionLocked()) {
       return;
@@ -276,6 +297,38 @@ export class AbwabDoorLinksFacade {
     this.store.completeMutation(doorVersion, message);
     this.tree.refresh();
     this.loadSnapshot();
+  }
+
+  private reconcileTreeDoorVersion(
+    doorId: number | null,
+    panelDoorVersion: number | null,
+    treeDoorVersion: number | null,
+    interactionLocked: boolean,
+  ): void {
+    if (doorId === null || treeDoorVersion === null) {
+      this.observedTreeDoorId = doorId;
+      this.observedTreeDoorVersion = treeDoorVersion;
+      return;
+    }
+    if (this.observedTreeDoorId !== doorId) {
+      this.observedTreeDoorId = doorId;
+      this.observedTreeDoorVersion = treeDoorVersion;
+      return;
+    }
+    if (panelDoorVersion === null || treeDoorVersion === this.observedTreeDoorVersion) {
+      return;
+    }
+    if (panelDoorVersion === treeDoorVersion) {
+      this.observedTreeDoorVersion = treeDoorVersion;
+      return;
+    }
+    if (interactionLocked) {
+      return;
+    }
+
+    this.observedTreeDoorVersion = treeDoorVersion;
+    this.store.markStale(ABWAB_LABELS.doorLinksStale);
+    this.loadSnapshot(true);
   }
 
   private isCurrent(generation: number): boolean {

@@ -39,6 +39,7 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
 
         var relationCounts = await GetLiveRelationCountsAsync(cancellationToken);
         var linkMetrics = await GetLiveLinkMetricsAsync(cancellationToken);
+        var inclusionCounts = await GetActiveInclusionCountsAsync(cancellationToken);
 
         var sectionDtos = sections
             .Select(s => new AbwabTreeSectionDto(
@@ -48,12 +49,15 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
         var doorDtos = doors.Select(d =>
         {
             var metrics = linkMetrics.GetValueOrDefault(d.Id);
+            var inclusions = inclusionCounts.GetValueOrDefault(d.Id);
             return new AbwabTreeDoorDto(
                 d.Id, d.SectionId, retiredSections.Contains(d.SectionId), d.ParentId, d.Name, d.Description, d.RepresentativeAyahText,
                 d.OrderValue, d.GlobalOrderValue, d.Version, d.DeletedAtUtc != null, liveChildCounts.GetValueOrDefault(d.Id),
                 relationCounts.GetValueOrDefault(d.Id),
                 metrics.LinkCount,
                 metrics.SelectedWordCount,
+                inclusions.SourceCount,
+                inclusions.ConsumerCount,
                 aliasesByDoor.GetValueOrDefault(d.Id, []));
         }).ToList();
 
@@ -106,6 +110,27 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
             count => new DoorLinkMetrics(count.Value, selectedWordCounts.GetValueOrDefault(count.Key)));
     }
 
+    private async Task<Dictionary<int, DoorInclusionCounts>> GetActiveInclusionCountsAsync(
+        CancellationToken cancellationToken)
+    {
+        var edges = await db.AbwabDoorInclusions.AsNoTracking()
+            .Where(inclusion => inclusion.DeletedAtUtc == null)
+            .Select(inclusion => new { inclusion.TargetDoorId, inclusion.SourceDoorId })
+            .ToListAsync(cancellationToken);
+        var counts = new Dictionary<int, DoorInclusionCounts>();
+
+        foreach (var edge in edges)
+        {
+            var targetCounts = counts.GetValueOrDefault(edge.TargetDoorId);
+            counts[edge.TargetDoorId] = targetCounts with { SourceCount = targetCounts.SourceCount + 1 };
+
+            var sourceCounts = counts.GetValueOrDefault(edge.SourceDoorId);
+            counts[edge.SourceDoorId] = sourceCounts with { ConsumerCount = sourceCounts.ConsumerCount + 1 };
+        }
+
+        return counts;
+    }
+
     private IQueryable<Domain.Linking.LinkingUnit> LiveUnits() =>
         db.LinkingUnits.AsNoTracking()
             .Where(unit =>
@@ -138,4 +163,6 @@ internal sealed class EfAbwabTreeReader(QuranDashboardDbContext db) : IAbwabTree
     }
 
     private readonly record struct DoorLinkMetrics(int LinkCount, int SelectedWordCount);
+
+    private readonly record struct DoorInclusionCounts(int SourceCount, int ConsumerCount);
 }

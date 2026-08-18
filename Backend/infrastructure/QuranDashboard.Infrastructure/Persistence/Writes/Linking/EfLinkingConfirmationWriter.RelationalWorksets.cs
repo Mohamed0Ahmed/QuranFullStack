@@ -19,11 +19,22 @@ internal sealed partial class EfLinkingConfirmationWriter
             actorUserId,
             cancellationToken);
         await CreateRelationalWorksetsAsync(preflightId, doorId, cancellationToken);
+        var previousSnapshots = await LoadPreviousUnitSnapshotsAsync(
+            preflightId,
+            doorId,
+            cancellationToken);
         await ValidateUnitIdentitiesAsync(preflightId, doorId, cancellationToken);
         await InsertPreparedUnitsAsync(doorId, actorUserId, cancellationToken);
         await MapPreparedUnitsAsync(preflightId, doorId, cancellationToken);
         await InsertPreparedUnitChildrenAsync(actorUserId, cancellationToken);
         await SynchronizePreparedContributionLinksAsync(cancellationToken);
+        await CreateRelationalOrphanWorksetAsync(cancellationToken);
+        var mutations = await CreatePreparedMutationSetAsync(previousSnapshots, cancellationToken);
+        await inclusionSynchronizer.SynchronizeAsync(
+            doorId,
+            mutations,
+            actorUserId,
+            cancellationToken);
         await RemoveRelationalOrphanUnitsAsync(cancellationToken);
         await SynchronizeRelationalDoorStateAsync(doorId, actorUserId, cancellationToken);
     }
@@ -157,6 +168,17 @@ internal sealed partial class EfLinkingConfirmationWriter
             CREATE TEMP TABLE linking_confirmation_orphan_candidates (
                 unit_id bigint PRIMARY KEY)
                 ON COMMIT DROP;
+
+            CREATE TEMP TABLE linking_confirmation_previous_units ON COMMIT DROP AS
+            SELECT source.prepared_source_id,
+                   existing.unit_id,
+                   existing.order_value
+            FROM linking_confirmation_sources source
+            JOIN linking_source_contribution_units existing
+              ON existing.source_contribution_id = source.contribution_id;
+
+            CREATE INDEX ix_linking_confirmation_previous_units_source
+                ON linking_confirmation_previous_units (prepared_source_id, order_value, unit_id);
             """,
             cancellationToken);
 

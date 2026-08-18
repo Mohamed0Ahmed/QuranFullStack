@@ -12,4 +12,5 @@ public abstract record DeleteDoorLinksOutcome
     public sealed record UnitNotFound : DeleteDoorLinksOutcome;
     public sealed record DoorArchived : DeleteDoorLinksOutcome;
     public sealed record DoorVersionStale : DeleteDoorLinksOutcome;
+    public sealed record SynchronizationUnavailable : DeleteDoorLinksOutcome;
 }

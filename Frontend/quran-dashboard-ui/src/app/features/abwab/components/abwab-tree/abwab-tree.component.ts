@@ -18,6 +18,10 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
+import {
+  AbwabTreeContextMenuController,
+  AbwabTreeMenuRequest,
+} from './abwab-tree-context-menu.controller';
 import { AbwabTreeExpansionCommands, AbwabTreeExpansionController } from './abwab-tree-expansion.controller';
 import {
   AbwabTreeRow,
@@ -27,11 +31,7 @@ import {
   resolveAbwabTreeKeyboardIntent,
 } from './abwab-tree-keyboard.controller';
 
-export interface AbwabTreeMenuRequest {
-  readonly id: number;
-  readonly x: number;
-  readonly y: number;
-}
+export type { AbwabTreeMenuRequest } from './abwab-tree-context-menu.controller';
 
 @Component({
   selector: 'qd-abwab-tree',
@@ -71,6 +71,11 @@ export class AbwabTreeComponent {
 
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
+  private readonly contextMenu = new AbwabTreeContextMenuController(
+    (id) => this.manualFocusId.set(id),
+    (id) => this.selected.emit(id),
+    (request) => this.menuRequested.emit(request),
+  );
 
   constructor() {
     effect(() => {
@@ -208,11 +213,7 @@ export class AbwabTreeComponent {
   }
 
   protected onRowContextMenu(event: MouseEvent, id: number): void {
-    event.preventDefault();
-    if (this.bulkMode()) {
-      return;
-    }
-    this.openMenuFor(id, event.clientX, event.clientY);
+    this.contextMenu.openFromRow(event, id, this.bulkMode());
   }
 
   protected onAddChildClick(event: Event, id: number): void {
@@ -226,14 +227,7 @@ export class AbwabTreeComponent {
   }
 
   protected onMoreClick(event: MouseEvent, id: number): void {
-    event.stopPropagation();
-    this.openMenuFor(id, event.clientX, event.clientY);
-  }
-
-  private openMenuFor(id: number, x: number, y: number): void {
-    this.manualFocusId.set(id);
-    this.selected.emit(id);
-    this.menuRequested.emit({ id, x, y });
+    this.contextMenu.openFromButton(event, id);
   }
 
   protected onRowDblClick(row: AbwabTreeRow): void {
@@ -359,9 +353,7 @@ export class AbwabTreeComponent {
         break;
       case 'openMenu': {
         event.preventDefault();
-        const rect = this.rowElement(intent.id)?.getBoundingClientRect();
-        const anchorX = this.resolveDirection() === 'rtl' ? rect?.right : rect?.left;
-        this.openMenuFor(intent.id, anchorX ?? 0, rect?.bottom ?? 0);
+        this.contextMenu.openFromKeyboard(intent.id, this.rowElement(intent.id), this.resolveDirection());
         break;
       }
       case 'none':

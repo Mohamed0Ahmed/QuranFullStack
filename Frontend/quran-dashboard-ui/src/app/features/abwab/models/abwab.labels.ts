@@ -121,6 +121,13 @@ export const ABWAB_LABELS = {
     `مواضع الكلمات المحددة في «${doorName}» — ${count}`,
   rowOrderEditAriaLabel: (doorName: string, order: number): string =>
     `تعديل ترتيب «${doorName}» — الترتيب الحالي ${order}`,
+  inclusionsContextMenuLabel: (sourceCount: number, consumerCount: number): string =>
+    `إدارة مصادر الباب، مصادر: ${sourceCount}، أبواب مستفيدة: ${consumerCount}`,
+  inclusionsContextMenuCounts: (sourceCount: number, consumerCount: number): string =>
+    `مصادر: ${sourceCount}، مستفيدة: ${consumerCount}`,
+  archivedInclusionsButton: 'مصادر الباب',
+  archivedInclusionsAriaLabel: (doorName: string, sourceCount: number, consumerCount: number): string =>
+    `عرض مصادر «${doorName}» للقراءة فقط، مصادر: ${sourceCount}، أبواب مستفيدة: ${consumerCount}`,
 
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
@@ -299,8 +306,10 @@ export const ABWAB_LABELS = {
     move: 'نقل الباب',
     sections: 'إدارة الأقسام',
     relations: 'علاقات الباب',
+    inclusions: 'إدارة مصادر الباب',
   } satisfies Record<AbwabModalKind, string>,
   relationsOfDoorKindName: (doorName: string): string => `علاقات «${doorName}»`,
+  inclusionsOfDoorKindName: (doorName: string): string => `مصادر «${doorName}»`,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
   modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 
@@ -332,6 +341,45 @@ export const ABWAB_LABELS = {
   relationAddButton: (count: number): string =>
     count <= 1 ? 'أضف العلاقة' : `أضف ${countPhrase(count, RELATION_FORMS)}`,
   relationsCloseButton: 'إغلاق',
+
+  inclusionsOp: 'إدارة مصادر الباب',
+  inclusionsModalTitle: 'إدارة مصادر الباب',
+  inclusionsModalDescription: 'اختر بابًا أو أكثر لإضافة محتواها الحالي إلى الباب المستهدف في عملية واحدة.',
+  inclusionsArchivedTargetDescription: 'هذا الباب مؤرشف. يمكنك مراجعة مصادره فقط، ويظل المحتوى المتزامن محفوظًا.',
+  inclusionsTargetLabel: 'الباب المستهدف',
+  inclusionsSourcesHeading: 'أبواب المصدر',
+  inclusionsConsumersHeading: 'الأبواب المستفيدة',
+  inclusionsSourcePickerHeading: 'إضافة أبواب مصدر',
+  inclusionsSourceSearch: 'ابحث واختر بابًا أو أكثر…',
+  inclusionsTargetTag: 'الباب المستهدف',
+  inclusionsExistingSourceTag: 'مصدر مُضاف',
+  inclusionsPickerEmpty: 'لا توجد أبواب حية متاحة كمصادر.',
+  inclusionsSourcesEmpty: 'لا توجد أبواب مصدر لهذا الباب بعد.',
+  inclusionsConsumersEmpty: 'لا توجد أبواب مستفيدة من هذا الباب.',
+  inclusionsArchivedStatus: 'مؤرشف',
+  inclusionsArchiveExplanation: 'يبقى المحتوى المتزامن محفوظًا عند أرشفة باب مصدر أو باب مستهدف.',
+  inclusionsLoading: 'جارٍ تحميل مصادر الباب…',
+  inclusionsRefreshing: 'جارٍ تحديث مصادر الباب',
+  inclusionsLoadError: 'تعذر تحميل مصادر الباب.',
+  inclusionsAddError: 'تعذر إضافة أبواب المصدر المحددة.',
+  inclusionsDetachError: 'تعذر فصل باب المصدر.',
+  inclusionsAddedNotice: 'تمت إضافة أبواب المصدر بنجاح.',
+  inclusionsDetachedNotice: (removedCount: number): string =>
+    `تم فصل باب المصدر وإزالة ${removedCount} من السجلات المتزامنة من الباب المستهدف.`,
+  inclusionsConflictRefreshed: 'تغير الباب المستهدف. تم تحديث مصادر الباب، فراجع اختيارك قبل المحاولة مجددًا.',
+  inclusionsNoneSelected: 'لم تختر بابًا ليكون مصدرًا بعد.',
+  inclusionsSelectedSummary: (count: number): string => `تم اختيار ${countPhrase(count, DOOR_FORMS)}`,
+  inclusionsAddButton: (count: number): string => count <= 1 ? 'إضافة باب مصدر' : 'إضافة أبواب مصدر',
+  inclusionsDetachButton: 'فصل',
+  inclusionsDetachAriaLabel: (doorName: string): string => `فصل «${doorName}» عن الباب المستهدف`,
+  inclusionsDetachConfirmTitle: 'فصل باب مصدر',
+  inclusionsDetachConfirmLabel: 'فصل باب المصدر',
+  inclusionsDetachConfirmBody: (sourceName: string, targetName: string): string =>
+    `سيُفصل باب المصدر «${sourceName}» عن الباب المستهدف «${targetName}». `
+    + 'يبقى الباب المصدر ومحتواه دون تغيير، وتُحذف فقط السجلات المتزامنة '
+    + 'التي يملكها هذا المصدر من الباب المستهدف.',
+  inclusionsDismissNotice: 'إخفاء التنبيه',
+  inclusionsCloseButton: 'إغلاق',
 
   relationsBulkAddOp: 'إضافة علاقة',
   relationsBulkTitle: (count: number): string => `إضافة علاقة لـ ${countPhrase(count, DOOR_FORMS)}`,

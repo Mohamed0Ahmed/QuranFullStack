@@ -31,4 +31,8 @@ export const ABWAB_PERMISSION_CODES = {
     reorder: 'abwab.template_nodes.reorder',
     delete: 'abwab.template_nodes.delete',
   },
+  inclusions: {
+    create: 'abwab.inclusions.create',
+    delete: 'abwab.inclusions.delete',
+  },
 } as const;

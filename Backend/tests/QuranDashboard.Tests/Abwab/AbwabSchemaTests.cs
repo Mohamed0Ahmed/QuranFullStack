@@ -62,6 +62,23 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
           AND a.attname = @columnName
         """;
 
+    private const string ForeignKeyShapeSql = """
+        SELECT referenced.relname,
+               ARRAY(
+                   SELECT local_attribute.attname
+                   FROM unnest(constraint_row.conkey) WITH ORDINALITY AS key_column(attnum, ord)
+                   JOIN pg_attribute local_attribute
+                     ON local_attribute.attrelid = constraint_row.conrelid
+                    AND local_attribute.attnum = key_column.attnum
+                   ORDER BY key_column.ord
+               ),
+               constraint_row.confdeltype::text
+        FROM pg_constraint constraint_row
+        JOIN pg_class referenced ON referenced.oid = constraint_row.confrelid
+        WHERE constraint_row.conname = @constraintName
+          AND constraint_row.contype = 'f'
+        """;
+
     private static readonly string[] ExpectedAuditSeedColumns =
     [
         "created_at", "created_by",
@@ -84,6 +101,18 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     private static readonly string[] ExpectedDoorAliasColumns =
     [
         "id", "door_id", "value", .. ExpectedAuditSeedColumns
+    ];
+
+    private static readonly string[] ExpectedDoorInclusionColumns =
+    [
+        "id", "target_door_id", "source_door_id", "created_at", "created_by",
+        "updated_at", "updated_by", "deleted_at", "deleted_by"
+    ];
+
+    private static readonly string[] ExpectedDoorInclusionUnitSyncColumns =
+    [
+        "id", "door_inclusion_id", "source_unit_id", "target_unit_id", "state",
+        "source_fingerprint", "created_at", "created_by", "updated_at", "updated_by"
     ];
 
     [Fact]
@@ -120,7 +149,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     }
 
     [Fact]
-    public async Task Doors_table_has_the_five_required_indexes()
+    public async Task Abwab_persistence_tables_have_the_required_schema_contract()
     {
         await using var scope = fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
@@ -135,6 +164,89 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
             isUnique: true, ["section_id", "parent_id", "name"]);
         await AssertIndexAsync(connection, "abwab_doors", "IX_abwab_doors_global_order_value",
             isUnique: false, ["global_order_value"]);
+
+        (await QueryColumnsAsync(connection, "abwab_door_inclusions"))
+            .Should().BeEquivalentTo(ExpectedDoorInclusionColumns);
+        (await QueryColumnsAsync(connection, "abwab_door_inclusion_unit_syncs"))
+            .Should().BeEquivalentTo(ExpectedDoorInclusionUnitSyncColumns);
+
+        await AssertForeignKeyAsync(
+            connection,
+            "FK_abwab_door_inclusions_abwab_doors_target_door_id",
+            "abwab_doors",
+            ["target_door_id"]);
+        await AssertForeignKeyAsync(
+            connection,
+            "FK_abwab_door_inclusions_abwab_doors_source_door_id",
+            "abwab_doors",
+            ["source_door_id"]);
+        await AssertForeignKeyAsync(
+            connection,
+            "FK_abwab_door_inclusion_syncs_inclusion",
+            "abwab_door_inclusions",
+            ["door_inclusion_id"]);
+        await AssertForeignKeyAsync(
+            connection,
+            "FK_abwab_door_inclusion_syncs_source_unit",
+            "linking_units",
+            ["source_unit_id"]);
+        await AssertForeignKeyAsync(
+            connection,
+            "FK_abwab_door_inclusion_syncs_target_unit",
+            "linking_units",
+            ["target_unit_id"]);
+
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusions",
+            "IX_abwab_door_inclusions_target_door_id_source_door_id",
+            isUnique: true,
+            ["target_door_id", "source_door_id"]);
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusions",
+            "IX_abwab_door_inclusions_source_door_id",
+            isUnique: false,
+            ["source_door_id"]);
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusions",
+            "IX_abwab_door_inclusions_deleted_at",
+            isUnique: false,
+            ["deleted_at"]);
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusion_unit_syncs",
+            "IX_abwab_door_inclusion_syncs_inclusion_source",
+            isUnique: true,
+            ["door_inclusion_id", "source_unit_id"]);
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusion_unit_syncs",
+            "IX_abwab_door_inclusion_syncs_target_unit",
+            isUnique: true,
+            ["target_unit_id"]);
+        await AssertIndexAsync(
+            connection,
+            "abwab_door_inclusion_unit_syncs",
+            "IX_abwab_door_inclusion_syncs_source_unit",
+            isUnique: false,
+            ["source_unit_id"]);
+        await AssertIndexFilterAsync(
+            connection,
+            "abwab_door_inclusions",
+            "IX_abwab_door_inclusions_target_door_id_source_door_id",
+            "(deleted_at IS NULL)");
+        await AssertIndexFilterAsync(
+            connection,
+            "abwab_door_inclusions",
+            "IX_abwab_door_inclusions_source_door_id",
+            "(deleted_at IS NULL)");
+        await AssertIndexFilterAsync(
+            connection,
+            "abwab_door_inclusion_unit_syncs",
+            "IX_abwab_door_inclusion_syncs_target_unit",
+            "(target_unit_id IS NOT NULL)");
     }
 
     [Fact]
@@ -473,5 +585,34 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         (await reader.ReadAsync()).Should().BeTrue($"index {indexName} on {tableName} should exist");
         reader.GetBoolean(1).Should().Be(isUnique, $"index {indexName} uniqueness");
         reader.GetFieldValue<string[]>(2).Should().Equal(columnNames, $"index {indexName} columns");
+    }
+
+    private static async Task AssertForeignKeyAsync(
+        NpgsqlConnection connection,
+        string constraintName,
+        string referencedTable,
+        string[] columnNames)
+    {
+        await using var command = new NpgsqlCommand(ForeignKeyShapeSql, connection);
+        command.Parameters.AddWithValue("constraintName", constraintName);
+
+        await using var reader = await command.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue($"foreign key {constraintName} should exist");
+        reader.GetString(0).Should().Be(referencedTable, $"foreign key {constraintName} target table");
+        reader.GetFieldValue<string[]>(1).Should().Equal(columnNames, $"foreign key {constraintName} columns");
+        reader.GetString(2).Should().Be("r", $"foreign key {constraintName} delete behavior");
+    }
+
+    private static async Task AssertIndexFilterAsync(
+        NpgsqlConnection connection,
+        string tableName,
+        string indexName,
+        string expectedFilter)
+    {
+        await using var command = new NpgsqlCommand(IndexFilterSql, connection);
+        command.Parameters.AddWithValue("tableName", tableName);
+        command.Parameters.AddWithValue("indexName", indexName);
+
+        (await command.ExecuteScalarAsync()).Should().Be(expectedFilter, $"index {indexName} filter");
     }
 }

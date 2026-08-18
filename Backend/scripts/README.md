@@ -15,7 +15,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `cleanup-test-runtime --run-id RUN_ID` | Removes the Docker resources of one `test-backend` run, selected by all five project test labels **and** that exact run ID. Never prunes |
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
-| `wipe-abwab` | Empties the six `abwab_*` tables on a local database, leaving the canonical `quran_*` data intact |
+| `wipe-abwab` | Empties the literal Abwab and Abwab-owned Linking reset closure on a local database, leaving canonical `quran_*`, access, and linking-workspace data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/README.md` §Invariants) |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
 | `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
@@ -140,11 +140,12 @@ rather than committed.
 ./scripts/wipe-abwab --yes
 ```
 
-`TRUNCATE ... RESTART IDENTITY CASCADE` over exactly six tables — `abwab_sections`,
-`abwab_doors`, `abwab_door_aliases`, `abwab_door_relations`, `abwab_templates`,
-`abwab_template_nodes` — so a schema change that cannot survive existing abwab rows (a column
-becoming `NOT NULL`, say) has a sanctioned local reset. Abwab content is authored curation data:
-nothing restores it, and the canonical dump covers `quran_*` only.
+`TRUNCATE ... RESTART IDENTITY CASCADE` over a literal allowlist that owns the complete Abwab and
+Abwab-to-Linking foreign-key closure: the eight `abwab_*` tables, door-scoped linking operations,
+jobs, prepared-state tables, contributions, units, and door ayah/word projections. Linking
+workspaces, `quran_*`, users, roles, and permissions are outside the closure. A schema change that
+cannot survive existing Abwab rows therefore has a sanctioned local reset. Abwab content is
+authored curation data: nothing restores it, and the canonical dump covers `quran_*` only.
 
 That hazard is not hypothetical: `20260802062011_RequireAbwabDoorSection` makes
 `abwab_doors.section_id` `NOT NULL` with no backfill and no guard
@@ -166,10 +167,9 @@ Guards, each of which exits non-zero:
 - **local only.** Any host other than `localhost` / `127.0.0.1` is refused. Deliberately
   stricter than `create-smoke-dump`: there is no `--allow-remote` escape, because a deployed
   database must not be wipeable by any flag this script accepts;
-- **a literal six-table allowlist** — no wildcard, no catalog query. `CASCADE` is safe only
-  because every foreign key pointing into an abwab table originates from another table in that
-  same list, so the cascade closure cannot reach `quran_*`, `users`, or `roles`. A seventh abwab
-  table means editing the list deliberately;
+- **a literal closure allowlist** — no wildcard, no catalog query. It includes every table whose
+  rows are owned by an Abwab door and excludes canonical Quran, access, and linking-workspace
+  tables. Any new Abwab or door-scoped Linking foreign key requires a deliberate list update;
 - **a post-wipe tripwire**: `quran_surahs` must still hold 114 rows. It does not prevent damage —
   it refuses to let damage pass silently.
 

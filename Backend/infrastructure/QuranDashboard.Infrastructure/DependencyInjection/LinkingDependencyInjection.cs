@@ -6,6 +6,7 @@ using QuranDashboard.Infrastructure.Caching.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
 using QuranDashboard.Infrastructure.Persistence.Reads.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
@@ -53,6 +54,7 @@ internal static class LinkingDependencyInjection
             sp.GetRequiredService<IAbwabCacheInvalidator>()));
         services.AddScoped<ILinkingWorkspaceWriter, EfLinkingWorkspaceWriter>();
         services.AddScoped<ILinkingConfirmedStateReader, EfLinkingConfirmedStateReader>();
+        services.AddScoped<AbwabDoorInclusionSyncLock>();
         services.AddScoped<EfLinkingConfirmationWriter>();
         services.AddScoped<ILinkingConfirmationWriter>(sp => new InvalidatingLinkingConfirmationWriter(
             sp.GetRequiredService<EfLinkingConfirmationWriter>(),

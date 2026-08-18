@@ -8,4 +8,5 @@ public enum LinkingSourceKind
     Stem = 4,
     WordType = 5,
     ManualMushafAyahs = 6,
+    DoorInclusion = 7,
 }

@@ -46,9 +46,15 @@
   flex: 1;
 }
 
-.abwab-archive-view__restore {
+.abwab-archive-view__restore,
+.abwab-archive-view__inclusions {
   flex: none;
   font-size: 0.75rem;
+}
+
+.abwab-archive-view__inclusions {
+  display: inline-flex;
+  gap: var(--qd-space-1);
 }
 
 .abwab-archive-view__hint {

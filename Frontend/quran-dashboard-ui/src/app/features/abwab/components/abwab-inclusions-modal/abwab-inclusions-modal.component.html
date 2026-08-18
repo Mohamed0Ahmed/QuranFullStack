@@ -1,0 +1,198 @@
+@if (controller.isOpen() && controller.target(); as target) {
+  <qd-modal-shell
+    variant="wide"
+    testIdPrefix="abwab-inclusions-modal"
+    [open]="true"
+    [titleText]="labels.inclusionsModalTitle"
+    [showClose]="false"
+    (dismissed)="close()"
+  >
+    <p qdModalShellHeaderSupport class="abwab-inclusions-modal__support">
+      <strong>{{ labels.inclusionsTargetLabel }}:</strong>
+      <span>{{ target.name }}</span>
+    </p>
+
+    <p class="abwab-inclusions-modal__description">
+      {{ target.isArchived ? labels.inclusionsArchivedTargetDescription : labels.inclusionsModalDescription }}
+    </p>
+
+    <qd-notice
+      [message]="controller.notice() ?? ''"
+      [dismissLabel]="controller.notice() ? labels.inclusionsDismissNotice : null"
+      testId="abwab-inclusions-modal-notice"
+      dismissTestId="abwab-inclusions-modal-notice-dismiss"
+      (dismiss)="controller.clearNotice()"
+    />
+
+    @if (controller.isInitialLoading()) {
+      <qd-skeleton-rows
+        class="abwab-inclusions-modal__loading"
+        [count]="5"
+        rowTemplate="1fr auto"
+        [loadingLabel]="labels.inclusionsLoading"
+        data-testid="abwab-inclusions-modal-loading"
+      />
+    } @else {
+      <div
+        class="abwab-inclusions-modal__content qd-refreshing-region"
+        [attr.aria-busy]="controller.isRefreshing()"
+      >
+        <qd-refreshing-indicator
+          [active]="controller.isRefreshing()"
+          testId="abwab-inclusions-modal-refreshing"
+        />
+
+        @if (controller.readError(); as message) {
+          <qd-error-state
+            severity="read"
+            [reserve]="controller.topology() === null"
+            [message]="message"
+            [actionLabel]="labels.retryButton"
+            testId="abwab-inclusions-modal-read-error"
+            actionTestId="abwab-inclusions-modal-read-retry"
+            (action)="controller.retryLoad()"
+          />
+        }
+
+        @if (controller.topology(); as topology) {
+          <div class="abwab-inclusions-modal__topology">
+            <section class="abwab-inclusions-modal__section" aria-labelledby="abwab-inclusions-sources-heading">
+              <h3 id="abwab-inclusions-sources-heading">
+                {{ labels.inclusionsSourcesHeading }}
+                <span aria-hidden="true">{{ topology.sources.length }}</span>
+              </h3>
+              @if (topology.sources.length === 0) {
+                <qd-empty-state
+                  [message]="labels.inclusionsSourcesEmpty"
+                  testId="abwab-inclusions-modal-sources-empty"
+                />
+              } @else {
+                <ul class="abwab-inclusions-modal__list">
+                  @for (source of topology.sources; track source.inclusionId) {
+                    <li>
+                      <span>{{ source.doorName }}</span>
+                      @if (source.isArchived) {
+                        <span class="abwab-inclusions-modal__status">{{ labels.inclusionsArchivedStatus }}</span>
+                      }
+                      @if (canDetachSources()) {
+                        <button
+                          type="button"
+                          qdAction="tertiary"
+                          size="sm"
+                          class="abwab-inclusions-modal__detach"
+                          [attr.aria-label]="detachAriaLabel(source.doorName)"
+                          [attr.data-testid]="'abwab-inclusions-modal-detach-' + source.inclusionId"
+                          (click)="controller.requestDetach(source)"
+                        >
+                          {{ labels.inclusionsDetachButton }}
+                        </button>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+
+            <section class="abwab-inclusions-modal__section" aria-labelledby="abwab-inclusions-consumers-heading">
+              <h3 id="abwab-inclusions-consumers-heading">
+                {{ labels.inclusionsConsumersHeading }}
+                <span aria-hidden="true">{{ topology.consumers.length }}</span>
+              </h3>
+              @if (topology.consumers.length === 0) {
+                <qd-empty-state
+                  [message]="labels.inclusionsConsumersEmpty"
+                  testId="abwab-inclusions-modal-consumers-empty"
+                />
+              } @else {
+                <ul class="abwab-inclusions-modal__list">
+                  @for (consumer of topology.consumers; track consumer.inclusionId) {
+                    <li>
+                      <span>{{ consumer.doorName }}</span>
+                      @if (consumer.isArchived) {
+                        <span class="abwab-inclusions-modal__status">{{ labels.inclusionsArchivedStatus }}</span>
+                      }
+                    </li>
+                  }
+                </ul>
+              }
+            </section>
+          </div>
+
+          @if (hasArchivedParticipants()) {
+            <p class="abwab-inclusions-modal__archive-note">{{ labels.inclusionsArchiveExplanation }}</p>
+          }
+
+          @if (canCreateSources()) {
+            <section class="abwab-inclusions-modal__picker" aria-labelledby="abwab-inclusions-picker-heading">
+              <h3 id="abwab-inclusions-picker-heading">{{ labels.inclusionsSourcePickerHeading }}</h3>
+              <qd-abwab-door-picker
+                [nodes]="liveRoots()"
+                [pickedIds]="selectedSourceIds()"
+                [excludedIds]="targetExcludedIds()"
+                [excludedTag]="labels.inclusionsTargetTag"
+                [disabledIds]="directSourceIds()"
+                [disabledTag]="labels.inclusionsExistingSourceTag"
+                [single]="false"
+                [emptyMessage]="labels.inclusionsPickerEmpty"
+                [searchPlaceholder]="labels.inclusionsSourceSearch"
+                testIdPrefix="abwab-inclusions-modal"
+                (toggled)="controller.toggleSource($event)"
+              />
+              <p class="abwab-inclusions-modal__selection" aria-live="polite" data-testid="abwab-inclusions-modal-selection">
+                {{ selectedSummary() }}
+              </p>
+            </section>
+          }
+        }
+      </div>
+    }
+
+    <div qdModalShellFooter class="abwab-inclusions-modal__footer">
+      @if (canCreateSources()) {
+        <button
+          type="button"
+          qdAction="primary"
+          [disabled]="!controller.canSubmit()"
+          data-testid="abwab-inclusions-modal-submit"
+          (click)="controller.submit()"
+        >
+          {{ addButtonLabel() }}
+        </button>
+      }
+      <button type="button" qdAction="tertiary" data-testid="abwab-inclusions-modal-close" (click)="close()">
+        {{ labels.inclusionsCloseButton }}
+      </button>
+      @if (controller.writeError(); as message) {
+        <qd-error-state
+          class="abwab-inclusions-modal__write-error"
+          severity="write"
+          [message]="message"
+          testId="abwab-inclusions-modal-write-error"
+        />
+      }
+    </div>
+  </qd-modal-shell>
+
+  @if (controller.detachCandidate(); as source) {
+    <qd-confirm-dialog
+      testIdPrefix="abwab-inclusions-detach-confirm"
+      [open]="true"
+      [titleText]="labels.inclusionsDetachConfirmTitle"
+      [confirmLabel]="labels.inclusionsDetachConfirmLabel"
+      [cancelLabel]="labels.cancelButton"
+      tone="danger"
+      [busy]="controller.isDetaching()"
+      (confirmed)="controller.confirmDetach()"
+      (cancelled)="controller.cancelDetach()"
+    >
+      <p>{{ detachConfirmBody(source.doorName, target.name) }}</p>
+      @if (controller.detachError(); as message) {
+        <qd-error-state
+          severity="write"
+          [message]="message"
+          testId="abwab-inclusions-detach-confirm-error"
+        />
+      }
+    </qd-confirm-dialog>
+  }
+}

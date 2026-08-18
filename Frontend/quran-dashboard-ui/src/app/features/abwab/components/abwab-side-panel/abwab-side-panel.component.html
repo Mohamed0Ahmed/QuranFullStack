@@ -79,6 +79,16 @@
         type="button"
         qdAction="tertiary"
         class="abwab-side-panel__op"
+        data-testid="abwab-side-panel-op-inclusions"
+        [disabled]="selectedDoor() === null || bulkMode()"
+        (click)="requestInclusions()"
+      >
+        {{ inclusionsLabel }}
+      </button>
+      <button
+        type="button"
+        qdAction="tertiary"
+        class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-relations"
         [disabled]="selectedDoor() === null || bulkMode()"
         (click)="relationsRequested.emit()"

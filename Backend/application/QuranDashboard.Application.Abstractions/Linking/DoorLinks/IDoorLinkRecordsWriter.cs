@@ -34,4 +34,5 @@ public abstract record DoorLinkMutationWriteResult
     public sealed record DoorArchived : DoorLinkMutationWriteResult;
     public sealed record DoorVersionStale : DoorLinkMutationWriteResult;
     public sealed record InvalidWords : DoorLinkMutationWriteResult;
+    public sealed record SynchronizationUnavailable : DoorLinkMutationWriteResult;
 }

@@ -152,6 +152,7 @@ internal sealed class EfLinkingConfirmedStateReader(QuranDashboardDbContext db) 
             .Where(contribution =>
                 contribution.DoorId == doorId
                 && contribution.DeletedAtUtc == null
+                && contribution.SourceKind != LinkingSourceKind.DoorInclusion
                 && requestedContributionIdentities.Contains(contribution.SourceIdentity))
             .Select(contribution => contribution.Id)
             .ToListAsync(cancellationToken);

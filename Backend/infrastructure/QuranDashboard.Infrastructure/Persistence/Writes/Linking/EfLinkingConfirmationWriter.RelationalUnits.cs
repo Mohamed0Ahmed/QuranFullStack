@@ -51,8 +51,10 @@ internal sealed partial class EfLinkingConfirmationWriter
         CancellationToken cancellationToken)
     {
         await InsertPreparedUnitAyahsAsync(cancellationToken);
+        await SynchronizePreparedUnitAyahOrdersAsync(cancellationToken);
         await RemoveUnrequestedPreparedUnitWordsAsync(cancellationToken);
         await InsertPreparedUnitWordsAsync(cancellationToken);
+        await RemoveUnrequestedPreparedUnitDescriptionsAsync(cancellationToken);
         await InsertPreparedUnitDescriptionsAsync(actorUserId, cancellationToken);
         await ValidatePreparedUnitChildrenAsync(cancellationToken);
     }
@@ -84,6 +86,36 @@ internal sealed partial class EfLinkingConfirmationWriter
                 LIMIT {PersistenceBatchSize}
                 """,
                 cancellationToken));
+
+    private async Task SynchronizePreparedUnitAyahOrdersAsync(CancellationToken cancellationToken)
+    {
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            UPDATE linking_unit_ayahs persisted
+            SET order_value = -persisted.order_value
+            WHERE EXISTS (
+                SELECT 1
+                FROM linking_confirmation_units unit
+                WHERE unit.unit_id = persisted.unit_id);
+
+            WITH desired AS (
+                SELECT DISTINCT ON (unit.unit_id, ayah.ayah_id)
+                       unit.unit_id,
+                       ayah.ayah_id,
+                       ayah.ayah_order
+                FROM linking_confirmation_units unit
+                JOIN linking_prepared_ayahs ayah
+                  ON ayah.unit_id = unit.prepared_unit_id
+                 AND ayah.is_requested
+                ORDER BY unit.unit_id, ayah.ayah_id, unit.prepared_unit_id)
+            UPDATE linking_unit_ayahs persisted
+            SET order_value = desired.ayah_order
+            FROM desired
+            WHERE persisted.unit_id = desired.unit_id
+              AND persisted.ayah_id = desired.ayah_id;
+            """,
+            cancellationToken);
+    }
 
     private async Task InsertPreparedUnitWordsAsync(CancellationToken cancellationToken) =>
         await ExecuteBatchesAsync(
@@ -170,7 +202,6 @@ internal sealed partial class EfLinkingConfirmationWriter
                     JOIN linking_unit_ayahs unit_ayah
                       ON unit_ayah.unit_id = unit.unit_id
                      AND unit_ayah.ayah_id = ayah.ayah_id
-                    WHERE unit.is_new
                     ORDER BY unit_ayah.id, description.order_value, unit.prepared_unit_id
                 ) candidate
                 WHERE NOT EXISTS (
@@ -180,6 +211,38 @@ internal sealed partial class EfLinkingConfirmationWriter
                       AND existing.order_value = candidate.order_value)
                 ORDER BY candidate.unit_ayah_id, candidate.order_value
                 LIMIT {PersistenceBatchSize}
+                """,
+                cancellationToken));
+
+    private async Task RemoveUnrequestedPreparedUnitDescriptionsAsync(
+        CancellationToken cancellationToken) =>
+        await ExecuteBatchesAsync(
+            () => db.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                WITH batch AS (
+                    SELECT DISTINCT persisted_description.ctid
+                    FROM linking_confirmation_units unit
+                    JOIN linking_unit_ayahs persisted_ayah
+                      ON persisted_ayah.unit_id = unit.unit_id
+                    JOIN linking_unit_ayah_descriptions persisted_description
+                      ON persisted_description.unit_ayah_id = persisted_ayah.id
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM linking_confirmation_units desired_unit
+                        JOIN linking_prepared_ayahs prepared_ayah
+                          ON prepared_ayah.unit_id = desired_unit.prepared_unit_id
+                         AND prepared_ayah.is_requested
+                        JOIN linking_prepared_ayah_descriptions prepared_description
+                          ON prepared_description.prepared_ayah_id = prepared_ayah.id
+                        WHERE desired_unit.unit_id = unit.unit_id
+                          AND prepared_ayah.ayah_id = persisted_ayah.ayah_id
+                          AND prepared_description.order_value = persisted_description.order_value
+                          AND prepared_description.body = persisted_description.body)
+                    LIMIT {PersistenceBatchSize}
+                )
+                DELETE FROM linking_unit_ayah_descriptions persisted_description
+                USING batch
+                WHERE persisted_description.ctid = batch.ctid
                 """,
                 cancellationToken));
 
@@ -247,8 +310,7 @@ internal sealed partial class EfLinkingConfirmationWriter
                       ON persisted_description.unit_ayah_id = persisted_ayah.id
                      AND persisted_description.order_value = description.order_value
                      AND persisted_description.body = description.body
-                    WHERE unit.is_new
-                      AND persisted_description.id IS NULL
+                    WHERE persisted_description.id IS NULL
                 ) AS "Value"
                 """)
             .SingleAsync(cancellationToken);
@@ -257,4 +319,5 @@ internal sealed partial class EfLinkingConfirmationWriter
             throw new LinkingStaleVersionException();
         }
     }
+
 }

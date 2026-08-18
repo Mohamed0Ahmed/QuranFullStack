@@ -23,6 +23,7 @@ import { AbwabPermissionsController } from '../../state/abwab-permissions.contro
 import { AbwabRevealController } from '../../state/abwab-reveal.controller';
 import { AbwabPageInteractionsController } from '../../state/abwab-page-interactions.controller';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
+import { AbwabInclusionsController } from '../../state/abwab-inclusions.controller';
 import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
@@ -44,20 +45,14 @@ import { AbwabCardsComponent } from '../../components/abwab-cards/abwab-cards.co
 import { AbwabArchiveViewComponent } from '../../components/abwab-archive-view/abwab-archive-view.component';
 import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab-side-panel.component';
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
-import { AbwabDoorModalComponent } from '../../components/abwab-door-modal/abwab-door-modal.component';
-import { AbwabMovePickerComponent } from '../../components/abwab-move-picker/abwab-move-picker.component';
-import { AbwabDoorRestoreModalComponent } from '../../components/abwab-door-restore-modal/abwab-door-restore-modal.component';
-import { AbwabSectionsModalComponent } from '../../components/abwab-sections-modal/abwab-sections-modal.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
-import { AbwabRelationsModalComponent } from '../../components/abwab-relations-modal/abwab-relations-modal.component';
+import { AbwabOverlaysHostComponent } from '../../components/abwab-overlays-host/abwab-overlays-host.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
-import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
-import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 const NO_IDS: ReadonlySet<number> = new Set<number>();
 const NO_ROOTS: readonly AbwabNode[] = [];
@@ -74,19 +69,13 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     AbwabArchiveViewComponent,
     AbwabSidePanelComponent,
     AbwabAnnouncerComponent,
-    AbwabDoorModalComponent,
-    AbwabMovePickerComponent,
-    AbwabDoorRestoreModalComponent,
-    AbwabSectionsModalComponent,
-    AbwabRelationsModalComponent,
+    AbwabOverlaysHostComponent,
     AbwabModalRestoreComponent,
-    QdContextMenuComponent,
     ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
     QdActionDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
-    ConfirmDialogComponent,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -97,6 +86,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     AbwabModalUrlController,
     AbwabRevealController,
     AbwabPageInteractionsController,
+    AbwabInclusionsController,
   ],
 })
 export class AbwabPageComponent implements OnInit {
@@ -114,7 +104,6 @@ export class AbwabPageComponent implements OnInit {
   protected readonly interactions = inject(AbwabPageInteractionsController);
   protected readonly doorLinks = inject(AbwabDoorLinksFacade);
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
-  protected readonly labels = ABWAB_LABELS;
 
   private readonly doorParam = signal<number | null>(null);
   protected readonly activeSectionId = signal<number | null>(null);
@@ -199,9 +188,6 @@ export class AbwabPageComponent implements OnInit {
   });
 
   protected readonly selectedDoor = this.overlays.selectedDoor;
-  protected readonly canDoorModalSave = computed(() =>
-    this.overlays.modalDoor() === null ? this.permissions.canCreateDoor() : this.permissions.canEditDoor(),
-  );
 
   protected get pageTitle(): string { return ABWAB_LABELS.pageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.pageSubtitle; }
@@ -214,14 +200,7 @@ export class AbwabPageComponent implements OnInit {
   protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
   protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
-  protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
-  protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
-  protected get archiveConfirmTitle(): string { return ABWAB_LABELS.archiveConfirmTitle; }
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
-  protected get editOpLabel(): string { return ABWAB_LABELS.editOp; }
-  protected get addChildOpLabel(): string { return ABWAB_LABELS.addChildOp; }
-  protected get moveOpLabel(): string { return ABWAB_LABELS.moveOp; }
-  protected get relationsOpLabel(): string { return ABWAB_LABELS.relationsOp; }
   protected get statAllDoorsLabel(): string { return ABWAB_LABELS.allDoorsTab; }
   protected get statOpenScopeLabel(): string { return ABWAB_LABELS.statOpenScopeDoors; }
 
@@ -396,4 +375,5 @@ export class AbwabPageComponent implements OnInit {
   private focusQueued(focus: () => void): void {
     setTimeout(focus, 0);
   }
+
 }

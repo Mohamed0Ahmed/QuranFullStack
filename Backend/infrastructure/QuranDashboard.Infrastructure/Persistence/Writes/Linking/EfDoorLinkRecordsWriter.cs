@@ -1,9 +1,14 @@
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
-internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db) : IDoorLinkRecordsWriter
+internal sealed partial class EfDoorLinkRecordsWriter(
+    QuranDashboardDbContext db,
+    AbwabDoorInclusionSyncLock syncLock,
+    IAbwabDoorInclusionSynchronizer inclusionSynchronizer) : IDoorLinkRecordsWriter
 {
     public async Task<DoorLinkMutationWriteResult> ReplaceWordsAsync(
         int doorId,
@@ -15,62 +20,88 @@ internal sealed partial class EfDoorLinkRecordsWriter(QuranDashboardDbContext db
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var door = await LockDoorAsync(doorId, cancellationToken);
-        var invalidDoor = ValidateDoor(door, expectedDoorVersion);
-        if (invalidDoor is not null)
+        try
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return invalidDoor;
-        }
+            var door = await LockDoorAsync(doorId, cancellationToken);
+            var invalidDoor = ValidateDoor(door, expectedDoorVersion);
+            if (invalidDoor is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return invalidDoor;
+            }
 
-        var unitState = await LockLiveUnitAsync(doorId, unitId, cancellationToken);
-        if (unitState is null)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.UnitNotFound();
-        }
+            var unitState = await LockLiveUnitAsync(doorId, unitId, cancellationToken);
+            if (unitState is null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.UnitNotFound();
+            }
 
-        if (!await SelectedWordsAreValidAsync(unitState.Ayahs, selectedWords, cancellationToken))
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.InvalidWords();
-        }
+            if (!await SelectedWordsAreValidAsync(unitState.Ayahs, selectedWords, cancellationToken))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.InvalidWords();
+            }
 
-        var existingWords = await LoadSelectedWordsAsync(unitId, cancellationToken);
-        var normalizedWords = selectedWords.OrderBy(word => word.AyahId).ThenBy(word => word.QuranWordId).ToList();
-        if (existingWords.SequenceEqual(normalizedWords))
-        {
-            await transaction.RollbackAsync(cancellationToken);
+            var existingWords = await LoadSelectedWordsAsync(unitId, cancellationToken);
+            var normalizedWords = selectedWords
+                .OrderBy(word => word.AyahId)
+                .ThenBy(word => word.QuranWordId)
+                .ToList();
+            if (existingWords.SequenceEqual(normalizedWords))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.Success(
+                    new DoorLinkMutationDto(0, door!.Version),
+                    true);
+            }
+
+            await inclusionSynchronizer.MarkTargetUnitOverriddenAsync(
+                doorId,
+                unitId,
+                actorUserId,
+                cancellationToken);
+            var affectedContributionIds = await LoadMappedContributionIdsAsync(
+                doorId,
+                unitId,
+                cancellationToken);
+            await ReplaceUnitWordsAsync(unitState.Ayahs, normalizedWords, cancellationToken);
+
+            var now = DateTimeOffset.UtcNow;
+            await TouchLiveContributionsAsync(
+                doorId,
+                affectedContributionIds,
+                actorUserId,
+                now,
+                cancellationToken);
+            await RebuildDoorAyahsAsync(
+                doorId,
+                unitState.Ayahs.Select(ayah => ayah.AyahId).ToList(),
+                actorUserId,
+                false,
+                cancellationToken);
+            await inclusionSynchronizer.SynchronizeAsync(
+                doorId,
+                AbwabDoorInclusionMutationSet.Create([], [unitId], [], []),
+                actorUserId,
+                cancellationToken);
+            await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
             return new DoorLinkMutationWriteResult.Success(
-                new DoorLinkMutationDto(0, door!.Version),
-                true);
+                new DoorLinkMutationDto(1, door!.Version),
+                false);
         }
-
-        var affectedContributionIds = await LoadMappedContributionIdsAsync(
-            doorId,
-            unitId,
-            cancellationToken);
-        await ReplaceUnitWordsAsync(unitState.Ayahs, normalizedWords, cancellationToken);
-
-        var now = DateTimeOffset.UtcNow;
-        await TouchLiveContributionsAsync(
-            doorId,
-            affectedContributionIds,
-            actorUserId,
-            now,
-            cancellationToken);
-        await RebuildDoorAyahsAsync(
-            doorId,
-            unitState.Ayahs.Select(ayah => ayah.AyahId).ToList(),
-            actorUserId,
-            false,
-            cancellationToken);
-        await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        return new DoorLinkMutationWriteResult.Success(
-            new DoorLinkMutationDto(1, door!.Version),
-            false);
+        catch (AbwabDoorInclusionSynchronizationConflictException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new DoorLinkMutationWriteResult.DoorVersionStale();
+        }
+        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new DoorLinkMutationWriteResult.SynchronizationUnavailable();
+        }
     }
 
     private async Task<bool> SelectedWordsAreValidAsync(

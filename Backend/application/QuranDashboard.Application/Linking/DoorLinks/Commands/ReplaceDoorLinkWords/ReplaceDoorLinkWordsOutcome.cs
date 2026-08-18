@@ -12,4 +12,5 @@ public abstract record ReplaceDoorLinkWordsOutcome
     public sealed record UnitNotFound : ReplaceDoorLinkWordsOutcome;
     public sealed record DoorArchived : ReplaceDoorLinkWordsOutcome;
     public sealed record DoorVersionStale : ReplaceDoorLinkWordsOutcome;
+    public sealed record SynchronizationUnavailable : ReplaceDoorLinkWordsOutcome;
 }

@@ -33,13 +33,18 @@ function parseModal(raw: string | null, door: number | null): AbwabModalState | 
   if (idSeparator > 0) {
     const kind = body.slice(0, idSeparator);
     const subjectDoorId = parsePositiveId(body.slice(idSeparator + 1));
-    if (!closed || kind !== 'relations' || subjectDoorId === null) {
+    const isRetainedRelation = closed && kind === 'relations';
+    const isTargetedInclusions = kind === 'inclusions';
+    if ((!isRetainedRelation && !isTargetedInclusions) || subjectDoorId === null) {
       return null;
     }
-    return { kind: 'relations', closed, subjectDoorId };
+    return { kind: isRetainedRelation ? 'relations' : 'inclusions', closed, subjectDoorId };
   }
 
   if (!isAbwabModalKind(body)) {
+    return null;
+  }
+  if (body === 'inclusions') {
     return null;
   }
   if (door === null && isDoorDependentAbwabModalKind(body)) {
@@ -49,11 +54,9 @@ function parseModal(raw: string | null, door: number | null): AbwabModalState | 
 }
 
 export function serializeAbwabModal(modal: AbwabModalState): string {
-  if (!modal.closed) {
-    return modal.kind;
-  }
   const subject = modal.subjectDoorId === null ? '' : `-${modal.subjectDoorId}`;
-  return `${modal.kind}${subject}${MODAL_CLOSED_SUFFIX}`;
+  const closed = modal.closed ? MODAL_CLOSED_SUFFIX : '';
+  return `${modal.kind}${subject}${closed}`;
 }
 
 export function parseAbwabQueryParams(queryParams: ParamMap): AbwabQueryState {

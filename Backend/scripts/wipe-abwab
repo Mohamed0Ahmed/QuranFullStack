@@ -5,17 +5,34 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 API_PROJECT="${BACKEND_ROOT}/api/QuranDashboard.Api"
 
-# A literal allowlist, never a wildcard or a catalog query: CASCADE is safe here only because every
-# foreign key pointing into an abwab table originates from another table in this same list, so the
-# cascade closure cannot reach quran_*, users, or roles. Adding a seventh abwab table means editing
-# this line deliberately — which is the point.
-ABWAB_TABLES=(
+# A literal allowlist, never a wildcard or a catalog query: it owns the complete Abwab-to-Linking
+# foreign-key closure and cannot reach quran_*, users, roles, or linking workspaces.
+ABWAB_RESET_TABLES=(
   abwab_sections
   abwab_doors
   abwab_door_aliases
   abwab_door_relations
+  abwab_door_inclusions
+  abwab_door_inclusion_unit_syncs
   abwab_templates
   abwab_template_nodes
+  linking_confirmation_jobs
+  linking_operations
+  linking_prepared_affected_contributions
+  linking_prepared_ayah_descriptions
+  linking_prepared_ayah_words
+  linking_prepared_ayahs
+  linking_prepared_units
+  linking_prepared_sources
+  linking_prepared_preflights
+  linking_source_contribution_units
+  linking_source_contributions
+  linking_unit_ayah_descriptions
+  linking_unit_ayah_words
+  linking_unit_ayahs
+  linking_units
+  linking_door_ayah_words
+  linking_door_ayahs
 )
 
 # The canonical Quran data this script must never touch. Checked after the wipe as a tripwire: it
@@ -101,8 +118,8 @@ case "${PGHOST}" in
 esac
 
 if [[ "${CONFIRMED}" != true ]]; then
-  echo "WARNING: this permanently empties every abwab table. Authored curation data is not recoverable." >&2
-  printf '  table:    %s\n' "${ABWAB_TABLES[@]}" >&2
+  echo "WARNING: this permanently empties every Abwab-owned table. Authored curation data is not recoverable." >&2
+  printf '  table:    %s\n' "${ABWAB_RESET_TABLES[@]}" >&2
   echo "  target:   ${PGUSER}@${PGHOST}:${PGPORT}/${PGDATABASE}" >&2
   usage
   exit 1
@@ -113,9 +130,9 @@ pg_query() {
 }
 
 echo "WARNING: emptying the following tables in ${PGDATABASE} on ${PGHOST}:${PGPORT}" >&2
-printf '  %s\n' "${ABWAB_TABLES[@]}" >&2
+printf '  %s\n' "${ABWAB_RESET_TABLES[@]}" >&2
 
-printf -v TABLE_LIST '%s, ' "${ABWAB_TABLES[@]}"
+printf -v TABLE_LIST '%s, ' "${ABWAB_RESET_TABLES[@]}"
 pg_query "TRUNCATE ${TABLE_LIST%, } RESTART IDENTITY CASCADE;" \
   || fail "TRUNCATE failed against ${PGDATABASE}. Nothing is guaranteed about the current state — inspect before retrying."
 
@@ -126,5 +143,5 @@ if [[ "${tripwire_actual}" != "${TRIPWIRE_COUNT}" ]]; then
   fail "TRIPWIRE FIRED: public.${TRIPWIRE_TABLE} holds ${tripwire_actual} rows, expected ${TRIPWIRE_COUNT}. The cascade reached canonical Quran data — restore from the canonical source before doing anything else."
 fi
 
-echo "Emptied ${#ABWAB_TABLES[@]} abwab tables in ${PGDATABASE}."
+echo "Emptied ${#ABWAB_RESET_TABLES[@]} abwab-owned tables in ${PGDATABASE}."
 echo "  tripwire: public.${TRIPWIRE_TABLE} = ${tripwire_actual} rows (expected ${TRIPWIRE_COUNT})"

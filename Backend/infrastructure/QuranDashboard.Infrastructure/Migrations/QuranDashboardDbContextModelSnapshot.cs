@@ -176,6 +176,139 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("abwab_door_aliases", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorInclusion", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<DateTimeOffset?>("DeletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<int?>("DeletedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("deleted_by");
+
+                    b.Property<int>("SourceDoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("source_door_id");
+
+                    b.Property<int>("TargetDoorId")
+                        .HasColumnType("integer")
+                        .HasColumnName("target_door_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeletedAtUtc");
+
+                    b.HasIndex("SourceDoorId")
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.HasIndex("TargetDoorId", "SourceDoorId")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("abwab_door_inclusions", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_door_inclusions_distinct_doors", "target_door_id <> source_door_id");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorInclusionUnitSync", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by");
+
+                    b.Property<int>("DoorInclusionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_inclusion_id");
+
+                    b.Property<byte[]>("SourceFingerprint")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("source_fingerprint");
+
+                    b.Property<long>("SourceUnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_unit_id");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("state");
+
+                    b.Property<long?>("TargetUnitId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("target_unit_id");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int?>("UpdatedBy")
+                        .HasColumnType("integer")
+                        .HasColumnName("updated_by");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SourceUnitId")
+                        .HasDatabaseName("IX_abwab_door_inclusion_syncs_source_unit");
+
+                    b.HasIndex("TargetUnitId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_abwab_door_inclusion_syncs_target_unit")
+                        .HasFilter("target_unit_id IS NOT NULL");
+
+                    b.HasIndex("DoorInclusionId", "SourceUnitId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_abwab_door_inclusion_syncs_inclusion_source");
+
+                    b.ToTable("abwab_door_inclusion_unit_syncs", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_abwab_door_inclusion_unit_syncs_state", "state IN ('active', 'overridden', 'suppressed')");
+
+                            t.HasCheckConstraint("ck_abwab_door_inclusion_unit_syncs_target_coherence", "(state IN ('active', 'overridden') AND target_unit_id IS NOT NULL) OR (state = 'suppressed' AND target_unit_id IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
                 {
                     b.Property<int>("Id")
@@ -1818,6 +1951,10 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("door_id");
 
+                    b.Property<int?>("DoorInclusionId")
+                        .HasColumnType("integer")
+                        .HasColumnName("door_inclusion_id");
+
                     b.Property<string>("Label")
                         .IsRequired()
                         .HasColumnType("text")
@@ -1827,7 +1964,7 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("lemma_id");
 
-                    b.Property<long>("OperationId")
+                    b.Property<long?>("OperationId")
                         .HasColumnType("bigint")
                         .HasColumnName("operation_id");
 
@@ -1908,6 +2045,10 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasIndex("DoorId")
                         .HasFilter("deleted_at IS NULL");
 
+                    b.HasIndex("DoorInclusionId")
+                        .IsUnique()
+                        .HasFilter("door_inclusion_id IS NOT NULL AND deleted_at IS NULL");
+
                     b.HasIndex("LemmaId")
                         .HasFilter("lemma_id IS NOT NULL");
 
@@ -1938,13 +2079,15 @@ namespace QuranDashboard.Infrastructure.Migrations
                         {
                             t.HasCheckConstraint("ck_linking_source_contributions_contribution_mode", "contribution_mode IN ('automatic', 'manual_single', 'manual_independent', 'manual_grouped')");
 
-                            t.HasCheckConstraint("ck_linking_source_contributions_kind_reference_coherence", "(source_kind = 'root'\n    AND root_id IS NOT NULL\n    AND num_nonnulls(lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'lemma'\n    AND lemma_id IS NOT NULL\n    AND num_nonnulls(root_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'stem'\n    AND stem_id IS NOT NULL\n    AND num_nonnulls(root_id, lemma_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'unique_word'\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 1\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'word_type'\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 1\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 0)\nOR (source_kind = 'manual_mushaf_ayahs'\n    AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)");
+                            t.HasCheckConstraint("ck_linking_source_contributions_kind_reference_coherence", "(source_kind = 'root'\n    AND root_id IS NOT NULL\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'lemma'\n    AND lemma_id IS NOT NULL\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(root_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'stem'\n    AND stem_id IS NOT NULL\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(root_id, lemma_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'unique_word'\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 1\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'word_type'\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(root_id, lemma_id, stem_id, word_type_tashkeel_word_id) = 1\n    AND num_nonnulls(unique_simple_word_id, unique_tashkeel_word_id) = 0)\nOR (source_kind = 'manual_mushaf_ayahs'\n    AND door_inclusion_id IS NULL\n    AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)\nOR (source_kind = 'door_inclusion'\n    AND door_inclusion_id IS NOT NULL\n    AND num_nonnulls(root_id, lemma_id, stem_id, unique_simple_word_id, unique_tashkeel_word_id, word_type_tashkeel_word_id) = 0)");
 
                             t.HasCheckConstraint("ck_linking_source_contributions_manual_mode_coherence", "(source_kind = 'manual_mushaf_ayahs'\n    AND contribution_mode IN ('manual_single', 'manual_independent', 'manual_grouped'))\nOR (source_kind <> 'manual_mushaf_ayahs'\n    AND contribution_mode = 'automatic')");
 
+                            t.HasCheckConstraint("ck_linking_source_contributions_operation_ownership_coherence", "(source_kind = 'door_inclusion' AND operation_id IS NULL AND door_inclusion_id IS NOT NULL)\nOR (source_kind <> 'door_inclusion' AND operation_id IS NOT NULL AND door_inclusion_id IS NULL)");
+
                             t.HasCheckConstraint("ck_linking_source_contributions_scope_schema_version", "jsonb_typeof(scope) = 'object'\nAND jsonb_exists(scope, 'schemaVersion')\nAND jsonb_typeof(scope -> 'schemaVersion') = 'number'\nAND (scope ->> 'schemaVersion') ~ '^[1-9][0-9]*$'\nAND (scope ->> 'schemaVersion')::numeric <= 2147483647");
 
-                            t.HasCheckConstraint("ck_linking_source_contributions_source_kind", "source_kind IN ('unique_word', 'root', 'lemma', 'stem', 'word_type', 'manual_mushaf_ayahs')");
+                            t.HasCheckConstraint("ck_linking_source_contributions_source_kind", "source_kind IN ('unique_word', 'root', 'lemma', 'stem', 'word_type', 'manual_mushaf_ayahs', 'door_inclusion')");
                         });
                 });
 
@@ -4575,6 +4718,44 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorInclusion", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("SourceDoorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
+                        .WithMany()
+                        .HasForeignKey("TargetDoorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorInclusionUnitSync", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoorInclusion", null)
+                        .WithMany()
+                        .HasForeignKey("DoorInclusionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_abwab_door_inclusion_syncs_inclusion");
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnit", null)
+                        .WithMany()
+                        .HasForeignKey("SourceUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("FK_abwab_door_inclusion_syncs_source_unit");
+
+                    b.HasOne("QuranDashboard.Domain.Linking.LinkingUnit", null)
+                        .WithMany()
+                        .HasForeignKey("TargetUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_abwab_door_inclusion_syncs_target_unit");
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Abwab.AbwabDoorRelation", b =>
                 {
                     b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoor", null)
@@ -4861,6 +5042,12 @@ namespace QuranDashboard.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("QuranDashboard.Domain.Abwab.AbwabDoorInclusion", null)
+                        .WithMany()
+                        .HasForeignKey("DoorInclusionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_linking_source_contributions_door_inclusion");
+
                     b.HasOne("QuranDashboard.Domain.Quran.Words.Morphology.QuranLemma", null)
                         .WithMany()
                         .HasForeignKey("LemmaId")
@@ -4869,8 +5056,7 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasOne("QuranDashboard.Domain.Linking.LinkingOperation", null)
                         .WithMany()
                         .HasForeignKey("OperationId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("QuranDashboard.Domain.Quran.Words.Morphology.QuranRoot", null)
                         .WithMany()

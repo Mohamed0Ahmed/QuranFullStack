@@ -45,6 +45,8 @@ public sealed class DeleteDoorLinksHandler(IDoorLinkRecordsWriter writer)
                 new DeleteDoorLinksOutcome.DoorVersionStale(),
             DoorLinkMutationWriteResult.InvalidWords =>
                 new DeleteDoorLinksOutcome.InvalidRequest(),
+            DoorLinkMutationWriteResult.SynchronizationUnavailable =>
+                new DeleteDoorLinksOutcome.SynchronizationUnavailable(),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(DoorLinkMutationWriteResult)} variant."),
         };

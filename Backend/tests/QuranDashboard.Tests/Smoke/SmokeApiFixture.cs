@@ -125,7 +125,13 @@ public sealed class SmokeApiFixture : IAsyncLifetime
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await db.Database.ExecuteSqlRawAsync(
             "TRUNCATE users, abwab_sections, abwab_doors, abwab_door_aliases, abwab_door_relations, "
-            + "abwab_templates, abwab_template_nodes RESTART IDENTITY CASCADE;");
+            + "abwab_door_inclusions, abwab_door_inclusion_unit_syncs, abwab_templates, abwab_template_nodes, "
+            + "linking_confirmation_jobs, linking_operations, linking_prepared_affected_contributions, "
+            + "linking_prepared_ayah_descriptions, linking_prepared_ayah_words, linking_prepared_ayahs, "
+            + "linking_prepared_units, linking_prepared_sources, linking_prepared_preflights, "
+            + "linking_source_contribution_units, linking_source_contributions, linking_unit_ayah_descriptions, "
+            + "linking_unit_ayah_words, linking_unit_ayahs, linking_units, linking_door_ayah_words, "
+            + "linking_door_ayahs RESTART IDENTITY CASCADE;");
         ProfileSource.Reset();
         InvalidateAbwabCaches();
     }
@@ -225,6 +231,11 @@ public sealed class SmokeApiFixture : IAsyncLifetime
             await db.AbwabDoors.CountAsync(),
             await db.AbwabDoorAliases.CountAsync(),
             await db.AbwabDoorRelations.CountAsync(),
+            await db.AbwabDoorInclusions.CountAsync(),
+            await db.AbwabDoorInclusionUnitSyncs.CountAsync(),
+            await db.LinkingSourceContributions.CountAsync(),
+            await db.LinkingSourceContributionUnits.CountAsync(),
+            await db.LinkingUnits.CountAsync(),
             await db.AbwabTemplates.CountAsync(),
             await db.AbwabTemplateNodes.CountAsync());
     }
@@ -260,5 +271,10 @@ internal sealed record SmokeAbwabWriteState(
     int Doors,
     int DoorAliases,
     int DoorRelations,
+    int DoorInclusions,
+    int DoorInclusionUnitSyncs,
+    int LinkingSourceContributions,
+    int LinkingSourceContributionUnits,
+    int LinkingUnits,
     int Templates,
     int TemplateNodes);

@@ -295,8 +295,14 @@ export class AbwabPageInteractionsController {
     }
     this.updateQueryParams(
       buildAbwabQueryParams({
-        ...(retained.subjectDoorId === null ? {} : { door: retained.subjectDoorId }),
-        modal: { kind: retained.kind, closed: false, subjectDoorId: null },
+        ...(retained.subjectDoorId === null || retained.kind === 'inclusions'
+          ? {}
+          : { door: retained.subjectDoorId }),
+        modal: {
+          kind: retained.kind,
+          closed: false,
+          subjectDoorId: retained.kind === 'inclusions' ? retained.subjectDoorId : null,
+        },
       }),
     );
   }

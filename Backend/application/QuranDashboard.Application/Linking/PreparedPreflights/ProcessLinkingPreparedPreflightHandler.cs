@@ -164,12 +164,10 @@ public sealed class ProcessLinkingPreparedPreflightHandler(
         }
 
         var input = await inputBuilder.BuildAsync(lease, work, cancellationToken);
-        var request = input.Request;
-        var intents = input.Intent;
-        var contributionIdentities = intents.Sources
+        var contributionIdentities = input.Intent.Sources
             .Select(source => source.SourceIdentity)
             .ToList();
-        var requestedAyahIds = intents.Sources
+        var requestedAyahIds = input.Intent.Sources
             .SelectMany(source => source.Units)
             .SelectMany(unit => unit.Ayahs)
             .Select(ayah => ayah.AyahId)
@@ -181,7 +179,9 @@ public sealed class ProcessLinkingPreparedPreflightHandler(
             requestedAyahIds,
             cancellationToken)
             ?? throw new LinkingSourceNotFoundException($"doorId={work.DoorId}");
-        intents = intents with { IsDoorArchived = state.IsArchived };
+        input = LinkingPreparedAdditiveContentMerger.Merge(input, state);
+        var request = input.Request;
+        var intents = input.Intent with { IsDoorArchived = state.IsArchived };
         var classification = LinkingOperationClassifier.Classify(intents, state);
         var intentHash = LinkingPreparedPreflightToken.IntentHash(request);
         var preflightToken = LinkingPreparedPreflightToken.Compute(

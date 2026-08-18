@@ -24,6 +24,8 @@ export const ABWAB_WRITE_PERMISSIONS = {
   editTemplateNode: ABWAB_PERMISSION_CODES.templateNodes.edit,
   reorderTemplateNode: ABWAB_PERMISSION_CODES.templateNodes.reorder,
   deleteTemplateNode: ABWAB_PERMISSION_CODES.templateNodes.delete,
+  createInclusion: ABWAB_PERMISSION_CODES.inclusions.create,
+  deleteInclusion: ABWAB_PERMISSION_CODES.inclusions.delete,
 } as const satisfies Record<string, PermissionCode>;
 
 const SECTION_PERMISSIONS = [
@@ -69,6 +71,8 @@ export class AbwabPermissionsController {
 
   readonly canCreateRelation = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.createRelation));
   readonly canDeleteRelation = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.deleteRelation));
+  readonly canCreateInclusion = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.createInclusion));
+  readonly canDeleteInclusion = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.deleteInclusion));
   readonly canUseBulkMode = computed(() => this.canAny(BULK_PERMISSIONS));
 
   readonly canCreateTemplate = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.createTemplate));
@@ -99,6 +103,7 @@ export class AbwabPermissionsController {
       case 'sections':
         return this.canManageSections();
       case 'relations':
+      case 'inclusions':
         return true;
     }
   }

@@ -137,6 +137,7 @@
                   [ariaLabel]="archiveTreeAriaLabel"
                   [canRestoreDoor]="permissions.canRestoreDoor()"
                   (restoreRequested)="interactions.onRestoreRequested($event)"
+                  (inclusionsRequested)="modalUrl.openInclusionsFromArchive($event)"
                 />
               }
             </div>
@@ -216,6 +217,7 @@
             (addChildRequested)="interactions.onAddChildRequested()"
             (editRequested)="interactions.onEditRequested()"
             (moveRequested)="interactions.onMoveRequested()"
+            (inclusionsRequested)="modalUrl.openInclusionsFromSidePanel($event)"
             (relationsRequested)="interactions.onRelationsOpenRequested()"
             (archiveRequested)="overlays.requestArchive()"
             (clearRequested)="interactions.onClearSelection()"
@@ -239,156 +241,20 @@
   />
 }
 
-<qd-abwab-door-modal
-  [open]="overlays.modalOpen()"
-  [door]="overlays.modalDoor()"
-  [parentId]="overlays.modalParentId()"
-  [parentName]="overlays.modalParentName()"
+<qd-abwab-overlays-host
   [activeSectionId]="activeSectionId()"
   [sections]="sections()"
-  [canSave]="canDoorModalSave()"
-  (saved)="interactions.onDoorModalSaved()"
-  (closed)="onDoorModalClosed()"
-/>
-
-<qd-abwab-move-picker
-  [open]="overlays.movePickerOpen()"
-  [sections]="sections()"
   [liveRoots]="pickerLiveRoots()"
-  [excludedIds]="overlays.moveExcludedIds()"
-  [movedSectionIds]="overlays.moveSectionIds()"
-  [titleText]="overlays.moveTitleText()"
-  [canConfirm]="permissions.canMoveDoor()"
-  (closed)="onMovePickerClosed()"
-  (confirmed)="interactions.onMoveConfirmed($event)"
-/>
-
-<qd-abwab-door-restore-modal
-  [door]="overlays.restoreTarget()"
-  [ancestors]="overlays.restoreAncestors()"
-  [sections]="sections()"
-  [canRestoreDoor]="permissions.canRestoreDoor()"
-  (closed)="overlays.closeRestoreModal()"
-  (restored)="onDoorRestored()"
-/>
-
-<qd-abwab-relations-modal
-  [open]="overlays.relationsModalOpen()"
-  [anchorDoorId]="overlays.relationsAnchorDoorId()"
-  [anchorDoorName]="overlays.relationsAnchorName()"
-  [anchorRelationCount]="overlays.relationsAnchorCount()"
-  [anchorPickMode]="overlays.relationsAnchorPickMode()"
-  [bulkTargets]="overlays.relationsBulkTargets()"
-  [liveRoots]="pickerLiveRoots()"
-  [loadRelations]="overlays.loadRelations"
-  [refetchRelations]="overlays.refetchRelations"
-  [addRelations]="overlays.addRelations"
-  [deleteRelation]="overlays.deleteRelation"
-  [canCreateRelation]="permissions.canCreateRelation()"
-  [canDeleteRelation]="permissions.canDeleteRelation()"
-  (closed)="onRelationsModalClosed()"
+  [tree]="tree()"
+  [searchIsFiltering]="searchIsFiltering()"
+  (doorModalClosed)="onDoorModalClosed()"
+  (movePickerClosed)="onMovePickerClosed()"
+  (doorRestored)="onDoorRestored()"
+  (relationsModalClosed)="onRelationsModalClosed()"
+  (sectionsModalClosed)="onSectionsModalClosed()"
   (revealRequested)="onRevealRequested($event)"
+  (archiveConfirmed)="confirmArchiveAndClearUrl()"
+  (bulkArchiveConfirmed)="onBulkArchiveConfirmed()"
+  (archiveConfirmCancelled)="onArchiveConfirmCancelled()"
+  (inclusionsModalClosed)="modalUrl.closeInclusions()"
 />
-
-<qd-abwab-sections-modal
-  [open]="overlays.sectionsModalOpen()"
-  [sections]="sections()"
-  [createSection]="overlays.createSection"
-  [renameSection]="overlays.renameSection"
-  [deleteSection]="overlays.deleteSection"
-  [reorderSection]="overlays.reorderSection"
-  [canCreateSection]="permissions.canCreateSection()"
-  [canEditSection]="permissions.canEditSection()"
-  [canReorderSection]="permissions.canReorderSection()"
-  [canDeleteSection]="permissions.canDeleteSection()"
-  (closed)="onSectionsModalClosed()"
-/>
-
-<qd-confirm-dialog
-  testIdPrefix="abwab-page-archive-confirm"
-  [open]="overlays.archiveConfirming()"
-  [titleText]="archiveConfirmTitle"
-  [confirmLabel]="archiveLabel"
-  [cancelLabel]="cancelLabel"
-  tone="danger"
-  [busy]="overlays.archiveBusy()"
-  [confirmDisabled]="!permissions.canArchiveDoor()"
-  (confirmed)="confirmArchiveAndClearUrl()"
-  (cancelled)="onArchiveConfirmCancelled()"
->
-  <p>{{ overlays.archiveConfirmMessage() }}</p>
-  @if (overlays.archiveError(); as message) {
-    <qd-error-state severity="write" [message]="message" testId="abwab-page-archive-confirm-error" />
-  }
-</qd-confirm-dialog>
-
-<qd-confirm-dialog
-  testIdPrefix="abwab-page-bulk-archive-confirm"
-  [open]="overlays.bulkArchiveConfirming()"
-  [titleText]="archiveConfirmTitle"
-  [confirmLabel]="archiveLabel"
-  [cancelLabel]="cancelLabel"
-  tone="danger"
-  [busy]="overlays.archiveBusy()"
-  [confirmDisabled]="!permissions.canArchiveDoor()"
-  (confirmed)="onBulkArchiveConfirmed()"
-  (cancelled)="interactions.onBulkArchiveConfirmCancelled()"
->
-  <p>{{ overlays.bulkArchiveConfirmMessage() }}</p>
-  @if (overlays.archiveError(); as message) {
-    <qd-error-state severity="write" [message]="message" testId="abwab-page-bulk-archive-confirm-error" />
-  }
-</qd-confirm-dialog>
-
-@if (overlays.contextMenuDoorId() !== null) {
-  <qd-context-menu
-    [position]="overlays.contextMenuPosition()"
-    menuTestId="abwab-page-context-menu"
-    backdropTestId="abwab-page-ctx-backdrop"
-    (dismissed)="overlays.closeContextMenu()"
-  >
-    @if (byId().get(overlays.contextMenuDoorId() ?? -1); as contextDoor) {
-      @if (contextDoor.children.length > 0) {
-        <button
-          type="button"
-          role="menuitem"
-          class="qd-context-menu__item"
-          [disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
-          [attr.aria-disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
-          [title]="searchIsFiltering() ? labels.treeExpansionSearchDisabledHint : labels.treeExpandBranch"
-          data-testid="abwab-page-ctx-expand-branch"
-          (click)="tree()?.expansionCommands?.expandBranch(contextDoor.id); overlays.closeContextMenu()"
-        >
-          {{ labels.treeExpandBranch }}
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          class="qd-context-menu__item"
-          [disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
-          [attr.aria-disabled]="searchIsFiltering() || !(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
-          [title]="searchIsFiltering() ? labels.treeExpansionSearchDisabledHint : labels.treeCollapseBranch"
-          data-testid="abwab-page-ctx-collapse-branch"
-          (click)="tree()?.expansionCommands?.collapseBranch(contextDoor.id); overlays.closeContextMenu()"
-        >
-          {{ labels.treeCollapseBranch }}
-        </button>
-      }
-    }
-    @if (permissions.canEditDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="interactions.onCtxEdit()">{{ editOpLabel }}</button>
-    }
-    @if (permissions.canCreateDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="interactions.onCtxAddChild()">{{ addChildOpLabel }}</button>
-    }
-    @if (permissions.canMoveDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="interactions.onCtxMove()">{{ moveOpLabel }}</button>
-    }
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="interactions.onCtxRelations()">{{ relationsOpLabel }}</button>
-    @if (permissions.canArchiveDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
-        {{ archiveLabel }}
-      </button>
-    }
-  </qd-context-menu>
-}

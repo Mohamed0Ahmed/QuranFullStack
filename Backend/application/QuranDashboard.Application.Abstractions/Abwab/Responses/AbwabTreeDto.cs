@@ -28,4 +28,6 @@ public sealed record AbwabTreeDoorDto(
     int RelationCount,
     int LinkCount,
     int SelectedWordCount,
+    int InclusionSourceCount,
+    int InclusionConsumerCount,
     IReadOnlyList<string> Aliases);

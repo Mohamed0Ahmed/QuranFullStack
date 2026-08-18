@@ -25,9 +25,13 @@ public static class LinkingOperationClassifier
         var totals = TotalsOf(results);
         var isBlocked = results.Any(result =>
             result.Classification.Classification == LinkingPreflightClassification.Invalid);
+        var hasSourceChanges = results.Any(result =>
+            result.Classification.Classification is LinkingPreflightClassification.NewSource
+                or LinkingPreflightClassification.Update);
 
         return new LinkingOperationClassification(
             !isBlocked
+                && !hasSourceChanges
                 && totals.New == 0
                 && totals.Updated == 0
                 && totals.Removed == 0,
@@ -132,11 +136,13 @@ public static class LinkingOperationClassifier
             ? LinkingPreflightClassification.Invalid
             : !index.ConfirmedAyahIds.Contains(ayah.AyahId)
                 ? LinkingPreflightClassification.NewAyah
-                : sourceWordsChanged || doorWordImpact.Added.Count > 0 || doorWordImpact.Removed.Count > 0
-                    ? LinkingPreflightClassification.Update
-                    : unitClassification == LinkingPreflightClassification.NewAyah
-                        ? LinkingPreflightClassification.OverlapOtherSource
-                        : LinkingPreflightClassification.Unchanged;
+                : live is null
+                    ? LinkingPreflightClassification.OverlapOtherSource
+                    : sourceWordsChanged || doorWordImpact.Added.Count > 0 || doorWordImpact.Removed.Count > 0
+                        ? LinkingPreflightClassification.Update
+                        : unitClassification == LinkingPreflightClassification.NewAyah
+                            ? LinkingPreflightClassification.OverlapOtherSource
+                            : LinkingPreflightClassification.Unchanged;
 
         return new LinkingAyahClassification(
             ayah.AyahId,
@@ -185,7 +191,9 @@ public static class LinkingOperationClassifier
         index.ContributionsByAyahId.TryGetValue(ayahId, out var contributions)
             ? [
                 .. contributions
-                    .Where(contribution => contribution.Id != live?.Id)
+                    .Where(contribution =>
+                        contribution.Id != live?.Id
+                        && LinkingSourceTokens.IsPublicKind(contribution.SourceKind))
                     .Select(contribution => new LinkingOverlappingSource(
                         contribution.SourceIdentity,
                         contribution.Label,
@@ -275,11 +283,14 @@ public static class LinkingOperationClassifier
             LinkingOperationIntent intent,
             LinkingConfirmedDoorState state)
         {
-            var contributionsBySourceIdentity = state.Contributions.ToDictionary(
+            var authoredContributions = state.Contributions
+                .Where(contribution => LinkingSourceTokens.IsPublicKind(contribution.SourceKind))
+                .ToArray();
+            var contributionsBySourceIdentity = authoredContributions.ToDictionary(
                 contribution => contribution.SourceIdentity,
                 StringComparer.Ordinal);
-            var contributionsByAyahId = BuildContributionsByAyahId(state.Contributions);
-            var unitIndexes = state.Contributions
+            var contributionsByAyahId = BuildContributionsByAyahId(authoredContributions);
+            var unitIndexes = authoredContributions
                 .SelectMany(contribution => contribution.Units)
                 .GroupBy(unit => unit.Id)
                 .Select(group => group.First())

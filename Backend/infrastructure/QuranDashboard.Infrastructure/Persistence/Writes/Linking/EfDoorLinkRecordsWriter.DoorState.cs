@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
 
@@ -6,8 +7,10 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfDoorLinkRecordsWriter
 {
-    private async Task<AbwabDoor?> LockDoorAsync(int doorId, CancellationToken cancellationToken) =>
-        (await db.AbwabDoors.FromSqlInterpolated(
+    private async Task<AbwabDoor?> LockDoorAsync(int doorId, CancellationToken cancellationToken)
+    {
+        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        return (await db.AbwabDoors.FromSqlInterpolated(
                 $"""
                 SELECT id, section_id, parent_id, name, description, representative_ayah_text,
                        order_value, global_order_value, created_at, created_by, updated_at, updated_by,
@@ -18,6 +21,7 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 """)
             .ToListAsync(cancellationToken))
         .SingleOrDefault();
+    }
 
     private static DoorLinkMutationWriteResult? ValidateDoor(AbwabDoor? door, uint expectedDoorVersion)
     {
@@ -163,9 +167,14 @@ internal sealed partial class EfDoorLinkRecordsWriter
         var ids = unitIds.ToArray();
         var hasMappings = await db.LinkingSourceContributionUnits.AsNoTracking()
             .AnyAsync(mapping => ids.Contains(mapping.UnitId), cancellationToken);
-        if (hasMappings)
+        var hasSyncMappings = await db.AbwabDoorInclusionUnitSyncs.AsNoTracking()
+            .AnyAsync(
+                sync => ids.Contains(sync.SourceUnitId)
+                    || (sync.TargetUnitId != null && ids.Contains(sync.TargetUnitId.Value)),
+                cancellationToken);
+        if (hasMappings || hasSyncMappings)
         {
-            throw new InvalidOperationException("A door-link unit still has contribution mappings.");
+            throw new AbwabDoorInclusionSynchronizationConflictException();
         }
 
         await db.Database.ExecuteSqlInterpolatedAsync(
@@ -192,77 +201,13 @@ internal sealed partial class EfDoorLinkRecordsWriter
         IReadOnlyList<int> affectedAyahIds,
         int actorUserId,
         bool deleteEmptyAyahs,
-        CancellationToken cancellationToken)
-    {
-        if (affectedAyahIds.Count == 0)
-        {
-            return;
-        }
-
-        var ayahIds = affectedAyahIds.Distinct().ToArray();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            INSERT INTO linking_door_ayahs (door_id, ayah_id, created_at, created_by)
-            SELECT DISTINCT {doorId}, unit_ayah.ayah_id, CURRENT_TIMESTAMP, {actorUserId}
-            FROM linking_unit_ayahs unit_ayah
-            JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-            JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-            JOIN linking_source_contributions contribution
-              ON contribution.id = mapping.source_contribution_id
-             AND contribution.deleted_at IS NULL
-            WHERE unit.door_id = {doorId}
-              AND contribution.door_id = {doorId}
-              AND unit_ayah.ayah_id = ANY ({ayahIds})
-            ON CONFLICT (door_id, ayah_id) DO NOTHING;
-
-            DELETE FROM linking_door_ayah_words word
-            USING linking_door_ayahs door_ayah
-            WHERE word.door_ayah_id = door_ayah.id
-              AND door_ayah.door_id = {doorId}
-              AND door_ayah.ayah_id = ANY ({ayahIds});
-
-            INSERT INTO linking_door_ayah_words (
-                door_ayah_id, quran_word_id, ayah_id, created_at, created_by)
-            SELECT DISTINCT door_ayah.id, unit_word.quran_word_id, unit_ayah.ayah_id,
-                   CURRENT_TIMESTAMP, {actorUserId}
-            FROM linking_door_ayahs door_ayah
-            JOIN linking_unit_ayahs unit_ayah ON unit_ayah.ayah_id = door_ayah.ayah_id
-            JOIN linking_unit_ayah_words unit_word ON unit_word.unit_ayah_id = unit_ayah.id
-            JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-            JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-            JOIN linking_source_contributions contribution
-              ON contribution.id = mapping.source_contribution_id
-             AND contribution.deleted_at IS NULL
-            WHERE door_ayah.door_id = {doorId}
-              AND unit.door_id = {doorId}
-              AND contribution.door_id = {doorId}
-              AND door_ayah.ayah_id = ANY ({ayahIds})
-            ON CONFLICT (door_ayah_id, quran_word_id) DO NOTHING;
-            """,
+        CancellationToken cancellationToken) =>
+        await new RelationalDoorStateRebuilder(db).RebuildAsync(
+            doorId,
+            affectedAyahIds,
+            actorUserId,
+            deleteEmptyAyahs,
             cancellationToken);
-
-        if (deleteEmptyAyahs)
-        {
-            await db.Database.ExecuteSqlInterpolatedAsync(
-                $"""
-                DELETE FROM linking_door_ayahs door_ayah
-                WHERE door_ayah.door_id = {doorId}
-                  AND door_ayah.ayah_id = ANY ({ayahIds})
-                  AND NOT EXISTS (
-                      SELECT 1
-                      FROM linking_unit_ayahs unit_ayah
-                      JOIN linking_units unit ON unit.id = unit_ayah.unit_id
-                      JOIN linking_source_contribution_units mapping ON mapping.unit_id = unit.id
-                      JOIN linking_source_contributions contribution
-                        ON contribution.id = mapping.source_contribution_id
-                       AND contribution.deleted_at IS NULL
-                      WHERE unit_ayah.ayah_id = door_ayah.ayah_id
-                        AND unit.door_id = {doorId}
-                        AND contribution.door_id = {doorId})
-                """,
-                cancellationToken);
-        }
-    }
 
     private sealed record LockedUnitState(LinkingUnit Unit, IReadOnlyList<LinkingUnitAyah> Ayahs);
 }
