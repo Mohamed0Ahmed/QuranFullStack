@@ -26,13 +26,27 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                 && orderedSourceUnitIds.Contains(sync.SourceUnitId))
             .OrderBy(sync => sync.SourceUnitId)
             .ToListAsync(cancellationToken);
-        if (syncs.Count != orderedSourceUnitIds.Length
-            || syncs.Any(sync => sync.State != AbwabDoorInclusionSyncState.Active || sync.TargetUnitId is null))
+        if (syncs.Count != orderedSourceUnitIds.Length)
         {
             throw new AbwabDoorInclusionSynchronizationUnavailableException();
         }
 
-        var targetUnitIds = syncs.Select(sync => sync.TargetUnitId!.Value).Order().ToArray();
+        if (syncs.Any(sync => sync.State switch
+            {
+                AbwabDoorInclusionSyncState.Active => sync.TargetUnitId is null,
+                AbwabDoorInclusionSyncState.Overridden => sync.TargetUnitId is null,
+                AbwabDoorInclusionSyncState.Suppressed => sync.TargetUnitId is not null,
+                _ => true,
+            }))
+        {
+            throw new AbwabDoorInclusionSynchronizationConflictException();
+        }
+
+        var targetUnitIds = syncs
+            .Where(sync => sync.TargetUnitId is not null)
+            .Select(sync => sync.TargetUnitId!.Value)
+            .Order()
+            .ToArray();
         var targetSnapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
             db,
             targetUnitIds,

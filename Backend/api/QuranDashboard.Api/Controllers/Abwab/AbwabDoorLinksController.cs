@@ -159,6 +159,7 @@ public sealed class AbwabDoorLinksController(
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<LinkingLifecycleErrorData>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> ReplaceWords(
         int doorId,
         long unitId,
@@ -202,6 +203,10 @@ public sealed class AbwabDoorLinksController(
                 Conflict(LifecycleError(
                     AbwabDoorLinkConflictCodes.DoorLinksStale,
                     ApiMessages.AbwabDoorLinksStale)),
+            ReplaceDoorLinkWordsOutcome.SynchronizationUnavailable =>
+                StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsUnavailable)),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(ReplaceDoorLinkWordsOutcome)} variant."),
         };
@@ -213,6 +218,7 @@ public sealed class AbwabDoorLinksController(
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<LinkingLifecycleErrorData>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> DeleteLinks(
         int doorId,
         [FromBody] DeleteAbwabDoorLinksBody? body,
@@ -254,6 +260,10 @@ public sealed class AbwabDoorLinksController(
                 Conflict(LifecycleError(
                     AbwabDoorLinkConflictCodes.DoorLinksStale,
                     ApiMessages.AbwabDoorLinksStale)),
+            DeleteDoorLinksOutcome.SynchronizationUnavailable =>
+                StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsUnavailable)),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(DeleteDoorLinksOutcome)} variant."),
         };

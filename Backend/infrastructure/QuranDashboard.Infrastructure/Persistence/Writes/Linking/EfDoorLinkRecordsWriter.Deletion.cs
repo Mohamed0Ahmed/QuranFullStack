@@ -15,101 +15,123 @@ internal sealed partial class EfDoorLinkRecordsWriter
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        var door = await LockDoorAsync(doorId, cancellationToken);
-        var invalidDoor = ValidateDoor(door, expectedDoorVersion);
-        if (invalidDoor is not null)
+        try
         {
-            await transaction.RollbackAsync(cancellationToken);
-            return invalidDoor;
-        }
+            var door = await LockDoorAsync(doorId, cancellationToken);
+            var invalidDoor = ValidateDoor(door, expectedDoorVersion);
+            if (invalidDoor is not null)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return invalidDoor;
+            }
 
-        var lockedUnits = await LockDoorUnitsAsync(doorId, cancellationToken);
-        var lockedAyahs = await LockDoorUnitAyahsAsync(doorId, cancellationToken);
-        var liveUnitIds = await LoadLiveUnitIdsAsync(doorId, cancellationToken);
-        var suppliedIds = selection.UnitIds.ToHashSet();
-        if (!suppliedIds.IsSubsetOf(liveUnitIds))
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.UnitNotFound();
-        }
+            var lockedUnits = await LockDoorUnitsAsync(doorId, cancellationToken);
+            var lockedAyahs = await LockDoorUnitAyahsAsync(doorId, cancellationToken);
+            var liveUnitIds = await LoadLiveUnitIdsAsync(doorId, cancellationToken);
+            var suppliedIds = selection.UnitIds.ToHashSet();
+            if (!suppliedIds.IsSubsetOf(liveUnitIds))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.UnitNotFound();
+            }
 
-        var selectedIds = selection.Mode == DoorLinkSelectionMode.Only
-            ? suppliedIds
-            : liveUnitIds.Where(unitId => !suppliedIds.Contains(unitId)).ToHashSet();
-        if (selectedIds.Count == 0)
-        {
-            await transaction.RollbackAsync(cancellationToken);
+            var selectedIds = selection.Mode == DoorLinkSelectionMode.Only
+                ? suppliedIds
+                : liveUnitIds.Where(unitId => !suppliedIds.Contains(unitId)).ToHashSet();
+            if (selectedIds.Count == 0)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.Success(
+                    new DoorLinkMutationDto(0, door!.Version),
+                    true);
+            }
+
+            var selectedUnits = lockedUnits.Where(unit => selectedIds.Contains(unit.Id)).ToList();
+            if (selectedUnits.Count != selectedIds.Count)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.UnitNotFound();
+            }
+
+            if (await HasCrossDoorMappingsAsync(doorId, selectedIds, cancellationToken))
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return new DoorLinkMutationWriteResult.UnitNotFound();
+            }
+
+            var affectedAyahIds = lockedAyahs
+                .Where(ayah => selectedIds.Contains(ayah.UnitId))
+                .Select(ayah => ayah.AyahId)
+                .Distinct()
+                .ToList();
+            var synchronizedUnitIds = await inclusionSynchronizer.PrepareTargetUnitSuppressionsAsync(
+                doorId,
+                selectedIds,
+                actorUserId,
+                cancellationToken);
+            var synchronizedUnitIdSet = synchronizedUnitIds.ToHashSet();
+            var directUnitIds = selectedIds
+                .Where(unitId => !synchronizedUnitIdSet.Contains(unitId))
+                .Order()
+                .ToArray();
+            var affectedContributionIds = await (
+                    from mapping in db.LinkingSourceContributionUnits.AsNoTracking()
+                    join contribution in db.LinkingSourceContributions.AsNoTracking()
+                        on mapping.SourceContributionId equals contribution.Id
+                    where directUnitIds.Contains(mapping.UnitId) && contribution.DoorId == doorId
+                    select mapping.SourceContributionId)
+                .Distinct()
+                .OrderBy(id => id)
+                .ToListAsync(cancellationToken);
+
+            await inclusionSynchronizer.SynchronizeAsync(
+                doorId,
+                AbwabDoorInclusionMutationSet.Create([], [], selectedIds, []),
+                actorUserId,
+                cancellationToken);
+
+            await db.Database.ExecuteSqlInterpolatedAsync(
+                $"""
+                DELETE FROM linking_source_contribution_units mapping
+                USING linking_source_contributions contribution
+                WHERE mapping.unit_id = ANY ({directUnitIds})
+                  AND contribution.id = mapping.source_contribution_id
+                  AND contribution.door_id = {doorId}
+                """,
+                cancellationToken);
+            await NormalizeContributionOrdersAsync(affectedContributionIds, cancellationToken);
+
+            var now = DateTimeOffset.UtcNow;
+            await UpdateContributionsAfterDeletionAsync(
+                doorId,
+                affectedContributionIds,
+                actorUserId,
+                now,
+                cancellationToken);
+            await DeleteUnitsAsync(selectedIds.Order().ToArray(), cancellationToken);
+            await RebuildDoorAyahsAsync(
+                doorId,
+                affectedAyahIds,
+                actorUserId,
+                true,
+                cancellationToken);
+            await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
             return new DoorLinkMutationWriteResult.Success(
-                new DoorLinkMutationDto(0, door!.Version),
-                true);
+                new DoorLinkMutationDto(selectedIds.Count, door!.Version),
+                false);
         }
-
-        var selectedUnits = lockedUnits.Where(unit => selectedIds.Contains(unit.Id)).ToList();
-        if (selectedUnits.Count != selectedIds.Count)
+        catch (AbwabDoorInclusionSynchronizationConflictException)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.UnitNotFound();
+            return new DoorLinkMutationWriteResult.DoorVersionStale();
         }
-
-        if (await HasCrossDoorMappingsAsync(doorId, selectedIds, cancellationToken))
+        catch (AbwabDoorInclusionSynchronizationUnavailableException)
         {
             await transaction.RollbackAsync(cancellationToken);
-            return new DoorLinkMutationWriteResult.UnitNotFound();
+            return new DoorLinkMutationWriteResult.SynchronizationUnavailable();
         }
-
-        var affectedAyahIds = lockedAyahs
-            .Where(ayah => selectedIds.Contains(ayah.UnitId))
-            .Select(ayah => ayah.AyahId)
-            .Distinct()
-            .ToList();
-        var affectedContributionIds = await (
-                from mapping in db.LinkingSourceContributionUnits.AsNoTracking()
-                join contribution in db.LinkingSourceContributions.AsNoTracking()
-                    on mapping.SourceContributionId equals contribution.Id
-                where selectedIds.Contains(mapping.UnitId) && contribution.DoorId == doorId
-                select mapping.SourceContributionId)
-            .Distinct()
-            .OrderBy(id => id)
-            .ToListAsync(cancellationToken);
-
-        await inclusionSynchronizer.SynchronizeAsync(
-            doorId,
-            AbwabDoorInclusionMutationSet.Create([], [], selectedIds, []),
-            actorUserId,
-            cancellationToken);
-
-        var selectedIdArray = selectedIds.ToArray();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            DELETE FROM linking_source_contribution_units mapping
-            USING linking_source_contributions contribution
-            WHERE mapping.unit_id = ANY ({selectedIdArray})
-              AND contribution.id = mapping.source_contribution_id
-              AND contribution.door_id = {doorId}
-            """,
-            cancellationToken);
-        await NormalizeContributionOrdersAsync(affectedContributionIds, cancellationToken);
-
-        var now = DateTimeOffset.UtcNow;
-        await UpdateContributionsAfterDeletionAsync(
-            doorId,
-            affectedContributionIds,
-            actorUserId,
-            now,
-            cancellationToken);
-        await DeleteUnitsAsync(selectedIdArray, cancellationToken);
-        await RebuildDoorAyahsAsync(
-            doorId,
-            affectedAyahIds,
-            actorUserId,
-            true,
-            cancellationToken);
-        await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
-        await transaction.CommitAsync(cancellationToken);
-
-        return new DoorLinkMutationWriteResult.Success(
-            new DoorLinkMutationDto(selectedIds.Count, door!.Version),
-            false);
     }
 
     private async Task<IReadOnlyList<LinkingUnit>> LockDoorUnitsAsync(

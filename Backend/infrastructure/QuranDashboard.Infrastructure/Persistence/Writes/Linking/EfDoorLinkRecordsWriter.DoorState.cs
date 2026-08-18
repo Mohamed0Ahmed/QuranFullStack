@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
 
@@ -166,9 +167,14 @@ internal sealed partial class EfDoorLinkRecordsWriter
         var ids = unitIds.ToArray();
         var hasMappings = await db.LinkingSourceContributionUnits.AsNoTracking()
             .AnyAsync(mapping => ids.Contains(mapping.UnitId), cancellationToken);
-        if (hasMappings)
+        var hasSyncMappings = await db.AbwabDoorInclusionUnitSyncs.AsNoTracking()
+            .AnyAsync(
+                sync => ids.Contains(sync.SourceUnitId)
+                    || (sync.TargetUnitId != null && ids.Contains(sync.TargetUnitId.Value)),
+                cancellationToken);
+        if (hasMappings || hasSyncMappings)
         {
-            throw new InvalidOperationException("A door-link unit still has contribution mappings.");
+            throw new AbwabDoorInclusionSynchronizationConflictException();
         }
 
         await db.Database.ExecuteSqlInterpolatedAsync(

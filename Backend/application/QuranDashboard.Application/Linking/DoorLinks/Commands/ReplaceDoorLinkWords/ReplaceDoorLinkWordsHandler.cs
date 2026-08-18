@@ -43,6 +43,8 @@ public sealed class ReplaceDoorLinkWordsHandler(IDoorLinkRecordsWriter writer)
                 new ReplaceDoorLinkWordsOutcome.DoorVersionStale(),
             DoorLinkMutationWriteResult.InvalidWords =>
                 new ReplaceDoorLinkWordsOutcome.InvalidRequest(),
+            DoorLinkMutationWriteResult.SynchronizationUnavailable =>
+                new ReplaceDoorLinkWordsOutcome.SynchronizationUnavailable(),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(DoorLinkMutationWriteResult)} variant."),
         };
