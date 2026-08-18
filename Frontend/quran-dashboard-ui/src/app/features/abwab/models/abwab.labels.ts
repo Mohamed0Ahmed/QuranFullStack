@@ -125,6 +125,9 @@ export const ABWAB_LABELS = {
     `تضمين الأبواب، مصادر مباشرة: ${sourceCount}، أبواب جامعة: ${consumerCount}`,
   inclusionsContextMenuCounts: (sourceCount: number, consumerCount: number): string =>
     `مصادر: ${sourceCount}، جامعة: ${consumerCount}`,
+  archivedInclusionsButton: 'التضمينات',
+  archivedInclusionsAriaLabel: (doorName: string, sourceCount: number, consumerCount: number): string =>
+    `عرض تضمينات «${doorName}» للقراءة فقط، مصادر مباشرة: ${sourceCount}، أبواب جامعة: ${consumerCount}`,
 
   rowChildCountAriaLabel: (count: number): string => `${countPhrase(count, DOOR_FORMS)} تحته مباشرة`,
   rowDescendantCountAriaLabel: (count: number): string =>
@@ -306,6 +309,7 @@ export const ABWAB_LABELS = {
     inclusions: 'تضمينات الباب',
   } satisfies Record<AbwabModalKind, string>,
   relationsOfDoorKindName: (doorName: string): string => `علاقات «${doorName}»`,
+  inclusionsOfDoorKindName: (doorName: string): string => `تضمينات «${doorName}»`,
   modalRestoreLabel: (kindName: string): string => `استعادة ${kindName}`,
   modalDiscardAriaLabel: (kindName: string): string => `تجاهل ${kindName}`,
 
@@ -341,6 +345,7 @@ export const ABWAB_LABELS = {
   inclusionsOp: 'تضمين الأبواب',
   inclusionsModalTitle: 'تضمين الأبواب',
   inclusionsModalDescription: 'اختر بابًا أو أكثر ليصبح محتواها الحالي جزءًا من الباب الجامع في عملية واحدة.',
+  inclusionsArchivedTargetDescription: 'هذا الباب مؤرشف. يمكنك مراجعة التضمينات فقط، ويظل المحتوى المتزامن محفوظًا.',
   inclusionsTargetLabel: 'الباب الجامع',
   inclusionsSourcesHeading: 'مصادر الباب',
   inclusionsConsumersHeading: 'يُستخدم في أبواب جامعة',
@@ -357,11 +362,23 @@ export const ABWAB_LABELS = {
   inclusionsRefreshing: 'جارٍ تحديث التضمينات',
   inclusionsLoadError: 'تعذر تحميل تضمينات الباب.',
   inclusionsAddError: 'تعذر تضمين الأبواب المحددة.',
+  inclusionsDetachError: 'تعذر فصل الباب المُضمَّن.',
   inclusionsAddedNotice: 'تم تضمين الأبواب بنجاح.',
+  inclusionsDetachedNotice: (removedCount: number): string =>
+    `تم فصل الباب المُضمَّن وإزالة ${removedCount} من السجلات المتزامنة من الباب الجامع.`,
   inclusionsConflictRefreshed: 'تغير الباب الجامع. تم تحديث التضمينات، فراجع اختيارك قبل المحاولة مجددًا.',
   inclusionsNoneSelected: 'لم تختر مصدرًا بعد.',
   inclusionsSelectedSummary: (count: number): string => `تم اختيار ${countPhrase(count, DOOR_FORMS)}`,
   inclusionsAddButton: (count: number): string => count <= 1 ? 'تضمين الباب' : `تضمين ${countPhrase(count, DOOR_FORMS)}`,
+  inclusionsDetachButton: 'فصل',
+  inclusionsDetachAriaLabel: (doorName: string): string => `فصل «${doorName}» عن الباب الجامع`,
+  inclusionsDetachConfirmTitle: 'فصل مصدر الباب',
+  inclusionsDetachConfirmLabel: 'فصل المصدر',
+  inclusionsDetachConfirmBody: (sourceName: string, targetName: string): string =>
+    `سيُفصل «${sourceName}» عن الباب الجامع «${targetName}». `
+    + 'يبقى الباب المصدر ومحتواه دون تغيير، وتُحذف فقط السجلات المتزامنة '
+    + 'التي يملكها هذا التضمين من الباب الجامع.',
+  inclusionsDismissNotice: 'إخفاء التنبيه',
   inclusionsCloseButton: 'إغلاق',
 
   relationsBulkAddOp: 'إضافة علاقة',

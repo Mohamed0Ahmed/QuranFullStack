@@ -3,7 +3,12 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabPageOverlaysController } from './abwab-page-overlays.controller';
-import { AbwabModalKind, AbwabModalState, isDoorDependentAbwabModalKind } from '../models/abwab.models';
+import {
+  AbwabModalKind,
+  AbwabModalState,
+  AbwabNode,
+  isDoorDependentAbwabModalKind,
+} from '../models/abwab.models';
 import { AbwabPermissionsController } from './abwab-permissions.controller';
 import { AbwabInclusionsController } from './abwab-inclusions.controller';
 import { AbwabSelectionStore } from './abwab-selection.store';
@@ -45,7 +50,7 @@ export class AbwabModalUrlController {
     }
     if (modal.subjectDoorId !== null) {
       const node = this.facade.snapshot()?.byId.get(modal.subjectDoorId);
-      return !!node && !node.isArchived ? modal : null;
+      return !!node && (modal.kind === 'inclusions' || !node.isArchived) ? modal : null;
     }
     return this.canOpen(modal.kind) ? modal : null;
   });
@@ -59,7 +64,7 @@ export class AbwabModalUrlController {
       return;
     }
     const stillOpen = modal !== null && !modal.closed && modal.kind === opened.kind;
-    if (stillOpen && this.sameSubject(opened, door)) {
+    if (stillOpen && this.sameSubject(opened, modal, door)) {
       return;
     }
     this.closeOverlayFor(opened.kind);
@@ -75,7 +80,7 @@ export class AbwabModalUrlController {
       return;
     }
     this.open(modal.kind);
-    this.trackOpen(modal.kind, this.doorSignal());
+    this.trackOpen(modal.kind, this.subjectDoorId(modal));
   }
 
   open(kind: AbwabModalKind): void {
@@ -99,9 +104,9 @@ export class AbwabModalUrlController {
         this.overlays.openRelations();
         return;
       case 'inclusions': {
-        const doorId = this.doorSignal();
+        const doorId = this.modalSignal()?.subjectDoorId ?? null;
         const node = doorId === null ? null : this.facade.snapshot()?.byId.get(doorId);
-        if (node && !node.isArchived) {
+        if (node) {
           this.inclusions.open(node);
         }
         return;
@@ -130,19 +135,26 @@ export class AbwabModalUrlController {
       return;
     }
     this.selection.select(node.id, node.version);
-    this.inclusions.open(node);
-    this.trackOpen('inclusions', node.id);
-    this.updateInclusionsQuery(node.id, false);
+    this.openInclusions(node, true);
+  }
+
+  openInclusionsFromArchive(doorId: number): void {
+    const node = this.facade.snapshot()?.byId.get(doorId);
+    if (!node || !node.isArchived) {
+      return;
+    }
+    this.openInclusions(node, false);
   }
 
   closeInclusions(): void {
     const kind = this.urlBackedKind(['inclusions']);
+    const subjectDoorId = this.inclusions.target()?.id ?? this.opened?.doorId ?? null;
     this.inclusions.close();
-    if (kind === null) {
+    if (kind === null || subjectDoorId === null) {
       return;
     }
     this.releaseTracking();
-    this.updateInclusionsQuery(null, true);
+    this.updateInclusionsQuery(subjectDoorId, true, false);
   }
 
   clearUnauthorizedWriteModal(): void {
@@ -162,6 +174,10 @@ export class AbwabModalUrlController {
     if (!isDoorDependentAbwabModalKind(kind)) {
       return this.facade.snapshot() !== null;
     }
+    if (kind === 'inclusions') {
+      const doorId = this.modalSignal()?.subjectDoorId ?? null;
+      return doorId !== null && this.facade.snapshot()?.byId.has(doorId) === true;
+    }
     const doorId = this.doorSignal();
     if (doorId === null) {
       return false;
@@ -170,8 +186,15 @@ export class AbwabModalUrlController {
     return !!node && !node.isArchived && this.overlays.selectedDoor()?.id === doorId;
   }
 
-  private sameSubject(opened: OpenedModal, door: number | null): boolean {
-    return !isDoorDependentAbwabModalKind(opened.kind) || opened.doorId === door;
+  private sameSubject(
+    opened: OpenedModal,
+    modal: AbwabModalState,
+    door: number | null,
+  ): boolean {
+    if (!isDoorDependentAbwabModalKind(opened.kind)) {
+      return true;
+    }
+    return opened.doorId === this.subjectDoorId(modal, door);
   }
 
   private isOverlayOpen(kind: AbwabModalKind): boolean {
@@ -213,12 +236,22 @@ export class AbwabModalUrlController {
     }
   }
 
-  private updateInclusionsQuery(doorId: number | null, closed: boolean): void {
+  private openInclusions(node: AbwabNode, selectDoor: boolean): void {
+    this.inclusions.open(node);
+    this.trackOpen('inclusions', node.id);
+    this.updateInclusionsQuery(node.id, false, selectDoor);
+  }
+
+  private subjectDoorId(modal: AbwabModalState, door = this.doorSignal()): number | null {
+    return modal.kind === 'inclusions' ? modal.subjectDoorId : door;
+  }
+
+  private updateInclusionsQuery(doorId: number, closed: boolean, updateDoor: boolean): void {
     void this.router.navigate([], {
       relativeTo: this.route,
       queryParams: buildAbwabQueryParams({
-        ...(doorId === null ? {} : { door: doorId }),
-        modal: { kind: 'inclusions', closed, subjectDoorId: null },
+        ...(updateDoor ? { door: doorId } : {}),
+        modal: { kind: 'inclusions', closed, subjectDoorId: doorId },
       }),
       queryParamsHandling: 'merge',
       replaceUrl: closed,

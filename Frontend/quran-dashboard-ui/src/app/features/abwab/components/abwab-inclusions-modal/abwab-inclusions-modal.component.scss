@@ -13,7 +13,6 @@
 }
 
 .abwab-inclusions-modal__description,
-.abwab-inclusions-modal__refresh,
 .abwab-inclusions-modal__archive-note,
 .abwab-inclusions-modal__selection {
   color: var(--qd-text-muted);
@@ -25,21 +24,13 @@
   margin-block-end: var(--qd-space-4);
 }
 
-.abwab-inclusions-modal__notice {
-  border: 1px solid var(--qd-success);
-  border-radius: var(--qd-radius-sm);
-  color: var(--qd-success);
-  padding: var(--qd-space-2) var(--qd-space-3);
-  margin-block-end: var(--qd-space-3);
-}
-
 .abwab-inclusions-modal__loading {
   display: block;
   --qd-skeleton-h: var(--qd-control-block-size);
 }
 
-.abwab-inclusions-modal__refresh {
-  margin-block-end: var(--qd-space-2);
+.abwab-inclusions-modal__content {
+  position: relative;
 }
 
 .abwab-inclusions-modal__topology {
@@ -98,6 +89,10 @@
   flex: none;
   color: var(--qd-warning);
   font-size: var(--qd-type-caption);
+}
+
+.abwab-inclusions-modal__detach {
+  flex: none;
 }
 
 .abwab-inclusions-modal__archive-note {

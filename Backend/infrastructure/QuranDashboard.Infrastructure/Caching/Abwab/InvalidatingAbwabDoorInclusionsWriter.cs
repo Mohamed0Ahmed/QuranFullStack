@@ -28,4 +28,25 @@ internal sealed class InvalidatingAbwabDoorInclusionsWriter(
 
         return result;
     }
+
+    public async Task<AbwabDoorInclusionDetachWriteResult> DetachAsync(
+        int targetDoorId,
+        int inclusionId,
+        uint expectedTargetDoorVersion,
+        int actorUserId,
+        CancellationToken cancellationToken)
+    {
+        var result = await inner.DetachAsync(
+            targetDoorId,
+            inclusionId,
+            expectedTargetDoorVersion,
+            actorUserId,
+            cancellationToken);
+        if (result is AbwabDoorInclusionDetachWriteResult.Success)
+        {
+            invalidator.InvalidateTree();
+        }
+
+        return result;
+    }
 }

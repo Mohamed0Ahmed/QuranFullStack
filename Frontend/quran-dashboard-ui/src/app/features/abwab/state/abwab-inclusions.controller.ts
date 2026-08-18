@@ -7,6 +7,7 @@ import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabNode } from '../models/abwab.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
+import { AbwabDirectInclusionDoorDto } from '../../../core/api/generated/models/abwab-direct-inclusion-door-dto';
 import { AbwabDoorInclusionTopologyDto } from '../../../core/api/generated/models/abwab-door-inclusion-topology-dto';
 
 const NO_SOURCE_IDS: ReadonlySet<number> = new Set<number>();
@@ -27,6 +28,9 @@ export class AbwabInclusionsController {
   private readonly writeErrorState = signal<string | null>(null);
   private readonly noticeState = signal<string | null>(null);
   private readonly submittingState = signal(false);
+  private readonly detachingState = signal(false);
+  private readonly detachCandidateState = signal<AbwabDirectInclusionDoorDto | null>(null);
+  private readonly detachErrorState = signal<string | null>(null);
   private readonly selectedSourceIdsState = signal<ReadonlySet<number>>(NO_SOURCE_IDS);
 
   private topologyRequest: Subscription | null = null;
@@ -35,7 +39,10 @@ export class AbwabInclusionsController {
   private writeGeneration = 0;
 
   readonly isOpen = this.openState.asReadonly();
-  readonly target = this.targetState.asReadonly();
+  readonly target = computed(() => {
+    const target = this.targetState();
+    return target === null ? null : (this.snapshot.snapshot()?.byId.get(target.id) ?? target);
+  });
   readonly topology = this.topologyState.asReadonly();
   readonly doorVersion = this.doorVersionState.asReadonly();
   readonly isInitialLoading = this.initialLoadingState.asReadonly();
@@ -44,6 +51,9 @@ export class AbwabInclusionsController {
   readonly writeError = this.writeErrorState.asReadonly();
   readonly notice = this.noticeState.asReadonly();
   readonly isSubmitting = this.submittingState.asReadonly();
+  readonly isDetaching = this.detachingState.asReadonly();
+  readonly detachCandidate = this.detachCandidateState.asReadonly();
+  readonly detachError = this.detachErrorState.asReadonly();
   readonly selectedSourceIds = this.selectedSourceIdsState.asReadonly();
   readonly selectedSourceCount = computed(() => this.selectedSourceIdsState().size);
   readonly directSourceIds = computed<ReadonlySet<number>>(() => {
@@ -56,7 +66,8 @@ export class AbwabInclusionsController {
     this.openState()
     && this.doorVersionState() !== null
     && this.selectedSourceIdsState().size > 0
-    && !this.submittingState(),
+    && !this.submittingState()
+    && !this.detachingState(),
   );
 
   constructor() {
@@ -73,6 +84,10 @@ export class AbwabInclusionsController {
     this.readErrorState.set(null);
     this.writeErrorState.set(null);
     this.noticeState.set(null);
+    this.submittingState.set(false);
+    this.detachingState.set(false);
+    this.detachCandidateState.set(null);
+    this.detachErrorState.set(null);
     this.loadTopology();
   }
 
@@ -89,6 +104,9 @@ export class AbwabInclusionsController {
     this.writeErrorState.set(null);
     this.noticeState.set(null);
     this.submittingState.set(false);
+    this.detachingState.set(false);
+    this.detachCandidateState.set(null);
+    this.detachErrorState.set(null);
   }
 
   retryLoad(): void {
@@ -100,8 +118,8 @@ export class AbwabInclusionsController {
   }
 
   toggleSource(doorId: number): void {
-    const target = this.targetState();
-    if (target === null || doorId === target.id || this.directSourceIds().has(doorId)) {
+    const target = this.target();
+    if (target === null || target.isArchived || doorId === target.id || this.directSourceIds().has(doorId)) {
       return;
     }
 
@@ -115,10 +133,15 @@ export class AbwabInclusionsController {
   }
 
   submit(): void {
-    const target = this.targetState();
+    const target = this.target();
     const doorVersion = this.doorVersionState();
     const sourceDoorIds = [...this.selectedSourceIdsState()].sort((left, right) => left - right);
-    if (target === null || doorVersion === null || sourceDoorIds.length === 0 || this.submittingState()) {
+    if (target === null
+        || target.isArchived
+        || doorVersion === null
+        || sourceDoorIds.length === 0
+        || this.submittingState()
+        || this.detachingState()) {
       return;
     }
 
@@ -156,6 +179,85 @@ export class AbwabInclusionsController {
         if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.Conflict) {
           this.noticeState.set(ABWAB_LABELS.inclusionsConflictRefreshed);
           this.loadTopology();
+          this.snapshot.refresh();
+        }
+      },
+    });
+  }
+
+  requestDetach(source: AbwabDirectInclusionDoorDto): void {
+    const target = this.target();
+    if (target === null || target.isArchived || this.submittingState() || this.detachingState()) {
+      return;
+    }
+
+    this.detachCandidateState.set(source);
+    this.detachErrorState.set(null);
+    this.writeErrorState.set(null);
+    this.noticeState.set(null);
+  }
+
+  cancelDetach(): void {
+    if (this.detachingState()) {
+      return;
+    }
+
+    this.detachCandidateState.set(null);
+    this.detachErrorState.set(null);
+  }
+
+  confirmDetach(): void {
+    const target = this.target();
+    const doorVersion = this.doorVersionState();
+    const candidate = this.detachCandidateState();
+    if (target === null
+        || target.isArchived
+        || doorVersion === null
+        || candidate === null
+        || this.submittingState()
+        || this.detachingState()) {
+      return;
+    }
+
+    this.writeRequest?.unsubscribe();
+    const generation = ++this.writeGeneration;
+    this.detachingState.set(true);
+    this.detachErrorState.set(null);
+    this.noticeState.set(null);
+    this.writeRequest = this.api.detachSource(
+      target.id,
+      candidate.inclusionId,
+      { expectedTargetDoorVersion: doorVersion },
+    ).subscribe({
+      next: (response) => {
+        if (generation !== this.writeGeneration) {
+          return;
+        }
+        this.detachingState.set(false);
+        if (!response.isSuccess || response.data == null) {
+          this.detachErrorState.set(response.message ?? ABWAB_LABELS.inclusionsDetachError);
+          return;
+        }
+
+        this.doorVersionState.set(response.data.targetDoorVersion);
+        this.detachCandidateState.set(null);
+        this.detachErrorState.set(null);
+        this.noticeState.set(ABWAB_LABELS.inclusionsDetachedNotice(
+          response.data.removedSynchronizedRecordCount,
+        ));
+        this.loadTopology();
+        this.snapshot.refresh();
+      },
+      error: (error: unknown) => {
+        if (generation !== this.writeGeneration) {
+          return;
+        }
+        this.detachingState.set(false);
+        this.detachErrorState.set(apiErrorMessage(error, ABWAB_LABELS.inclusionsDetachError));
+        if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.Conflict) {
+          this.noticeState.set(ABWAB_LABELS.inclusionsConflictRefreshed);
+          this.loadTopology();
+          this.snapshot.refresh();
         }
       },
     });
@@ -166,7 +268,7 @@ export class AbwabInclusionsController {
   }
 
   private loadTopology(): void {
-    const target = this.targetState();
+    const target = this.target();
     if (!this.openState() || target === null) {
       return;
     }
@@ -189,6 +291,12 @@ export class AbwabInclusionsController {
         }
         this.topologyState.set(response.data);
         this.doorVersionState.set(response.data.doorVersion);
+        const detachCandidate = this.detachCandidateState();
+        if (detachCandidate !== null
+            && !response.data.sources.some((source) => source.inclusionId === detachCandidate.inclusionId)) {
+          this.detachCandidateState.set(null);
+          this.detachErrorState.set(null);
+        }
         const blockedSourceIds = new Set(response.data.sources.map((source) => source.doorId));
         const retainedSelection = new Set(
           [...this.selectedSourceIdsState()].filter((sourceDoorId) => !blockedSourceIds.has(sourceDoorId)),

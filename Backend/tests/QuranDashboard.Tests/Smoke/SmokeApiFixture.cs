@@ -231,6 +231,11 @@ public sealed class SmokeApiFixture : IAsyncLifetime
             await db.AbwabDoors.CountAsync(),
             await db.AbwabDoorAliases.CountAsync(),
             await db.AbwabDoorRelations.CountAsync(),
+            await db.AbwabDoorInclusions.CountAsync(),
+            await db.AbwabDoorInclusionUnitSyncs.CountAsync(),
+            await db.LinkingSourceContributions.CountAsync(),
+            await db.LinkingSourceContributionUnits.CountAsync(),
+            await db.LinkingUnits.CountAsync(),
             await db.AbwabTemplates.CountAsync(),
             await db.AbwabTemplateNodes.CountAsync());
     }
@@ -266,5 +271,10 @@ internal sealed record SmokeAbwabWriteState(
     int Doors,
     int DoorAliases,
     int DoorRelations,
+    int DoorInclusions,
+    int DoorInclusionUnitSyncs,
+    int LinkingSourceContributions,
+    int LinkingSourceContributionUnits,
+    int LinkingUnits,
     int Templates,
     int TemplateNodes);

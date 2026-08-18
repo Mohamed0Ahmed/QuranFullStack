@@ -22,3 +22,26 @@ public abstract record AbwabDoorInclusionAddWriteResult
 
     public sealed record SynchronizationUnavailable : AbwabDoorInclusionAddWriteResult;
 }
+
+public sealed record AbwabDoorInclusionDetachResultDto(
+    int InclusionId,
+    int RemovedSynchronizedRecordCount,
+    uint TargetDoorVersion);
+
+public abstract record AbwabDoorInclusionDetachWriteResult
+{
+    private AbwabDoorInclusionDetachWriteResult() { }
+
+    public sealed record Success(AbwabDoorInclusionDetachResultDto Result)
+        : AbwabDoorInclusionDetachWriteResult;
+
+    public sealed record InvalidRequest : AbwabDoorInclusionDetachWriteResult;
+
+    public sealed record NotFound : AbwabDoorInclusionDetachWriteResult;
+
+    public sealed record ArchivedTarget : AbwabDoorInclusionDetachWriteResult;
+
+    public sealed record StaleTargetVersion : AbwabDoorInclusionDetachWriteResult;
+
+    public sealed record SynchronizationUnavailable : AbwabDoorInclusionDetachWriteResult;
+}

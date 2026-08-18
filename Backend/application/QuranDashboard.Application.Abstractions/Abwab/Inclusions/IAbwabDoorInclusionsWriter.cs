@@ -10,4 +10,11 @@ public interface IAbwabDoorInclusionsWriter
         IReadOnlyList<int> sourceDoorIds,
         int actorUserId,
         CancellationToken cancellationToken);
+
+    Task<AbwabDoorInclusionDetachWriteResult> DetachAsync(
+        int targetDoorId,
+        int inclusionId,
+        uint expectedTargetDoorVersion,
+        int actorUserId,
+        CancellationToken cancellationToken);
 }

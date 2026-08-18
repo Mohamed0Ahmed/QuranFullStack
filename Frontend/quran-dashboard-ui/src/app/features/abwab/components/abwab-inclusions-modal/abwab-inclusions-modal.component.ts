@@ -20,6 +20,11 @@ import { QdActionDirective } from '../../../../shared/ui/action/action.directive
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
+import {
+  QdRefreshingIndicatorComponent,
+} from '../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
+import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 
 @Component({
   selector: 'qd-abwab-inclusions-modal',
@@ -31,6 +36,9 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
     QdSkeletonRowsComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
+    QdNoticeComponent,
+    QdRefreshingIndicatorComponent,
+    ConfirmDialogComponent,
   ],
   templateUrl: './abwab-inclusions-modal.component.html',
   styleUrl: './abwab-inclusions-modal.component.scss',
@@ -73,6 +81,13 @@ export class AbwabInclusionsModalComponent {
   protected readonly addButtonLabel = computed(() =>
     ABWAB_LABELS.inclusionsAddButton(this.controller.selectedSourceCount()),
   );
+  protected readonly isLiveTarget = computed(() => this.controller.target()?.isArchived === false);
+  protected readonly canCreateSources = computed(() =>
+    this.isLiveTarget() && this.permissions.canCreateInclusion(),
+  );
+  protected readonly canDetachSources = computed(() =>
+    this.isLiveTarget() && this.permissions.canDeleteInclusion(),
+  );
   protected readonly hasArchivedParticipants = computed(() => {
     const topology = this.controller.topology();
     return topology !== null
@@ -85,7 +100,7 @@ export class AbwabInclusionsModalComponent {
       const open = this.controller.isOpen();
       const loaded = this.controller.topology() !== null;
       untracked(() => {
-        if (open && loaded && this.permissions.canCreateInclusion()) {
+        if (open && loaded && this.canCreateSources()) {
           setTimeout(() => this.picker()?.focusSearch());
         }
       });
@@ -94,5 +109,13 @@ export class AbwabInclusionsModalComponent {
 
   protected close(): void {
     this.closed.emit();
+  }
+
+  protected detachAriaLabel(doorName: string): string {
+    return ABWAB_LABELS.inclusionsDetachAriaLabel(doorName);
+  }
+
+  protected detachConfirmBody(sourceName: string, targetName: string): string {
+    return ABWAB_LABELS.inclusionsDetachConfirmBody(sourceName, targetName);
   }
 }

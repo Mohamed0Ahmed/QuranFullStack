@@ -203,6 +203,9 @@ public static class ApiMessages
     public const string AbwabDoorInclusionsCycle = "سيؤدي هذا التضمين إلى دورة غير صالحة بين الأبواب";
     public const string AbwabDoorInclusionsStaleTarget = "تغيّر الباب الجامع؛ حدّث التضمينات ثم حاول مجددًا";
     public const string AbwabDoorInclusionsUnavailable = "تعذّر إكمال مزامنة التضمينات بأمان. حاول لاحقًا.";
+    public const string AbwabDoorInclusionDetached = "تم فصل الباب المُضمَّن";
+    public const string AbwabDoorInclusionNotFound = "لم يتم العثور على التضمين النشط لهذا الباب";
+    public const string AbwabDoorInclusionArchivedTarget = "لا يمكن فصل تضمين من باب جامع مؤرشف";
 
     private const string AbwabDoorRelationDuplicatePrefix = "توجد علاقة من هذا النوع بالفعل مع";
 

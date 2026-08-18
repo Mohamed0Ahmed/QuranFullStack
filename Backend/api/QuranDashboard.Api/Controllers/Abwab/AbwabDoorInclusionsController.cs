@@ -1,9 +1,11 @@
 using QuranDashboard.Api.Authorization;
 using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Api.Contracts.Abwab;
+using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Abwab.Responses;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Abwab.Commands.AddDoorInclusions;
+using QuranDashboard.Application.Abwab.Commands.DeleteDoorInclusion;
 using QuranDashboard.Application.Abwab.Queries.GetDoorInclusions;
 
 namespace QuranDashboard.Api.Controllers.Abwab;
@@ -13,7 +15,8 @@ namespace QuranDashboard.Api.Controllers.Abwab;
 public sealed class AbwabDoorInclusionsController(
     AuthorizationStateAccessEvaluator stateEvaluator,
     GetDoorInclusionsHandler getHandler,
-    AddDoorInclusionsHandler addHandler) : ControllerBase
+    AddDoorInclusionsHandler addHandler,
+    DeleteDoorInclusionHandler deleteHandler) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<AbwabDoorInclusionTopologyDto>), StatusCodes.Status200OK)]
@@ -94,6 +97,56 @@ public sealed class AbwabDoorInclusionsController(
                     ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsUnavailable)),
             _ => throw new InvalidOperationException(
                 $"Unhandled {nameof(AddDoorInclusionsOutcome)} variant."),
+        };
+    }
+
+    [HttpDelete("{inclusionId:int}")]
+    [RequirePermission(AbwabPermissions.Inclusions.Delete)]
+    [ProducesResponseType(typeof(ApiResponse<AbwabDoorInclusionDetachResultDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status503ServiceUnavailable)]
+    public async Task<IActionResult> Delete(
+        int targetDoorId,
+        int inclusionId,
+        [FromBody] DeleteAbwabDoorInclusionBody? body,
+        CancellationToken cancellationToken)
+    {
+        if (body is null)
+        {
+            return BadRequest(ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsInvalidRequest));
+        }
+
+        var actorUserId = await ResolveUserIdAsync();
+        var outcome = await deleteHandler.HandleAsync(
+            new DeleteDoorInclusionCommand(
+                targetDoorId,
+                inclusionId,
+                body.ExpectedTargetDoorVersion,
+                actorUserId),
+            cancellationToken);
+
+        return outcome switch
+        {
+            DeleteDoorInclusionOutcome.Success success =>
+                Ok(ApiResponse<AbwabDoorInclusionDetachResultDto>.Ok(
+                    success.Result,
+                    ApiMessages.AbwabDoorInclusionDetached)),
+            DeleteDoorInclusionOutcome.InvalidRequest =>
+                BadRequest(ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsInvalidRequest)),
+            DeleteDoorInclusionOutcome.NotFound =>
+                NotFound(ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionNotFound)),
+            DeleteDoorInclusionOutcome.ArchivedTarget =>
+                Conflict(ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionArchivedTarget)),
+            DeleteDoorInclusionOutcome.StaleTargetVersion =>
+                Conflict(ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsStaleTarget)),
+            DeleteDoorInclusionOutcome.SynchronizationUnavailable =>
+                StatusCode(
+                    StatusCodes.Status503ServiceUnavailable,
+                    ApiResponse<object>.Fail(ApiMessages.AbwabDoorInclusionsUnavailable)),
+            _ => throw new InvalidOperationException(
+                $"Unhandled {nameof(DeleteDoorInclusionOutcome)} variant."),
         };
     }
 

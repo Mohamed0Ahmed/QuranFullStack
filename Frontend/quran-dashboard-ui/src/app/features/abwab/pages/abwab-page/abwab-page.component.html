@@ -137,6 +137,7 @@
                   [ariaLabel]="archiveTreeAriaLabel"
                   [canRestoreDoor]="permissions.canRestoreDoor()"
                   (restoreRequested)="interactions.onRestoreRequested($event)"
+                  (inclusionsRequested)="modalUrl.openInclusionsFromArchive($event)"
                 />
               }
             </div>

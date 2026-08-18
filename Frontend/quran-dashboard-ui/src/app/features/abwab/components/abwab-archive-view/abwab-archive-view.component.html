@@ -40,6 +40,21 @@
 
         <button
           type="button"
+          qdAction="tertiary"
+          size="sm"
+          class="abwab-archive-view__inclusions"
+          [attr.aria-label]="inclusionsAriaLabel(node)"
+          [attr.data-testid]="'abwab-archive-inclusions-' + node.id"
+          [attr.tabindex]="-1"
+          (click)="onInclusionsClick(node.id)"
+        >
+          <span aria-hidden="true">↔</span>
+          <span>{{ inclusionsLabel }}</span>
+          <span aria-hidden="true">{{ inclusionCount(node) }}</span>
+        </button>
+
+        <button
+          type="button"
           qdAction="secondary"
           size="sm"
           class="abwab-archive-view__restore"

@@ -175,6 +175,17 @@ public sealed class SmokeAbwabWriteAuthorizationTests(SmokeApiFixture fixture)
                     sourceDoorIds = new[] { 999998 },
                 })),
             new(
+                "DELETE api/abwab/doors/{targetDoorId}/inclusions/{inclusionId}",
+                HttpMethod.Delete,
+                "/api/abwab/doors/999999/inclusions/999998",
+                AbwabPermissions.Inclusions.Delete,
+                AbwabPermissions.Inclusions.Create,
+                HttpStatusCode.NotFound,
+                () => JsonRequest(
+                    HttpMethod.Delete,
+                    "/api/abwab/doors/999999/inclusions/999998",
+                    new { expectedTargetDoorVersion = 0u })),
+            new(
                 "POST api/abwab/templates",
                 HttpMethod.Post,
                 "/api/abwab/templates",

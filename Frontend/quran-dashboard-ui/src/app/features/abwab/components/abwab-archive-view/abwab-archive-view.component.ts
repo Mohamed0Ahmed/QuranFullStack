@@ -28,6 +28,7 @@ export class AbwabArchiveViewComponent {
   readonly canRestoreDoor = input(false);
 
   readonly restoreRequested = output<number>();
+  readonly inclusionsRequested = output<number>();
 
   private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
@@ -35,6 +36,7 @@ export class AbwabArchiveViewComponent {
   protected get restoreLabel(): string { return ABWAB_LABELS.restoreButton; }
   protected get restoreParentFirstHint(): string { return ABWAB_LABELS.restoreParentFirstHint; }
   protected get restorePermissionHint(): string { return ABWAB_LABELS.restorePermissionHint; }
+  protected get inclusionsLabel(): string { return ABWAB_LABELS.archivedInclusionsButton; }
 
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();
@@ -84,6 +86,24 @@ export class AbwabArchiveViewComponent {
     this.restoreRequested.emit(id);
   }
 
+  protected onInclusionsClick(id: number): void {
+    if (this.nodesById().has(id)) {
+      this.inclusionsRequested.emit(id);
+    }
+  }
+
+  protected inclusionsAriaLabel(node: AbwabNode): string {
+    return ABWAB_LABELS.archivedInclusionsAriaLabel(
+      node.name,
+      node.inclusionSourceCount,
+      node.inclusionConsumerCount,
+    );
+  }
+
+  protected inclusionCount(node: AbwabNode): number {
+    return node.inclusionSourceCount + node.inclusionConsumerCount;
+  }
+
   protected onKeydown(event: KeyboardEvent): void {
     if (event.target !== event.currentTarget && isNativeButtonActivation(event.key)) {
       return;
@@ -119,6 +139,10 @@ export class AbwabArchiveViewComponent {
       case 'select':
         event.preventDefault();
         this.requestRestoreIfAllowed(intent.id);
+        break;
+      case 'openMenu':
+        event.preventDefault();
+        this.onInclusionsClick(intent.id);
         break;
       default:
         break;

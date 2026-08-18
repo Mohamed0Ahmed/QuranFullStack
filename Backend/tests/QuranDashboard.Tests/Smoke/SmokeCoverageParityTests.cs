@@ -29,6 +29,10 @@ public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
         new("POST", "api/abwab/doors/{doorId:int}/relations", AbwabPermissions.Relations.Create),
         new("DELETE", "api/abwab/relations/{relationId:int}", AbwabPermissions.Relations.Delete),
         new("POST", "api/abwab/doors/{targetDoorId:int}/inclusions", AbwabPermissions.Inclusions.Create),
+        new(
+            "DELETE",
+            "api/abwab/doors/{targetDoorId:int}/inclusions/{inclusionId:int}",
+            AbwabPermissions.Inclusions.Delete),
         new("POST", "api/abwab/templates", AbwabPermissions.Templates.Create),
         new("DELETE", "api/abwab/templates/{templateId:int}", AbwabPermissions.Templates.Delete),
         new("POST", "api/abwab/templates/{templateId:int}/apply", AbwabPermissions.Templates.Apply),

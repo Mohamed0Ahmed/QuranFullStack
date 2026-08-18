@@ -8,6 +8,8 @@ export type { AbwabDoorDtoApiResponse } from './models/abwab-door-dto-api-respon
 export type { AbwabDoorDtoIReadOnlyListApiResponse } from './models/abwab-door-dto-i-read-only-list-api-response';
 export type { AbwabDoorInclusionAddResultDto } from './models/abwab-door-inclusion-add-result-dto';
 export type { AbwabDoorInclusionAddResultDtoApiResponse } from './models/abwab-door-inclusion-add-result-dto-api-response';
+export type { AbwabDoorInclusionDetachResultDto } from './models/abwab-door-inclusion-detach-result-dto';
+export type { AbwabDoorInclusionDetachResultDtoApiResponse } from './models/abwab-door-inclusion-detach-result-dto-api-response';
 export type { AbwabDoorInclusionDto } from './models/abwab-door-inclusion-dto';
 export type { AbwabDoorInclusionTopologyDto } from './models/abwab-door-inclusion-topology-dto';
 export type { AbwabDoorInclusionTopologyDtoApiResponse } from './models/abwab-door-inclusion-topology-dto-api-response';
@@ -64,6 +66,7 @@ export type { CreateSectionCommand } from './models/create-section-command';
 export type { CreateTemplateBody } from './models/create-template-body';
 export type { CurrentUserResponse } from './models/current-user-response';
 export type { CurrentUserResponseApiResponse } from './models/current-user-response-api-response';
+export type { DeleteAbwabDoorInclusionBody } from './models/delete-abwab-door-inclusion-body';
 export type { DeleteAbwabDoorLinksBody } from './models/delete-abwab-door-links-body';
 export type { DeleteDoorBody } from './models/delete-door-body';
 export type { DeviceSessionResponse } from './models/device-session-response';

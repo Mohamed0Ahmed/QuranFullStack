@@ -23,9 +23,13 @@ export class AbwabModalRestoreComponent {
 
   private readonly kindName = computed(() => {
     const doorName = this.subjectDoorName();
-    return this.kind() === 'relations' && doorName !== null
-      ? ABWAB_LABELS.relationsOfDoorKindName(doorName)
-      : ABWAB_LABELS.modalKindNames[this.kind()];
+    if (doorName !== null && this.kind() === 'relations') {
+      return ABWAB_LABELS.relationsOfDoorKindName(doorName);
+    }
+    if (doorName !== null && this.kind() === 'inclusions') {
+      return ABWAB_LABELS.inclusionsOfDoorKindName(doorName);
+    }
+    return ABWAB_LABELS.modalKindNames[this.kind()];
   });
 
   protected readonly restoreLabel = computed(() => ABWAB_LABELS.modalRestoreLabel(this.kindName()));
