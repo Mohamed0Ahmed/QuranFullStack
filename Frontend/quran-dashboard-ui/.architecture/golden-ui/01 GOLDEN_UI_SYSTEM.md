@@ -215,13 +215,13 @@ Gap between split columns: 24 (Wide), 20 (Wide at 1080–1279).
 
 | Token | Height | Padding-inline | Use |
 |---|---|---|---|
-| `ctl-sm` | 32 | 10 | Dense desktop inline controls **only when a ≥44px hit area is provided by the row/pseudo-element**. |
+| `ctl-sm` | 32 | 10 | Dense desktop inline controls, plus Compact modal workflow controls. |
 | `ctl-md` | 40 | 14 | Default: inputs, selects, buttons, tabs, pagination. |
 | `ctl-lg` | 48 | 18 | Compact-mode primary actions, modal footer actions on phone. |
 
 Invariants: identical height, radius (`6px`), border (`hairline`), font (`t-body`) and vertical alignment for **input, select, textarea-single-line, button, tab, chip-button**. Icon-only buttons are square at their scale. Busy state never changes width: label persists, the icon slot swaps to a 16px spinner, and a `min-inline-size` is reserved from the resting label. (D20, D21, F05)
 
-**Hit-area contract (44px, independent of visual density — D45, D46, D47):** any control smaller than 44px in either axis must expand its interactive box via padding or an `::after` inset overlay to ≥44×44. This applies to tree chevrons, row overflow actions, pagination controls, Mushaf page/nav triggers and chip removes. The visible icon may stay 16–20px.
+**Hit-area contract (44px, independent of visual density — D45, D46, D47):** any control smaller than 44px in either axis must expand its interactive box via padding or an `::after` inset overlay to ≥44×44. This applies to tree chevrons, row overflow actions, pagination controls, Mushaf page/nav triggers and chip removes. Dense Compact modal workflows are the approved exception: their actions and filter inclusion controls render at 32px to preserve working-list density. The visible icon may stay 16–20px.
 
 ### 3.7 Repeated-geometry anchors
 

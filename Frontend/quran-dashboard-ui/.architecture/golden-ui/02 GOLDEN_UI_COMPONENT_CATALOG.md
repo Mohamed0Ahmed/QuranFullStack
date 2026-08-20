@@ -113,9 +113,9 @@ Field key: **1** Purpose · **2** Consumers · **3** Anatomy · **4** Visual lan
 7. Optional: leading icon, trailing count chip, keyboard-shortcut hint (Wide only).
 8. D14 active translate · 20–32px targets (D45/D46/D47) · local visual copies (D22) · green used for generic hover (D12).
 9. One primary per view; explicit destructive semantics; Archive-Restore may be **visible-disabled** with an explanation (G22) whereas most missing writes are hidden.
-10. **Wide** `ctl-md` inline groups. **Medium** same, wrapping in declared order. **Compact** `ctl-lg`, full-width stack for page/modal primaries.
+10. **Wide** `ctl-md` inline groups. **Medium** same, wrapping in declared order. **Compact** `ctl-lg`, full-width stack for page/modal primaries; dense modal workflows may use `ctl-sm`.
 11. rest · hover · focus-visible · active · disabled (+ reason when the disable is a capability statement) · busy · danger · icon-only (named).
-12. Heights 32/40/48; icon 16–20 inside a ≥44px hit area; min-inline-size reserved from resting label.
+12. Heights 32/40/48; icon 16–20 inside a ≥44px hit area except approved 32px dense modal workflows; min-inline-size reserved from resting label.
 13. Group gap 8; icon→label 6.
 14. `t-body` 14, weight 600 for primary, 500 otherwise. Never all-caps (meaningless in Arabic).
 15. Labels never truncate; long labels wrap to 2 lines at Compact.

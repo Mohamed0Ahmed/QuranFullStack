@@ -1,0 +1,491 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>تصور محرر آيات المصدر</title>
+    <style>
+      :root {
+        --bg: #f4f2ec;
+        --surface: #fff;
+        --quiet: #fbfaf6;
+        --recessed: #eeebe1;
+        --border: #e6e2d7;
+        --border-strong: #d6d1c2;
+        --ink: #23211c;
+        --muted: #6e6759;
+        --green: #1c6349;
+        --green-text: #1b5e46;
+        --green-tint: #e7f0ea;
+        --danger: #8c2f22;
+        --danger-tint: #f7e9e5;
+        --radius: 10px;
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "IBM Plex Sans Arabic", system-ui, sans-serif;
+      }
+
+      button { font: inherit; }
+
+      .concept-bar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        max-width: 1120px;
+        margin: 0 auto;
+        padding: 16px 20px;
+      }
+
+      .concept-bar p { margin: 0; color: var(--muted); font-size: 13px; }
+
+      .mode-switch {
+        display: inline-flex;
+        gap: 4px;
+        padding: 4px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--surface);
+      }
+
+      .mode-switch button,
+      .tool,
+      .back {
+        min-height: 34px;
+        padding: 0 11px;
+        border: 1px solid var(--border-strong);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .mode-switch button[aria-pressed="true"] {
+        border-color: var(--green);
+        background: var(--green-tint);
+        color: var(--green-text);
+        font-weight: 700;
+      }
+
+      .stage {
+        display: grid;
+        place-items: center;
+        min-height: calc(100vh - 66px);
+        padding: 20px;
+      }
+
+      .modal {
+        display: flex;
+        flex-direction: column;
+        inline-size: min(100%, 1010px);
+        block-size: min(88dvh, 780px);
+        overflow: hidden;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--surface);
+        box-shadow: 0 8px 24px -10px rgb(35 33 28 / 22%);
+      }
+
+      .modal__titlebar {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: space-between;
+        min-block-size: 60px;
+        padding: 12px 18px;
+        border-block-end: 1px solid var(--border);
+      }
+
+      .modal__titlebar h1 {
+        margin: 0;
+        font-family: Amiri, serif;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .close { color: var(--muted); font-size: 14px; }
+
+      .editor {
+        display: flex;
+        flex: 1 1 auto;
+        flex-direction: column;
+        min-block-size: 0;
+      }
+
+      .editor__controls {
+        display: grid;
+        flex: 0 0 auto;
+        gap: 12px;
+        padding: 14px 18px 12px;
+        border-block-end: 1px solid var(--border);
+        background: var(--quiet);
+      }
+
+      .source-line {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .source-line__name {
+        margin: 0;
+        font-family: Amiri, serif;
+        font-size: 21px;
+        font-weight: 700;
+      }
+
+      .source-line__count {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+        white-space: nowrap;
+      }
+
+      .source-line__count strong { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+      .source-line__meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .back {
+        min-height: 30px;
+        padding-inline: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .filter-block {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .filter-block__label { color: var(--muted); font-size: 13px; white-space: nowrap; }
+
+      .type-filter {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        flex: 1 1 auto;
+        gap: 6px;
+      }
+
+      .type-filter button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        min-height: 36px;
+        padding: 0 8px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--surface);
+        color: var(--muted);
+        cursor: pointer;
+      }
+
+      .type-filter button.is-active {
+        border-color: var(--green);
+        background: var(--green-tint);
+        color: var(--green-text);
+        font-weight: 700;
+      }
+
+      .type-filter small { color: inherit; font-size: 11px; font-variant-numeric: tabular-nums; }
+
+      .type-filter__check {
+        display: inline-grid;
+        place-items: center;
+        inline-size: 15px;
+        block-size: 15px;
+        border: 1px solid var(--border-strong);
+        border-radius: 4px;
+        color: transparent;
+        font-size: 10px;
+        line-height: 1;
+      }
+
+      .type-filter button.is-included .type-filter__check {
+        border-color: var(--green);
+        background: var(--green);
+        color: var(--surface);
+      }
+
+      .selection-tools {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .selection-tools__hint { color: var(--muted); font-size: 12px; }
+
+      .selection-tools__actions { display: flex; gap: 6px; }
+
+      .tool--select {
+        border-color: var(--green);
+        background: var(--green-tint);
+        color: var(--green-text);
+      }
+
+      .tool--clear { color: var(--muted); }
+
+      .ayah-scroll {
+        flex: 1 1 auto;
+        min-block-size: 0;
+        overflow: auto;
+        padding: 10px 18px 18px;
+        background: var(--surface);
+      }
+
+      .ayah-list {
+        display: grid;
+        gap: 8px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .ayah-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 10px;
+      }
+
+      .ayah-row input {
+        inline-size: 16px;
+        block-size: 16px;
+        margin: 0;
+        accent-color: var(--green);
+      }
+
+      .ayah-card {
+        position: relative;
+        min-inline-size: 0;
+        padding: 10px 14px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        background: var(--recessed);
+      }
+
+      .ayah-card__serial {
+        position: absolute;
+        inset-block-start: 8px;
+        inset-inline-start: 9px;
+        display: grid;
+        place-items: center;
+        min-inline-size: 22px;
+        block-size: 22px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .ayah-card__meta {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 7px;
+        min-block-size: 18px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .ayah-card__meta span + span::before {
+        content: "·";
+        margin-inline-end: 7px;
+        color: var(--border-strong);
+      }
+
+      .ayah-card__text {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        column-gap: .22em;
+        margin: 2px 24px 0;
+        font-family: Amiri, serif;
+        font-size: clamp(22px, 2vw, 30px);
+        line-height: 1.55;
+        text-align: center;
+      }
+
+      .ayah-card__highlight {
+        padding-block: 1px;
+        padding-inline: 2px;
+        border-radius: 4px;
+        background: #cfe0d6;
+        color: var(--ink);
+      }
+
+      .mobile-note {
+        display: none;
+        margin: 0;
+        padding: 8px 12px;
+        border-block-start: 1px solid var(--border);
+        background: var(--surface);
+        color: var(--muted);
+        font-size: 11px;
+        text-align: center;
+      }
+
+      .stage.is-mobile {
+        align-items: start;
+        padding: 0;
+      }
+
+      .stage.is-mobile .modal {
+        inline-size: min(100%, 390px);
+        block-size: 94dvh;
+        border-radius: 12px 12px 0 0;
+      }
+
+      .stage.is-mobile .modal__titlebar {
+        min-block-size: 52px;
+        padding: 8px 12px;
+      }
+
+      .stage.is-mobile .modal__titlebar h1 { font-size: 20px; }
+
+      .stage.is-mobile .editor__controls {
+        gap: 8px;
+        padding: 8px 12px;
+      }
+
+      .stage.is-mobile .source-line__name { font-size: 18px; }
+      .stage.is-mobile .source-line__count { font-size: 12px; }
+      .stage.is-mobile .source-line__meta { gap: 5px; }
+      .stage.is-mobile .back { min-height: 28px; padding-inline: 6px; font-size: 11px; }
+
+      .stage.is-mobile .filter-block {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .stage.is-mobile .type-filter { gap: 4px; }
+      .stage.is-mobile .type-filter button { min-height: 34px; font-size: 12px; }
+      .stage.is-mobile .selection-tools { min-height: 34px; }
+      .stage.is-mobile .selection-tools__hint { font-size: 11px; }
+      .stage.is-mobile .tool { min-height: 32px; padding-inline: 8px; font-size: 12px; }
+      .stage.is-mobile .ayah-scroll { padding: 8px 10px 10px; }
+      .stage.is-mobile .ayah-list { gap: 6px; }
+      .stage.is-mobile .ayah-row { gap: 7px; }
+      .stage.is-mobile .ayah-card { padding: 7px 9px; }
+      .stage.is-mobile .ayah-card__serial { inset-block-start: 6px; inset-inline-start: 7px; }
+      .stage.is-mobile .ayah-card__meta { font-size: 11px; }
+      .stage.is-mobile .ayah-card__text { margin: 1px 20px 0; font-size: 22px; line-height: 1.45; }
+      .stage.is-mobile .mobile-note { display: block; }
+    </style>
+  </head>
+  <body>
+    <header class="concept-bar">
+      <p>تصور بصري فقط، والبيانات أدناه placeholders غير قرآنية</p>
+      <div class="mode-switch" aria-label="مقاس المعاينة">
+        <button type="button" data-mode="desktop" aria-pressed="true">ديسكتوب</button>
+        <button type="button" data-mode="mobile" aria-pressed="false">موبايل</button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage">
+      <section class="modal" aria-labelledby="editor-title">
+        <header class="modal__titlebar">
+          <h1 id="editor-title">تعديل اختيار آيات المصدر</h1>
+          <button class="back" type="button">إغلاق</button>
+        </header>
+
+        <section class="editor" aria-label="محرر نتائج المصدر التجريبي">
+          <header class="editor__controls">
+            <div class="source-line">
+              <p class="source-line__name">مصدر تجريبي</p>
+              <div class="source-line__meta">
+                <p class="source-line__count">المختار: <strong>—</strong> سجل</p>
+                <button class="back" type="button">العودة للمساحة</button>
+              </div>
+            </div>
+
+            <div class="filter-block">
+              <span class="filter-block__label">أنواع الكلمات</span>
+              <div class="type-filter" role="group" aria-label="أنواع الكلمات">
+                <button class="is-active is-included" type="button"><span class="type-filter__check">✓</span>الكل <small>—</small></button>
+                <button class="is-included" type="button"><span class="type-filter__check">✓</span>نوع أ <small>—</small></button>
+                <button class="is-included" type="button"><span class="type-filter__check">✓</span>نوع ب <small>—</small></button>
+              </div>
+            </div>
+
+            <div class="selection-tools">
+              <span class="selection-tools__hint">المعروض: — سجل</span>
+              <div class="selection-tools__actions">
+                <button class="tool tool--select" type="button">تحديد الكل</button>
+                <button class="tool tool--clear" type="button">إلغاء التحديد</button>
+              </div>
+            </div>
+          </header>
+
+          <div class="ayah-scroll" aria-label="قائمة النتائج">
+            <ol class="ayah-list">
+              <li class="ayah-row">
+                <input type="checkbox" checked aria-label="تحديد سجل تجريبي 1" />
+                <article class="ayah-card">
+                  <span class="ayah-card__serial">1</span>
+                  <div class="ayah-card__meta"><span>مرجع تجريبي</span><span>سجل 1</span></div>
+                  <p class="ayah-card__text">[نص تجريبي من واجهة البيانات] <span class="ayah-card__highlight">[تطابق]</span></p>
+                </article>
+              </li>
+              <li class="ayah-row">
+                <input type="checkbox" checked aria-label="تحديد سجل تجريبي 2" />
+                <article class="ayah-card">
+                  <span class="ayah-card__serial">2</span>
+                  <div class="ayah-card__meta"><span>مرجع تجريبي</span><span>سجل 2</span></div>
+                  <p class="ayah-card__text"><span class="ayah-card__highlight">[تطابق]</span> [نص تجريبي]</p>
+                </article>
+              </li>
+              <li class="ayah-row">
+                <input type="checkbox" checked aria-label="تحديد سجل تجريبي 3" />
+                <article class="ayah-card">
+                  <span class="ayah-card__serial">3</span>
+                  <div class="ayah-card__meta"><span>مرجع تجريبي</span><span>سجل 3</span></div>
+                  <p class="ayah-card__text">[نص تجريبي ممتد] <span class="ayah-card__highlight">[تطابق]</span> [نص تجريبي]</p>
+                </article>
+              </li>
+              <li class="ayah-row">
+                <input type="checkbox" checked aria-label="تحديد سجل تجريبي 4" />
+                <article class="ayah-card">
+                  <span class="ayah-card__serial">4</span>
+                  <div class="ayah-card__meta"><span>مرجع تجريبي</span><span>سجل 4</span></div>
+                  <p class="ayah-card__text">[نص تجريبي طويل لقياس التفاف السطر] <span class="ayah-card__highlight">[تطابق]</span></p>
+                </article>
+              </li>
+            </ol>
+          </div>
+          <p class="mobile-note">رأس التحكم ثابت، وقائمة الآيات هي منطقة التمرير الوحيدة.</p>
+        </section>
+      </section>
+    </main>
+
+    <script>
+      const stage = document.getElementById('stage');
+      document.querySelectorAll('[data-mode]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const mobile = button.dataset.mode === 'mobile';
+          stage.classList.toggle('is-mobile', mobile);
+          document.querySelectorAll('[data-mode]').forEach((candidate) => {
+            candidate.setAttribute('aria-pressed', String(candidate === button));
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

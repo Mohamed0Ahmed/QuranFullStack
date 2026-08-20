@@ -1,5 +1,6 @@
 @if (items().length > 1) {
   <section class="linking-source-type-filters" [attr.aria-label]="sectionLabel">
+    <span class="linking-source-type-filters__heading">أنواع الكلمات</span>
     <div class="linking-source-type-filters__grid" role="group">
       <article
         class="linking-source-type-filters__option"
@@ -14,7 +15,7 @@
           [attr.aria-pressed]="viewTypeCode() === null"
           (click)="showAll()"
         >
-          {{ allLabel }}
+          <span class="linking-source-type-filters__label">{{ allLabel }}</span>
         </button>
         <label class="linking-source-type-filters__inclusion">
           <input
@@ -25,7 +26,7 @@
             [attr.aria-label]="'تحديد كل أنواع الكلمات للربط'"
             (change)="includeAll()"
           />
-          <span>{{ inclusionLabel }}</span>
+          <span class="qd-sr-only">{{ inclusionLabel }}</span>
         </label>
       </article>
 
@@ -45,7 +46,7 @@
             (click)="showType(item.code)"
           >
             <span class="linking-source-type-filters__label">{{ item.arabicLabel }}</span>
-            <span class="linking-source-type-filters__count">{{ item.occurrencesCount }} مرة</span>
+            <span class="linking-source-type-filters__count">{{ item.occurrencesCount }}</span>
           </button>
           <label class="linking-source-type-filters__inclusion">
             <input
@@ -56,7 +57,7 @@
               [attr.aria-label]="'تحديد ' + item.arabicLabel + ' للربط'"
               (change)="toggleIncluded(item.code)"
             />
-            <span>{{ inclusionLabel }}</span>
+            <span class="qd-sr-only">{{ inclusionLabel }}</span>
           </label>
         </article>
       }

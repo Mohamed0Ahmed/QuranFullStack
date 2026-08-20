@@ -105,7 +105,8 @@
   overflow: auto;
 }
 
-.direct-link-workflow__body--preflight {
+.direct-link-workflow__body--preflight,
+.direct-link-workflow__body--configuration {
   overflow: hidden;
 }
 
@@ -129,45 +130,42 @@
 
 .direct-link-workflow__configuration-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: var(--qd-space-2) var(--qd-space-3);
+  justify-content: space-between;
+  gap: var(--qd-space-2);
 }
 
-.direct-link-workflow__configuration-toolbar p {
+.direct-link-workflow__configuration-count {
   margin: 0;
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-meta);
   line-height: var(--qd-type-meta-lh);
 }
 
-.direct-link-workflow__word-toggle--active,
-.direct-link-workflow__word-toggle--active:hover {
+.direct-link-workflow__word-toggle {
+  white-space: nowrap;
+}
+
+.direct-link-workflow__word-toggle.qd-is-selected,
+.direct-link-workflow__word-toggle.qd-is-selected:hover {
   border-color: var(--qd-border-accent);
   background: var(--qd-accent-tint);
   color: var(--qd-accent-text);
 }
 
-.direct-link-workflow__word-toggle-mark {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  inline-size: 1rem;
-  block-size: 1rem;
-  border: var(--qd-hairline-strong);
-  border-radius: var(--qd-radius-xs);
-  font-size: var(--qd-type-caption);
-  line-height: 1;
-}
-
-.direct-link-workflow__word-toggle--active .direct-link-workflow__word-toggle-mark {
-  border-color: var(--qd-accent);
-  background: var(--qd-accent);
-  color: var(--qd-accent-fg);
-}
-
 @media (max-width: bp.$qd-bp-compact-max) {
   .direct-link-workflow { gap: var(--qd-space-1); padding: var(--qd-space-2); }
   .direct-link-workflow__steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  .direct-link-workflow__steps button { min-block-size: var(--qd-control-sm); }
+
+  .direct-link-workflow__configuration-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .direct-link-workflow__configuration-count {
+    font-size: var(--qd-type-caption);
+  }
+
 }

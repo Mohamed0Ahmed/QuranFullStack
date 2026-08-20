@@ -1,0 +1,13 @@
+<section class="linking-ayah-selection-toolbar">
+  <div class="linking-ayah-selection-toolbar__configuration">
+    <ng-content select="[qdLinkingAyahSelectionConfiguration]" />
+  </div>
+  <div class="linking-ayah-selection-toolbar__selection-tools">
+    <button qdAction="secondary" size="sm" type="button" (click)="selectAllRequested.emit()">
+      {{ selectAllLabel() }}
+    </button>
+    <button qdAction="tertiary" size="sm" type="button" (click)="clearAllRequested.emit()">
+      {{ clearAllLabel() }}
+    </button>
+  </div>
+</section>

@@ -11,6 +11,7 @@ import { LinkingInlineSourceWorkflowController } from '../../state/linking-inlin
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { linkingSourceTypeCodes } from '../../utils/linking-source-types';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
+import { LinkingAyahSelectionToolbarComponent } from '../linking-ayah-selection-toolbar/linking-ayah-selection-toolbar.component';
 import { LinkingManualShapeSelectorComponent } from '../linking-manual-shape-selector/linking-manual-shape-selector.component';
 import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking-preflight-step.component';
 import { LinkingSourceTypeFiltersComponent } from '../linking-source-type-filters/linking-source-type-filters.component';
@@ -27,6 +28,7 @@ import {
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,
+    LinkingAyahSelectionToolbarComponent,
     LinkingDoorStepComponent,
     LinkingManualShapeSelectorComponent,
     LinkingPreflightStepComponent,

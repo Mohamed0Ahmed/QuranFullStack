@@ -389,6 +389,9 @@ Rules:
 - Do **not** visually modify Quranic text in ways that may change meaning.
 - Any Quranic text display style must prioritize readability and accuracy.
 - Missing data must be shown as a **controlled state**, not silently fabricated.
+- The linking ayah-selection card is an approved Compact exception: it may reduce only its displayed
+  word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block padding to its
+  background-only word highlights. It must not change text, glyphs, word boundaries, or source data.
 
 ## 14. Definition of Done for Style / UI Foundation Changes
 
@@ -1846,10 +1849,10 @@ Load-bearing decisions:
   no slot, so ordinary buttons keep their natural width. Busy sets `aria-busy` and keeps the label.
 - **No active-state translate** (D14). Active and hover change tone only, and `.qd-btn` lost its
   `translateY(1px)` in the same change — the transition list no longer mentions `transform`.
-- **Compact hit area** (D45): at `≤767` every action's `--qd-action-size` becomes
-  `--qd-hit-target-min` (44px) through padding growth, and `primary`/`lg` take `--qd-control-lg`
-  (48px). Icon-only and row actions also take that size on the inline axis, so a 16–20px glyph
-  still sits in a 44px box.
+- **Compact hit area** (D45): at `≤767` actions outside a modal use
+  `--qd-hit-target-min` (44px), and `primary`/`lg` take `--qd-control-lg` (48px). Dense modal
+  workflows use `--qd-control-sm` (32px) for actions and filter inclusion controls; density is an
+  approved modal exception. Icon-only and row actions outside that exception retain the 44px box.
 - **Padding-inline uses the spacing scale** (`8/12/16`), not the board's `10/14/18`: the Plan 7
   contract restricts every spacing step to `2,4,8,12,16,20,24,32,40,48,64`, and a control padding
   is a spacing step. The heights are the locked values and were not rounded.

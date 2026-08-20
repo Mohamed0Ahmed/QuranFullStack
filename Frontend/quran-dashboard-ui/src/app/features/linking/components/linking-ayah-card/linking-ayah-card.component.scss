@@ -1,9 +1,13 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
 }
 
 .linking-ayah-card {
   position: relative;
+  gap: var(--qd-space-1);
+  padding: var(--qd-space-1) var(--qd-space-2);
 }
 
 .linking-ayah-card--grouped {
@@ -16,6 +20,22 @@
   position: absolute;
   inset-block-start: var(--qd-space-2);
   inset-inline-end: var(--qd-space-3);
+}
+
+.linking-ayah-card__serial {
+  position: absolute;
+  inset-block-start: var(--qd-space-1);
+  inset-inline-start: var(--qd-space-2);
+  display: grid;
+  place-items: center;
+  min-inline-size: var(--qd-s-20);
+  block-size: var(--qd-s-20);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-surface);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+  font-variant-numeric: tabular-nums;
 }
 
 .linking-ayah-card__meta {
@@ -35,13 +55,19 @@
   text-align: start;
 }
 
+.linking-ayah-card__meta span + span::before {
+  content: '·';
+  margin-inline-end: var(--qd-space-2);
+  color: var(--qd-border-strong);
+}
+
 .linking-ayah-card__text {
   align-items: baseline;
   column-gap: 0.24em;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  margin: 0;
+  margin: 0 var(--qd-s-24);
   row-gap: 0;
   text-align: center;
 }
@@ -74,18 +100,30 @@
 .linking-ayah-card__word--added {
   background-color: var(--qd-mushaf-word-selection-bg);
   border-radius: var(--qd-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--qd-mushaf-word-selection-ring);
+  padding-block: var(--qd-s-2);
 }
 
 .linking-ayah-card__word--existing {
   background-color: var(--qd-warning-tint);
   border-radius: var(--qd-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--qd-warning-hairline);
+  padding-block: var(--qd-s-2);
 }
 
 .linking-ayah-card__word--removed,
 .linking-ayah-card__word--excluded {
   background-color: var(--qd-danger-tint);
   border-radius: var(--qd-radius-sm);
-  box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
+  padding-block: var(--qd-s-2);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-ayah-card {
+    gap: var(--qd-s-2);
+    padding: var(--qd-s-2) var(--qd-space-1);
+  }
+
+  .linking-ayah-card__word {
+    font-size: calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2));
+    line-height: 1.55;
+  }
 }

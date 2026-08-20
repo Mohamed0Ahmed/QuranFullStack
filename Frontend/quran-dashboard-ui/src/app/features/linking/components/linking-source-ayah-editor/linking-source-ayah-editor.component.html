@@ -1,26 +1,35 @@
 <section class="linking-source-ayah-editor" aria-label="تعديل اختيار آيات المصدر">
   <header class="linking-source-ayah-editor__header">
-    <div>
+    <div class="linking-source-ayah-editor__summary">
       @if (state().sourceLabel; as sourceLabel) {
         <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
       }
       <p class="linking-source-ayah-editor__ready-count">
-        {{ labels.totalAyahs }}:
-        <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
-        <span aria-hidden="true">·</span>
-        {{ labels.selectedCount }}:
-        <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
-        @if (facade.viewTypeCode() !== null) {
+        <span class="linking-source-ayah-editor__wide-count">
+          {{ labels.totalAyahs }}:
+          <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
           <span aria-hidden="true">·</span>
-          {{ labels.displayedAyahs }}:
-          <strong class="qd-ltr-isolate tabular-nums">{{ facade.displayedAyahCount() || '—' }}</strong>
-        }
+          {{ labels.selectedCount }}:
+          <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
+          @if (facade.viewTypeCode() !== null) {
+            <span aria-hidden="true">·</span>
+            {{ labels.displayedAyahs }}:
+            <strong class="qd-ltr-isolate tabular-nums">{{ facade.displayedAyahCount() || '—' }}</strong>
+          }
+        </span>
+        <span class="linking-source-ayah-editor__compact-count">
+          <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
+          <span aria-hidden="true">/</span>
+          <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
+          آية
+        </span>
       </p>
     </div>
     <button
       qdAction="secondary"
       size="sm"
       type="button"
+      class="linking-source-ayah-editor__back"
       [busy]="dismissPending()"
       [disabled]="dismissPending()"
       (click)="dismiss()"
@@ -38,32 +47,34 @@
       (typeCodesChange)="facade.setSourceTypeCodes($event)"
       (viewTypeCodeChange)="facade.setViewTypeCode($event)"
     />
-    <div class="linking-source-ayah-editor__toolbar">
-      @if (item.configuration.kind === 'manual') {
-        <qd-linking-manual-shape-selector
-          [selectedCount]="selectedCount()"
-          [linkShape]="item.configuration.linkShape"
-          (linkShapeChanged)="setManualLinkShape($event)"
-        />
-      } @else if (automaticConfiguration(); as configuration) {
-        <button
-          qdAction="secondary"
-          size="sm"
-          type="button"
-          [class.qd-is-selected]="configuration.automaticWordMatchesEnabled"
-          [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
-          (click)="facade.setAutomaticWordMatches(!configuration.automaticWordMatchesEnabled)"
-        >
-          {{ labels.highlightStep }}
-        </button>
-      }
-      <button qdAction="secondary" size="sm" type="button" (click)="facade.selectAll()">
-        {{ labels.selectAll }}
-      </button>
-      <button qdAction="secondary" size="sm" type="button" (click)="facade.clearAll()">
-        {{ labels.clearAll }}
-      </button>
-    </div>
+    <qd-linking-ayah-selection-toolbar
+      [selectAllLabel]="labels.selectAll"
+      [clearAllLabel]="labels.clearAll"
+      (selectAllRequested)="facade.selectAll()"
+      (clearAllRequested)="facade.clearAll()"
+    >
+      <div qdLinkingAyahSelectionConfiguration>
+        @if (item.configuration.kind === 'manual') {
+          <qd-linking-manual-shape-selector
+            [selectedCount]="selectedCount()"
+            [linkShape]="item.configuration.linkShape"
+            (linkShapeChanged)="setManualLinkShape($event)"
+          />
+        } @else if (automaticConfiguration(); as configuration) {
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            class="linking-source-ayah-editor__words-toggle"
+            [class.qd-is-selected]="configuration.automaticWordMatchesEnabled"
+            [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
+            (click)="facade.setAutomaticWordMatches(!configuration.automaticWordMatchesEnabled)"
+          >
+            {{ labels.highlightStep }}
+          </button>
+        }
+      </div>
+    </qd-linking-ayah-selection-toolbar>
     @if (request(); as pageRequest) {
       <qd-linking-virtual-ayah-list
         [scope]="'workspace-editor:' + item.sourceKey"

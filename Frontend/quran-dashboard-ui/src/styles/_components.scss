@@ -294,6 +294,10 @@ button.qd-interactive-surface {
     --qd-action-size: var(--qd-hit-target-min);
   }
 
+  .qd-modal-shell .qd-action {
+    --qd-action-size: var(--qd-control-sm);
+  }
+
   .qd-action--lg,
   .qd-action--primary {
     --qd-action-size: var(--qd-control-lg);
