@@ -24,7 +24,15 @@ export class LinkingWorkspaceSourceRowComponent {
   readonly removeRequested = output<void>();
   protected readonly labels = LINKING_LABELS;
   protected readonly sourceKind = computed(() => linkingSourcePresentation(this.row().item.source));
-  protected readonly isAutomatic = computed(() => this.row().item.configuration.kind === 'automatic');
+  protected readonly membershipLabel = computed(() =>
+    `${this.row().checked ? 'إلغاء تحديد' : 'تحديد'} مصدر ${this.row().item.source.label} للعملية`,
+  );
+  protected readonly showAyahsLabel = computed(() =>
+    `${this.labels.showAyahs}: ${this.row().countLabel}`,
+  );
+  protected readonly automaticWordsLabel = computed(() =>
+    `${this.labels.highlightStep}: ${this.row().item.source.label}`,
+  );
   protected readonly automaticConfiguration = computed(() => {
     const configuration = this.row().item.configuration;
     return configuration.kind === 'automatic' ? configuration : null;

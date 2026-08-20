@@ -7,16 +7,15 @@
   class="linking-workspace-source-row"
   (click)="toggleMembershipFromRow($event)"
 >
-  <input
-    type="checkbox"
-    class="linking-workspace-source-row__membership"
-    [checked]="row().checked"
-    [attr.aria-label]="row().checked ? 'إلغاء تحديد المصدر للعملية' : 'تحديد المصدر للعملية'"
-    (change)="membershipChanged.emit(!row().checked)"
-  />
-  @if (row().checked) {
-    <span class="linking-workspace-source-row__selection-check" aria-hidden="true">✓</span>
-  }
+  <label class="linking-workspace-source-row__membership">
+    <input
+      class="qd-checkbox"
+      type="checkbox"
+      [checked]="row().checked"
+      [attr.aria-label]="membershipLabel()"
+      (change)="membershipChanged.emit(!row().checked)"
+    />
+  </label>
 
   <div class="linking-workspace-source-row__identity">
     <p>{{ sourceKind() }}</p>
@@ -24,16 +23,19 @@
   </div>
 
   <div class="linking-workspace-source-row__count">
-    <span class="linking-workspace-source-row__count-label">{{ labels.totalAyahs }}</span>
     <button
       qdAction="secondary"
       size="sm"
       type="button"
       class="linking-workspace-source-row__ayahs-button"
       [attr.data-linking-editor-source-key]="row().item.sourceKey"
+      [attr.aria-label]="showAyahsLabel()"
       (click)="editRequested.emit()"
     >
-      <span>{{ labels.showAyahs }}</span>
+      <span class="linking-workspace-source-row__wide-label">{{ labels.showAyahs }}</span>
+      <span class="linking-workspace-source-row__compact-label" aria-hidden="true">
+        {{ labels.showAyahsCompact }}
+      </span>
       <span class="linking-workspace-source-row__ayahs-count">{{ row().countLabel }}</span>
     </button>
   </div>
@@ -47,12 +49,16 @@
         class="linking-workspace-source-row__toggle"
         [class.linking-workspace-source-row__toggle--active]="configuration.automaticWordMatchesEnabled"
         [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
+        [attr.aria-label]="automaticWordsLabel()"
         (click)="automaticWordsChanged.emit(!configuration.automaticWordMatchesEnabled)"
       >
         <span class="linking-workspace-source-row__toggle-mark" aria-hidden="true">
           {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
         </span>
-        <span>{{ labels.highlightStep }}</span>
+        <span class="linking-workspace-source-row__wide-label">{{ labels.highlightStep }}</span>
+        <span class="linking-workspace-source-row__compact-label" aria-hidden="true">
+          {{ labels.highlightStepCompact }}
+        </span>
       </button>
     </div>
   }
@@ -62,8 +68,9 @@
     size="sm"
     type="button"
     class="linking-workspace-source-row__remove"
+    [attr.aria-label]="labels.removeSource + ': ' + row().item.source.label"
     (click)="removeRequested.emit()"
   >
-    {{ labels.removeSource }}
+    <span aria-hidden="true">×</span>
   </button>
 </article>

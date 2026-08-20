@@ -1,18 +1,61 @@
-<qd-details-workspace [identity]="labels.preparedSources" variant="action-rail" testIdPrefix="linking-workspace-content">
-  <div qdDetailsActions class="linking-workspace__top-actions">
-    <span>{{ labels.selectedSourcesCount }}: {{ selectedCount() }}</span>
-    <button qdAction="primary" size="sm" type="button" [disabled]="selectedCount() === 0" (click)="linkSelected()">{{ labels.linkSelected }}</button>
-    @if (selectedCount() > 0) { <button qdAction="tertiary" size="sm" type="button" (click)="clearSelection()">{{ labels.clearSelection }}</button> }
-    <button qdAction="danger" size="sm" type="button" [disabled]="!hasRows()" (click)="removeAll()">{{ labels.removeAll }}</button>
+<qd-details-workspace
+  class="linking-workspace__details"
+  variant="action-rail"
+  [identity]="''"
+  [labelledBy]="'linking-workspace-title'"
+  [hasFooter]="true"
+  testIdPrefix="linking-workspace-content"
+>
+  <div qdDetailsMetadata class="linking-workspace__identity">
+    <h2 id="linking-workspace-title">
+      <span class="linking-workspace__wide-title">{{ labels.preparedSources }}</span>
+      <span class="linking-workspace__compact-title">{{ labels.workspaceSources }}</span>
+    </h2>
+    <span class="linking-workspace__source-count" [attr.aria-label]="rows().length + ' ' + labels.preparedSources">
+      {{ rows().length }}
+    </span>
   </div>
-  <div qdDetailsStatus>
-    @if (removedItem(); as removed) { <span>{{ labels.sourceRemoved }}</span><button qdAction="tertiary" size="sm" type="button" (click)="undo()">{{ labels.undo }}</button> }
+
+  <div qdDetailsActions class="linking-workspace__actions">
+    @if (selectedCount() > 0) {
+      <button qdAction="tertiary" size="sm" type="button" (click)="clearSelection()">
+        {{ labels.clearSelection }}
+      </button>
+    }
+    <button
+      qdAction="danger"
+      size="sm"
+      type="button"
+      [disabled]="selectedCount() === 0"
+      (click)="requestRemoveSelected()"
+    >
+      {{ labels.removeSelected }}
+    </button>
+    <button
+      qdAction="danger"
+      size="sm"
+      type="button"
+      [disabled]="!hasRows()"
+      (click)="requestClearAll()"
+    >
+      {{ labels.clearWorkspace }}
+    </button>
   </div>
+
+  @if (!bulkRemoval() && removedItem()) {
+    <div qdDetailsStatus class="linking-workspace__status">
+      <span>{{ labels.sourceRemoved }}</span>
+      <button qdAction="tertiary" size="sm" type="button" (click)="undo()">{{ labels.undo }}</button>
+    </div>
+  }
+
   @if (hasRows()) {
     <div qdResultList listVariant="linked" [listLabel]="labels.preparedSources" class="linking-workspace__items">
       @for (row of rows(); track row.item.sourceKey; let index = $index) {
         <qd-linking-workspace-source-row
-          [row]="row" [position]="index + 1" [setSize]="rows().length"
+          [row]="row"
+          [position]="index + 1"
+          [setSize]="rows().length"
           (membershipChanged)="toggleMembership(row.item.sourceKey, $event)"
           (editRequested)="edit(row.item.sourceKey)"
           (automaticWordsChanged)="automaticWords(row.item.sourceKey, $event)"
@@ -20,5 +63,48 @@
         />
       }
     </div>
-  } @else { <qd-empty-state [message]="labels.emptyWorkspace" /> }
+  } @else {
+    <qd-empty-state [message]="labels.emptyWorkspace" />
+  }
+
+  <div qdDetailsFooter class="linking-workspace__footer">
+    <span class="linking-workspace__footer-summary">
+      {{ labels.selectedSourcesCount }}: <strong>{{ selectedCount() }}</strong>
+    </span>
+    <button
+      qdAction="primary"
+      size="sm"
+      type="button"
+      [disabled]="selectedCount() === 0"
+      (click)="linkSelected()"
+    >
+      {{ labels.linkSelected }}
+    </button>
+  </div>
 </qd-details-workspace>
+
+<qd-confirm-dialog
+  [open]="removeSelectedRequested()"
+  [titleText]="labels.removeSelectedTitle"
+  [confirmLabel]="labels.removeSelectedConfirm"
+  [cancelLabel]="labels.removeSelectedCancel"
+  tone="danger"
+  testIdPrefix="linking-remove-selected"
+  (confirmed)="confirmRemoveSelected()"
+  (cancelled)="cancelRemoveSelected()"
+>
+  <p>{{ selectedCount() }} {{ labels.preparedSources }}</p>
+</qd-confirm-dialog>
+
+<qd-confirm-dialog
+  [open]="clearAllRequested()"
+  [titleText]="labels.clearWorkspaceTitle"
+  [confirmLabel]="labels.clearWorkspaceConfirm"
+  [cancelLabel]="labels.clearWorkspaceCancel"
+  tone="danger"
+  testIdPrefix="linking-clear-workspace"
+  (confirmed)="confirmClearAll()"
+  (cancelled)="cancelClearAll()"
+>
+  <p>{{ rows().length }} {{ labels.preparedSources }}</p>
+</qd-confirm-dialog>
