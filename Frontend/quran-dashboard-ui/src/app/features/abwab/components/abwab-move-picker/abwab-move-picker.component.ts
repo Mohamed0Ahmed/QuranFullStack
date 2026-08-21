@@ -173,7 +173,7 @@ export class AbwabMovePickerComponent {
   }
 
   protected confirm(): void {
-    if (!this.canConfirm()) {
+    if (!this.canConfirm() || this.busy()) {
       return;
     }
     const targetSectionId = this.pickedSectionId();
@@ -184,6 +184,8 @@ export class AbwabMovePickerComponent {
   }
 
   protected cancel(): void {
-    this.closed.emit();
+    if (!this.busy()) {
+      this.closed.emit();
+    }
   }
 }

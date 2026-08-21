@@ -197,6 +197,7 @@ export class AbwabPageOverlaysController {
   readonly moveBusy = signal(false);
   readonly moveError = signal<string | null>(null);
   private readonly moveDoorIds = signal<readonly number[]>([]);
+  private moveRequestGeneration = 0;
 
   readonly moveExcludedIds = computed(() => {
     const byId = this.byId();
@@ -237,6 +238,7 @@ export class AbwabPageOverlaysController {
       return;
     }
     this.moveDoorIds.set([door.id]);
+    this.moveRequestGeneration += 1;
     this.moveBusy.set(false);
     this.moveError.set(null);
     this.movePickerOpen.set(true);
@@ -251,12 +253,14 @@ export class AbwabPageOverlaysController {
       return;
     }
     this.moveDoorIds.set(ids);
+    this.moveRequestGeneration += 1;
     this.moveBusy.set(false);
     this.moveError.set(null);
     this.movePickerOpen.set(true);
   }
 
   closeMovePicker(): void {
+    this.moveRequestGeneration += 1;
     this.movePickerOpen.set(false);
     this.moveBusy.set(false);
     this.moveError.set(null);
@@ -267,6 +271,7 @@ export class AbwabPageOverlaysController {
       return;
     }
     const ids = this.moveDoorIds();
+    const requestGeneration = this.moveRequestGeneration;
     this.moveBusy.set(true);
     this.moveError.set(null);
     if (ids.length === 1) {
@@ -281,15 +286,22 @@ export class AbwabPageOverlaysController {
           targetSectionId: destination.targetSectionId,
           version: node.version,
         })
-        .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess));
+        .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess, requestGeneration));
       return;
     }
     this.writeController
       .bulkMoveDoors(destination.targetParentId, destination.targetSectionId)
-      .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess));
+      .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess, requestGeneration));
   }
 
-  private handleMoveOutcome(outcome: AbwabWriteOutcome<unknown>, onSuccess: () => void): void {
+  private handleMoveOutcome(
+    outcome: AbwabWriteOutcome<unknown>,
+    onSuccess: () => void,
+    requestGeneration: number,
+  ): void {
+    if (requestGeneration !== this.moveRequestGeneration) {
+      return;
+    }
     this.moveBusy.set(false);
     if (outcome.kind === 'success') {
       onSuccess();

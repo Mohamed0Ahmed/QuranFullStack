@@ -47,7 +47,8 @@ badges, reward mechanics), and **dense enterprise greige** (joyless gray-on-gray
 - Flat parchment + one scholarly green: warm parchment canvas, near-white cards,
   hairline borders, green as both primary and accent; navy demoted to footer-only.
 - Quran/Mushaf content keeps its current naskh faces (Amiri etc.), unchanged; a
-  clean Arabic sans (IBM Plex Sans Arabic) carries UI chrome.
+  clean Arabic sans (IBM Plex Sans Arabic) carries UI chrome. The exact Compact
+  linking ayah-selection display exception is owned by `FRONTEND_UI_RULES.md` §3.
 - Quiet and **flat**; separation comes from the tonal surface ladder and hairline
   borders. A single shadow exists, reserved for floating layers only.
 - Light navbar (opaque, flat, hairline bottom border), dark navy footer/anchor;
@@ -190,8 +191,10 @@ or needed. Do not use a flat pure-white *page canvas*; the canvas is parchment.
 **Quran / Content Font:** the app's **current** Quran/Mushaf faces (Amiri for
 Mushaf/verse text, with the existing ayah-marker face). These are **sacred and
 stable: do not change or replace Quran/Mushaf glyph fonts or Quran rendering**, and
-never animate Quran text. The prototype agrees (it also uses Amiri for verse text),
-so no change is needed here.
+never animate Quran text. The sole display exception is the exact Compact linking
+ayah-selection rule in `FRONTEND_UI_RULES.md` §3; it does not change the font, text,
+glyphs, or word boundaries. The prototype agrees (it also uses Amiri for verse text),
+so no font change is needed here.
 
 **UI Font (adopted from prototype):** **IBM Plex Sans Arabic** for Arabic UI chrome
 and **IBM Plex Sans** for Latin UI. Use weights **400 / 500 / 600 / 700** where

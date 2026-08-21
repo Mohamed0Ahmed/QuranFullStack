@@ -75,7 +75,9 @@ The identity is **flat parchment + ink + one scholarly green**:
 - **Calm, non-distracting motion.** Quick, subtle transitions only; no bounce, no
   showy animation; reduced-motion respected.
 - **Quran text rendering stays sacred and stable.** Quran/Mushaf glyph fonts and
-  rendering are unchanged and are **never animated**.
+  rendering are unchanged and are **never animated**. The sole Compact display
+  exception is the linking ayah-selection card rule recorded in
+  `FRONTEND_UI_RULES.md` §3; it changes no font, text, glyph, or word boundary.
 
 The Angular app stays **light + dark** only. The dark theme still runs the
 previous navy + gold values and remains functional; reconciling dark to the

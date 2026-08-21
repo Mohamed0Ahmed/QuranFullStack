@@ -236,7 +236,7 @@
               type="button"
               qdAction="row-action"
               class="abwab-tree__act abwab-tree__act--more-compact"
-              [attr.aria-label]="detailsAriaLabel(node.name)"
+              [attr.aria-label]="labels.rowDetailsAriaLabel(node.name)"
               [attr.data-testid]="'abwab-tree-details-' + node.id"
               [attr.tabindex]="-1"
               (click)="onDetailsClick($event, node.id)"

@@ -6,6 +6,8 @@
     [titleText]="titleText()"
     [showClose]="false"
     [submitOnEnter]="true"
+    [dismissOnBackdrop]="!busy()"
+    [dismissOnEscape]="!busy()"
     (dismissed)="cancel()"
     (primaryActionRequested)="confirm()"
   >
@@ -129,7 +131,13 @@
       >
         {{ confirmLabel }}
       </button>
-      <button type="button" qdAction="tertiary" data-testid="abwab-move-picker-cancel" (click)="cancel()">
+      <button
+        type="button"
+        qdAction="tertiary"
+        [disabled]="busy()"
+        data-testid="abwab-move-picker-cancel"
+        (click)="cancel()"
+      >
         {{ cancelLabel }}
       </button>
     </div>

@@ -141,52 +141,60 @@
   }
 </qd-confirm-dialog>
 
-@if (overlays.contextMenuDoorId() !== null) {
-  <qd-context-menu
-    [position]="overlays.contextMenuPosition()"
-    menuTestId="abwab-management-picker-context-menu"
-    backdropTestId="abwab-management-picker-context-backdrop"
-    (dismissed)="overlays.closeContextMenu()"
-  >
-    @if (selectionMode()) {
-      @if (contextMenuNode(); as node) {
-        <div class="abwab-management-picker__menu-stats" role="presentation">
-          <span>{{ labels.rowHeaderPositions }}: {{ node.selectedWordCount }}</span>
-          <span>{{ labels.rowHeaderLinks }}: {{ node.linkCount }}</span>
-          <span>{{ labels.rowHeaderDirect }}: {{ node.liveChildCount }}</span>
-          <span>{{ labels.rowHeaderTotal }}: {{ node.liveDescendantCount }}</span>
-          <span>{{ labels.rowHeaderDepth }}: {{ node.maxRelativeDepth }}</span>
-          <span>{{ labels.rowHeaderRelations }}: {{ node.relationCount }}</span>
-        </div>
+@if (contextMenuNode(); as node) {
+  @if (overlays.contextMenuKind() === 'details') {
+    <qd-context-menu
+      variant="disclosure-popover"
+      [position]="overlays.contextMenuPosition()"
+      [menuAriaLabel]="labels.rowDetailsAriaLabel(node.name)"
+      menuTestId="abwab-management-picker-context-menu"
+      backdropTestId="abwab-management-picker-context-backdrop"
+      (dismissed)="overlays.closeContextMenu()"
+    >
+      <div class="abwab-management-picker__menu-stats">
+        <span>{{ labels.rowHeaderPositions }}: {{ node.selectedWordCount }}</span>
+        <span>{{ labels.rowHeaderLinks }}: {{ node.linkCount }}</span>
+        <span>{{ labels.rowHeaderDirect }}: {{ node.liveChildCount }}</span>
+        <span>{{ labels.rowHeaderTotal }}: {{ node.liveDescendantCount }}</span>
+        <span>{{ labels.rowHeaderDepth }}: {{ node.maxRelativeDepth }}</span>
+        <span>{{ labels.rowHeaderRelations }}: {{ node.relationCount }}</span>
+      </div>
+    </qd-context-menu>
+  } @else {
+    <qd-context-menu
+      [position]="overlays.contextMenuPosition()"
+      menuTestId="abwab-management-picker-context-menu"
+      backdropTestId="abwab-management-picker-context-backdrop"
+      (dismissed)="overlays.closeContextMenu()"
+    >
+      @if (permissions.canEditDoor()) {
+        <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxEdit()">
+          {{ labels.editOp }}
+        </button>
       }
-    }
-    @if (permissions.canEditDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxEdit()">
-        {{ labels.editOp }}
+      @if (permissions.canCreateDoor()) {
+        <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxAddChild()">
+          {{ labels.addChildOp }}
+        </button>
+      }
+      @if (permissions.canMoveDoor()) {
+        <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxMove()">
+          {{ labels.moveOp }}
+        </button>
+      }
+      <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxRelations()">
+        {{ labels.relationsOp }}
       </button>
-    }
-    @if (permissions.canCreateDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxAddChild()">
-        {{ labels.addChildOp }}
-      </button>
-    }
-    @if (permissions.canMoveDoor()) {
-      <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxMove()">
-        {{ labels.moveOp }}
-      </button>
-    }
-    <button type="button" role="menuitem" class="qd-context-menu__item" (click)="overlays.ctxRelations()">
-      {{ labels.relationsOp }}
-    </button>
-    @if (permissions.canArchiveDoor()) {
-      <button
-        type="button"
-        role="menuitem"
-        class="qd-context-menu__item qd-context-menu__item--danger"
-        (click)="overlays.ctxArchive()"
-      >
-        {{ labels.archiveOp }}
-      </button>
-    }
-  </qd-context-menu>
+      @if (permissions.canArchiveDoor()) {
+        <button
+          type="button"
+          role="menuitem"
+          class="qd-context-menu__item qd-context-menu__item--danger"
+          (click)="overlays.ctxArchive()"
+        >
+          {{ labels.archiveOp }}
+        </button>
+      }
+    </qd-context-menu>
+  }
 }

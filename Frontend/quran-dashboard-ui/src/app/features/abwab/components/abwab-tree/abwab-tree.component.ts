@@ -72,6 +72,7 @@ export class AbwabTreeComponent {
 
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
+  protected readonly labels = ABWAB_LABELS;
   private readonly contextMenu = new AbwabTreeContextMenuController(
     (id) => this.manualFocusId.set(id),
     (id) => this.selected.emit(id),
@@ -201,10 +202,6 @@ export class AbwabTreeComponent {
 
   protected menuAriaLabel(name: string): string {
     return ABWAB_LABELS.rowMenuAriaLabel(name);
-  }
-
-  protected detailsAriaLabel(name: string): string {
-    return `تفاصيل «${name}»`;
   }
 
   protected expandAriaLabel(row: AbwabTreeRow, node: AbwabNode): string {
