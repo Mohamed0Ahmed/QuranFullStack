@@ -1,5 +1,6 @@
 import { Component, computed, input, output } from '@angular/core';
 
+import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 import {
   AYAH_STUDY_TABS_BY_GROUP,
   AyahStudyGroup,
@@ -56,6 +57,7 @@ let nextStudyContextInstance = 0;
     MushafDoorsPanelComponent,
     SelectedWordSectionComponent,
     SelectedAyahSectionComponent,
+    SessionScrollStateDirective,
   ],
   templateUrl: './study-context-section.component.html',
   styleUrls: ['./study-context-section.component.scss'],

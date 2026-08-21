@@ -1,4 +1,9 @@
-<div class="qd-page abwab-page" data-testid="abwab-page">
+<div
+  class="qd-page abwab-page"
+  data-testid="abwab-page"
+  qdSessionScrollState="abwab.main"
+  qdSessionScrollTarget="viewport"
+>
   <div class="qd-page-shell qd-page-shell--full-data abwab-page__frame">
     <header class="qd-page-header abwab-page__header">
       <div>
@@ -173,6 +178,7 @@
                   [bulkSelectedIds]="bulkSelectedIds()"
                   [matchedIds]="treeMatchedIds()"
                   [expandSeedIds]="expandSeedIds()"
+                  [transientExpandSeedIds]="transientExpandSeedIds()"
                   [searchExpandedIds]="searchExpandedIds()"
                   [revealedId]="revealedId()"
                   [canCreateDoor]="permissions.canCreateDoor()"
@@ -185,6 +191,7 @@
                   (orderCommitted)="interactions.onOrderCommitted($event)"
                   (relationsRequested)="interactions.onRelationsRequested($event)"
                   (linksToggled)="doorLinks.toggleDoor($event)"
+                  (expandedIdsChanged)="rememberExpandedDoorIds($event)"
                 />
               }
               @if (permissions.canCreateDoor()) {

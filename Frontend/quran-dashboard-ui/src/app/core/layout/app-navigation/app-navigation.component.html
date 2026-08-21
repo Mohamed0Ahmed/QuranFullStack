@@ -56,7 +56,7 @@
         <a
           class="qd-nav__link"
           qdAction="tertiary"
-          [routerLink]="item.route"
+          [routerLink]="navigationTarget(item)"
           routerLinkActive="qd-nav__link--current"
           ariaCurrentWhenActive="page"
           [routerLinkActiveOptions]="{ exact: exactFor(item.route) }"
@@ -86,8 +86,7 @@
   <a
     class="qd-nav__link qd-nav__link--child"
     qdAction="tertiary"
-    [routerLink]="child.route"
-    [queryParams]="child.queryParams ?? null"
+    [routerLink]="navigationTarget(child)"
     routerLinkActive="qd-nav__link--current"
     ariaCurrentWhenActive="page"
     [routerLinkActiveOptions]="{ exact: child.route === parent.route }"

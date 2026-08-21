@@ -24,6 +24,7 @@ import { MushafDoorsHighlightStore } from '../../state/mushaf-doors-highlight.st
 import { LinkingAccessService } from '../../../linking/state/linking-access.service';
 import { ManualMushafSelectionStore } from '../../../linking/state/manual-mushaf-selection.store';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
+import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 
 @Component({
   selector: 'qd-mushaf-reader-page',
@@ -33,6 +34,7 @@ import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/conte
     MushafPageAreaComponent,
     MushafSelectionStatusComponent,
     QdContextMenuComponent,
+    SessionScrollStateDirective,
     StudyContextSectionComponent,
   ],
   templateUrl: './mushaf-reader-page.component.html',

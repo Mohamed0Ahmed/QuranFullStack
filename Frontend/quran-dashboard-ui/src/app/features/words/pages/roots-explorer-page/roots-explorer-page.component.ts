@@ -1,7 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, effect, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, debounceTime } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
@@ -36,6 +36,7 @@ import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-c
 import { mapRootAyahMatchToShared } from '../../utils/root-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
+import { WordsDebouncedSearchDraftController } from '../../state/words-debounced-search-draft.controller';
 
 type RootTableColumnKey = MorphologyColumnKey;
 type RootPanelState = ReturnType<RootsDetailFacade['panelState']>;
@@ -57,9 +58,8 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly explainerPreference = inject(WordsExplainerPreference);
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('roots', (value) => this.updateQueryParams({ search: value || null, page: null }));
   private readonly restoredColumn = signal<RootTableColumnKey | null>(null);
-  private readonly searchInput = new Subject<string>();
-  private searchSub?: Subscription;
   private querySyncSub?: Subscription;
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
@@ -95,7 +95,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly rootsTableLabel = ROOTS_TABLE_LABEL;
   protected readonly wordsTablistLabel = ROOTS_WORDS_TABLIST_LABEL;
   protected readonly surahsTablistLabel = ROOTS_SURAHS_TABLIST_LABEL;
-  protected readonly searchDraft = signal('');
+  protected readonly searchDraft = this.searchDraftController.draft;
   protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   protected get rangeMetrics() { return ROOTS_RANGE_METRICS; }
   protected readonly isDesktop = signal(true);
@@ -162,12 +162,12 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.searchDraftController.start();
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
-    this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.querySyncSub = this.route.queryParamMap.subscribe((params) => {
       const parsed = parseRootsQueryParams(params);
-      this.searchDraft.set(parsed.search);
+      this.searchDraftController.syncCommitted(parsed.search);
       this.restoredColumn.set(parseMorphologyColumnKey(parsed.column));
       this.ranges.set(parsed.ranges);
     });
@@ -181,13 +181,13 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.listFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
-    this.searchSub?.unsubscribe();
+    this.searchDraftController.destroy();
     this.querySyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
     this.tableFocus.destroy();
   }
 
-  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraft.set(value); this.searchInput.next(value); }
+  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraftController.update(value); }
   protected onRangesChange(ranges: RangeFilters): void {
     this.clearTableFocus();
     this.updateQueryParams({ ...buildRangeQueryParams(ranges, ROOTS_RANGE_METRICS), page: null });

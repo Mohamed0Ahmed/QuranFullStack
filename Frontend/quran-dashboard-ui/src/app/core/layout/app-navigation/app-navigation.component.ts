@@ -12,9 +12,10 @@ import {
   output,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, UrlTree } from '@angular/router';
 
 import { NavItem } from '../../navigation/nav-items';
+import { NavigationResumeService } from '../../navigation/navigation-resume.service';
 import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { QdActionDirective } from '../../../shared/ui/action/action.directive';
 import {
@@ -38,6 +39,7 @@ const NAV_MENU_ANCHOR_GAP = 0;
 })
 export class AppNavigationComponent {
   private readonly router = inject(Router);
+  private readonly navigationResume = inject(NavigationResumeService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -78,6 +80,10 @@ export class AppNavigationComponent {
 
   protected exactFor(route: string): boolean {
     return route === DASHBOARD_ROUTE_PATH;
+  }
+
+  protected navigationTarget(item: NavItem): UrlTree {
+    return this.navigationResume.targetFor(item);
   }
 
   protected isMenuActive(item: NavItem): boolean {

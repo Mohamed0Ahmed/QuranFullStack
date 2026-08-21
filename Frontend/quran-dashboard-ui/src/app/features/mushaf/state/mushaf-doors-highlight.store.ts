@@ -1,4 +1,4 @@
-import { Injectable, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Injectable, OnDestroy, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { MushafDoorHighlightsResponse } from '../../../core/api/generated/models';
@@ -13,6 +13,11 @@ import {
 } from '../models/mushaf-door-highlights.models';
 import { ResourceLoadState } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+import {
+  MushafDoorsHighlightSessionState,
+  MushafDoorsHighlightSessionStore,
+  hasDoorSelection,
+} from './mushaf-doors-highlight-session.store';
 
 const DEFAULT_DOOR_COLOR_SLOT: MushafDoorColorSlot = MUSHAF_DOOR_COLOR_SLOTS[0];
 const EMPTY_LOAD_STATE: ResourceLoadState = {
@@ -25,6 +30,7 @@ const EMPTY_LOAD_STATE: ResourceLoadState = {
 export class MushafDoorsHighlightStore implements OnDestroy {
   private readonly api = inject(MushafDoorHighlightsApi);
   private readonly doors = inject(AbwabSnapshotFacade);
+  private readonly session = inject(MushafDoorsHighlightSessionStore);
 
   private readonly pageNumberState = signal<number | null>(null);
   private readonly draftDoorIdsState = signal<ReadonlySet<number>>(new Set());
@@ -34,6 +40,7 @@ export class MushafDoorsHighlightStore implements OnDestroy {
   private readonly loadStateValue = signal<ResourceLoadState>(EMPTY_LOAD_STATE);
   private requestSubscription: Subscription | null = null;
   private requestToken = 0;
+  private pendingSessionState: MushafDoorsHighlightSessionState | null = null;
 
   readonly draftDoorIds = this.draftDoorIdsState.asReadonly();
   readonly appliedDoorIds = this.appliedDoorIdsState.asReadonly();
@@ -114,6 +121,20 @@ export class MushafDoorsHighlightStore implements OnDestroy {
     );
   });
 
+  constructor() {
+    const storedState = this.session.read();
+    if (hasDoorSelection(storedState)) {
+      this.pendingSessionState = storedState;
+      this.doors.ensureLoaded();
+    }
+    effect(() => {
+      const snapshot = this.doors.snapshot();
+      if (snapshot) {
+        untracked(() => this.rebindDoorSelection(snapshot));
+      }
+    });
+  }
+
   ngOnDestroy(): void {
     this.cancelRequest();
   }
@@ -134,6 +155,7 @@ export class MushafDoorsHighlightStore implements OnDestroy {
     if (next.has(doorId)) {
       next.delete(doorId);
       this.draftDoorIdsState.set(next);
+      this.persistDoorSelection();
       return;
     }
     if (next.size >= this.maxSelectedDoors) {
@@ -142,12 +164,14 @@ export class MushafDoorsHighlightStore implements OnDestroy {
 
     next.add(doorId);
     this.draftDoorIdsState.set(next);
+    this.persistDoorSelection();
   }
 
   confirmDraft(): void {
     const applied = new Set(this.draftDoorIdsState());
     this.appliedDoorIdsState.set(applied);
     this.assignUniqueDoorColors(applied);
+    this.persistDoorSelection();
     this.responseState.set(null);
     this.cancelRequest();
     this.loadCurrentPage();
@@ -161,6 +185,7 @@ export class MushafDoorsHighlightStore implements OnDestroy {
     this.appliedDoorIdsState.set(applied);
     this.draftDoorIdsState.set(draft);
     this.pruneDoorColors(applied);
+    this.persistDoorSelection();
     this.responseState.set(null);
     this.cancelRequest();
     this.loadCurrentPage();
@@ -183,6 +208,7 @@ export class MushafDoorsHighlightStore implements OnDestroy {
     const next = new Map(colorSlots);
     next.set(doorId, colorSlot);
     this.doorColorSlotsState.set(next);
+    this.persistDoorSelection();
   }
 
   retry(): void {
@@ -219,6 +245,36 @@ export class MushafDoorsHighlightStore implements OnDestroy {
         connectionMessage: 'تعذّر الاتصال بالخادم لتحميل تمييز الأبواب.',
       },
     );
+  }
+
+  private rebindDoorSelection(snapshot: AbwabTreeSnapshotVm): void {
+    const current = this.pendingSessionState ?? this.captureSessionState();
+    const rebound = this.session.rebind(current, snapshot);
+    this.pendingSessionState = null;
+    const applied = new Set(rebound.appliedDoorIds);
+    const appliedChanged = !setsEqual(this.appliedDoorIdsState(), applied);
+    this.draftDoorIdsState.set(new Set(rebound.draftDoorIds));
+    this.appliedDoorIdsState.set(applied);
+    this.doorColorSlotsState.set(new Map(rebound.colorSlots));
+    this.assignUniqueDoorColors(applied);
+    this.persistDoorSelection();
+    if (appliedChanged) {
+      this.responseState.set(null);
+      this.cancelRequest();
+      this.loadCurrentPage();
+    }
+  }
+
+  private persistDoorSelection(): void {
+    this.session.write(this.captureSessionState());
+  }
+
+  private captureSessionState(): MushafDoorsHighlightSessionState {
+    return {
+      draftDoorIds: Array.from(this.draftDoorIdsState()),
+      appliedDoorIds: Array.from(this.appliedDoorIdsState()),
+      colorSlots: Array.from(this.doorColorSlotsState()),
+    };
   }
 
   private currentResponse(): MushafDoorHighlightsResponse | null {

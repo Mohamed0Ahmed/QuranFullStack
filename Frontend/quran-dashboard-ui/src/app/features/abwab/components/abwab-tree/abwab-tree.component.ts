@@ -30,7 +30,6 @@ import {
   isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
 } from './abwab-tree-keyboard.controller';
-
 export type { AbwabTreeMenuRequest } from './abwab-tree-context-menu.controller';
 
 @Component({
@@ -53,6 +52,7 @@ export class AbwabTreeComponent {
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
   readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
+  readonly transientExpandSeedIds = input<ReadonlySet<number>>(new Set());
   readonly searchExpandedIds = input<ReadonlySet<number>>(new Set());
   readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly revealedId = input<number | null>(null);
@@ -82,13 +82,13 @@ export class AbwabTreeComponent {
   constructor() {
     effect(() => {
       const seed = this.expandSeedIds();
-      if (seed.size === 0) {
-        return;
-      }
       untracked(() => this.expansion.seed(seed));
     });
+    effect(() => {
+      const seed = this.transientExpandSeedIds();
+      untracked(() => this.expansion.setTransient(seed));
+    });
   }
-
   private readonly effectiveExpandedIds = computed<ReadonlySet<number>>(() =>
     this.expansion.effectiveIds(this.searchExpandedIds()),
   );

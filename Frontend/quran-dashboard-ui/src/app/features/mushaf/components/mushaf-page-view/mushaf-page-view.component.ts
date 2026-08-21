@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
+import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 import { MushafPageViewModel } from '../../models/mushaf.models';
 import {
   MushafDoorDetailsRequest,
@@ -30,7 +31,7 @@ import {
 @Component({
   selector: 'qd-mushaf-page-view',
   standalone: true,
-  imports: [CommonModule, MushafLineComponent, MushafPageSwipeDirective],
+  imports: [CommonModule, MushafLineComponent, MushafPageSwipeDirective, SessionScrollStateDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-view.component.html',
   styleUrls: ['./mushaf-page-view.component.scss'],
