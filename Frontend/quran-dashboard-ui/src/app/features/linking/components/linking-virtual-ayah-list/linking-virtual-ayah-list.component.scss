@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .linking-virtual-ayah-list,
 .linking-virtual-ayah-list__viewport {
   min-block-size: 18rem;
@@ -5,7 +7,7 @@
 }
 
 .linking-virtual-ayah-list__row {
-  padding: var(--qd-space-2) var(--qd-space-3);
+  padding: var(--qd-space-1) var(--qd-space-2);
 }
 
 .linking-virtual-ayah-list__content {
@@ -99,4 +101,14 @@
   margin: 0;
   padding: var(--qd-space-3);
   color: var(--qd-color-danger-text);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-virtual-ayah-list__row {
+    padding: var(--qd-s-2) var(--qd-space-1);
+  }
+
+  .linking-virtual-ayah-list__content {
+    gap: var(--qd-space-2);
+  }
 }

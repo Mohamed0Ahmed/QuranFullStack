@@ -110,13 +110,12 @@ export class QdDataTableComponent<T> {
   }
 
   scrollRowIntoView(index: number, direction: QdDataTableRowDirection): void {
-    const itemSize = this.isCompact() ? this.compactRowHeight() : this.rowHeight();
-    if (itemSize <= 0) {
-      return;
-    }
-
     const viewport = this.viewport();
     if (this.useVirtualScroll() && viewport) {
+      const itemSize = this.rowHeight();
+      if (itemSize <= 0) {
+        return;
+      }
       const offset = viewport.measureScrollOffset('top');
       const viewportSize = viewport.getViewportSize();
       if (this.shouldScroll(index, offset, viewportSize, itemSize, direction)) {
@@ -126,8 +125,18 @@ export class QdDataTableComponent<T> {
     }
 
     const body = this.host.nativeElement.querySelector('[data-testid="qd-data-table-body"]') as HTMLElement | null;
-    if (body && this.shouldScroll(index, body.scrollTop, body.clientHeight, itemSize, direction)) {
-      body.scrollTop = this.nextOffset(body.scrollTop, itemSize, direction);
+    const row = body?.querySelectorAll<HTMLElement>('.qd-data-table__row').item(index);
+    if (!body || !row) {
+      return;
+    }
+
+    const bodyRect = body.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    if (direction === 'down' && rowRect.bottom > bodyRect.bottom) {
+      body.scrollTop += rowRect.bottom - bodyRect.bottom;
+    }
+    if (direction === 'up' && rowRect.top < bodyRect.top) {
+      body.scrollTop += rowRect.top - bodyRect.top;
     }
   }
 

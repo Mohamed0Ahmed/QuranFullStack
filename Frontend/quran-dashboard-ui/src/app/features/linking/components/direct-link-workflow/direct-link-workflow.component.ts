@@ -11,6 +11,7 @@ import { LinkingInlineSourceWorkflowController } from '../../state/linking-inlin
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { linkingSourceTypeCodes } from '../../utils/linking-source-types';
 import { LinkingDoorStepComponent } from '../linking-door-step/linking-door-step.component';
+import { LinkingAyahSelectionToolbarComponent } from '../linking-ayah-selection-toolbar/linking-ayah-selection-toolbar.component';
 import { LinkingManualShapeSelectorComponent } from '../linking-manual-shape-selector/linking-manual-shape-selector.component';
 import { LinkingPreflightStepComponent } from '../linking-preflight-step/linking-preflight-step.component';
 import { LinkingSourceTypeFiltersComponent } from '../linking-source-type-filters/linking-source-type-filters.component';
@@ -27,6 +28,7 @@ import {
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
     QdNoticeComponent,
+    LinkingAyahSelectionToolbarComponent,
     LinkingDoorStepComponent,
     LinkingManualShapeSelectorComponent,
     LinkingPreflightStepComponent,
@@ -100,6 +102,39 @@ export class DirectLinkWorkflowComponent {
   protected cancelExecution(): void { this.workflow.cancelExecution(); }
   protected canNavigateTo(step: LinkingWorkflowStep): boolean { return this.workflow.canNavigateTo(step); }
   protected navigateTo(step: LinkingWorkflowStep): void { this.workflow.navigateTo(step); }
+
+  protected onEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || event.defaultPrevented || event.isComposing || event.target instanceof HTMLButtonElement) {
+      return;
+    }
+    switch (this.currentStep()) {
+      case 'configure-source':
+        if (!this.canAdvanceSource()) {
+          return;
+        }
+        event.preventDefault();
+        this.next();
+        return;
+      case 'door':
+        if (!this.canAdvanceDoor()) {
+          return;
+        }
+        event.preventDefault();
+        this.next();
+        return;
+      case 'ready':
+        if (!this.isCopy() || !this.isNoOp()) {
+          if (!this.canSubmit()) {
+            return;
+          }
+          event.preventDefault();
+          this.submit();
+        }
+        return;
+      default:
+        return;
+    }
+  }
 
   protected toggleManualWord(toggle: LinkingVirtualWordToggle): void {
     this.workflow.toggleDirectManualWord(toggle.ayahId, toggle.quranWordId);

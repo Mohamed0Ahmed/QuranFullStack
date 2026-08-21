@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="labels.inclusionsModalTitle"
     [showClose]="false"
+    [submitOnEnter]="canCreateSources()"
     (dismissed)="close()"
+    (primaryActionRequested)="controller.submit()"
   >
     <p qdModalShellHeaderSupport class="abwab-inclusions-modal__support">
       <strong>{{ labels.inclusionsTargetLabel }}:</strong>

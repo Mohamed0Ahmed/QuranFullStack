@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: contents;
 }
@@ -6,4 +8,20 @@
   margin-inline-start: auto;
   color: var(--qd-text-muted);
   font-size: var(--qd-type-caption);
+}
+
+.abwab-overlays-host__compact-menu-stats {
+  display: none;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-overlays-host__compact-menu-stats--visible {
+    display: grid;
+    gap: var(--qd-space-1);
+    padding: var(--qd-space-2) var(--qd-space-3);
+    border-block-end: var(--qd-hairline);
+    color: var(--qd-text-muted);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-type-caption-lh);
+  }
 }

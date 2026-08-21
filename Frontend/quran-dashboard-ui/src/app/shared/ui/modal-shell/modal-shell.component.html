@@ -22,7 +22,7 @@
       [attr.data-qd-modal-variant]="variant()"
       [attr.data-testid]="dialogTestId() ?? testIdPrefix()"
       [cdkTrapFocus]="trapEnabled()"
-      (keydown.escape)="onEscape($event)"
+      (keydown)="onKeydown($event)"
     >
       <header
         class="qd-modal-shell__header"

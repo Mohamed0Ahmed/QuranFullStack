@@ -39,7 +39,25 @@
   </ng-template>
 
   <ng-template #compactRowTemplate let-row let-index="index">
-    <ng-container *ngTemplateOutlet="rowCells; context: { row: row, index: index }" />
+    <span class="word-types-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</span>
+    <div class="qd-explorer-mobile-identity">
+      <span class="word-types-table__word">{{ row.displayText }}</span>
+      <div class="qd-explorer-mobile-relations">
+        @if (row.kind === 'word') {
+          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.type }}:</span><span>{{ row.typeLabel.ar }}</span></span>
+          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.root }}:</span><span>{{ row.rootText || placeholder }}</span></span>
+          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.stem }}:</span><span>{{ row.stemText || placeholder }}</span></span>
+          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.lemma }}:</span><span>{{ row.lemmaText || placeholder }}</span></span>
+        } @else {
+          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ dimensionHeader() }}:</span><span>{{ row.displayText }}</span></span>
+        }
+      </div>
+    </div>
+    <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--primary">
+      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-occurrences" data-word-count-column="occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'occurrences')" />
+      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-ayahs" data-word-count-column="ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'ayahs')" />
+      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-surahs" data-word-count-column="surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'surahs')" />
+    </div>
   </ng-template>
 
   <ng-template #loadingTemplate>

@@ -69,8 +69,8 @@
   </ng-template>
 
   <ng-template #compactRowTemplate let-row let-index="index">
-    <div class="lemmas-table__compact-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
-    <div class="lemmas-table__compact-identity">
+    <div class="lemmas-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
+    <div class="lemmas-table__compact-identity qd-explorer-mobile-identity">
       <button
         qdAction="row-action"
         size="sm"
@@ -84,7 +84,10 @@
       >
         <span class="lemmas-table__display">{{ row.displayText }}</span>
       </button>
-      <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
+      <div class="qd-explorer-mobile-relations">
+        <span class="qd-explorer-mobile-relation-label">{{ headers.root }}:</span>
+        <ng-container *ngTemplateOutlet="rootCell; context: { row: row }" />
+      </div>
     </div>
     <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
   </ng-template>
@@ -170,12 +173,12 @@
 </ng-template>
 
 <ng-template #mobileStats let-row="row">
-  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--grid-12">
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences" [class.qd-is-selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" data-testid="lemmas-table-mobile-occurrences" [attr.aria-label]="row.occurrencesCount + ' ' + countLabels.occurrences" [disabled]="row.occurrencesCount === 0" [attr.aria-disabled]="row.occurrencesCount === 0 ? 'true' : null" [attr.aria-describedby]="row.occurrencesCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'occurrences', 'ayahs')">{{ row.occurrencesCount }} {{ headers.occurrences }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)" data-testid="lemmas-table-mobile-ayahs" [attr.aria-label]="row.ayahsCount + ' ' + countLabels.ayahs" [disabled]="row.ayahsCount === 0" [attr.aria-disabled]="row.ayahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.ayahsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'ayahs', 'ayahs')">{{ row.ayahsCount }} {{ headers.ayahs }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)" data-testid="lemmas-table-mobile-surahs" [attr.aria-label]="row.surahsCount + ' ' + countLabels.surahs" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })">{{ row.surahsCount }} {{ headers.surahs }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'simple', row.simpleWordsCount)" data-testid="lemmas-table-mobile-simple-words" [attr.aria-label]="row.simpleWordsCount + ' ' + countLabels.simpleWords" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'simple', 'words', { wordView: 'simple' })">{{ row.simpleWordsCount }} {{ headers.simpleWords }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" data-testid="lemmas-table-mobile-tashkeel-words" [attr.aria-label]="row.tashkeelWordsCount + ' ' + countLabels.tashkeelWords" [disabled]="row.tashkeelWordsCount === 0" [attr.aria-disabled]="row.tashkeelWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.tashkeelWordsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })">{{ row.tashkeelWordsCount }} {{ headers.tashkeelWords }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'stems', row.stemsCount)" data-testid="lemmas-table-mobile-stems" [attr.aria-label]="row.stemsCount + ' ' + countLabels.stems" [disabled]="row.stemsCount === 0" [attr.aria-disabled]="row.stemsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.stemsCount === 0 ? disabledReasonId : null" (click)="openCount(row, 'stems', 'stems')">{{ row.stemsCount }} {{ headers.stems }}</button>
+  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--primary">
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences" testId="lemmas-table-mobile-occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" [countFirst]="true" (chipClick)="openCount(row, 'occurrences', 'ayahs')" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" [countFirst]="true" (chipClick)="openCount(row, 'ayahs', 'ayahs')" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" [countFirst]="true" (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-simple-words" [label]="headers.simpleWords" [count]="row.simpleWordsCount" [disabled]="row.simpleWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'simple', row.simpleWordsCount)" [countFirst]="true" (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-tashkeel-words" [label]="headers.tashkeelWords" [count]="row.tashkeelWordsCount" [disabled]="row.tashkeelWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" [countFirst]="true" (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-stems" [label]="headers.stems" [count]="row.stemsCount" [disabled]="row.stemsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'stems', row.stemsCount)" [countFirst]="true" (chipClick)="openCount(row, 'stems', 'stems')" />
   </div>
 </ng-template>

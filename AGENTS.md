@@ -62,11 +62,3 @@ documentation. Steady-state contract pointers live in `docs/contracts/README.md`
 The canonical production-source rule, three-part exception, scope exclusions, and directive
 exemptions live in `CODING_PRINCIPLES.md` §2 `Comment Policy`. Load that
 heading for production-source changes.
-
-<!-- SPECKIT START -->
-
-## Active Spec Kit Feature
-
-`specs/001-abwab-door-inclusions/`
-
-<!-- SPECKIT END -->

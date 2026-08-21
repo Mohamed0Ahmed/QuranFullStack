@@ -44,6 +44,7 @@ export class LinkingAyahCardComponent {
   readonly metaAlignment = input<'center' | 'start'>('start');
   readonly resultPosition = input.required<number>();
   readonly resultCount = input.required<number>();
+  readonly showResultCount = input(true);
   readonly wordToggled = output<number>();
 
   protected readonly labels = LINKING_LABELS;

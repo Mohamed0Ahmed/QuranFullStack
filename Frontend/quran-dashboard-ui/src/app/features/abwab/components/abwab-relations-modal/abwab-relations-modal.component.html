@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="titleText()"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="close()"
+    (primaryActionRequested)="add()"
   >
     @if (!anchorPickMode() && status() === 'ready') {
       <span qdModalShellHeaderExtra class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">

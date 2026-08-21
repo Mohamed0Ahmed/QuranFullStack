@@ -21,7 +21,15 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
+  .quran-source-linking-actions {
+    flex-wrap: nowrap;
+    gap: var(--qd-space-1);
+  }
+
   .quran-source-linking-actions .qd-action {
-    --qd-action-size: var(--qd-control-lg);
+    --qd-action-size: var(--qd-control-sm);
+    --qd-action-padding-inline: var(--qd-space-2);
+
+    font-size: var(--qd-type-caption);
   }
 }

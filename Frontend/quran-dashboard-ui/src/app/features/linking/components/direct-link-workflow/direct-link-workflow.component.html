@@ -1,4 +1,4 @@
-<section class="direct-link-workflow" [attr.aria-label]="labels.operation">
+<section class="direct-link-workflow" [attr.aria-label]="labels.operation" (keydown.enter)="onEnter($event)">
   <header class="direct-link-workflow__header">
     @if (currentStep() !== 'succeeded') {
       <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
@@ -26,6 +26,7 @@
   <div
     class="direct-link-workflow__body"
     [class.direct-link-workflow__body--preflight]="currentStep() === 'preflighting' || currentStep() === 'ready'"
+    [class.direct-link-workflow__body--configuration]="currentStep() === 'configure-source'"
   >
     @if (showExecutionProgress()) {
       @if (execution().job; as job) {
@@ -80,31 +81,7 @@
               (viewTypeCodeChange)="setDirectViewTypeCode($event)"
             />
             <header class="direct-link-workflow__configuration-toolbar">
-              @if (isAutomatic()) {
-                <button
-                  qdAction="secondary"
-                  size="sm"
-                  type="button"
-                  [class.qd-is-selected]="draft.automaticWordMatchesEnabled"
-                  [attr.aria-pressed]="draft.automaticWordMatchesEnabled"
-                  (click)="workflow.setDirectAutomaticWords(!draft.automaticWordMatchesEnabled)"
-                >
-                  {{ labels.highlightStep }}
-                </button>
-              } @else {
-                <qd-linking-manual-shape-selector
-                  [selectedCount]="directSelectedCount()"
-                  [linkShape]="draft.manualLinkShape ?? 'independent'"
-                  (linkShapeChanged)="setManualLinkShape($event)"
-                />
-              }
-              <button qdAction="secondary" size="sm" type="button" (click)="workflow.selectAllDirectAyahs()">
-                {{ labels.selectAll }}
-              </button>
-              <button qdAction="secondary" size="sm" type="button" (click)="workflow.clearAllDirectAyahs()">
-                {{ labels.clearAll }}
-              </button>
-              <p role="status">
+              <p class="direct-link-workflow__configuration-count" role="status">
                 {{ labels.totalAyahs }}:
                 <strong class="qd-ltr-isolate tabular-nums">{{ directTotalAyahCount() || '—' }}</strong>
                 <span aria-hidden="true">·</span>
@@ -116,6 +93,34 @@
                   <strong class="qd-ltr-isolate tabular-nums">{{ directDisplayedAyahCount() || '—' }}</strong>
                 }
               </p>
+              <qd-linking-ayah-selection-toolbar
+                [selectAllLabel]="labels.selectAll"
+                [clearAllLabel]="labels.clearAll"
+                (selectAllRequested)="workflow.selectAllDirectAyahs()"
+                (clearAllRequested)="workflow.clearAllDirectAyahs()"
+              >
+                <div qdLinkingAyahSelectionConfiguration>
+                @if (isAutomatic()) {
+                  <button
+                    qdAction="secondary"
+                    size="sm"
+                    type="button"
+                    class="direct-link-workflow__word-toggle"
+                    [class.qd-is-selected]="draft.automaticWordMatchesEnabled"
+                    [attr.aria-pressed]="draft.automaticWordMatchesEnabled"
+                    (click)="workflow.setDirectAutomaticWords(!draft.automaticWordMatchesEnabled)"
+                  >
+                    {{ labels.highlightStep }}
+                  </button>
+                } @else {
+                  <qd-linking-manual-shape-selector
+                    [selectedCount]="directSelectedCount()"
+                    [linkShape]="draft.manualLinkShape ?? 'independent'"
+                    (linkShapeChanged)="setManualLinkShape($event)"
+                  />
+                }
+                </div>
+              </qd-linking-ayah-selection-toolbar>
             </header>
             @if (directRequest(); as request) {
               <qd-linking-virtual-ayah-list

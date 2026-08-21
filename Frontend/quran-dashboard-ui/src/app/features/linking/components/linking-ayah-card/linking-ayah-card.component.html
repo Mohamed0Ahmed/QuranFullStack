@@ -7,15 +7,18 @@
   @if (displayStatusLabel(); as status) {
     <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
   }
+  @if (!showResultCount()) {
+    <span class="linking-ayah-card__serial" aria-hidden="true">{{ resultPosition() }}</span>
+  }
   <header
     class="linking-ayah-card__meta"
     [class.linking-ayah-card__meta--start]="metaAlignment() === 'start'"
   >
     <ng-content select="[qdLinkingAyahCardMetaStart]" />
-    <span>{{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
-    <span aria-hidden="true">·</span>
+    @if (showResultCount()) {
+      <span>{{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
+    }
     <span>{{ ayah().surahNameArabic }}</span>
-    <span aria-hidden="true">—</span>
     <span>الآية {{ ayah().ayahNumber }}</span>
   </header>
   <p class="linking-ayah-card__text" dir="rtl">

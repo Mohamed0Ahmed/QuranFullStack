@@ -51,44 +51,4 @@
   .stems-table {
     block-size: auto;
   }
-
-  .stems-table__stem--compact {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  .stems-table__display {
-    text-align: center;
-  }
-
-  .stems-table__compact-row-number {
-    position: absolute;
-    inset-block-start: 1.125rem;
-    inset-inline-start: var(--qd-space-2);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  .stems-table__compact-identity {
-    flex-direction: column;
-    gap: var(--qd-space-1);
-    padding-inline: var(--qd-space-6) var(--qd-space-2);
-  }
-
-  .stems-table__mobile-meta--compact {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: var(--qd-space-2);
-    inline-size: 100%;
-  }
-
-  .stems-table__mobile-meta--compact .stems-table__lemma-link,
-  .stems-table__mobile-meta--compact .stems-table__root-link {
-    display: flex;
-    min-inline-size: 0;
-    min-block-size: var(--qd-hit-target-min);
-    align-items: center;
-  }
 }

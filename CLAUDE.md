@@ -61,11 +61,3 @@ long-lived survivor list live in `docs/README.md` under _Where things live now_,
 The canonical production-source rule, its three-part exception, scope exclusions, and directive
 exemptions live in `CODING_PRINCIPLES.md` §2 `Comment Policy`. Load that
 heading when changing production-source code.
-
-<!-- SPECKIT START -->
-
-## Active Spec Kit Feature
-
-`specs/001-abwab-door-inclusions/`
-
-<!-- SPECKIT END -->

@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="title"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="onDismissed($event)"
+    (primaryActionRequested)="submitFromEnter()"
   >
     @if (errorMessage(); as error) {
       <qd-error-state severity="write" [reserve]="true" [message]="error" testId="qd-state-error" data-testid="abwab-sections-modal-error" />
@@ -13,7 +15,11 @@
 
     <ul class="abwab-sections-modal__list">
       @for (section of sections(); track section.id) {
-        <li class="abwab-sections-modal__row" [attr.data-testid]="'abwab-sections-modal-row-' + section.id">
+        <li
+          class="abwab-sections-modal__row"
+          [class.abwab-sections-modal__row--editing]="editingId() === section.id"
+          [attr.data-testid]="'abwab-sections-modal-row-' + section.id"
+        >
           @if (canReorderSection()) {
             @if (editingOrderId() === section.id) {
               <input
@@ -45,6 +51,7 @@
           }
           @if (canEditSection() && editingId() === section.id) {
             <input
+              class="abwab-sections-modal__rename-input"
               type="text"
               [value]="editingName()"
               [attr.data-testid]="'abwab-sections-modal-rename-input-' + section.id"
@@ -53,18 +60,27 @@
             <button
               type="button"
               qdAction="primary"
+              class="abwab-sections-modal__row-action abwab-sections-modal__row-action--save"
               [attr.data-testid]="'abwab-sections-modal-rename-save-' + section.id"
               (click)="saveRename(section.id)"
             >
               {{ saveLabel }}
             </button>
-            <button type="button" qdAction="tertiary" (click)="cancelRename()">{{ cancelLabel }}</button>
+            <button
+              type="button"
+              qdAction="tertiary"
+              class="abwab-sections-modal__row-action abwab-sections-modal__row-action--cancel"
+              (click)="cancelRename()"
+            >
+              {{ cancelLabel }}
+            </button>
           } @else {
             <span class="abwab-sections-modal__name">{{ section.name }}</span>
             @if (canEditSection()) {
               <button
                 type="button"
                 qdAction="tertiary"
+                class="abwab-sections-modal__row-action abwab-sections-modal__row-action--rename"
                 [attr.data-testid]="'abwab-sections-modal-rename-' + section.id"
                 (click)="startRename(section)"
               >
@@ -75,6 +91,7 @@
               <button
                 type="button"
                 qdAction="tertiary"
+                class="abwab-sections-modal__row-action abwab-sections-modal__row-action--delete"
                 [attr.data-testid]="'abwab-sections-modal-delete-' + section.id"
                 (click)="requestRemove(section.id)"
               >

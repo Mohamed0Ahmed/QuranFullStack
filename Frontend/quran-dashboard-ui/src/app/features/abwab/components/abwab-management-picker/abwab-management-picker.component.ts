@@ -19,7 +19,7 @@ import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-s
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
-import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
+import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabMoveDestination, AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
 import { AbwabManagementPickerSessionStore } from '../../state/abwab-management-picker-session.store';
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
@@ -70,6 +70,7 @@ export class AbwabManagementPickerComponent {
 
   readonly selectedDoorId = input<number | null>(null);
   readonly excludedDoorIds = input<readonly number[]>([]);
+  readonly selectionMode = input(false);
   readonly selectionChanged = output<number | null>();
 
   protected readonly facade = inject(AbwabSnapshotFacade);
@@ -86,6 +87,10 @@ export class AbwabManagementPickerComponent {
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
+  protected readonly contextMenuNode = computed(() => {
+    const id = this.overlays.contextMenuDoorId();
+    return id === null ? null : (this.byId().get(id) ?? null);
+  });
   protected readonly excludedIds = computed(() => new Set(this.excludedDoorIds()));
   protected readonly liveRoots = computed<readonly AbwabNode[]>(
     () => this.facade.snapshot()?.liveRoots ?? NO_ROOTS,
@@ -214,7 +219,7 @@ export class AbwabManagementPickerComponent {
       return;
     }
     this.overlays.setContextMenuPosition(request.x, request.y);
-    this.overlays.requestContextMenu(request.id);
+    this.overlays.requestContextMenu(request.id, request.kind);
   }
 
   protected addChild(doorId: number): void {
@@ -260,6 +265,10 @@ export class AbwabManagementPickerComponent {
     if (this.overlays.modalDoor() === null && door !== null) {
       this.pendingCreatedDoorId.set(door.id);
     }
+  }
+
+  protected onMoveConfirmed(destination: AbwabMoveDestination): void {
+    this.overlays.confirmMove(destination, () => this.overlays.closeMovePicker());
   }
 
   protected confirmArchive(): void {

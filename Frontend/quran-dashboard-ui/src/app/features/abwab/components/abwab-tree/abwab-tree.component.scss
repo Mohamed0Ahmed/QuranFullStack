@@ -1,4 +1,5 @@
 @use '../../../../../styles/breakpoints' as bp;
+@use './abwab-tree-mobile' as mobile;
 
 .abwab-tree-frame {
   display: grid;
@@ -180,6 +181,10 @@
   font-size: 0.6875rem;
 }
 
+.abwab-tree__compact-count-label {
+  display: none;
+}
+
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-tree__count--wide {
     display: none;
@@ -225,13 +230,19 @@
   flex: none;
 }
 
-@media (max-width: bp.$qd-bp-compact-max) {
-  .abwab-tree-frame {
-    --abwab-tree-row-control: var(--qd-control-lg);
-    --abwab-tree-indent-step: var(--qd-space-3);
-  }
-
-  .abwab-tree__row {
-    min-block-size: var(--qd-control-lg);
-  }
+.abwab-tree__act--more-compact {
+  display: none;
 }
+
+.abwab-tree-frame--selection .abwab-tree__lead {
+  padding-inline-start: calc(
+    min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
+      var(--abwab-tree-indent-step)
+  );
+}
+
+.abwab-tree-frame--selection .abwab-tree__row > *:last-child {
+  padding-inline-end: 0;
+}
+
+@include mobile.apply;

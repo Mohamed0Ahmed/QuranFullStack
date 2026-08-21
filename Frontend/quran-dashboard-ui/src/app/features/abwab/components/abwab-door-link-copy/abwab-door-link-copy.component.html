@@ -1,4 +1,4 @@
-<section class="abwab-door-link-copy" [attr.aria-label]="labels.doorLinksCopyHeading">
+<section class="abwab-door-link-copy" [attr.aria-label]="labels.doorLinksCopyHeading" (keydown.enter)="startFromEnter($event)">
   <header class="abwab-door-link-copy__header">
     <h5>{{ labels.doorLinksCopyHeading }}</h5>
     <button

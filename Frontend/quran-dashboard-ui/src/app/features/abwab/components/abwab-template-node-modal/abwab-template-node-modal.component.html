@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="modalTitle"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="onDismissed($event)"
+    (primaryActionRequested)="submit()"
   >
     <p
       qdModalShellHeaderSupport

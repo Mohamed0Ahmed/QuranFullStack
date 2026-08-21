@@ -43,6 +43,8 @@
             [ayah]="ayah"
             [resultPosition]="row.position + 1"
             [resultCount]="rows().length"
+            [showResultCount]="false"
+            metaAlignment="center"
             [highlightSourceWords]="highlightSourceWords()"
             [wordSelectable]="wordSelectable() && row.linkingSourceAyah"
             [wordImpact]="overlayFor(row)?.doorWordImpact ?? null"

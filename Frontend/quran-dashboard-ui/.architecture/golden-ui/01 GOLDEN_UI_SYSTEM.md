@@ -25,7 +25,7 @@
 | Which element owns page gutters? | §4.3. Exactly one: the page shell. Four named page intents, no nested gutter owners. |
 | Maximum columns for collections? | §9. Every repeated collection declares min measure, max columns and orphan rule. No `auto-fill` without a maximum. |
 | Which contracts become shared behaviour? | `GOLDEN_UI_COMPONENT_CATALOG.md` — 20 families, each as base + named variants + optional zones. No boolean-heavy universal components. |
-| How do keyboard/touch/AT users get the same information? | §10. One disclosure contract (never pointer-only `title`), 44px hit-area contract independent of visual density, one ARIA vocabulary per family. |
+| How do keyboard/touch/AT users get the same information? | §10. One disclosure contract (never pointer-only `title`), 44px hit-area contract independent of visual density except the named Compact modal exception, one ARIA vocabulary per family. |
 | Density for long research sessions? | §3.6 two density modes (Comfortable / Dense) affecting row/control padding only — never hit area, never type size below the minimums. |
 | What may stay different? | `GOLDEN_UI_COMPONENT_CATALOG.md` §"Preserved differences" per family + `UI_DRIFT_TO_CANONICAL_MAP.md` part 2 (G01–G24). |
 ---
@@ -33,12 +33,12 @@
 ## 1. Design principles
 
 1. **Arabic-first, not mirrored.** Logical properties only (`inline-start/inline-end`, `margin-inline`, `padding-inline`, `border-inline-start`). Direction is a first-class design input, not a post-process. LTR is a *local island* (email, permission code, version hash, subject, source keys) — never a layout direction. (G01)
-2. **Scripture is protected content, not UI.** Quran text, fonts, glyphs, markers, measured page geometry and no-animation rules are outside the design system's authority. The system may style the *chrome around* it. (G02, G03, G11)
+2. **Scripture is protected content, not UI.** Quran text, fonts, glyphs, markers, measured page geometry and no-animation rules are outside the design system's authority. The system may style the *chrome around* it. The sole content-style exception is the exact Compact linking ayah-selection rule in `FRONTEND_UI_RULES.md` §3 and `UI_STYLE_SYSTEM.md` §13. (G02, G03, G11)
 3. **Same contract, same UI.** If two surfaces share a behaviour contract, they share the visual and interaction vocabulary. Differences must be nameable in domain terms or they are drift.
 4. **Calm by default.** Flat parchment/ink/green identity. No gradients, no glass, no resting shadows, no hover lift, no entrance motion. Motion is state feedback only: 120–160ms colour/border transitions; shadow exists only on floating layers.
 5. **Green means state, never decoration.** Solid green = one primary action per view. Green tint + 2px inline-start green thread = current/selected. Generic hover is neutral. (D12, D14–D16)
 6. **Stable frame, growing content.** Shells, controls, anchors and scroll owners are stable. Content that genuinely varies grows. Stability is never bought with invisible blank bands.
-7. **Density serves reading, not compression.** A data-dense dashboard uses width; it does not shrink type or targets. Minimum body 14px, minimum hit area 44px, minimum table row 40px.
+7. **Density serves reading, not compression.** A data-dense dashboard uses width; it does not shrink generic UI type or targets. Minimum body 14px, minimum hit area 44px, minimum table row 40px, subject only to the named Compact modal and linking-selection exceptions.
 8. **Safety is visible.** Destructive and permission-changing actions state their target, their consequence and their diff before they submit. They never look like ordinary saves. (G17, G18)
 9. **One primary action per view; one destructive path per object.**
 10. **Every constrained text surface declares its overflow contract** (wrap / truncate / scroll / expand) and every truncation has a non-pointer disclosure path. (D35)
@@ -215,13 +215,13 @@ Gap between split columns: 24 (Wide), 20 (Wide at 1080–1279).
 
 | Token | Height | Padding-inline | Use |
 |---|---|---|---|
-| `ctl-sm` | 32 | 10 | Dense desktop inline controls **only when a ≥44px hit area is provided by the row/pseudo-element**. |
+| `ctl-sm` | 32 | 10 | Dense desktop inline controls, plus Compact modal workflow controls. |
 | `ctl-md` | 40 | 14 | Default: inputs, selects, buttons, tabs, pagination. |
 | `ctl-lg` | 48 | 18 | Compact-mode primary actions, modal footer actions on phone. |
 
 Invariants: identical height, radius (`6px`), border (`hairline`), font (`t-body`) and vertical alignment for **input, select, textarea-single-line, button, tab, chip-button**. Icon-only buttons are square at their scale. Busy state never changes width: label persists, the icon slot swaps to a 16px spinner, and a `min-inline-size` is reserved from the resting label. (D20, D21, F05)
 
-**Hit-area contract (44px, independent of visual density — D45, D46, D47):** any control smaller than 44px in either axis must expand its interactive box via padding or an `::after` inset overlay to ≥44×44. This applies to tree chevrons, row overflow actions, pagination controls, Mushaf page/nav triggers and chip removes. The visible icon may stay 16–20px.
+**Hit-area contract (44px, independent of visual density — D45, D46, D47):** any control smaller than 44px in either axis must expand its interactive box via padding or an `::after` inset overlay to ≥44×44. This applies to tree chevrons, row overflow actions, pagination controls, Mushaf page/nav triggers and chip removes. Dense Compact modal workflows are the approved exception: their actions and filter inclusion controls render at 32px to preserve working-list density. The visible icon may stay 16–20px.
 
 ### 3.7 Repeated-geometry anchors
 
@@ -412,7 +412,7 @@ Hover / focus / long-press disclosure remains valid wherever the owning interact
 - **Names:** every icon-only control has a text name; every truncated value's full text is reachable through the §8.1 disclosure ladder (on the owning control, not on a synthetic tab stop); every count chip's name includes its dimension ("المواضع: 381").
 - **State announcement:** one `aria-live="polite"` region per workspace for filter results, mutation outcomes and pagination changes; `aria-busy` on refreshing regions; error blocks are `role="alert"` only for write failures.
 - **Focus:** visible ring everywhere (§2.7); focus never trapped except in modals/sheets; focus returns to trigger on close; sheet navigation gets trap + scroll lock + inert background + visible Close (D13).
-- **Targets:** 44px minimum hit area everywhere (§3.6), verified after implementation — this design states intent only (handoff §24.18).
+- **Targets:** 44px minimum hit area everywhere except the exact dense Compact modal exception in §3.6, verified after implementation — this design states intent only (handoff §24.18).
 - **Not claimed:** WCAG conformance, screen-reader behaviour, forced-colors, 200% zoom and 320px verification remain post-implementation work.
 
 ---

@@ -121,21 +121,4 @@
   .roots-table {
     block-size: auto;
   }
-
-  .roots-table__word--compact {
-    justify-content: center;
-    padding-inline: var(--qd-space-6);
-  }
-
-  .roots-table__display {
-    text-align: center;
-  }
-
-  .roots-table__compact-row-number {
-    position: absolute;
-    inset-block-start: 0.625rem;
-    inset-inline-start: var(--qd-space-2);
-    z-index: 1;
-    pointer-events: none;
-  }
 }

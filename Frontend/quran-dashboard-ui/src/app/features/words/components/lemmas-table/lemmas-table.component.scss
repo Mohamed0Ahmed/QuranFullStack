@@ -168,35 +168,4 @@
   .lemmas-table {
     block-size: auto;
   }
-
-  .lemmas-table__word--compact {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  .lemmas-table__display {
-    text-align: center;
-  }
-
-  .lemmas-table__compact-row-number {
-    position: absolute;
-    inset-block-start: 1.125rem;
-    inset-inline-start: var(--qd-space-2);
-    z-index: 1;
-    pointer-events: none;
-  }
-
-  .lemmas-table__compact-identity {
-    flex-direction: row;
-    gap: var(--qd-space-1);
-    padding-inline: var(--qd-space-6) var(--qd-space-2);
-  }
-
-  .lemmas-table__compact-identity .lemmas-table__root-link {
-    display: flex;
-    flex: 0 1 35%;
-    min-inline-size: 0;
-    min-block-size: var(--qd-hit-target-min);
-    align-items: center;
-  }
 }

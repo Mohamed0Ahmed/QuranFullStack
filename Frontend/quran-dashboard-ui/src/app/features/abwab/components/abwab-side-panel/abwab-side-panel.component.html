@@ -1,4 +1,38 @@
 <div class="abwab-side-panel" role="group" [attr.aria-label]="operationsHeading">
+  @if (selectedDoor(); as door) {
+    <div class="abwab-side-panel__compact-bar" data-testid="abwab-side-panel-compact-bar">
+      <button
+        type="button"
+        qdAction="tertiary"
+        class="abwab-side-panel__compact-count"
+        [attr.aria-label]="linksAriaLabel(door.name)"
+        data-testid="abwab-side-panel-compact-links"
+        (click)="compactLinksRequested.emit(door.id)"
+      >
+        {{ linksLabel }}: {{ linkCount() }}
+      </button>
+      <button
+        type="button"
+        qdAction="tertiary"
+        class="abwab-side-panel__compact-count"
+        [attr.aria-label]="relationsAriaLabel(door.name)"
+        data-testid="abwab-side-panel-compact-relations"
+        (click)="compactRelationsRequested.emit(door.id)"
+      >
+        {{ relationsLabel }}: {{ relationCount() }}
+      </button>
+      <button
+        type="button"
+        qdAction="primary"
+        size="sm"
+        class="abwab-side-panel__compact-operations"
+        data-testid="abwab-side-panel-compact-operations"
+        (click)="requestOperations($event)"
+      >
+        {{ operationsHeading }}
+      </button>
+    </div>
+  }
   <div class="qd-card abwab-side-panel__box">
     <h4>{{ activeDoorHeading }}</h4>
     @if (selectedDoor(); as door) {

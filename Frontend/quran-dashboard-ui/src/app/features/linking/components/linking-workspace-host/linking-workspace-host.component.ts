@@ -8,7 +8,6 @@ import { LinkingWorkspaceComponent } from '../linking-workspace/linking-workspac
 import { DirectLinkWorkflowComponent } from '../direct-link-workflow/direct-link-workflow.component';
 import { LinkingWorkflowFacade } from '../../state/linking-workflow.facade';
 import { LinkingSourceAyahEditorComponent } from '../linking-source-ayah-editor/linking-source-ayah-editor.component';
-import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 
 @Component({
@@ -19,7 +18,6 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
     LinkingWorkspaceComponent,
     DirectLinkWorkflowComponent,
     LinkingSourceAyahEditorComponent,
-    ConfirmDialogComponent,
     QdErrorStateComponent,
   ],
   templateUrl: './linking-workspace-host.component.html',
@@ -46,8 +44,6 @@ export class LinkingWorkspaceHostComponent {
     return this.isLinkingFlow() ? this.labels.directLink : this.labels.workspace;
   });
   protected readonly editorSourceKey = this.workspace.editorSourceKey;
-  protected readonly clearAllRequested = this.workspace.clearAllRequested;
-  protected readonly itemCount = this.workspace.itemCount;
   protected readonly persistenceWarning = this.workspace.persistenceWarning;
   protected readonly editorExitPending = this.workspace.editorExitPending;
 
@@ -80,6 +76,4 @@ export class LinkingWorkspaceHostComponent {
   }
 
   protected dismissPersistenceWarning(): void { this.workspace.dismissPersistenceWarning(); }
-  protected confirmClearAll(): void { this.workspace.confirmClearAll(); }
-  protected cancelClearAll(): void { this.workspace.cancelClearAll(); }
 }

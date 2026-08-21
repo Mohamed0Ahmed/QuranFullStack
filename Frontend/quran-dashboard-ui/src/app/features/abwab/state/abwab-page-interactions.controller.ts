@@ -25,6 +25,7 @@ interface AbwabTreeMenuRequest {
   readonly id: number;
   readonly x: number;
   readonly y: number;
+  readonly kind: 'details' | 'operations';
 }
 
 @Injectable()
@@ -177,7 +178,16 @@ export class AbwabPageInteractionsController {
 
   onMenuRequested(request: AbwabTreeMenuRequest): void {
     this.overlays.setContextMenuPosition(request.x, request.y);
-    this.overlays.requestContextMenu(request.id);
+    this.overlays.requestContextMenu(request.id, request.kind);
+  }
+
+  onOperationsRequested(anchor: { x: number; y: number }): void {
+    const doorId = this.selection.selectedDoorId();
+    if (doorId === null) {
+      return;
+    }
+    this.overlays.setContextMenuPosition(anchor.x, anchor.y);
+    this.overlays.requestContextMenu(doorId, 'operations');
   }
 
   onCreateRootRequested(): void {
@@ -277,7 +287,9 @@ export class AbwabPageInteractionsController {
       this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker(), () => undefined, true);
       return;
     }
-    this.closeUrlBackedModal(['move'], () => this.overlays.confirmMove(destination), () => undefined, true);
+    this.overlays.confirmMove(destination, () =>
+      this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker(), () => undefined, true),
+    );
   }
 
   onSectionsModalClosed(onRestoreFocus: FocusCallback): void {

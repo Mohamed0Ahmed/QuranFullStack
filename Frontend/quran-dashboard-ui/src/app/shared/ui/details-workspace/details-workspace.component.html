@@ -5,7 +5,7 @@
   [class.qd-details__shell--action-rail]="variant() === 'action-rail'"
   [class.qd-details__shell--study]="variant() === 'study'"
   [class.qd-details__shell--overlay-body]="variant() === 'overlay-body'"
-  [attr.aria-labelledby]="showsIdentity() ? identityId : null"
+  [attr.aria-labelledby]="showsIdentity() ? identityId : labelledBy()"
   [attr.data-testid]="testIdPrefix()"
 >
   @if (hasHeader()) {

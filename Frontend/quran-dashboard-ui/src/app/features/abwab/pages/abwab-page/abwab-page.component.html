@@ -201,9 +201,15 @@
             </div>
           }
         </div>
-        <aside class="abwab-page__side qd-page-rail qd-page-rail--m">
+        <aside
+          class="abwab-page__side qd-page-rail qd-page-rail--m"
+          [class.abwab-page__side--has-selection]="selectedDoor() !== null || selection.bulkMode()"
+          [class.abwab-page__side--bulk]="selection.bulkMode()"
+        >
           <qd-abwab-side-panel
             [selectedDoor]="selectedDoor()"
+            [linkCount]="selectedDoorNode()?.linkCount ?? 0"
+            [relationCount]="selectedDoorNode()?.relationCount ?? 0"
             [bulkMode]="selection.bulkMode()"
             [bulkCount]="selection.bulkCount()"
             [bulkNames]="bulkNames()"
@@ -226,6 +232,9 @@
             (bulkRelationsRequested)="overlays.openBulkRelations()"
             (bulkArchiveRequested)="overlays.requestBulkArchive()"
             (bulkClearRequested)="interactions.onBulkClearRequested()"
+            (operationsRequested)="interactions.onOperationsRequested($event)"
+            (compactLinksRequested)="doorLinks.toggleDoor($event)"
+            (compactRelationsRequested)="interactions.onRelationsRequested($event)"
           />
         </aside>
       </div>

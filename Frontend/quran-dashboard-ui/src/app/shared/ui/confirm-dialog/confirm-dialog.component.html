@@ -5,7 +5,9 @@
   [titleText]="titleText()"
   [showClose]="false"
   [testIdPrefix]="testIdPrefix()"
+  [submitOnEnter]="submitOnEnter()"
   (dismissed)="cancel()"
+  (primaryActionRequested)="confirm()"
 >
   <ng-content />
 

@@ -59,6 +59,7 @@ export class AbwabTreeComponent {
   readonly canCreateDoor = input(false);
   readonly canReorderDoor = input(false);
   readonly openLinksDoorId = input<number | null>(null);
+  readonly selectionMode = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -71,6 +72,7 @@ export class AbwabTreeComponent {
 
   private readonly manualFocusId = signal<number | null>(null);
   protected readonly editingId = signal<number | null>(null);
+  protected readonly labels = ABWAB_LABELS;
   private readonly contextMenu = new AbwabTreeContextMenuController(
     (id) => this.manualFocusId.set(id),
     (id) => this.selected.emit(id),
@@ -228,6 +230,10 @@ export class AbwabTreeComponent {
 
   protected onMoreClick(event: MouseEvent, id: number): void {
     this.contextMenu.openFromButton(event, id);
+  }
+
+  protected onDetailsClick(event: MouseEvent, id: number): void {
+    this.contextMenu.openDetailsFromButton(event, id);
   }
 
   protected onRowDblClick(row: AbwabTreeRow): void {

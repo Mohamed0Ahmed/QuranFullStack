@@ -3,7 +3,7 @@ import { of } from 'rxjs';
 
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
-import { AbwabWriteController, abwabPermissionDenied } from './abwab-write.controller';
+import { AbwabWriteController, AbwabWriteOutcome, abwabPermissionDenied } from './abwab-write.controller';
 import { AbwabSectionsController } from './abwab-sections.controller';
 import { AbwabRelationsController } from './abwab-relations.controller';
 import { AbwabNode, AbwabRelationDirectionKind, AbwabRelationKind } from '../models/abwab.models';
@@ -194,7 +194,10 @@ export class AbwabPageOverlaysController {
   }
 
   readonly movePickerOpen = signal(false);
+  readonly moveBusy = signal(false);
+  readonly moveError = signal<string | null>(null);
   private readonly moveDoorIds = signal<readonly number[]>([]);
+  private moveRequestGeneration = 0;
 
   readonly moveExcludedIds = computed(() => {
     const byId = this.byId();
@@ -235,6 +238,9 @@ export class AbwabPageOverlaysController {
       return;
     }
     this.moveDoorIds.set([door.id]);
+    this.moveRequestGeneration += 1;
+    this.moveBusy.set(false);
+    this.moveError.set(null);
     this.movePickerOpen.set(true);
   }
 
@@ -247,22 +253,31 @@ export class AbwabPageOverlaysController {
       return;
     }
     this.moveDoorIds.set(ids);
+    this.moveRequestGeneration += 1;
+    this.moveBusy.set(false);
+    this.moveError.set(null);
     this.movePickerOpen.set(true);
   }
 
   closeMovePicker(): void {
+    this.moveRequestGeneration += 1;
     this.movePickerOpen.set(false);
+    this.moveBusy.set(false);
+    this.moveError.set(null);
   }
 
-  confirmMove(destination: AbwabMoveDestination): void {
-    this.movePickerOpen.set(false);
-    if (!this.permissions.canMoveDoor()) {
+  confirmMove(destination: AbwabMoveDestination, onSuccess: () => void): void {
+    if (!this.permissions.canMoveDoor() || this.moveBusy()) {
       return;
     }
     const ids = this.moveDoorIds();
+    const requestGeneration = this.moveRequestGeneration;
+    this.moveBusy.set(true);
+    this.moveError.set(null);
     if (ids.length === 1) {
       const node = this.byId().get(ids[0]);
       if (!node) {
+        this.moveBusy.set(false);
         return;
       }
       this.writeController
@@ -271,10 +286,28 @@ export class AbwabPageOverlaysController {
           targetSectionId: destination.targetSectionId,
           version: node.version,
         })
-        .subscribe();
+        .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess, requestGeneration));
       return;
     }
-    this.writeController.bulkMoveDoors(destination.targetParentId, destination.targetSectionId).subscribe();
+    this.writeController
+      .bulkMoveDoors(destination.targetParentId, destination.targetSectionId)
+      .subscribe((outcome) => this.handleMoveOutcome(outcome, onSuccess, requestGeneration));
+  }
+
+  private handleMoveOutcome(
+    outcome: AbwabWriteOutcome<unknown>,
+    onSuccess: () => void,
+    requestGeneration: number,
+  ): void {
+    if (requestGeneration !== this.moveRequestGeneration) {
+      return;
+    }
+    this.moveBusy.set(false);
+    if (outcome.kind === 'success') {
+      onSuccess();
+      return;
+    }
+    this.moveError.set(outcome.message);
   }
 
   private readonly restoreDoorId = signal<number | null>(null);
@@ -405,8 +438,10 @@ export class AbwabPageOverlaysController {
 
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly contextMenuKind = signal<'details' | 'operations'>('operations');
 
-  requestContextMenu(id: number): void {
+  requestContextMenu(id: number, kind: 'details' | 'operations'): void {
+    this.contextMenuKind.set(kind);
     this.contextMenuDoorId.set(id);
   }
 

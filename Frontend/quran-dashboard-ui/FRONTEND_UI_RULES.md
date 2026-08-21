@@ -31,8 +31,13 @@ values and do not edit the theme toggle. A dark mismatch is recorded, never "fix
 
 Use the currently approved project fonts. The Golden boards' preview faces authorise nothing. Never
 add a font package, never touch a Quran font, glyph mapping, line metric, ligature helper, marker
-rule, or renderer boundary. Generic CSS and generic components must not reach Quran renderer
-descendants. Re-measure geometry against the real Arabic faces before accepting a board pixel.
+rule, or renderer boundary outside the exact linking-selection exception below. Generic CSS and
+generic components must not reach Quran renderer descendants. Re-measure geometry against the real
+Arabic faces before accepting a board pixel.
+
+The linking ayah-selection card has one approved Compact-only display exception: reduce its existing
+word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block padding to background-only
+word highlights. It changes no font, text, glyph, word boundary, source data, or other Quran surface.
 
 ## 4. Responsive bands — one vocabulary
 

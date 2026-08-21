@@ -161,21 +161,4 @@
   .unique-words-table {
     block-size: auto;
   }
-
-  .unique-words-table__word--compact {
-    flex: 1 1 auto;
-    justify-content: center;
-  }
-
-  .unique-words-table__display {
-    text-align: center;
-  }
-
-  .unique-words-table__compact-row-number {
-    position: absolute;
-    inset-block-start: 0.75rem;
-    inset-inline-start: var(--qd-space-2);
-    z-index: 1;
-    pointer-events: none;
-  }
 }

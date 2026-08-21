@@ -20,6 +20,7 @@ export class QdDetailsWorkspaceComponent {
   readonly layout = input<QdDetailsWorkspaceLayout>('selection');
   readonly variant = input<QdDetailsWorkspaceVariant>('entity');
   readonly noSelectionMessage = input('');
+  readonly labelledBy = input<string | null>(null);
   readonly hasHeader = input(true);
   readonly hasTabs = input(false);
   readonly hasFooter = input(false);

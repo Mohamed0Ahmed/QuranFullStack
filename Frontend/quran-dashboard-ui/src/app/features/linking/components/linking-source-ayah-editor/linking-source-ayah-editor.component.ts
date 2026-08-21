@@ -14,6 +14,7 @@ import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingManualLinkShape } from '../../models/linking-manual-mushaf.models';
 import { LinkingSourceEditorFacade } from '../../state/linking-source-editor.facade';
 import { LinkingManualShapeSelectorComponent } from '../linking-manual-shape-selector/linking-manual-shape-selector.component';
+import { LinkingAyahSelectionToolbarComponent } from '../linking-ayah-selection-toolbar/linking-ayah-selection-toolbar.component';
 import { LinkingSourceTypeFiltersComponent } from '../linking-source-type-filters/linking-source-type-filters.component';
 import {
   LinkingVirtualAyahListComponent,
@@ -25,6 +26,7 @@ import {
   standalone: true,
   imports: [
     QdActionDirective,
+    LinkingAyahSelectionToolbarComponent,
     LinkingManualShapeSelectorComponent,
     LinkingSourceTypeFiltersComponent,
     LinkingVirtualAyahListComponent,

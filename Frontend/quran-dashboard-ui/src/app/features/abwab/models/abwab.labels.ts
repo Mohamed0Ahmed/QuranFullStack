@@ -113,6 +113,7 @@ export const ABWAB_LABELS = {
   archiveTreeAriaLabel: 'شجرة الأبواب المؤرشفة',
   rowAddChildAriaLabel: (doorName: string): string => `إضافة باب فرعي تحت «${doorName}»`,
   rowMenuAriaLabel: (doorName: string): string => `عمليات «${doorName}»`,
+  rowDetailsAriaLabel: (doorName: string): string => `تفاصيل «${doorName}»`,
   rowRelationsAriaLabel: (doorName: string, count: number): string =>
     `عرض علاقات «${doorName}» — ${countPhrase(count, RELATION_FORMS)}`,
   rowLinksAriaLabel: (doorName: string, count: number): string =>
@@ -140,6 +141,7 @@ export const ABWAB_LABELS = {
   rowHeaderLinks: 'الروابط',
   rowHeaderTotal: 'الكل',
   rowHeaderDepth: 'عمق',
+  rowHeaderRelations: 'العلاقات',
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',
