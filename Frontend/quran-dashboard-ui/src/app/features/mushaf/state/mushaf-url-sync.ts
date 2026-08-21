@@ -12,7 +12,7 @@ import {
 } from '../models/mushaf.models';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
-const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'none']);
+const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'doors', 'none']);
 const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
   'tafsir',
   'translation',

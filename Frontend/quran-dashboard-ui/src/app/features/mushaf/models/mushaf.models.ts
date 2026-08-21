@@ -132,7 +132,7 @@ export interface WordAnalysisDto extends Omit<WordAnalysisWireDto, 'renderedWord
   renderedWordSegments: RenderedSegmentDto[];
 }
 
-export type PanelMode = 'ayah' | 'word' | 'none';
+export type PanelMode = 'ayah' | 'word' | 'doors' | 'none';
 export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat';
 export type AyahStudyGroup = 'sources' | 'similarity';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';

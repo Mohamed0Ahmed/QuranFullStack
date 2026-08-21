@@ -51,8 +51,11 @@
         [selectedWordLocation]="selectedWordLocation()"
         [ayahSelectionMode]="ayahSelectionMode()"
         [selectedVerseKeys]="selectedVerseKeys()"
+        [wordDoorHighlights]="wordDoorHighlights()"
+        [ayahDoorHighlights]="ayahDoorHighlights()"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"
+        (doorDetailsRequest)="doorDetailsRequest.emit($event)"
       />
     }
 

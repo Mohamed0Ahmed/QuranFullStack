@@ -11,6 +11,10 @@ import {
 import { CommonModule } from '@angular/common';
 
 import { MushafPageViewModel } from '../../models/mushaf.models';
+import {
+  MushafDoorDetailsRequest,
+  MushafDoorResolvedHighlight,
+} from '../../models/mushaf-door-highlights.models';
 import { clampMushafPageNumber } from '../../state/mushaf-url-sync';
 import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
 import {
@@ -37,10 +41,13 @@ export class MushafPageViewComponent {
   readonly selectedWordLocation = input<string | null>(null);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
+  readonly wordDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
+  readonly ayahDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
   readonly pageChange = output<number>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
 
   private readonly pageJumpInputRef = viewChild<ElementRef<HTMLInputElement>>('pageJumpInput');
 

@@ -1,0 +1,158 @@
+<section class="mushaf-doors-panel" aria-label="أبواب المصحف" data-testid="mushaf-doors-panel">
+  <qd-tabs layout="inline" ariaLabel="أقسام أبواب المصحف" dir="rtl">
+    <button
+      qdTab
+      type="button"
+      [selected]="activeTab() === 'doors'"
+      data-testid="mushaf-doors-tab-tree"
+      (click)="selectTab('doors')"
+    >
+      الأبواب
+    </button>
+    <button
+      qdTab
+      type="button"
+      [selected]="activeTab() === 'selected'"
+      [attr.aria-label]="'المحدد، عدد الأبواب المحددة ' + highlights.appliedDoorIds().size"
+      data-testid="mushaf-doors-tab-selected"
+      (click)="selectTab('selected')"
+    >
+      المحدد
+      <span
+        class="qd-tabs__count"
+        [class.qd-tabs__count--empty]="highlights.appliedDoorIds().size === 0"
+        aria-hidden="true"
+      >
+        {{ highlights.appliedDoorIds().size }}
+      </span>
+    </button>
+  </qd-tabs>
+
+  <div class="mushaf-doors-panel__content" role="tabpanel">
+    @if (activeTab() === 'doors') {
+      @if (tree.isLoading() && !tree.snapshot()) {
+        <qd-panel-skeleton
+          shape="rows"
+          [rowsCount]="6"
+          rowTemplate="minmax(0, 1fr) auto auto"
+          loadingLabel="جارٍ تحميل شجرة الأبواب..."
+          testId="mushaf-doors-tree-loading"
+        />
+      } @else if (tree.errorMessage() && !tree.snapshot()) {
+        <qd-error-state
+          severity="read"
+          [message]="tree.errorMessage()!"
+          actionLabel="إعادة المحاولة"
+          testId="mushaf-doors-tree-error"
+          actionTestId="mushaf-doors-tree-retry"
+          (action)="retryTree()"
+        />
+      } @else if (tree.isEmpty()) {
+        <qd-empty-state message="لا توجد أبواب متاحة حاليًا." testId="mushaf-doors-tree-empty" />
+      } @else {
+        <div class="mushaf-doors-panel__tree">
+          <qd-abwab-tree
+            [roots]="tree.snapshot()?.liveRoots ?? []"
+            ariaLabel="اختر أبوابًا لتمييزها في المصحف"
+            [bulkMode]="true"
+            [bulkSelectedIds]="highlights.draftDoorIds()"
+            [selectionMode]="true"
+            (bulkToggled)="toggleDoor($event)"
+          />
+        </div>
+        <div class="mushaf-doors-panel__confirm">
+          <span class="mushaf-doors-panel__selection-summary">
+            تم اختيار {{ highlights.draftDoorIds().size }} باب
+          </span>
+          <button
+            type="button"
+            qdAction="primary"
+            [disabled]="!highlights.hasDraftChanges()"
+            data-testid="mushaf-doors-confirm"
+            (click)="confirmDoors()"
+          >
+            تأكيد
+          </button>
+        </div>
+      }
+    } @else {
+      @if (highlights.appliedDoors().length === 0) {
+        <qd-empty-state
+          message="لم يتم تأكيد أي أبواب بعد. اختر الأبواب ثم اضغط تأكيد."
+          testId="mushaf-doors-selected-empty"
+        />
+      } @else {
+        @if (highlights.loadState().isLoading) {
+          <qd-panel-skeleton
+            shape="text"
+            loadingLabel="جارٍ تطبيق تمييز الأبواب على الصفحة..."
+            testId="mushaf-door-highlights-loading"
+          />
+        } @else if (highlights.loadState().errorMessage) {
+          <qd-error-state
+            severity="read"
+            [message]="highlights.loadState().errorMessage!"
+            actionLabel="إعادة المحاولة"
+            testId="mushaf-door-highlights-error"
+            actionTestId="mushaf-door-highlights-retry"
+            (action)="highlights.retry()"
+          />
+        }
+
+        @if (highlights.unavailableDoorCount() > 0) {
+          <qd-notice
+            tone="info"
+            [message]="'تعذّر تطبيق ' + highlights.unavailableDoorCount() + ' من الأبواب المحددة.'"
+            testId="mushaf-door-highlights-unavailable"
+          />
+        }
+
+        <div class="mushaf-doors-panel__selected-list" data-testid="mushaf-doors-selected-list">
+          @for (door of highlights.appliedDoors(); track door.id) {
+            <article class="mushaf-doors-panel__selected-door" [attr.data-testid]="'mushaf-selected-door-' + door.id">
+              <div class="mushaf-doors-panel__selected-header">
+                <h3>{{ door.name }}</h3>
+                <button
+                  type="button"
+                  qdAction="danger"
+                  size="sm"
+                  [attr.aria-label]="'حذف الباب ' + door.name"
+                  [attr.data-testid]="'mushaf-selected-door-remove-' + door.id"
+                  (click)="highlights.removeAppliedDoor(door.id)"
+                >
+                  حذف
+                </button>
+              </div>
+
+              <fieldset class="mushaf-doors-panel__palette">
+                <legend>لون التمييز</legend>
+                <div class="mushaf-doors-panel__swatches">
+                  @for (colorSlot of highlights.palette; track colorSlot) {
+                    <label
+                      class="mushaf-doors-panel__swatch-option"
+                      [class.mushaf-doors-panel__swatch-option--selected]="door.colorSlot === colorSlot"
+                      [attr.data-color-slot]="colorSlot"
+                      [attr.title]="colorLabel(colorSlot)"
+                    >
+                      <input
+                        class="qd-sr-only"
+                        type="radio"
+                        [name]="'mushaf-door-color-' + door.id"
+                        [value]="colorSlot"
+                        [checked]="door.colorSlot === colorSlot"
+                        [attr.aria-label]="colorLabel(colorSlot)"
+                        [attr.data-testid]="'mushaf-selected-door-color-' + door.id + '-' + colorSlot"
+                        (change)="setDoorColor(door.id, colorSlot)"
+                      />
+                      <span class="mushaf-doors-panel__swatch" aria-hidden="true"></span>
+                    </label>
+                  }
+                </div>
+              </fieldset>
+            </article>
+          }
+        </div>
+      }
+    }
+  </div>
+</section>

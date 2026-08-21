@@ -17,6 +17,7 @@ import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { SelectedAyahSectionComponent } from '../selected-ayah-section/selected-ayah-section.component';
 import { SelectedWordSectionComponent } from '../selected-word-section/selected-word-section.component';
+import { MushafDoorsPanelComponent } from '../mushaf-doors-panel/mushaf-doors-panel.component';
 
 export type StudyContextTab = 'analysis' | 'doors' | AyahStudyGroup;
 
@@ -29,7 +30,7 @@ interface StudyContextTabDefinition {
 
 const STUDY_CONTEXT_TABS: readonly StudyContextTabDefinition[] = [
   { key: 'analysis', label: 'التحليل', disabled: false, testId: 'study-context-tab-analysis' },
-  { key: 'doors', label: 'الأبواب', disabled: true, testId: 'study-context-tab-doors' },
+  { key: 'doors', label: 'الأبواب', disabled: false, testId: 'study-context-tab-doors' },
   {
     key: 'sources',
     label: 'التفاسير والترجمات',
@@ -52,6 +53,7 @@ let nextStudyContextInstance = 0;
   imports: [
     QdTabsComponent,
     QdTabDirective,
+    MushafDoorsPanelComponent,
     SelectedWordSectionComponent,
     SelectedAyahSectionComponent,
   ],
@@ -88,6 +90,10 @@ export class StudyContextSectionComponent {
   private readonly instanceId = `qd-study-context-${nextStudyContextInstance++}`;
 
   protected readonly activeContextTab = computed<StudyContextTab>(() => {
+    if (this.activePanel() === 'doors') {
+      return 'doors';
+    }
+
     if (this.activePanel() !== 'ayah') {
       return 'analysis';
     }

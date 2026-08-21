@@ -23,8 +23,12 @@
         [selectedWordLocation]="selectedWordLocation()"
         [ayahSelectionMode]="ayahSelectionMode()"
         [selectedVerseKeys]="selectedVerseKeys()"
+        [doorHighlight]="word.isAyahMarker
+          ? (ayahDoorHighlights().get(word.verseKey) ?? null)
+          : (wordDoorHighlights().get(word.wordLocation) ?? null)"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"
+        (doorDetailsRequest)="doorDetailsRequest.emit($event)"
       />
     }
   }

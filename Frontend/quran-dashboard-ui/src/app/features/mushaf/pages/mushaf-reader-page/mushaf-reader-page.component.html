@@ -14,11 +14,14 @@
       [canSelectAyahs]="linkingAccess.canUseLinking()"
       [ayahSelectionMode]="ayahSelection.active()"
       [selectedVerseKeys]="ayahSelection.selectedVerseKeys()"
+      [wordDoorHighlights]="doorHighlights.wordHighlights()"
+      [ayahDoorHighlights]="doorHighlights.ayahHighlights()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
       (ayahSelect)="onAyahSelect($event)"
       (wordSelect)="onWordSelect($event)"
       (ayahSelectionModeChange)="toggleAyahSelectionMode()"
+      (doorDetailsRequest)="openDoorDetails($event)"
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
@@ -47,4 +50,25 @@
       (ayahNavigate)="onAyahNavigate($event)"
     />
   </section>
+
 </div>
+
+@if (doorDetails(); as details) {
+  <qd-context-menu
+    variant="disclosure-popover"
+    [position]="details.position"
+    menuAriaLabel="أبواب الكلمة"
+    menuTestId="mushaf-door-details-popover"
+    backdropTestId="mushaf-door-details-backdrop"
+    (dismissed)="closeDoorDetails()"
+  >
+    <div class="mushaf-reader__door-details">
+      <strong>أبواب الكلمة</strong>
+      <ul>
+        @for (door of details.highlight.doors; track door.id) {
+          <li>{{ door.name }}</li>
+        }
+      </ul>
+    </div>
+  </qd-context-menu>
+}

@@ -57,7 +57,25 @@
     color: var(--qd-accent);
   }
 
+  &--door-highlight {
+    color: var(--qd-mushaf-door-highlight);
+  }
+
+  &--door-highlight.mushaf-word--ayah-selection {
+    color: var(--qd-accent);
+  }
+
   &--selected-word.mushaf-word--ayah-selection {
     color: inherit;
   }
+}
+
+@for $slot from 1 through 15 {
+  [data-door-color-slot='#{$slot}'] {
+    --qd-mushaf-door-highlight: var(--qd-door-highlight-#{$slot});
+  }
+}
+
+[data-door-color-slot='multi'] {
+  --qd-mushaf-door-highlight: var(--qd-door-highlight-multi);
 }

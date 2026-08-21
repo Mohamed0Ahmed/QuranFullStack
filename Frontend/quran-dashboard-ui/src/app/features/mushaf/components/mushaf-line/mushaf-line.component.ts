@@ -2,6 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { CommonModule } from '@angular/common';
 
 import { MushafLineDto, PageMarkerDto } from '../../models/mushaf.models';
+import {
+  MushafDoorDetailsRequest,
+  MushafDoorResolvedHighlight,
+} from '../../models/mushaf-door-highlights.models';
 import { MushafMarkerComponent } from '../mushaf-marker/mushaf-marker.component';
 import { MushafWordComponent } from '../mushaf-word/mushaf-word.component';
 import { MUSHAF_BASMALLAH_DISPLAY_TEXT } from './mushaf-basmallah-display-text';
@@ -25,9 +29,12 @@ export class MushafLineComponent {
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
   readonly surahNameArabic = input<string | null>(null);
+  readonly wordDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
+  readonly ayahDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
 
   basmallahText(): string {
     return MUSHAF_BASMALLAH_DISPLAY_TEXT;

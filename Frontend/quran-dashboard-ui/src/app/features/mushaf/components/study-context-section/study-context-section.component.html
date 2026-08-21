@@ -48,6 +48,8 @@
         [loadState]="wordLoadState()"
         [selectedWordLocation]="selectedWordLocation()"
       />
+    } @else if (activeContextTab() === 'doors') {
+      <qd-mushaf-doors-panel />
     } @else {
       <qd-selected-ayah-section
         [embedded]="true"

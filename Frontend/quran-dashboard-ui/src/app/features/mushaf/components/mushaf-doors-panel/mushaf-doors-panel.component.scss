@@ -1,0 +1,115 @@
+.mushaf-doors-panel {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--qd-space-4);
+  min-block-size: 0;
+
+  &__content,
+  &__tree {
+    min-block-size: 0;
+  }
+
+  &__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: var(--qd-space-3);
+  }
+
+  &__tree {
+    flex: 1;
+    overflow: auto;
+    padding-block: var(--qd-space-2);
+    border-block: var(--qd-hairline);
+  }
+
+  &__confirm,
+  &__selected-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--qd-space-3);
+  }
+
+  &__confirm {
+    flex-wrap: wrap;
+    padding-block-start: var(--qd-space-2);
+  }
+
+  &__selection-summary,
+  &__palette legend {
+    color: var(--qd-text-muted);
+    font-size: var(--qd-type-meta);
+  }
+
+  &__selected-list {
+    display: grid;
+    gap: var(--qd-space-3);
+  }
+
+  &__selected-door {
+    display: grid;
+    gap: var(--qd-space-3);
+    padding: var(--qd-card-padding-dense);
+    border: var(--qd-hairline);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-section-bg);
+  }
+
+  &__selected-header h3 {
+    margin: 0;
+    color: var(--qd-text);
+    font-size: var(--qd-type-body-lg);
+    font-weight: 600;
+  }
+
+  &__palette {
+    display: grid;
+    gap: var(--qd-space-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--qd-space-2);
+  }
+
+  &__swatch-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--qd-hit-target-min);
+    block-size: var(--qd-hit-target-min);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-pill);
+    cursor: pointer;
+  }
+
+  &__swatch-option--selected {
+    border-color: var(--qd-accent);
+    outline: var(--qd-focus-ring-width) solid var(--qd-accent);
+    outline-offset: var(--qd-s-2);
+  }
+
+  &__swatch-option:focus-within {
+    outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+    outline-offset: var(--qd-focus-ring-offset);
+  }
+
+  &__swatch {
+    inline-size: var(--qd-s-20);
+    block-size: var(--qd-s-20);
+    border-radius: var(--qd-radius-pill);
+    background: var(--qd-door-highlight-swatch);
+  }
+}
+
+@for $slot from 1 through 15 {
+  [data-color-slot='#{$slot}'] {
+    --qd-door-highlight-swatch: var(--qd-door-highlight-#{$slot});
+  }
+}
