@@ -70,6 +70,7 @@ export class AbwabManagementPickerComponent {
 
   readonly selectedDoorId = input<number | null>(null);
   readonly excludedDoorIds = input<readonly number[]>([]);
+  readonly selectionMode = input(false);
   readonly selectionChanged = output<number | null>();
 
   protected readonly facade = inject(AbwabSnapshotFacade);
@@ -86,6 +87,10 @@ export class AbwabManagementPickerComponent {
 
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
+  protected readonly contextMenuNode = computed(() => {
+    const id = this.overlays.contextMenuDoorId();
+    return id === null ? null : (this.byId().get(id) ?? null);
+  });
   protected readonly excludedIds = computed(() => new Set(this.excludedDoorIds()));
   protected readonly liveRoots = computed<readonly AbwabNode[]>(
     () => this.facade.snapshot()?.liveRoots ?? NO_ROOTS,

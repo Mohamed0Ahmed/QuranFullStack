@@ -140,6 +140,7 @@ export const ABWAB_LABELS = {
   rowHeaderLinks: 'الروابط',
   rowHeaderTotal: 'الكل',
   rowHeaderDepth: 'عمق',
+  rowHeaderRelations: 'العلاقات',
 
   activeDoorHeading: 'الباب النشط',
   noSelectionHint: 'اختر بابًا من الشجرة أو البطاقات',

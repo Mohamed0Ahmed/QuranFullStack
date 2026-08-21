@@ -59,6 +59,7 @@ export class AbwabTreeComponent {
   readonly canCreateDoor = input(false);
   readonly canReorderDoor = input(false);
   readonly openLinksDoorId = input<number | null>(null);
+  readonly selectionMode = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();

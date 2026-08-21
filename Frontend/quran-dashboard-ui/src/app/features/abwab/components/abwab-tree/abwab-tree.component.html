@@ -1,4 +1,8 @@
-<div class="abwab-tree-frame" [class.abwab-tree-frame--bulk]="bulkMode()">
+<div
+  class="abwab-tree-frame"
+  [class.abwab-tree-frame--bulk]="bulkMode()"
+  [class.abwab-tree-frame--selection]="selectionMode()"
+>
   <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
     <span></span>
     <span class="abwab-tree__header-cell abwab-tree__positions relative end-qd-8">
@@ -107,7 +111,8 @@
 
         <span class="abwab-tree__name" [title]="node.name">
           <span
-            class="abwab-tree__name-text qd-truncate inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
+            class="abwab-tree__name-text inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
+            [class.qd-truncate]="!selectionMode()"
             [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
           >
             {{ node.name }}
@@ -200,7 +205,7 @@
 
         @if (!bulkMode()) {
           <span class="abwab-tree__actions">
-            @if (canCreateDoor()) {
+            @if (canCreateDoor() && !selectionMode()) {
               <button
                 type="button"
                 qdAction="row-action"

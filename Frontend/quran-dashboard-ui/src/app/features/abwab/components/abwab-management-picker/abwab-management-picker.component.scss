@@ -1,4 +1,5 @@
 @use '../../pages/abwab-page/abwab-page.component';
+@use '../../../../../styles/breakpoints' as bp;
 
 :host {
   display: block;
@@ -14,4 +15,28 @@
 
 .abwab-management-picker__tree-card {
   flex: 1;
+}
+
+.abwab-management-picker__tree-card--selection {
+  padding: 0;
+}
+
+.abwab-management-picker__menu-stats {
+  display: none;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-management-picker__tree-card--selection {
+    margin-inline: calc(var(--qd-space-2) * -1);
+  }
+
+  .abwab-management-picker__menu-stats {
+    display: grid;
+    gap: var(--qd-space-1);
+    padding: var(--qd-space-2) var(--qd-space-3);
+    border-block-end: var(--qd-hairline);
+    color: var(--qd-ink-muted);
+    font-size: var(--qd-type-caption);
+    font-variant-numeric: tabular-nums;
+  }
 }
