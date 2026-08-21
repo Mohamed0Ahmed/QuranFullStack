@@ -3,24 +3,55 @@
   aria-label="سياق الدراسة"
   data-testid="study-context-section"
 >
-  @if (!selectedWordLocation() && !selectedVerseKey()) {
-    <qd-empty-state
-      message="اختر كلمة أو آية من المصحف لعرض سياق الدراسة."
-      testId="study-context-empty"
-    />
-  } @else {
-    <qd-selected-word-section
-      [embedded]="true"
-      [analysis]="wordAnalysis()"
-      [loadState]="wordLoadState()"
-      [selectedWordLocation]="selectedWordLocation()"
-    />
+  <qd-tabs
+    class="study-context-section__tabs"
+    layout="tracks"
+    ariaLabel="أقسام دراسة المصحف"
+    dir="rtl"
+  >
+    @for (tab of tabs; track tab.key) {
+      <button
+        qdTab
+        type="button"
+        class="study-context-section__tab"
+        [id]="tabElementId(tab.key)"
+        [attr.aria-controls]="tab.disabled ? null : panelElementId(tab.key)"
+        [selected]="activeContextTab() === tab.key"
+        [disabled]="tab.disabled"
+        [attr.disabled]="tab.disabled ? '' : null"
+        [attr.data-testid]="tab.testId"
+        (click)="selectContextTab(tab)"
+      >
+        <span class="study-context-section__tab-label">{{ tab.label }}</span>
+        @if (tab.key === 'similarity') {
+          <span
+            class="qd-tabs__count"
+            [class.qd-tabs__count--unknown]="relatedStudyCount() === null"
+            data-testid="study-context-related-count"
+            >{{ relatedStudyCountLabel() }}</span
+          >
+        }
+      </button>
+    }
+  </qd-tabs>
 
-    @if (selectedVerseKey()) {
-      <div class="study-context-section__divider" role="separator"></div>
-
+  <div
+    class="study-context-section__content"
+    role="tabpanel"
+    [id]="panelElementId(activeContextTab())"
+    [attr.aria-labelledby]="tabElementId(activeContextTab())"
+  >
+    @if (activeContextTab() === 'analysis') {
+      <qd-selected-word-section
+        [embedded]="true"
+        [analysis]="wordAnalysis()"
+        [loadState]="wordLoadState()"
+        [selectedWordLocation]="selectedWordLocation()"
+      />
+    } @else {
       <qd-selected-ayah-section
         [embedded]="true"
+        [group]="activeAyahGroup()"
         [study]="ayahStudy()"
         [loadState]="ayahLoadState()"
         [similarAyahs]="similarAyahs()"
@@ -39,5 +70,5 @@
         (ayahNavigate)="ayahNavigate.emit($event)"
       />
     }
-  }
+  </div>
 </section>

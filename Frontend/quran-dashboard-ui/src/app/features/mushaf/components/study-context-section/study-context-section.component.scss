@@ -20,10 +20,25 @@
   border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
 
-  &__divider {
+  &__tabs {
+    --qd-tabs-track-floor: 8.5rem;
+
+    display: block;
     flex-shrink: 0;
-    border-block-start: var(--qd-hairline);
-    margin-inline: calc(-1 * var(--qd-space-3));
+    max-inline-size: 100%;
+  }
+
+  &__tab-label {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__content {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-height: 0;
   }
 }
 
@@ -38,6 +53,11 @@
     min-height: auto;
     overflow-y: visible;
     overflow-x: visible;
+
+    &__content {
+      flex: none;
+      min-height: auto;
+    }
   }
 }
 

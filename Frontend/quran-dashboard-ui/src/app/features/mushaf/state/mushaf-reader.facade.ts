@@ -360,7 +360,10 @@ export class MushafReaderFacade {
   }
 
   setAyahTab(tab: AyahStudyTab): void {
-    this.patchUrlQuery({ [MUSHAF_URL_KEYS.ayahTab]: tab });
+    this.patchUrlQuery({
+      [MUSHAF_URL_KEYS.panel]: 'ayah',
+      [MUSHAF_URL_KEYS.ayahTab]: tab,
+    });
   }
 
   setTafsirSource(sourceKey: string): void {

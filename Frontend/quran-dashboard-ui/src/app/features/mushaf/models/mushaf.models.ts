@@ -134,7 +134,13 @@ export interface WordAnalysisDto extends Omit<WordAnalysisWireDto, 'renderedWord
 
 export type PanelMode = 'ayah' | 'word' | 'none';
 export type AyahStudyTab = 'tafsir' | 'translation' | 'full-i3rab' | 'similar-ayahs' | 'mutashabihat';
+export type AyahStudyGroup = 'sources' | 'similarity';
 export type WordAnalysisTab = 'morphology' | 'segments' | 'i3rab' | 'identity';
+
+export const AYAH_STUDY_TABS_BY_GROUP = {
+  sources: ['tafsir', 'translation', 'full-i3rab'],
+  similarity: ['mutashabihat', 'similar-ayahs'],
+} as const satisfies Record<AyahStudyGroup, readonly AyahStudyTab[]>;
 
 export const AYAH_STUDY_TAB_LABELS: Record<AyahStudyTab, { full: string; short: string }> = {
   tafsir: { full: 'التفسير', short: 'التفسير' },

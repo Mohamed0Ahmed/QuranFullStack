@@ -3,7 +3,10 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 
 import { MushafPageAreaComponent } from '../../components/mushaf-page-area/mushaf-page-area.component';
-import { StudyContextSectionComponent } from '../../components/study-context-section/study-context-section.component';
+import {
+  StudyContextSectionComponent,
+  StudyContextTab,
+} from '../../components/study-context-section/study-context-section.component';
 import { MushafSelectionStatusComponent } from '../../../linking/components/mushaf-selection-status/mushaf-selection-status.component';
 import { AyahStudyTab, AyahNavigationTarget } from '../../models/mushaf.models';
 import { MushafReaderFacade } from '../../state/mushaf-reader.facade';
@@ -124,6 +127,22 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
 
   protected onAyahTabChange(tab: AyahStudyTab): void {
     this.facade.setAyahTab(tab);
+  }
+
+  protected onStudyContextTabChange(tab: StudyContextTab): void {
+    switch (tab) {
+      case 'analysis':
+        this.facade.setPanel('word');
+        return;
+      case 'sources':
+        this.facade.setAyahTab('tafsir');
+        return;
+      case 'similarity':
+        this.facade.setAyahTab('mutashabihat');
+        return;
+      case 'doors':
+        return;
+    }
   }
 
   protected onTafsirSourceChange(sourceKey: string): void {
