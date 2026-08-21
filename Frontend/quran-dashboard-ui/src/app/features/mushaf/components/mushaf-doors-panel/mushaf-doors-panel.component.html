@@ -61,8 +61,8 @@
           />
         </div>
         <div class="mushaf-doors-panel__confirm">
-          <span class="mushaf-doors-panel__selection-summary">
-            تم اختيار {{ highlights.draftDoorIds().size }} باب
+          <span class="mushaf-doors-panel__selection-summary" aria-live="polite">
+            تم اختيار {{ highlights.draftDoorIds().size }} من {{ highlights.maxSelectedDoors }} بابًا
           </span>
           <button
             type="button"
@@ -74,6 +74,13 @@
             تأكيد
           </button>
         </div>
+        @if (highlights.selectionLimitReached()) {
+          <qd-notice
+            tone="info"
+            message="وصلت إلى الحد الأقصى: 15 بابًا. ألغِ تحديد باب لإضافة باب آخر."
+            testId="mushaf-doors-selection-limit"
+          />
+        }
       }
     } @else {
       @if (highlights.appliedDoors().length === 0) {
@@ -109,50 +116,61 @@
 
         <div class="mushaf-doors-panel__selected-list" data-testid="mushaf-doors-selected-list">
           @for (door of highlights.appliedDoors(); track door.id) {
-            <article class="mushaf-doors-panel__selected-door" [attr.data-testid]="'mushaf-selected-door-' + door.id">
-              <div class="mushaf-doors-panel__selected-header">
-                <h3>{{ door.name }}</h3>
-                <button
-                  type="button"
-                  qdAction="danger"
-                  size="sm"
-                  [attr.aria-label]="'حذف الباب ' + door.name"
-                  [attr.data-testid]="'mushaf-selected-door-remove-' + door.id"
-                  (click)="highlights.removeAppliedDoor(door.id)"
-                >
-                  حذف
-                </button>
-              </div>
-
-              <fieldset class="mushaf-doors-panel__palette">
-                <legend>لون التمييز</legend>
-                <div class="mushaf-doors-panel__swatches">
-                  @for (colorSlot of highlights.palette; track colorSlot) {
-                    <label
-                      class="mushaf-doors-panel__swatch-option"
-                      [class.mushaf-doors-panel__swatch-option--selected]="door.colorSlot === colorSlot"
-                      [attr.data-color-slot]="colorSlot"
-                      [attr.title]="colorLabel(colorSlot)"
-                    >
-                      <input
-                        class="qd-sr-only"
-                        type="radio"
-                        [name]="'mushaf-door-color-' + door.id"
-                        [value]="colorSlot"
-                        [checked]="door.colorSlot === colorSlot"
-                        [attr.aria-label]="colorLabel(colorSlot)"
-                        [attr.data-testid]="'mushaf-selected-door-color-' + door.id + '-' + colorSlot"
-                        (change)="setDoorColor(door.id, colorSlot)"
-                      />
-                      <span class="mushaf-doors-panel__swatch" aria-hidden="true"></span>
-                    </label>
-                  }
-                </div>
-              </fieldset>
-            </article>
+            <div
+              class="mushaf-doors-panel__selected-door"
+              [class.mushaf-doors-panel__selected-door--open]="palettePopover()?.door?.id === door.id"
+              [attr.data-color-slot]="door.colorSlot"
+              [attr.data-testid]="'mushaf-selected-door-' + door.id"
+            >
+              <button
+                type="button"
+                class="mushaf-doors-panel__door-trigger"
+                [attr.title]="door.path"
+                [attr.aria-label]="'الباب ' + door.name + '، المسار ' + door.path + '، اضغط لاختيار اللون'"
+                [attr.aria-expanded]="palettePopover()?.door?.id === door.id"
+                [attr.aria-controls]="palettePopover()?.door?.id === door.id ? 'mushaf-door-palette-popover' : null"
+                [attr.data-testid]="'mushaf-selected-door-palette-' + door.id"
+                (click)="openPalette($event, door)"
+              >
+                <span class="mushaf-doors-panel__door-color" aria-hidden="true"></span>
+                <span class="mushaf-doors-panel__door-name">{{ door.name }}</span>
+              </button>
+              <button
+                type="button"
+                class="mushaf-doors-panel__remove-door"
+                [attr.aria-label]="'إلغاء تحديد الباب ' + door.name"
+                [attr.title]="'إلغاء تحديد الباب ' + door.name"
+                [attr.data-testid]="'mushaf-selected-door-remove-' + door.id"
+                (click)="removeDoor($event, door.id)"
+              >
+                <span aria-hidden="true">×</span>
+              </button>
+            </div>
           }
         </div>
       }
     }
   </div>
 </section>
+
+@if (palettePopover(); as palette) {
+  <qd-context-menu
+    id="mushaf-door-palette-popover"
+    variant="disclosure-popover"
+    [position]="palette.position"
+    [anchorElement]="palette.anchor"
+    [controlElement]="palette.anchor"
+    [blockingBackdrop]="false"
+    [menuAriaLabel]="'اختيار لون الباب ' + palette.door.name"
+    menuTestId="mushaf-door-palette-popover"
+    backdropTestId="mushaf-door-palette-backdrop"
+    (dismissed)="closePalette()"
+  >
+    <qd-mushaf-door-palette
+      [door]="palette.door"
+      [palette]="highlights.palette"
+      [reservedColorSlots]="highlights.usedColorSlots()"
+      (colorSelected)="setDoorColor(palette.door.id, $event)"
+    />
+  </qd-context-menu>
+}

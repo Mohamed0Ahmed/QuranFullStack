@@ -40,7 +40,7 @@ word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block paddin
 word highlights. It changes no font, text, glyph, word boundary, source data, or other Quran surface.
 
 Door highlighting has one approved visual exception: a highlighted word uses its assigned door token
-behind unchanged Quran text, inset by the 6px `--qd-mushaf-door-highlight-inset` from both block
+behind unchanged Quran text, inset by the 10px `--qd-mushaf-door-highlight-inset` from both block
 edges. A word or ayah marker belonging to multiple selected doors uses fixed multi-door gradients
 independent of assigned colors: a light background gradient for the word and a darker readable
 gradient for the marker glyph. In forced-colors, solid block edges identify a single-door word and

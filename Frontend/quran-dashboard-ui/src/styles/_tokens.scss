@@ -189,7 +189,8 @@
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
 
-  --qd-mushaf-door-highlight-inset: calc(var(--qd-s-4) + var(--qd-s-2));
+  --qd-mushaf-door-highlight-inset: calc(var(--qd-s-8) + var(--qd-s-2));
+  --qd-mushaf-door-tile-inline-size: 11rem;
   --qd-door-highlight-1: color-mix(in oklch, oklch(0.720 0.190 25) 48%, var(--qd-surface));
   --qd-door-highlight-2: color-mix(in oklch, oklch(0.820 0.170 95) 52%, var(--qd-surface));
   --qd-door-highlight-3: color-mix(in oklch, oklch(0.700 0.170 145) 48%, var(--qd-surface));

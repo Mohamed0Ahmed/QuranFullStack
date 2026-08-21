@@ -1,6 +1,7 @@
 <div
   #backdrop
   class="qd-context-menu__backdrop"
+  [class.qd-context-menu__backdrop--nonblocking]="!blockingBackdrop()"
   [attr.data-testid]="backdropTestId()"
   (click)="dismissed.emit()"
 ></div>
@@ -8,7 +9,9 @@
   #surface
   class="qd-context-menu"
   [qdFloatingLayer]="variant()"
+  [anchorElement]="anchorElement()"
   [anchorPoint]="position()"
+  [controlElement]="controlElement()"
   [dismissBoundaryElement]="backdrop"
   [attr.role]="variant() === 'action-menu' ? 'menu' : 'region'"
   [attr.tabindex]="variant() === 'disclosure-popover' ? -1 : null"

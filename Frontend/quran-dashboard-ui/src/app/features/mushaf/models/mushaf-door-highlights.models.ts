@@ -8,6 +8,7 @@ export type MushafDoorResolvedColorSlot = MushafDoorColorSlot | 'multi';
 export interface MushafAppliedDoorViewModel {
   readonly id: number;
   readonly name: string;
+  readonly path: string;
   readonly colorSlot: MushafDoorColorSlot;
 }
 

@@ -394,7 +394,7 @@ Rules:
   word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block padding to its
   background-only word highlights. It must not change text, glyphs, word boundaries, or source data.
 - Door highlighting is an approved visual exception: a highlighted word uses its assigned
-  categorical door token behind unchanged Quran text, inset by the 6px
+  categorical door token behind unchanged Quran text, inset by the 10px
   `--qd-mushaf-door-highlight-inset` from both block edges. A word or ayah marker belonging to
   multiple selected doors uses fixed gradients independent of assigned colors: a light background
   gradient for the word and a darker readable gradient for the marker glyph. In forced-colors,
