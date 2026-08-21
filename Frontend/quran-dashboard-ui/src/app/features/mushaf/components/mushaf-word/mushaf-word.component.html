@@ -18,4 +18,13 @@
   (pointercancel)="onPointerEnd($event)"
   (contextmenu)="onContextMenu($event)"
   (click)="onWordClick($event)"
->{{ displayText() }}</button>
+>
+  @if (doorHighlight() && !word().isAyahMarker) {
+    <span
+      class="mushaf-word__door-background"
+      [style.--qd-mushaf-door-background]="doorBackground()"
+      aria-hidden="true"
+    ></span>
+  }
+  <span class="mushaf-word__text">{{ displayText() }}</span>
+</button>

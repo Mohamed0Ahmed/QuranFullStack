@@ -44,6 +44,17 @@ export class MushafWordComponent implements OnDestroy {
 
   protected readonly displayText = computed(() => toQuranWordDisplayText(this.word().textUthmani));
 
+  protected readonly doorBackground = computed(() => {
+    const highlight = this.doorHighlight();
+    if (!highlight || this.word().isAyahMarker) {
+      return null;
+    }
+
+    return highlight.colorSlot === 'multi'
+      ? 'var(--qd-door-highlight-multi-gradient)'
+      : `var(--qd-door-highlight-${highlight.colorSlot})`;
+  });
+
   protected readonly isSelectedAyah = computed(
     () => this.ayahSelectionMode() && this.selectedVerseKeys().includes(this.word().verseKey),
   );

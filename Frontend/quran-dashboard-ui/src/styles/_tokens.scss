@@ -189,22 +189,53 @@
   --qd-mushaf-ayah-marker-color: var(--qd-text-muted);
   --qd-mushaf-sticky-top: calc(var(--qd-navbar-block-size) + var(--qd-space-3));
 
-  --qd-door-highlight-1: oklch(0.420 0.095 166);
-  --qd-door-highlight-2: oklch(0.440 0.120 37);
-  --qd-door-highlight-3: oklch(0.430 0.100 252);
-  --qd-door-highlight-4: oklch(0.430 0.095 305);
-  --qd-door-highlight-5: oklch(0.410 0.075 204);
-  --qd-door-highlight-6: oklch(0.420 0.085 70);
-  --qd-door-highlight-7: oklch(0.410 0.110 15);
-  --qd-door-highlight-8: oklch(0.410 0.090 275);
-  --qd-door-highlight-9: oklch(0.430 0.075 120);
-  --qd-door-highlight-10: oklch(0.420 0.085 220);
-  --qd-door-highlight-11: oklch(0.420 0.090 330);
-  --qd-door-highlight-12: oklch(0.450 0.105 55);
-  --qd-door-highlight-13: oklch(0.430 0.060 245);
-  --qd-door-highlight-14: oklch(0.430 0.115 5);
-  --qd-door-highlight-15: oklch(0.400 0.075 145);
-  --qd-door-highlight-multi: oklch(0.410 0.125 292);
+  --qd-mushaf-door-highlight-inset: calc(var(--qd-s-4) + var(--qd-s-2));
+  --qd-door-highlight-1: color-mix(in oklch, oklch(0.720 0.190 25) 48%, var(--qd-surface));
+  --qd-door-highlight-2: color-mix(in oklch, oklch(0.820 0.170 95) 52%, var(--qd-surface));
+  --qd-door-highlight-3: color-mix(in oklch, oklch(0.700 0.170 145) 48%, var(--qd-surface));
+  --qd-door-highlight-4: color-mix(in oklch, oklch(0.690 0.150 180) 48%, var(--qd-surface));
+  --qd-door-highlight-5: color-mix(in oklch, oklch(0.740 0.150 225) 50%, var(--qd-surface));
+  --qd-door-highlight-6: color-mix(in oklch, oklch(0.650 0.170 265) 46%, var(--qd-surface));
+  --qd-door-highlight-7: color-mix(in oklch, oklch(0.690 0.170 305) 48%, var(--qd-surface));
+  --qd-door-highlight-8: color-mix(in oklch, oklch(0.720 0.190 345) 48%, var(--qd-surface));
+  --qd-door-highlight-9: color-mix(in oklch, oklch(0.750 0.180 55) 50%, var(--qd-surface));
+  --qd-door-highlight-10: color-mix(in oklch, oklch(0.780 0.170 120) 52%, var(--qd-surface));
+  --qd-door-highlight-11: color-mix(in oklch, oklch(0.650 0.150 165) 46%, var(--qd-surface));
+  --qd-door-highlight-12: color-mix(in oklch, oklch(0.790 0.130 205) 52%, var(--qd-surface));
+  --qd-door-highlight-13: color-mix(in oklch, oklch(0.630 0.160 285) 46%, var(--qd-surface));
+  --qd-door-highlight-14: color-mix(in oklch, oklch(0.700 0.190 330) 48%, var(--qd-surface));
+  --qd-door-highlight-15: color-mix(in oklch, oklch(0.680 0.140 75) 48%, var(--qd-surface));
+  --qd-door-highlight-gradient-angle: 110deg;
+  --qd-door-highlight-multi-gradient: linear-gradient(
+    var(--qd-door-highlight-gradient-angle),
+    var(--qd-door-highlight-1) 0%,
+    var(--qd-door-highlight-2) 34%,
+    var(--qd-door-highlight-5) 67%,
+    var(--qd-door-highlight-7) 100%
+  );
+  --qd-door-marker-1: color-mix(in oklch, oklch(0.520 0.170 25) 72%, var(--qd-text));
+  --qd-door-marker-2: color-mix(in oklch, oklch(0.520 0.140 95) 72%, var(--qd-text));
+  --qd-door-marker-3: color-mix(in oklch, oklch(0.500 0.150 145) 72%, var(--qd-text));
+  --qd-door-marker-4: color-mix(in oklch, oklch(0.490 0.130 180) 72%, var(--qd-text));
+  --qd-door-marker-5: color-mix(in oklch, oklch(0.510 0.140 225) 72%, var(--qd-text));
+  --qd-door-marker-6: color-mix(in oklch, oklch(0.500 0.160 265) 72%, var(--qd-text));
+  --qd-door-marker-7: color-mix(in oklch, oklch(0.500 0.150 305) 72%, var(--qd-text));
+  --qd-door-marker-8: color-mix(in oklch, oklch(0.510 0.170 345) 72%, var(--qd-text));
+  --qd-door-marker-9: color-mix(in oklch, oklch(0.520 0.160 55) 72%, var(--qd-text));
+  --qd-door-marker-10: color-mix(in oklch, oklch(0.510 0.150 120) 72%, var(--qd-text));
+  --qd-door-marker-11: color-mix(in oklch, oklch(0.480 0.130 165) 72%, var(--qd-text));
+  --qd-door-marker-12: color-mix(in oklch, oklch(0.500 0.120 205) 72%, var(--qd-text));
+  --qd-door-marker-13: color-mix(in oklch, oklch(0.490 0.150 285) 72%, var(--qd-text));
+  --qd-door-marker-14: color-mix(in oklch, oklch(0.500 0.170 330) 72%, var(--qd-text));
+  --qd-door-marker-15: color-mix(in oklch, oklch(0.490 0.130 75) 72%, var(--qd-text));
+  --qd-door-marker-multi: color-mix(in oklch, oklch(0.500 0.160 300) 72%, var(--qd-text));
+  --qd-door-marker-multi-gradient: linear-gradient(
+    var(--qd-door-highlight-gradient-angle),
+    var(--qd-door-marker-1) 0%,
+    var(--qd-door-marker-2) 34%,
+    var(--qd-door-marker-5) 67%,
+    var(--qd-door-marker-7) 100%
+  );
 
   --qd-segment-cat-1: oklch(0.521 0.089 69.2);
   --qd-segment-cat-2: oklch(0.490 0.068 176.3);

@@ -47,8 +47,9 @@ badges, reward mechanics), and **dense enterprise greige** (joyless gray-on-gray
 - Flat parchment + one scholarly green: warm parchment canvas, near-white cards,
   hairline borders, green as both primary and accent; navy demoted to footer-only.
 - Quran/Mushaf content keeps its current naskh faces (Amiri etc.), unchanged; a
-  clean Arabic sans (IBM Plex Sans Arabic) carries UI chrome. The exact Compact
-  linking ayah-selection display exception is owned by `FRONTEND_UI_RULES.md` §3.
+  clean Arabic sans (IBM Plex Sans Arabic) carries UI chrome. The exact visual
+  linking-selection and door-highlight exceptions are owned by
+  `FRONTEND_UI_RULES.md` §3.
 - Quiet and **flat**; separation comes from the tonal surface ladder and hairline
   borders. A single shadow exists, reserved for floating layers only.
 - Light navbar (opaque, flat, hairline bottom border), dark navy footer/anchor;
@@ -191,10 +192,10 @@ or needed. Do not use a flat pure-white *page canvas*; the canvas is parchment.
 **Quran / Content Font:** the app's **current** Quran/Mushaf faces (Amiri for
 Mushaf/verse text, with the existing ayah-marker face). These are **sacred and
 stable: do not change or replace Quran/Mushaf glyph fonts or Quran rendering**, and
-never animate Quran text. The sole display exception is the exact Compact linking
-ayah-selection rule in `FRONTEND_UI_RULES.md` §3; it does not change the font, text,
-glyphs, or word boundaries. The prototype agrees (it also uses Amiri for verse text),
-so no font change is needed here.
+never animate Quran text. The only display exceptions are the exact visual
+linking-selection and door-highlight rules in `FRONTEND_UI_RULES.md` §3; neither
+changes the font, text, glyph shape, word boundaries, or line metrics. The prototype
+agrees (it also uses Amiri for verse text), so no font change is needed here.
 
 **UI Font (adopted from prototype):** **IBM Plex Sans Arabic** for Arabic UI chrome
 and **IBM Plex Sans** for Latin UI. Use weights **400 / 500 / 600 / 700** where
@@ -231,7 +232,8 @@ The light theme is **fully flat**. Separation comes from two cooperating layers:
 the **surface ladder** (parchment page → near-white card → quiet section →
 recessed tones) and **hairline borders** (`--qd-border` and a stronger
 `--qd-border-strong`). There are **no resting card shadows, no hover shadows, no
-hover lifts, no gradients, and no backdrop blur** anywhere in light.
+hover lifts, no gradients outside the fixed multi-door Mushaf word and ayah-marker
+highlight, and no backdrop blur** anywhere in light.
 
 **Shadow tokens (light):**
 - `--qd-shadow-sm` and `--qd-shadow` are `none` — flat by contract, not by habit.
@@ -304,12 +306,15 @@ bounce-free. Quran text is never animated.
   and neutrals stay tinted warm. Near-white **elevated cards** are allowed when
   paired with the parchment background and a hairline border (revised Warm Neutral
   Rule) — never with a shadow.
-- **Don't** use gradients, gradient text, glassmorphism, or backdrop blur —
-  **anywhere, zero exceptions**. The two previously sanctioned exceptions (the
-  footer's gradient top hairline and the optional translucent navbar blur) are
-  removed. *Decorative* colored side-stripes remain banned; the only sanctioned
-  semantic edges are the 2px green thread (current/selected) and the 3px
-  segment-colored inline-start edge on mushaf segment cards.
+- **Don't** use gradients, gradient text, glassmorphism, or backdrop blur. The one
+  gradient exception is the fixed multi-color Mushaf highlight for a word or ayah
+  marker belonging to multiple selected doors. It stays visually distinct even
+  when those doors share an assigned color, and never changes Quran text. The
+  footer's gradient top hairline and the optional translucent navbar blur remain
+  removed. *Decorative* colored
+  side-stripes remain banned; the only sanctioned semantic edges are the 2px green
+  thread (current/selected) and the 3px segment-colored inline-start edge on mushaf
+  segment cards.
 - **Don't** paste raw CSS, inline styles, or hex values into Angular; every value
   lives as an OKLCH `--qd-*` token in `src/styles/_tokens.scss` /
   `src/styles/_themes.scss` and is consumed through the token system.

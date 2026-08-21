@@ -11,6 +11,13 @@
 > - `Golden UI — Responsive Critical States.dc.html`
 >
 > **Revision 2 (locked-decision pass).** D36 is decided (**disabled + visible reason**), D37 is decided (**non-interactive**), the 1080px Wide threshold is approved, Access route-leave has a canonical *target*, and D38 remains open. Twelve consistency corrections are applied: no gradients anywhere, exact surface-ladder terminology, split Access lifecycle frames, added responsive visual coverage, a proportionate card-nesting rule, preview-vs-project typography separated, mode-scoped Medium width rule, `lifecycle-active` split from `mutation-success`, every referenced token defined, a broader SCSS exception policy, a tab-order-safe truncation contract, and an explicit `qd-state` migration-adapter allowance.
+>
+> **Revision 3 (Mushaf door-highlighting exception).** Gradients remain prohibited except for one
+> fixed renderer treatment: a Quran word or ayah marker linked to multiple selected doors uses
+> static multi-door gradients independently of assigned colors. A light gradient appears behind the
+> word and a darker readable gradient appears within the marker glyph. The treatment changes no
+> Quran text, font, glyph shape, word boundary, line metric,
+> animation, control, surface, loading state, or decorative treatment.
 
 ---
 
@@ -33,9 +40,9 @@
 ## 1. Design principles
 
 1. **Arabic-first, not mirrored.** Logical properties only (`inline-start/inline-end`, `margin-inline`, `padding-inline`, `border-inline-start`). Direction is a first-class design input, not a post-process. LTR is a *local island* (email, permission code, version hash, subject, source keys) — never a layout direction. (G01)
-2. **Scripture is protected content, not UI.** Quran text, fonts, glyphs, markers, measured page geometry and no-animation rules are outside the design system's authority. The system may style the *chrome around* it. The sole content-style exception is the exact Compact linking ayah-selection rule in `FRONTEND_UI_RULES.md` §3 and `UI_STYLE_SYSTEM.md` §13. (G02, G03, G11)
+2. **Scripture is protected content, not UI.** Quran text, fonts, glyphs, markers, measured page geometry and no-animation rules are outside the design system's authority. The system may style the *chrome around* it. The only content-style exceptions are the exact visual linking-selection and door-highlight rules in `FRONTEND_UI_RULES.md` §3 and `UI_STYLE_SYSTEM.md` §13. (G02, G03, G11)
 3. **Same contract, same UI.** If two surfaces share a behaviour contract, they share the visual and interaction vocabulary. Differences must be nameable in domain terms or they are drift.
-4. **Calm by default.** Flat parchment/ink/green identity. No gradients, no glass, no resting shadows, no hover lift, no entrance motion. Motion is state feedback only: 120–160ms colour/border transitions; shadow exists only on floating layers.
+4. **Calm by default.** Flat parchment/ink/green identity. No gradients outside the fixed multi-door Mushaf word and ayah-marker highlight, no glass, no resting shadows, no hover lift, no entrance motion. Motion is state feedback only: 120–160ms colour/border transitions; shadow exists only on floating layers.
 5. **Green means state, never decoration.** Solid green = one primary action per view. Green tint + 2px inline-start green thread = current/selected. Generic hover is neutral. (D12, D14–D16)
 6. **Stable frame, growing content.** Shells, controls, anchors and scroll owners are stable. Content that genuinely varies grows. Stability is never bought with invisible blank bands.
 7. **Density serves reading, not compression.** A data-dense dashboard uses width; it does not shrink generic UI type or targets. Minimum body 14px, minimum hit area 44px, minimum table row 40px, subject only to the named Compact modal and linking-selection exceptions.
@@ -83,7 +90,7 @@ Ladder rule: **no surface may sit on the same surface.** A card is `--qd-surface
 | `--qd-green-thread` | `#1C6349` | 2px `border-inline-start` on selected rows/cards/panels (logical, never physical). (D26) |
 | `--qd-green-quiet` | `#CFE0D6` | Hairline on green-tinted surfaces only. |
 
-Forbidden: green as generic hover, green as decorative border, green gradients, green for non-state emphasis. (D12, D15, D16)
+Forbidden: green as generic hover, green as decorative border, decorative green gradients, and green for non-state emphasis. The fixed categorical multi-door Mushaf gradient may include green. (D12, D15, D16)
 
 ### 2.4 Status (semantic, never colour-only)
 

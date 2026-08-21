@@ -39,6 +39,15 @@ The linking ayah-selection card has one approved Compact-only display exception:
 word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block padding to background-only
 word highlights. It changes no font, text, glyph, word boundary, source data, or other Quran surface.
 
+Door highlighting has one approved visual exception: a highlighted word uses its assigned door token
+behind unchanged Quran text, inset by the 6px `--qd-mushaf-door-highlight-inset` from both block
+edges. A word or ayah marker belonging to multiple selected doors uses fixed multi-door gradients
+independent of assigned colors: a light background gradient for the word and a darker readable
+gradient for the marker glyph. In forced-colors, solid block edges identify a single-door word and
+a system-color underline identifies a single-door marker; dashed perimeters identify multi-door
+words and markers. The treatment never changes or animates the font, text, glyph shape, word
+boundaries, or line metrics.
+
 ## 4. Responsive bands — one vocabulary
 
 `src/app/shared/layout/breakpoints.contract.json` is the only source of band values. TypeScript and
@@ -70,9 +79,10 @@ appear only in Wide.
 
 ## 6. Prohibited effects
 
-No gradients, glass, resting card shadows, hover lifts, active-state translation, decorative
-entrance motion, decorative imagery, or gamification. Shadow exists only on floating layers
-(`--qd-shadow-layer`). Motion is state feedback at 120–160ms and honours `prefers-reduced-motion`.
+No gradients outside the fixed multi-door Mushaf word and ayah-marker highlight defined in §3,
+glass, resting card shadows, hover lifts, active-state translation, decorative entrance motion,
+decorative imagery, or gamification. Shadow exists only on floating layers (`--qd-shadow-layer`).
+Motion is state feedback at 120–160ms and honours `prefers-reduced-motion`.
 
 Green is state, never decoration: solid green is the single primary action, tint is current/selected,
 and a 2px logical `border-inline-start` thread marks selection. Generic hover is
@@ -118,5 +128,6 @@ because a documented guarantee the gate does not deliver is worse than none:
   protected-name match, so `.mushaf-line:hover` and `.a,\n.mushaf-word` are both inspected.
 
 It also scans **every** stylesheet under `src/` for a raw responsive threshold, in px *or* rem. Its
-legacy allowlist is now empty except the two permanent colour-literal entries that define the token
-owner's boundary, and it may only shrink.
+pattern allowlist contains only the two permanent colour-literal boundary entries and the two fixed
+multi-door gradient declarations in the token owner. A separate consumer check permits each gradient
+token exactly once in the Mushaf word renderer and rejects every other consumer.

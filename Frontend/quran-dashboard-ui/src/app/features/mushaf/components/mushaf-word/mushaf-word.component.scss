@@ -4,7 +4,9 @@
 }
 
 .mushaf-word {
-  display: inline;
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
   font-family: var(--qd-font-quran);
   font-size: var(--qd-mushaf-word-font-size);
   line-height: 1.9;
@@ -16,6 +18,17 @@
   color: inherit;
   cursor: pointer;
   transition: background-color var(--qd-t-fast);
+
+  &__door-background {
+    position: absolute;
+    z-index: -1;
+    inset-block: var(--qd-mushaf-door-highlight-inset);
+    inset-inline: 0;
+    box-sizing: border-box;
+    border-radius: var(--qd-radius-xs);
+    background: var(--qd-mushaf-door-background);
+    pointer-events: none;
+  }
 
   &:disabled {
     cursor: default;
@@ -57,8 +70,8 @@
     color: var(--qd-accent);
   }
 
-  &--door-highlight {
-    color: var(--qd-mushaf-door-highlight);
+  &--marker.mushaf-word--door-highlight {
+    color: var(--qd-mushaf-door-marker);
   }
 
   &--door-highlight.mushaf-word--ayah-selection {
@@ -72,10 +85,47 @@
 
 @for $slot from 1 through 15 {
   [data-door-color-slot='#{$slot}'] {
-    --qd-mushaf-door-highlight: var(--qd-door-highlight-#{$slot});
+    --qd-mushaf-door-marker: var(--qd-door-marker-#{$slot});
   }
 }
 
 [data-door-color-slot='multi'] {
-  --qd-mushaf-door-highlight: var(--qd-door-highlight-multi);
+  --qd-mushaf-door-marker: var(--qd-door-marker-multi);
+}
+
+.mushaf-word--marker[data-door-color-slot='multi'] {
+  color: transparent;
+  background: var(--qd-door-marker-multi-gradient);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+@media (forced-colors: active) {
+  .mushaf-word--door-highlight:not(.mushaf-word--marker) .mushaf-word__door-background {
+    border-block: var(--qd-s-2) solid Highlight;
+    background: Canvas;
+  }
+
+  .mushaf-word--door-highlight[data-door-color-slot='multi']:not(.mushaf-word--marker)
+    .mushaf-word__door-background {
+    border: var(--qd-s-2) dashed Highlight;
+  }
+
+  .mushaf-word--marker.mushaf-word--door-highlight {
+    color: Highlight;
+    text-decoration: underline;
+    text-decoration-color: Highlight;
+    text-decoration-thickness: var(--qd-s-2);
+    text-underline-offset: var(--qd-s-2);
+  }
+
+  .mushaf-word--marker[data-door-color-slot='multi'] {
+    color: Highlight;
+    background: none;
+    outline: var(--qd-s-2) dashed Highlight;
+    outline-offset: var(--qd-s-2);
+    text-decoration: none;
+    -webkit-text-fill-color: currentColor;
+  }
 }

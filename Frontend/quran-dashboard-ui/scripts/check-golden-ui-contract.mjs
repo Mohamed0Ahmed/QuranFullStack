@@ -51,6 +51,26 @@ const LEGACY_ALLOWLIST = [
     reason: 'the token owner is the only place a colour literal may be written',
     retiresIn: 'never',
   },
+  {
+    file: 'src/styles/_tokens.scss',
+    rule: 'gradient',
+    count: 2,
+    reason: 'the fixed multi-door Mushaf word and ayah-marker gradient tokens',
+    retiresIn: 'never',
+  },
+];
+
+const SCOPED_GRADIENT_TOKEN_CONSUMERS = [
+  {
+    token: '--qd-door-highlight-multi-gradient',
+    file: 'src/app/features/mushaf/components/mushaf-word/mushaf-word.component.ts',
+    count: 1,
+  },
+  {
+    token: '--qd-door-marker-multi-gradient',
+    file: 'src/app/features/mushaf/components/mushaf-word/mushaf-word.component.scss',
+    count: 1,
+  },
 ];
 
 const QD_STATE_CONSUMER_BASELINE = 0;
@@ -366,6 +386,25 @@ function checkForbiddenPatterns() {
   }
 }
 
+function checkScopedGradientTokenConsumers() {
+  const sourceFiles = walk('src', ['.scss', '.ts', '.html']);
+
+  for (const contract of SCOPED_GRADIENT_TOKEN_CONSUMERS) {
+    const expression = new RegExp(`var\\(${contract.token}\\)`, 'g');
+    for (const file of sourceFiles) {
+      const found = countMatches(readFile(file), expression);
+      const allowed = file === contract.file ? contract.count : 0;
+      if (found !== allowed) {
+        failures.push(
+          `${file}: ${found} use(s) of ${contract.token}; contract permits ${allowed}`,
+        );
+      }
+    }
+  }
+
+  notes.push(`scoped gradient token consumers: ${SCOPED_GRADIENT_TOKEN_CONSUMERS.length}`);
+}
+
 function checkRawBreakpoints() {
   const values = bandValues();
   const scanned = new Set([...GOLDEN_LAYER, ...walk('src', ['.scss'])]);
@@ -675,6 +714,7 @@ function checkNoArtificialTabStops() {
 checkContractShape();
 checkSingleBandTruth();
 checkForbiddenPatterns();
+checkScopedGradientTokenConsumers();
 checkRawBreakpoints();
 checkPageShellContract();
 checkQdStateRetired();
@@ -692,7 +732,7 @@ console.log(
   `bands: compact <=${bands.compactMax}, medium ${bands.mediumMin}-${bands.mediumMax}, wide >=${bands.wideMin}, wide-plus >=${bands.widePlusMin}`,
 );
 console.log(`golden layer files scanned: ${GOLDEN_LAYER.length}`);
-console.log(`legacy allowlist entries: ${LEGACY_ALLOWLIST.length}`);
+console.log(`pattern allowlist entries: ${LEGACY_ALLOWLIST.length}`);
 for (const note of notes) {
   console.log(note);
 }
