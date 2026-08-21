@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   block-size: 100%;
@@ -45,4 +47,17 @@
 
 .qd-details-panel__content[hidden] {
   display: none;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host-context(.qd-modal-shell--overlay) .qd-details__header,
+  :host-context(.qd-modal-shell--overlay) .qd-details__body,
+  :host-context(.qd-modal-shell--overlay) .qd-details__footer {
+    padding: var(--qd-space-2);
+  }
+
+  :host-context(.qd-modal-shell--overlay) .qd-details__tabs {
+    padding-inline: var(--qd-space-2);
+    padding-block: var(--qd-space-2) 0;
+  }
 }

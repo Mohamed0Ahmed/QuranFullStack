@@ -8,11 +8,14 @@
   [attr.aria-describedby]="disabled() ? disabledReasonId() : null"
   [attr.aria-pressed]="ariaPressed()"
   [disabled]="disabled()"
-  [attr.data-testid]="'word-count-chip'"
+  data-testid="word-count-chip"
   (click)="onClick()"
 >
-  @if (showLabel()) {
+  @if (showLabel() && !countFirst()) {
     <span class="word-count-chip__label">{{ label() }}</span>
   }
   <span class="word-count-chip__count">{{ count() }}</span>
+  @if (showLabel() && countFirst()) {
+    <span class="word-count-chip__label">{{ label() }}</span>
+  }
 </button>

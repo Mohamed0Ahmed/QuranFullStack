@@ -159,6 +159,10 @@
     width: 100%;
     min-inline-size: 0;
   }
+
+  .qd-explorer-search-row > qd-explorer-association-filter {
+    flex: 0 0 auto;
+  }
 }
 
 .qd-explorer-controls-secondary {

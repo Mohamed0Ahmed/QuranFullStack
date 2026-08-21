@@ -72,20 +72,25 @@
   </ng-template>
 
   <ng-template #compactRowTemplate let-row let-index="index">
-    <div class="unique-words-table__compact-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
-    <button
-      qdAction="row-action"
-      size="sm"
-      type="button"
-      class="unique-words-table__word unique-words-table__word--compact qd-interactive-surface"
-      data-testid="unique-words-table-word-button"
-      [disabled]="row.surahsCount === 0"
-      [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
-      [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
-      (click)="selectRow(row)"
-    >
-      <span class="unique-words-table__display">{{ row.displayText }}</span>
-    </button>
+    <div class="unique-words-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
+    <div class="qd-explorer-mobile-identity">
+      <button
+        qdAction="row-action"
+        size="sm"
+        type="button"
+        class="unique-words-table__word unique-words-table__word--compact qd-interactive-surface"
+        data-testid="unique-words-table-word-button"
+        [disabled]="row.surahsCount === 0"
+        [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
+        [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
+        (click)="selectRow(row)"
+      >
+        <span class="unique-words-table__display">{{ row.displayText }}</span>
+      </button>
+      <div class="qd-explorer-mobile-relations">
+        <ng-container *ngTemplateOutlet="relationCells; context: { row: row }" />
+      </div>
+    </div>
     <ng-container *ngTemplateOutlet="mobileStats; context: { row: row }" />
   </ng-template>
 
@@ -190,13 +195,12 @@
 </ng-template>
 
 <ng-template #mobileStats let-row="row">
-  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--flex">
-    <ng-container *ngTemplateOutlet="relationCells; context: { row: row }" />
+  <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--primary">
     <span class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences-static">
-      {{ row.occurrencesCount }} {{ occurrencesLabel }}
+      <span class="qd-explorer-mobile-stat__count">{{ row.occurrencesCount }}</span><span class="qd-explorer-mobile-stat__label">{{ occurrencesLabel }}</span>
     </span>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'ayahs', row.ayahsCount)" data-testid="unique-words-table-mobile-ayahs" [attr.aria-label]="row.ayahsCount + ' ' + ayahsLabel" [disabled]="row.ayahsCount === 0" [attr.aria-disabled]="row.ayahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.ayahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'ayahs', 'ayahs')">{{ row.ayahsCount }} {{ ayahsLabel }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'surahs', row.surahsCount)" data-testid="unique-words-table-mobile-surahs" [attr.aria-label]="row.surahsCount + ' ' + surahsLabel" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'surahs', 'surahs')">{{ row.surahsCount }} {{ surahsLabel }}</button>
-    <button qdAction="toolbar" size="sm" type="button" class="qd-badge qd-explorer-mobile-stat qd-explorer-mobile-stat--action" [class.qd-is-selected]="isCountActive(row, 'missing', row.missingSurahsCount)" data-testid="unique-words-table-mobile-missing" [attr.aria-label]="row.missingSurahsCount + ' ' + missingLabel" [disabled]="row.missingSurahsCount === 0" [attr.aria-disabled]="row.missingSurahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.missingSurahsCount === 0 ? disabledReasonId : null" (click)="openDrilldown(row, 'missing', 'missing')">{{ row.missingSurahsCount }} {{ missingLabel }}</button>
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="unique-words-table-mobile-ayahs" [label]="ayahsLabel" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" [countFirst]="true" (chipClick)="openDrilldown(row, 'ayahs', 'ayahs')" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="unique-words-table-mobile-surahs" [label]="surahsLabel" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" [countFirst]="true" (chipClick)="openDrilldown(row, 'surahs', 'surahs')" />
+    <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="unique-words-table-mobile-missing" [label]="missingLabel" [count]="row.missingSurahsCount" [disabled]="row.missingSurahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'missing', row.missingSurahsCount)" [countFirst]="true" (chipClick)="openDrilldown(row, 'missing', 'missing')" />
   </div>
 </ng-template>

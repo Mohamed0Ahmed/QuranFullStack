@@ -8,6 +8,9 @@ export const WORD_COUNT_DISABLED_REASON = 'لا كلمات مرتبطة بهذا
   templateUrl: './word-count-chip.component.html',
   styleUrl: './word-count-chip.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[attr.data-testid]': 'testId()',
+  },
 })
 export class WordCountChipComponent {
   readonly label = input.required<string>();
@@ -16,6 +19,8 @@ export class WordCountChipComponent {
   readonly disabledReasonId = input<string | null>(null);
   readonly selected = input(false);
   readonly showLabel = input(true);
+  readonly countFirst = input(false);
+  readonly testId = input<string | null>(null);
 
   readonly chipClick = output<void>();
 
