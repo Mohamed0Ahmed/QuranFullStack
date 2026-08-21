@@ -49,10 +49,6 @@ export class EntityDetailOverlayHostComponent {
   private readonly headerStore = inject(EntityDetailOverlayHeaderStore);
   private readonly linkingAccess = inject(LinkingAccessService);
 
-  constructor() {
-    this.overlay.start();
-  }
-
   protected readonly hasStack = computed(() => this.overlay.state().stack.length > 0);
 
   protected readonly isOverlayOpen = this.overlay.isOpen;

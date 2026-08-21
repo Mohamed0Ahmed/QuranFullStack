@@ -14,7 +14,7 @@
 .abwab-tree-branch {
   position: relative;
   display: flex;
-  flex: 0 0 var(--abwab-tree-indent-step);
+  flex: 0 0 var(--at-i);
 }
 
 .abwab-tree-branch::before,
@@ -47,11 +47,11 @@
   inset-block-end: 0;
   inset-inline-start: calc(
     var(--qd-space-2) +
-      min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
-      var(--abwab-tree-indent-step)
+      min(var(--at-d, 0), var(--at-m)) *
+      var(--at-i)
   );
   display: flex;
-  inline-size: var(--abwab-tree-indent-step);
+  inline-size: var(--at-i);
 }
 
 .abwab-tree-child-stem::before {
