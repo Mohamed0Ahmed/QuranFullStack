@@ -180,6 +180,15 @@ export class AbwabSectionsModalComponent {
     });
   }
 
+  protected submitFromEnter(): void {
+    const editingId = this.editingId();
+    if (editingId !== null) {
+      this.saveRename(editingId);
+      return;
+    }
+    this.add();
+  }
+
   protected startRename(section: AbwabTreeSectionDto): void {
     if (!this.canEditSection()) {
       return;

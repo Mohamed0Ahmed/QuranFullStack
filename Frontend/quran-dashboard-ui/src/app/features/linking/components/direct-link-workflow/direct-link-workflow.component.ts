@@ -103,6 +103,39 @@ export class DirectLinkWorkflowComponent {
   protected canNavigateTo(step: LinkingWorkflowStep): boolean { return this.workflow.canNavigateTo(step); }
   protected navigateTo(step: LinkingWorkflowStep): void { this.workflow.navigateTo(step); }
 
+  protected onEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || event.defaultPrevented || event.isComposing || event.target instanceof HTMLButtonElement) {
+      return;
+    }
+    switch (this.currentStep()) {
+      case 'configure-source':
+        if (!this.canAdvanceSource()) {
+          return;
+        }
+        event.preventDefault();
+        this.next();
+        return;
+      case 'door':
+        if (!this.canAdvanceDoor()) {
+          return;
+        }
+        event.preventDefault();
+        this.next();
+        return;
+      case 'ready':
+        if (!this.isCopy() || !this.isNoOp()) {
+          if (!this.canSubmit()) {
+            return;
+          }
+          event.preventDefault();
+          this.submit();
+        }
+        return;
+      default:
+        return;
+    }
+  }
+
   protected toggleManualWord(toggle: LinkingVirtualWordToggle): void {
     this.workflow.toggleDirectManualWord(toggle.ayahId, toggle.quranWordId);
   }

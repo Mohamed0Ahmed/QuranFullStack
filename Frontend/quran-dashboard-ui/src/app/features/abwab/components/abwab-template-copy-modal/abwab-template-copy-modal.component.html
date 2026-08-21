@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="titleText()"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="close()"
+    (primaryActionRequested)="confirm()"
   >
     <p qdModalShellHeaderSupport class="abwab-template-copy-modal__desc">{{ descriptionText }}</p>
 

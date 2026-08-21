@@ -99,8 +99,10 @@
   [movedSectionIds]="overlays.moveSectionIds()"
   [titleText]="overlays.moveTitleText()"
   [canConfirm]="permissions.canMoveDoor()"
+  [busy]="overlays.moveBusy()"
+  [errorMessage]="overlays.moveError()"
   (closed)="overlays.closeMovePicker()"
-  (confirmed)="overlays.confirmMove($event)"
+  (confirmed)="onMoveConfirmed($event)"
 />
 
 <qd-abwab-relations-modal

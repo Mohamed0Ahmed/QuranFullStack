@@ -57,10 +57,12 @@ export class QdModalShellComponent {
   readonly dismissOnEscape = input(true);
   readonly trapFocus = input(true);
   readonly returnFocus = input(true);
+  readonly submitOnEnter = input(false);
   readonly testIdPrefix = input('qd-modal-shell');
   readonly dialogTestId = input<string | null>(null);
 
   readonly dismissed = output<QdModalShellDismissReason>();
+  readonly primaryActionRequested = output<void>();
 
   private readonly instance = nextShellId++;
   readonly instanceId = `qd-modal-shell-${this.instance}`;
@@ -130,6 +132,22 @@ export class QdModalShellComponent {
       return;
     }
     this.dismissed.emit('escape');
+  }
+
+  protected onKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Escape') {
+      this.onEscape(event);
+      return;
+    }
+    if (!this.submitOnEnter() || event.key !== 'Enter' || event.defaultPrevented || event.isComposing) {
+      return;
+    }
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement) {
+      return;
+    }
+    event.preventDefault();
+    this.primaryActionRequested.emit();
   }
 
   protected onCloseClick(): void {

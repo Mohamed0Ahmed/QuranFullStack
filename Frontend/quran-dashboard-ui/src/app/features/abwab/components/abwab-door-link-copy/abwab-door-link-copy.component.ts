@@ -43,4 +43,12 @@ export class AbwabDoorLinkCopyComponent {
       && copy.targetDoorId !== null
       && selectedCount > 0;
   });
+
+  protected startFromEnter(event: Event): void {
+    if (!(event instanceof KeyboardEvent) || event.defaultPrevented || event.isComposing || event.target instanceof HTMLButtonElement || !this.canStart()) {
+      return;
+    }
+    event.preventDefault();
+    this.controller.start();
+  }
 }

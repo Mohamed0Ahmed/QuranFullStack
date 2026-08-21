@@ -18,6 +18,8 @@
   [movedSectionIds]="overlays.moveSectionIds()"
   [titleText]="overlays.moveTitleText()"
   [canConfirm]="permissions.canMoveDoor()"
+  [busy]="overlays.moveBusy()"
+  [errorMessage]="overlays.moveError()"
   (closed)="movePickerClosed.emit()"
   (confirmed)="interactions.onMoveConfirmed($event)"
 />

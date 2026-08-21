@@ -5,7 +5,9 @@
     [open]="true"
     [titleText]="modalTitle"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="onDismissed($event)"
+    (primaryActionRequested)="submit()"
   >
     <p qdModalShellHeaderSupport class="abwab-door-modal__context" data-testid="abwab-door-modal-context">
       {{ contextText }}

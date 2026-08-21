@@ -19,7 +19,7 @@ import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-s
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
-import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
+import { ABWAB_ORDER_SCOPE_TO_WIRE, AbwabMoveDestination, AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { AbwabPageOverlaysController } from '../../state/abwab-page-overlays.controller';
 import { AbwabManagementPickerSessionStore } from '../../state/abwab-management-picker-session.store';
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
@@ -265,6 +265,10 @@ export class AbwabManagementPickerComponent {
     if (this.overlays.modalDoor() === null && door !== null) {
       this.pendingCreatedDoorId.set(door.id);
     }
+  }
+
+  protected onMoveConfirmed(destination: AbwabMoveDestination): void {
+    this.overlays.confirmMove(destination, () => this.overlays.closeMovePicker());
   }
 
   protected confirmArchive(): void {

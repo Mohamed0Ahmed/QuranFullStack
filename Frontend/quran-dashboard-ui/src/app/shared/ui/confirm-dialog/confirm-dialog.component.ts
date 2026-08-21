@@ -20,6 +20,7 @@ export class ConfirmDialogComponent {
   readonly busy = input(false);
   readonly confirmDisabled = input(false);
   readonly testIdPrefix = input('qd-confirm-dialog');
+  readonly submitOnEnter = input(false);
 
   readonly confirmed = output<void>();
   readonly cancelled = output<void>();

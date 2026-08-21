@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .abwab-sections-modal__list {
   list-style: none;
   border: 1px solid var(--qd-border);
@@ -110,4 +112,98 @@
 .abwab-sections-modal__discard-confirm .abwab-sections-modal__foot-actions {
   justify-content: flex-start;
   margin-block-start: var(--qd-space-3);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-sections-modal__list {
+    margin-block-end: var(--qd-space-2);
+  }
+
+  .abwab-sections-modal__row {
+    display: grid;
+    grid-template-areas:
+      'order name'
+      'rename delete';
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: var(--qd-space-1) var(--qd-space-2);
+    padding: var(--qd-space-2);
+  }
+
+  .abwab-sections-modal__row--editing {
+    grid-template-areas:
+      'order name'
+      'save cancel';
+  }
+
+  .abwab-sections-modal__order,
+  .abwab-sections-modal__order-input {
+    grid-area: order;
+  }
+
+  .abwab-sections-modal__name,
+  .abwab-sections-modal__rename-input {
+    grid-area: name;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .abwab-sections-modal__row-action {
+    inline-size: 100%;
+    min-block-size: var(--qd-hit-target-min);
+  }
+
+  .abwab-sections-modal__row-action--rename {
+    border-color: var(--qd-info-hairline);
+    background: var(--qd-info-tint);
+    color: var(--qd-info);
+  }
+
+  .abwab-sections-modal__row-action--delete {
+    border-color: var(--qd-danger-hairline);
+    background: var(--qd-danger-tint);
+    color: var(--qd-danger);
+  }
+
+  .abwab-sections-modal__row-action--rename,
+  .abwab-sections-modal__row-action--save {
+    grid-area: rename;
+  }
+
+  .abwab-sections-modal__row-action--delete,
+  .abwab-sections-modal__row-action--cancel {
+    grid-area: delete;
+  }
+
+  .abwab-sections-modal__row--editing .abwab-sections-modal__row-action--save {
+    grid-area: save;
+  }
+
+  .abwab-sections-modal__row--editing .abwab-sections-modal__row-action--cancel {
+    grid-area: cancel;
+  }
+
+  .abwab-sections-modal__add {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: var(--qd-space-2);
+  }
+
+  .abwab-sections-modal__add label {
+    grid-column: 1 / -1;
+  }
+
+  .abwab-sections-modal__add input {
+    min-inline-size: 0;
+    padding: var(--qd-space-2);
+  }
+
+  .abwab-sections-modal__add .qd-action {
+    min-block-size: var(--qd-hit-target-min);
+  }
+
+  .abwab-sections-modal__foot-actions {
+    justify-content: flex-start;
+  }
 }

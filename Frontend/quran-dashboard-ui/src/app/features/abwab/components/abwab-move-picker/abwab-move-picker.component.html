@@ -5,9 +5,15 @@
     [open]="true"
     [titleText]="titleText()"
     [showClose]="false"
+    [submitOnEnter]="true"
     (dismissed)="cancel()"
+    (primaryActionRequested)="confirm()"
   >
     <p qdModalShellHeaderSupport class="abwab-move-picker__desc">{{ descriptionText }}</p>
+
+    @if (errorMessage(); as message) {
+      <qd-error-state severity="write" [message]="message" testId="abwab-move-picker-error" />
+    }
 
     <qd-tabs
       qdModalShellHeaderSupport
@@ -116,7 +122,8 @@
       <button
         type="button"
         qdAction="primary"
-        [disabled]="pickedSectionId() === null || !canConfirm()"
+        [busy]="busy()"
+        [disabled]="pickedSectionId() === null || !canConfirm() || busy()"
         data-testid="abwab-move-picker-confirm"
         (click)="confirm()"
       >

@@ -287,7 +287,9 @@ export class AbwabPageInteractionsController {
       this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker(), () => undefined, true);
       return;
     }
-    this.closeUrlBackedModal(['move'], () => this.overlays.confirmMove(destination), () => undefined, true);
+    this.overlays.confirmMove(destination, () =>
+      this.closeUrlBackedModal(['move'], () => this.overlays.closeMovePicker(), () => undefined, true),
+    );
   }
 
   onSectionsModalClosed(onRestoreFocus: FocusCallback): void {
