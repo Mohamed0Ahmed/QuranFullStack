@@ -51,6 +51,8 @@ export class MushafPageSwipeDirective {
       return;
     }
 
+    this.clearClickSuppression();
+
     if (!event.isPrimary) {
       this.resetGesture();
       return;

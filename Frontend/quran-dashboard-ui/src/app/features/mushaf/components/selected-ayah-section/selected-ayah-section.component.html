@@ -48,6 +48,14 @@
           (click)="tabChange.emit(tab.key)"
         >
           <span class="selected-ayah-section__tab-label">{{ tabLabels[tab.key].short }}</span>
+          @if (tab.countTestId !== null) {
+            <span
+              class="qd-tabs__count"
+              [class.qd-tabs__count--unknown]="tabCount(tab.key) === null"
+              [attr.data-testid]="tab.countTestId"
+              >{{ tabCountLabel(tab.key) }}</span
+            >
+          }
         </button>
       }
     </qd-tabs>

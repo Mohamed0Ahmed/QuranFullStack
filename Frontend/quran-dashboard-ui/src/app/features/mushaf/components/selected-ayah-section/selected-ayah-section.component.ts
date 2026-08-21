@@ -28,11 +28,17 @@ import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 interface AyahStudyTabDefinition {
   readonly key: AyahStudyTab;
   readonly testId: string | null;
+  readonly countTestId: string | null;
 }
 
 const AYAH_STUDY_TAB_TEST_IDS: Partial<Record<AyahStudyTab, string>> = {
   'similar-ayahs': 'ayah-tab-similar-ayahs',
   mutashabihat: 'ayah-tab-mutashabihat',
+};
+
+const AYAH_STUDY_TAB_COUNT_TEST_IDS: Partial<Record<AyahStudyTab, string>> = {
+  'similar-ayahs': 'similar-ayah-count',
+  mutashabihat: 'mutashabihat-group-count',
 };
 
 let nextAyahStudyInstance = 0;
@@ -121,6 +127,7 @@ export class SelectedAyahSectionComponent {
     AYAH_STUDY_TABS_BY_GROUP[this.group()].map((key) => ({
       key,
       testId: AYAH_STUDY_TAB_TEST_IDS[key] ?? null,
+      countTestId: AYAH_STUDY_TAB_COUNT_TEST_IDS[key] ?? null,
     })),
   );
   protected readonly tabsAriaLabel = computed(() =>
@@ -153,6 +160,26 @@ export class SelectedAyahSectionComponent {
   protected readonly mutashabihatOccurrenceCount = computed<number | null>(
     () => this.study()?.similaritySummary.mutashabihatOccurrenceCount ?? null,
   );
+
+  protected tabCount(tab: AyahStudyTab): number | null {
+    if (this.loadState().isLoading || !this.study()) {
+      return null;
+    }
+
+    switch (tab) {
+      case 'similar-ayahs':
+        return this.similarAyahCount();
+      case 'mutashabihat':
+        return this.mutashabihatGroupCount();
+      default:
+        return null;
+    }
+  }
+
+  protected tabCountLabel(tab: AyahStudyTab): string {
+    const count = this.tabCount(tab);
+    return count === null ? '' : `${count}`;
+  }
 
   protected selectedAyahNavigateLabel(): string {
     const ayah = this.study()?.ayah;

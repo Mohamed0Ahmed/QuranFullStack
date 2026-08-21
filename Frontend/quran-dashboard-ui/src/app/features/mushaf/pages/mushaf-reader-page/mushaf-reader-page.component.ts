@@ -94,13 +94,12 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
   }
 
   protected onAyahSelect(verseKey: string): void {
-    if (this.ayahSelection.active()) {
-      this.ignoreNextWordSelection = true;
-      this.ayahSelection.toggle(verseKey);
+    if (!this.ayahSelection.active()) {
       return;
     }
 
-    this.facade.selectAyah(verseKey);
+    this.ignoreNextWordSelection = true;
+    this.ayahSelection.toggle(verseKey);
   }
 
   protected onWordSelect(wordLocation: string): void {

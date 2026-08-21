@@ -306,7 +306,6 @@ export class MushafReaderFacade {
       Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
     > = {
       [MUSHAF_URL_KEYS.word]: wordLocation,
-      [MUSHAF_URL_KEYS.panel]: 'word',
       [MUSHAF_URL_KEYS.focusAyah]: null,
     };
 
