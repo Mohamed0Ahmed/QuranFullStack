@@ -1,4 +1,9 @@
-<div class="mushaf-page-view qd-scroll-stable" data-testid="mushaf-page-view">
+<div
+  qdMushafPageSwipe
+  class="mushaf-page-view qd-scroll-stable"
+  data-testid="mushaf-page-view"
+  (mushafPageSwipe)="onPageSwipe($event)"
+>
   <div class="mushaf-page-view__text-column">
     @if (displaySurahs().length) {
       <div class="mushaf-page-view__chrome-top">
