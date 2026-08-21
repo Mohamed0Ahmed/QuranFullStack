@@ -4,25 +4,20 @@
   display: block;
 }
 
-.word-type-filter,
-// The first-load mirror stands in for `.word-type-filter`'s own toolbar + panel grid, so it must lay
-// its two children out identically (Feature 030, N3 row 8).
-.word-type-filter__skeleton {
+.wf,
+.wf__skeleton {
   display: grid;
   gap: 0.75rem;
 }
 
-.word-type-filter__toolbar {
+.wf__toolbar {
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
   align-items: stretch;
 }
 
-/* .qd-card qd-card--hover supplies border/background/shadow/hover/transition;
-   this trigger only needs its own flex sizing and to zero the card's padding
-   so the full-size inner button remains the click target. */
-.word-type-filter__trigger {
+.wf__trigger {
   display: flex;
   align-items: stretch;
   flex: 1 1 16rem;
@@ -30,16 +25,16 @@
   padding: 0;
 }
 
-.word-type-filter__trigger.qd-is-selected {
+.wf__trigger.qd-is-selected {
   background: var(--qd-selected-bg);
   border-color: var(--qd-border-accent);
 }
 
-.word-type-filter__trigger--disabled {
+.wf__trigger--disabled {
   opacity: 0.72;
 }
 
-.word-type-filter__button {
+.wf__button {
   flex: 1 1 auto;
   display: flex;
   align-items: center;
@@ -56,57 +51,48 @@
   transition: color var(--qd-t-fast);
 }
 
-.word-type-filter__button.qd-is-selected {
+.wf__button.qd-is-selected {
   color: var(--qd-accent-text, var(--qd-text));
 }
 
-.word-type-filter__button:disabled {
+.wf__button:disabled {
   cursor: wait;
 }
 
-// The mirror's trigger reuses the real button box for its padding/flex metrics on an inert span; only
-// the click affordance has to go.
-.word-type-filter__button--skeleton {
+.wf__button--skeleton {
   cursor: default;
 }
 
-// Only the selected trigger carries the badge below, so on every other trigger this bar is what
-// stands in for the loaded `.word-type-filter__label` — and it must occupy that label's line box,
-// not the shared --qd-skeleton-h default, or the badge-less lines would grow on settle. `1lh` is
-// that line box: the bar inherits the same font as the label it replaces.
-.word-type-filter__skeleton-label {
+.wf__skeleton-label {
   --qd-skeleton-w: 5rem;
   --qd-skeleton-h: 1lh;
 }
 
-.word-type-filter__skeleton-count {
+.wf__skeleton-count {
   --qd-skeleton-w: 2.5rem;
   --qd-skeleton-h: 1.125rem;
   flex-shrink: 0;
   border-radius: var(--qd-radius-pill);
 }
 
-// Reserves geometry only, and only on the trigger the loaded markup badges — the selected one. Kept
-// as a real `.qd-badge` so that row inherits the badge's actual line box, which is taller than the
-// label beside it.
-.word-type-filter__skeleton-badge {
+.wf__skeleton-badge {
   visibility: hidden;
 }
 
-.word-type-filter__button:focus-visible,
-.word-type-filter__secondary-field select:focus-visible {
+.wf__button:focus-visible,
+.wf__secondary-field select:focus-visible {
   outline: 2px solid var(--qd-focus-ring);
   outline-offset: 2px;
 }
 
-.word-type-filter__button-content {
+.wf__button-content {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
   min-inline-size: 0;
 }
 
-.word-type-filter__label-row {
+.wf__label-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -114,38 +100,38 @@
   flex-wrap: wrap;
 }
 
-.word-type-filter__state {
+.wf__state {
   flex-shrink: 0;
 }
 
-.word-type-filter__children-section {
+.wf__children-section {
   display: grid;
   gap: 0.85rem;
 }
 
-.word-type-filter__children-header {
+.wf__children-header {
   display: grid;
   gap: 0.2rem;
 }
 
-.word-type-filter__children-eyebrow,
-.word-type-filter__children-title {
+.wf__children-eyebrow,
+.wf__children-title {
   margin: 0;
 }
 
-.word-type-filter__children-eyebrow {
+.wf__children-eyebrow {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--qd-accent-text, var(--qd-text-muted));
 }
 
-.word-type-filter__children-title {
+.wf__children-title {
   font-size: 0.98rem;
   font-weight: 700;
   color: var(--qd-text);
 }
 
-.word-type-filter__children {
+.wf__children {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -154,14 +140,11 @@
   grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
 }
 
-.word-type-filter__child {
+.wf__child {
   min-inline-size: 0;
 }
 
-/* .qd-chip .qd-chip--pill supplies border/background/hover/selected/focus/
-   transition; this child only needs its list-item sizing plus the selected
-   dot indicator, which is genuinely local. */
-.word-type-filter__child-button {
+.wf__child-button {
   position: relative;
   justify-content: space-between;
   inline-size: 100%;
@@ -171,19 +154,18 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
-  .word-type-filter__child-button,
-  .word-type-filter__button {
+  .wf__child-button,
+  .wf__button {
     min-block-size: var(--qd-hit-target-min);
   }
 }
 
-.word-type-filter__child-button.qd-is-selected {
+.wf__child-button.qd-is-selected {
   padding-inline-start: 1.15rem;
   font-weight: 700;
 }
 
-/* §16 allowed-gold: solid selection indicator. */
-.word-type-filter__child-button.qd-is-selected::before {
+.wf__child-button.qd-is-selected::before {
   content: '';
   position: absolute;
   inset-block-start: 50%;
@@ -196,15 +178,15 @@
   background: var(--qd-accent);
 }
 
-.word-type-filter__child-button:disabled {
+.wf__child-button:disabled {
   cursor: wait;
 }
 
-.word-type-filter__label {
+.wf__label {
   font-weight: 700;
 }
 
-.word-type-filter__child-label {
+.wf__child-label {
   min-inline-size: 0;
   font-weight: 400;
   overflow: hidden;
@@ -212,19 +194,17 @@
   white-space: nowrap;
 }
 
-.word-type-filter__count {
+.wf__count {
   flex-shrink: 0;
   min-inline-size: 2.5rem;
 }
 
-/* The trigger isn't a .qd-chip, so it needs its own selected-count treatment;
-   the child gets this for free from .qd-chip.qd-is-selected .qd-chip__count. */
-.word-type-filter__trigger.qd-is-selected .qd-chip__count {
+.wf__trigger.qd-is-selected .qd-chip__count {
   background: var(--qd-surface);
   color: var(--qd-accent-text);
 }
 
-.word-type-filter__panel {
+.wf__panel {
   display: grid;
   align-content: start;
   gap: 0.85rem;
@@ -236,12 +216,12 @@
   overflow: auto;
 }
 
-.word-type-filter__placeholder {
+.wf__placeholder {
   margin: 0;
   color: var(--qd-text-muted);
 }
 
-.word-type-filter__secondary {
+.wf__secondary {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
@@ -249,7 +229,7 @@
   border-block-start: 1px solid var(--qd-border);
 }
 
-.word-type-filter__secondary-field {
+.wf__secondary-field {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;

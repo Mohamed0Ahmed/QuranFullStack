@@ -14,11 +14,15 @@ import { EntityDetailOverlayHostComponent } from './features/words/entity-detail
       [attr.inert]="hasForegroundDialog() ? '' : null"
       [attr.aria-hidden]="hasForegroundDialog() ? true : null"
     />
-    <qd-entity-detail-overlay-host
-      [attr.inert]="linkingOpen() ? '' : null"
-      [attr.aria-hidden]="linkingOpen() ? true : null"
-    />
-    <qd-linking-workspace-host />
+    @defer (when overlayOpen(); prefetch on idle) {
+      <qd-entity-detail-overlay-host
+        [attr.inert]="linkingOpen() ? '' : null"
+        [attr.aria-hidden]="linkingOpen() ? true : null"
+      />
+    }
+    @defer (when linkingOpen(); prefetch on idle) {
+      <qd-linking-workspace-host />
+    }
   `,
 })
 export class App {
@@ -28,4 +32,8 @@ export class App {
   protected readonly overlayOpen = this.overlay.isOpen;
   protected readonly linkingOpen = this.linkingWorkspace.isOpen;
   protected readonly hasForegroundDialog = computed(() => this.overlayOpen() || this.linkingOpen());
+
+  constructor() {
+    this.overlay.start();
+  }
 }

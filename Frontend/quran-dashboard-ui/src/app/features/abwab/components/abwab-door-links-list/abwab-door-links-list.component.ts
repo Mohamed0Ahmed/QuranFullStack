@@ -7,7 +7,7 @@ import { ChangeDetectionStrategy, Component, inject, input } from '@angular/core
 import { AbwabDoorLinkRecordView } from '../../models/abwab-door-links.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
-import { MeasuredRowVirtualScrollStrategy } from '../../../linking/utils/measured-row-virtual-scroll.strategy';
+import { MeasuredRowVirtualScrollStrategy } from '../../../../shared/ui/virtual-scroll/measured-row-virtual-scroll.strategy';
 import { AbwabDoorLinkRecordComponent } from '../abwab-door-link-record/abwab-door-link-record.component';
 
 const ESTIMATED_RECORD_SIZE = 248;

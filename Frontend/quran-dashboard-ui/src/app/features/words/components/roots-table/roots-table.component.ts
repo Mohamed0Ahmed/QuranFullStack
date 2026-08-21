@@ -52,7 +52,7 @@ import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
 import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 88;
+const ROW_HEIGHT_COMPACT = 214;
 const ROOT_TABLE_WIDE_COLUMN_COUNT = 9;
 const ROOT_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;

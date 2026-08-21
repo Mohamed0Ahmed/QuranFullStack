@@ -196,8 +196,8 @@ export class WordTypeFilterComponent {
 
   focusSelectedType(): void {
     const host = this.host.nativeElement as HTMLElement;
-    const selected = host.querySelector<HTMLButtonElement>('.word-type-filter__button[aria-current="true"]');
-    const fallback = host.querySelector<HTMLButtonElement>('.word-type-filter__button');
+    const selected = host.querySelector<HTMLButtonElement>('.wf__button[aria-current="true"]');
+    const fallback = host.querySelector<HTMLButtonElement>('.wf__button');
     (selected ?? fallback)?.focus();
   }
 }

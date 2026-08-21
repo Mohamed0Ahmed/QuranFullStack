@@ -34,7 +34,7 @@ import {
 import { LinkingQuranEntityStore } from '../../state/linking-quran-entity.store';
 import { LinkingPreflightDetailsFacade } from '../../state/linking-preflight-details.facade';
 import { LinkingSourcePagesFacade } from '../../state/linking-source-pages.facade';
-import { MeasuredRowVirtualScrollStrategy } from '../../utils/measured-row-virtual-scroll.strategy';
+import { MeasuredRowVirtualScrollStrategy } from '../../../../shared/ui/virtual-scroll/measured-row-virtual-scroll.strategy';
 import { LinkingAyahCardComponent } from '../linking-ayah-card/linking-ayah-card.component';
 
 export interface LinkingVirtualWordToggle {

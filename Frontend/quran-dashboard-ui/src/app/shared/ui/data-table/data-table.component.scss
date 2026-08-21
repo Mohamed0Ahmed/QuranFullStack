@@ -28,7 +28,7 @@
   block-size: 32rem;
 }
 
-.qd-data-table__body--compact {
+.qd-data-table__body--compact:not(.qd-data-table__body--virtual) {
   display: grid;
 }
 

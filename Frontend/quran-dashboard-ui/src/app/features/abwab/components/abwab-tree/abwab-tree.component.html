@@ -1,24 +1,24 @@
 <div
-  class="abwab-tree-frame"
-  [class.abwab-tree-frame--bulk]="bulkMode()"
-  [class.abwab-tree-frame--selection]="selectionMode()"
+  class="a-f"
+  [class.a-f--bulk]="bulkMode()"
+  [class.a-f--selection]="selectionMode()"
 >
-  <div class="abwab-tree__header" aria-hidden="true" data-testid="abwab-tree-header">
+  <div class="a-header" aria-hidden="true" data-testid="abwab-tree-header">
     <span></span>
-    <span class="abwab-tree__header-cell abwab-tree__positions relative end-qd-8">
+    <span class="a-header-cell a-positions relative end-qd-8">
       {{ headerPositionsLabel }}
     </span>
-    <span class="abwab-tree__header-cell">{{ headerLinksLabel }}</span>
-    <span class="abwab-tree__header-cell">{{ headerDirectLabel }}</span>
-    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerTotalLabel }}</span>
-    <span class="abwab-tree__header-cell abwab-tree__count--wide">{{ headerDepthLabel }}</span>
+    <span class="a-header-cell">{{ headerLinksLabel }}</span>
+    <span class="a-header-cell">{{ headerDirectLabel }}</span>
+    <span class="a-header-cell a-count--wide">{{ headerTotalLabel }}</span>
+    <span class="a-header-cell a-count--wide">{{ headerDepthLabel }}</span>
     <span></span>
     @if (!bulkMode()) {
       <span></span>
     }
   </div>
   <div
-    class="abwab-tree"
+    class="a-tree"
     role="tree"
     qdHierarchyKeyboard
     [qdHierarchyRows]="visibleRows()"
@@ -29,14 +29,14 @@
     @let node = nodesById().get(row.id);
     @if (node) {
       <div
-        class="abwab-tree__row"
-        [class.abwab-tree__row--revealed]="revealedId() === node.id"
+        class="a-row"
+        [class.a-row--revealed]="revealedId() === node.id"
         role="treeitem"
         [attr.aria-level]="node.depth + 1"
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
         [attr.aria-selected]="selectedId() === node.id"
         [attr.tabindex]="rovingId() === node.id ? 0 : -1"
-        [style.--abwab-tree-depth]="node.depth"
+        [style.--at-d]="node.depth"
         [attr.data-qd-hierarchy-id]="node.id"
         [attr.data-testid]="'abwab-tree-row-' + node.id"
         (click)="onRowClick(node.id)"
@@ -44,7 +44,7 @@
         (contextmenu)="onRowContextMenu($event, node.id)"
         (keydown)="onKeydown($event)"
       >
-        <span class="abwab-tree__lead">
+        <span class="a-lead">
           <qd-abwab-tree-branches
             [guides]="branchGuidesById().get(node.id) ?? []"
             [expanded]="row.isExpanded"
@@ -63,8 +63,8 @@
         <button
           type="button"
           qdAction="row-action"
-          class="abwab-tree__chevron qd-hit-target"
-          [class.abwab-tree__chevron--leaf]="!row.hasChildren"
+          class="a-chevron qd-hit-target"
+          [class.a-chevron--leaf]="!row.hasChildren"
           [attr.data-testid]="'abwab-tree-chevron-' + node.id"
           [attr.tabindex]="-1"
           [attr.aria-hidden]="row.hasChildren ? null : true"
@@ -81,7 +81,7 @@
             <input
               type="number"
               min="1"
-              class="abwab-tree__order-input"
+              class="a-order-input"
               [value]="displayOrder(node)"
               [attr.data-testid]="'abwab-tree-order-input-' + node.id"
               (click)="$event.stopPropagation()"
@@ -91,7 +91,7 @@
           } @else {
             <button
               type="button"
-              class="abwab-tree__order qd-chip qd-is-selected"
+              class="a-order qd-chip qd-is-selected"
               [attr.aria-label]="orderEditAriaLabel(node)"
               [attr.data-testid]="'abwab-tree-order-' + node.id"
               [attr.tabindex]="rovingId() === node.id ? 0 : -1"
@@ -102,16 +102,16 @@
           }
         } @else {
           <span
-            class="abwab-tree__order qd-chip qd-chip--static qd-is-selected"
+            class="a-order qd-chip qd-chip--static qd-is-selected"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
           >
             {{ displayOrder(node) }}
           </span>
         }
 
-        <span class="abwab-tree__name" [title]="node.name">
+        <span class="a-name" [title]="node.name">
           <span
-            class="abwab-tree__name-text inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
+            class="a-name-text inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
             [class.qd-truncate]="!selectionMode()"
             [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
           >
@@ -120,10 +120,10 @@
         </span>
         </span>
 
-        <span class="abwab-tree__count-cell abwab-tree__positions">
-          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerPositionsLabel }}</span>
+        <span class="a-count-cell a-positions">
+          <span class="a-compact-count-label" aria-hidden="true">{{ headerPositionsLabel }}</span>
           <span
-            class="abwab-tree__count qd-chip__count"
+            class="a-count qd-chip__count"
             [class.text-qd-ink-muted]="node.selectedWordCount === 0"
             [class.text-qd-green-text]="node.selectedWordCount !== 0"
             [attr.aria-label]="positionsAriaLabel(node)"
@@ -133,13 +133,13 @@
           </span>
         </span>
 
-        <span class="abwab-tree__count-cell">
-          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerLinksLabel }}</span>
+        <span class="a-count-cell">
+          <span class="a-compact-count-label" aria-hidden="true">{{ headerLinksLabel }}</span>
           <button
             type="button"
             qdAction="row-action"
             size="sm"
-            class="abwab-tree__links-count abwab-tree__count"
+            class="a-links-count a-count"
             [class.text-qd-ink-muted]="node.linkCount === 0"
             [class.text-qd-green-text]="node.linkCount !== 0"
             [class.bg-qd-green-tint]="openLinksDoorId() === node.id"
@@ -156,42 +156,42 @@
           </button>
         </span>
 
-        <span class="abwab-tree__count-cell">
-          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerDirectLabel }}</span>
+        <span class="a-count-cell">
+          <span class="a-compact-count-label" aria-hidden="true">{{ headerDirectLabel }}</span>
           @if (row.hasChildren) {
             <span
-              class="abwab-tree__count qd-chip__count"
+              class="a-count qd-chip__count"
               [attr.aria-label]="childCountAriaLabel(node.liveChildCount)"
               [attr.data-testid]="'abwab-tree-count-' + node.id"
               >{{ node.liveChildCount }}</span
             >
           }
         </span>
-        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+        <span class="a-count-cell a-count--wide">
           @if (row.hasChildren) {
             <span
-              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              class="a-count a-count--wide qd-chip__count"
               [attr.aria-label]="descendantCountAriaLabel(node.liveDescendantCount)"
               [attr.data-testid]="'abwab-tree-descendants-' + node.id"
               >{{ node.liveDescendantCount }}</span
             >
           }
         </span>
-        <span class="abwab-tree__count-cell abwab-tree__count--wide">
+        <span class="a-count-cell a-count--wide">
           @if (row.hasChildren) {
             <span
-              class="abwab-tree__count abwab-tree__count--wide qd-chip__count"
+              class="a-count a-count--wide qd-chip__count"
               [attr.aria-label]="depthAriaLabel(node.maxRelativeDepth)"
               [attr.data-testid]="'abwab-tree-depth-' + node.id"
               >{{ depthBadge(node.maxRelativeDepth) }}</span
             >
           }
         </span>
-        <span class="abwab-tree__flags">
+        <span class="a-flags">
           <button
             type="button"
-            class="abwab-tree__flag qd-chip qd-chip--pill"
-            [class.abwab-tree__flag--empty]="node.relationCount === 0"
+            class="a-flag qd-chip qd-chip--pill"
+            [class.a-flag--empty]="node.relationCount === 0"
             [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
             [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
             [attr.tabindex]="-1"
@@ -199,7 +199,7 @@
           >
             {{ relationsFlagLabel }}
             <span
-              class="abwab-tree__flag-count"
+              class="a-flag-count"
               [attr.data-testid]="'abwab-tree-relations-count-' + node.id"
               >{{ node.relationCount }}</span
             >
@@ -207,12 +207,12 @@
         </span>
 
         @if (!bulkMode()) {
-          <span class="abwab-tree__actions">
+          <span class="a-actions">
             @if (canCreateDoor() && !selectionMode()) {
               <button
               type="button"
               qdAction="row-action"
-              class="abwab-tree__act abwab-tree__act--add-child"
+              class="a-act a-act--add-child"
               [attr.aria-label]="addChildAriaLabel(node.name)"
                 [attr.data-testid]="'abwab-tree-add-child-' + node.id"
                 [attr.tabindex]="-1"
@@ -224,7 +224,7 @@
             <button
               type="button"
               qdAction="row-action"
-              class="abwab-tree__act abwab-tree__act--more-wide"
+              class="a-act a-act--more-wide"
               [attr.aria-label]="menuAriaLabel(node.name)"
               [attr.data-testid]="'abwab-tree-more-' + node.id"
               [attr.tabindex]="-1"
@@ -235,7 +235,7 @@
             <button
               type="button"
               qdAction="row-action"
-              class="abwab-tree__act abwab-tree__act--more-compact"
+              class="a-act a-act--more-compact"
               [attr.aria-label]="labels.rowDetailsAriaLabel(node.name)"
               [attr.data-testid]="'abwab-tree-details-' + node.id"
               [attr.tabindex]="-1"

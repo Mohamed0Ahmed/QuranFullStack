@@ -59,7 +59,7 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
 import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 68;
+const ROW_HEIGHT_COMPACT = 188;
 const UNIQUE_TABLE_WIDE_COLUMN_COUNT = 8;
 const UNIQUE_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;

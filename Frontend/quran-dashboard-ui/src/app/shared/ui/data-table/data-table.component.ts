@@ -1,5 +1,9 @@
 import { isPlatformBrowser, NgTemplateOutlet } from '@angular/common';
-import { CdkVirtualScrollViewport, ScrollingModule } from '@angular/cdk/scrolling';
+import {
+  CdkVirtualScrollViewport,
+  ScrollingModule,
+  VIRTUAL_SCROLL_STRATEGY,
+} from '@angular/cdk/scrolling';
 import {
   afterNextRender,
   ChangeDetectionStrategy,
@@ -7,6 +11,7 @@ import {
   contentChild,
   DestroyRef,
   ElementRef,
+  effect,
   inject,
   input,
   output,
@@ -18,7 +23,11 @@ import {
 
 import { QD_BP_COMPACT_QUERY } from '../../layout/breakpoints';
 import { QdRefreshingIndicatorComponent } from '../refreshing-indicator/refreshing-indicator.component';
+import { MeasuredRowVirtualScrollStrategy } from '../virtual-scroll/measured-row-virtual-scroll.strategy';
 import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, QdDataTableState } from './data-table.models';
+
+const DEFAULT_ROW_HEIGHT = 40;
+const VIRTUAL_ROW_BUFFER = 640;
 
 @Component({
   selector: 'qd-data-table',
@@ -27,6 +36,13 @@ import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, Qd
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [
+    {
+      provide: VIRTUAL_SCROLL_STRATEGY,
+      useFactory: (): MeasuredRowVirtualScrollStrategy =>
+        new MeasuredRowVirtualScrollStrategy(DEFAULT_ROW_HEIGHT, VIRTUAL_ROW_BUFFER),
+    },
+  ],
   host: {
     class: 'qd-data-table',
     '[attr.role]': "isCompact() ? 'list' : 'table'",
@@ -48,6 +64,7 @@ export class QdDataTableComponent<T> {
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly destroyRef = inject(DestroyRef);
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly virtualScrollStrategy = inject(VIRTUAL_SCROLL_STRATEGY) as MeasuredRowVirtualScrollStrategy;
   private readonly isCompactLayout = signal(false);
 
   readonly renderer = input.required<QdDataTableRenderer>();
@@ -79,6 +96,10 @@ export class QdDataTableComponent<T> {
   private readonly viewport = viewChild(CdkVirtualScrollViewport);
 
   constructor() {
+    effect(() =>
+      this.virtualScrollStrategy.resetMeasurements(this.rows().length, this.rowHeightEstimate()),
+    );
+
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
@@ -112,15 +133,7 @@ export class QdDataTableComponent<T> {
   scrollRowIntoView(index: number, direction: QdDataTableRowDirection): void {
     const viewport = this.viewport();
     if (this.useVirtualScroll() && viewport) {
-      const itemSize = this.rowHeight();
-      if (itemSize <= 0) {
-        return;
-      }
-      const offset = viewport.measureScrollOffset('top');
-      const viewportSize = viewport.getViewportSize();
-      if (this.shouldScroll(index, offset, viewportSize, itemSize, direction)) {
-        viewport.scrollToOffset(this.nextOffset(offset, itemSize, direction), 'auto');
-      }
+      this.scrollVirtualRowIntoView(viewport, index, direction);
       return;
     }
 
@@ -141,7 +154,7 @@ export class QdDataTableComponent<T> {
   }
 
   protected useVirtualScroll(): boolean {
-    return this.virtual() && !this.isCompact() && typeof ResizeObserver !== 'undefined';
+    return this.virtual() && typeof ResizeObserver !== 'undefined';
   }
 
   protected isSelected(row: T): boolean {
@@ -171,19 +184,29 @@ export class QdDataTableComponent<T> {
     return this.selectable() && this.renderer() !== 'grouped-rows';
   }
 
-  private shouldScroll(
+  private scrollVirtualRowIntoView(
+    viewport: CdkVirtualScrollViewport,
     index: number,
-    offset: number,
-    viewportSize: number,
-    itemSize: number,
     direction: QdDataTableRowDirection,
-  ): boolean {
-    const first = Math.max(0, Math.floor(offset / itemSize));
-    const last = Math.max(first, Math.floor((offset + viewportSize - 1) / itemSize));
-    return direction === 'down' ? index > last : index < first;
+  ): void {
+    const body = viewport.elementRef.nativeElement;
+    const row = body.querySelector<HTMLElement>(`[data-row-index="${index}"]`);
+    if (row === null) {
+      viewport.scrollToIndex(index, 'auto');
+      return;
+    }
+    const bodyRect = body.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+    const offset = viewport.measureScrollOffset('top');
+    if (direction === 'down' && rowRect.bottom > bodyRect.bottom) {
+      viewport.scrollToOffset(offset + rowRect.bottom - bodyRect.bottom, 'auto');
+    }
+    if (direction === 'up' && rowRect.top < bodyRect.top) {
+      viewport.scrollToOffset(offset + rowRect.top - bodyRect.top, 'auto');
+    }
   }
 
-  private nextOffset(offset: number, itemSize: number, direction: QdDataTableRowDirection): number {
-    return Math.max(0, direction === 'down' ? offset + itemSize : offset - itemSize);
+  private rowHeightEstimate(): number {
+    return this.isCompact() ? this.compactRowHeight() : this.rowHeight();
   }
 }

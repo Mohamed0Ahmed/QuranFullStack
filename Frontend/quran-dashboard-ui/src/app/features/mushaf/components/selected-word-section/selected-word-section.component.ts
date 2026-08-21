@@ -41,7 +41,7 @@ const FIRST_LOAD_SEGMENT_PLACEHOLDER_COUNT = 3;
   templateUrl: './selected-word-section.component.html',
   styleUrls: ['./selected-word-section.component.scss'],
   host: {
-    '[class.qd-selected-word-section--embedded]': 'embedded()',
+    '[class.qd-sws--embedded]': 'embedded()',
   },
 })
 export class SelectedWordSectionComponent {

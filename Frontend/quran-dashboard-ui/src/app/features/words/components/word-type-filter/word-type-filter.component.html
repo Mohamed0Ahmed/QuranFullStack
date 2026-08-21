@@ -1,15 +1,15 @@
-<section class="word-type-filter" [attr.aria-label]="filterLabel">
+<section class="wf" [attr.aria-label]="filterLabel">
   @if (tree(); as currentTree) {
-    <div class="word-type-filter__toolbar" role="toolbar" (click)="$event.stopPropagation()">
+    <div class="wf__toolbar" role="toolbar" (click)="$event.stopPropagation()">
       @for (node of currentTree.mainTypes; track node.code) {
         <div
-          class="word-type-filter__trigger qd-card qd-card--hover"
+          class="wf__trigger qd-card qd-card--hover"
           [class.qd-is-selected]="isSelected(node)"
-          [class.word-type-filter__trigger--disabled]="loading()"
+          [class.wf__trigger--disabled]="loading()"
         >
           <button
             type="button"
-            class="word-type-filter__button"
+            class="wf__button"
             [class.qd-is-selected]="isSelected(node)"
             [attr.aria-current]="isSelected(node) ? 'true' : null"
             [attr.aria-selected]="isSelected(node)"
@@ -19,35 +19,35 @@
             [disabled]="loading()"
             (click)="selectType(node)"
           >
-            <span class="word-type-filter__button-content">
-              <span class="word-type-filter__label-row">
-                <span class="word-type-filter__label">{{ node.label.ar }}</span>
+            <span class="wf__button-content">
+              <span class="wf__label-row">
+                <span class="wf__label">{{ node.label.ar }}</span>
                 @if (isSelected(node)) {
-                  <span class="word-type-filter__state qd-badge qd-badge--accent">{{ currentFilterLabel }}</span>
+                  <span class="wf__state qd-badge qd-badge--accent">{{ currentFilterLabel }}</span>
                 }
               </span>
             </span>
-            <span class="word-type-filter__count qd-chip__count">{{ node.count }}</span>
+            <span class="wf__count qd-chip__count">{{ node.count }}</span>
           </button>
         </div>
       }
     </div>
 
-    <div id="word-type-filter-panel" class="word-type-filter__panel" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
+    <div id="word-type-filter-panel" class="wf__panel" role="region" [attr.aria-label]="browsedNode() ? panelRegionLabel(browsedNode()!) : filterLabel">
       @if (browsedNode(); as panelNode) {
         @if (panelNode.children.length > 0) {
-          <section class="word-type-filter__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">
-            <div class="word-type-filter__children-header">
-              <p class="word-type-filter__children-eyebrow">{{ panelNode.label.ar }}</p>
-              <h2 class="word-type-filter__children-title" [id]="'word-type-filter-children-heading-' + panelNode.code">{{ subtypeGroupLabel }}</h2>
+          <section class="wf__children-section" role="group" [attr.aria-labelledby]="'word-type-filter-children-heading-' + panelNode.code">
+            <div class="wf__children-header">
+              <p class="wf__children-eyebrow">{{ panelNode.label.ar }}</p>
+              <h2 class="wf__children-title" [id]="'word-type-filter-children-heading-' + panelNode.code">{{ subtypeGroupLabel }}</h2>
             </div>
 
-            <ul class="word-type-filter__children" role="list">
+            <ul class="wf__children" role="list">
               @for (child of panelNode.children; track child.childCode) {
-                <li class="word-type-filter__child" role="listitem">
+                <li class="wf__child" role="listitem">
                   <button
                     type="button"
-                    class="word-type-filter__child-button qd-chip qd-chip--pill"
+                    class="wf__child-button qd-chip qd-chip--pill"
                     [class.qd-is-selected]="isChildSelected(child)"
                     [attr.aria-current]="isChildSelected(child) ? 'true' : null"
                     [attr.aria-selected]="isChildSelected(child)"
@@ -55,8 +55,8 @@
                     [title]="child.label.ar"
                     (click)="selectChild(child)"
                   >
-                    <span class="word-type-filter__child-label">{{ child.label.ar }}</span>
-                    <span class="word-type-filter__count qd-chip__count">{{ child.count }}</span>
+                    <span class="wf__child-label">{{ child.label.ar }}</span>
+                    <span class="wf__count qd-chip__count">{{ child.count }}</span>
                   </button>
                 </li>
               }
@@ -65,8 +65,8 @@
         }
 
         @if (showCaseControls()) {
-          <div class="word-type-filter__secondary" data-testid="word-type-case-filter">
-            <label class="word-type-filter__secondary-field">
+          <div class="wf__secondary" data-testid="word-type-case-filter">
+            <label class="wf__secondary-field">
               <span>{{ caseFilterLabel }}</span>
               <select [value]="selectedCase()" [disabled]="loading()" (change)="changeCase($event)">
                 @for (option of caseOptions; track option) {
@@ -78,8 +78,8 @@
         }
 
         @if (showVerbControls()) {
-          <div class="word-type-filter__secondary" data-testid="word-type-verb-filter">
-            <label class="word-type-filter__secondary-field">
+          <div class="wf__secondary" data-testid="word-type-verb-filter">
+            <label class="wf__secondary-field">
               <span>{{ tenseFilterLabel }}</span>
               <select [value]="selectedTense()" [disabled]="loading()" (change)="changeTense($event)">
                 @for (option of tenseOptions; track option) {
@@ -87,7 +87,7 @@
                 }
               </select>
             </label>
-            <label class="word-type-filter__secondary-field">
+            <label class="wf__secondary-field">
               <span>{{ voiceFilterLabel }}</span>
               <select [value]="selectedVoice()" [disabled]="loading()" (change)="changeVoice($event)">
                 @for (option of voiceOptions; track option) {
@@ -99,49 +99,35 @@
         }
 
         @if (showNoSubtypes()) {
-          <p class="word-type-filter__placeholder">{{ noSubtypesLabel }}</p>
+          <p class="wf__placeholder">{{ noSubtypesLabel }}</p>
         }
       }
     </div>
   } @else if (loading()) {
-    <!--
-      First-load mirror (Feature 030, N3 row 8). The tree-less state used to be a single text line, so
-      the toolbar's trigger cards and the fixed-height panel both appeared at once and shoved the whole
-      page down. This mirrors the loaded structure exactly rather than approximating it: one card per
-      main type (the set is the fixed WORD_TYPE_MAIN_TYPES domain list, not tree data) reusing the real
-      trigger/card/button/label-row classes and flex sizing, so the strip wraps identically at every
-      width, plus the panel box, whose height is already fixed in CSS.
-      `qd-panel-skeleton` owns the role="status" announcement (§17); the toolbar mirror stays aria-hidden
-      so there is only one live region.
-    -->
-    <div class="word-type-filter__skeleton" data-testid="word-type-filter-skeleton">
-      <div class="word-type-filter__toolbar" aria-hidden="true">
+    <div class="wf__skeleton" data-testid="word-type-filter-skeleton">
+      <div class="wf__toolbar" aria-hidden="true">
         @for (code of skeletonTriggers; track code) {
-          <div class="word-type-filter__trigger qd-card">
-            <span class="word-type-filter__button word-type-filter__button--skeleton">
-              <span class="word-type-filter__button-content">
-                <span class="word-type-filter__label-row">
-                  <span class="qd-skeleton word-type-filter__skeleton-label"></span>
-                  <!-- Reserves the badge line box on the trigger that will carry it: the loaded
-                       markup badges the SELECTED trigger only (see `:23-28` above). Mirroring it on
-                       every trigger made the non-selected ones taller than they land, so each
-                       wrapped flex line shrank when the tree arrived. -->
+          <div class="wf__trigger qd-card">
+            <span class="wf__button wf__button--skeleton">
+              <span class="wf__button-content">
+                <span class="wf__label-row">
+                  <span class="qd-skeleton wf__skeleton-label"></span>
                   @if (code === selectedType()) {
-                    <span class="qd-badge word-type-filter__state word-type-filter__skeleton-badge">&nbsp;</span>
+                    <span class="qd-badge wf__state wf__skeleton-badge">&nbsp;</span>
                   }
                 </span>
               </span>
-              <span class="qd-skeleton word-type-filter__skeleton-count"></span>
+              <span class="qd-skeleton wf__skeleton-count"></span>
             </span>
           </div>
         }
       </div>
 
-      <div class="word-type-filter__panel">
+      <div class="wf__panel">
         <qd-panel-skeleton [loadingLabel]="loadingLabel" />
       </div>
     </div>
   } @else {
-    <p class="word-type-filter__placeholder">{{ filterLabel }}</p>
+    <p class="wf__placeholder">{{ filterLabel }}</p>
   }
 </section>
