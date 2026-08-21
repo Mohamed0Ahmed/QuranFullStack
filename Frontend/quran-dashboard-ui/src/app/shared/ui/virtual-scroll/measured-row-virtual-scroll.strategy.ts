@@ -2,29 +2,9 @@ import { ListRange } from '@angular/cdk/collections';
 import { CdkVirtualScrollViewport, VirtualScrollStrategy } from '@angular/cdk/scrolling';
 import { Observable, Subject, distinctUntilChanged } from 'rxjs';
 
+import { FenwickDeltaTree } from './fenwick-delta-tree';
+
 const CONTENT_WRAPPER_SELECTOR = '.cdk-virtual-scroll-content-wrapper';
-
-class FenwickDeltaTree {
-  private values: number[] = [0];
-
-  reset(length: number): void {
-    this.values = new Array(length + 1).fill(0);
-  }
-
-  add(index: number, delta: number): void {
-    for (let position = index + 1; position < this.values.length; position += position & -position) {
-      this.values[position] += delta;
-    }
-  }
-
-  prefix(length: number): number {
-    let total = 0;
-    for (let position = length; position > 0; position -= position & -position) {
-      total += this.values[position];
-    }
-    return total;
-  }
-}
 
 export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   private readonly scrolledIndex = new Subject<number>();
@@ -32,6 +12,7 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   private viewport: CdkVirtualScrollViewport | null = null;
   private contentWrapper: HTMLElement | null = null;
   private resizeObserver: ResizeObserver | null = null;
+  private resizeFrame: number | null = null;
   private measuredSizes: number[] = [];
   private renderedRange: ListRange = { start: 0, end: 0 };
   private updating = false;
@@ -40,7 +21,7 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   readonly scrolledIndexChange: Observable<number> = this.scrolledIndex.pipe(distinctUntilChanged());
 
   constructor(
-    private readonly estimatedRowSize: number,
+    private estimatedRowSize: number,
     private readonly bufferSize: number,
   ) {}
 
@@ -53,7 +34,11 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
 
   detach(): void {
     this.resizeObserver?.disconnect();
+    if (this.resizeFrame !== null) {
+      cancelAnimationFrame(this.resizeFrame);
+    }
     this.resizeObserver = null;
+    this.resizeFrame = null;
     this.contentWrapper = null;
     this.viewport = null;
   }
@@ -76,6 +61,12 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
   scrollToIndex(index: number, behavior: ScrollBehavior): void {
     const bounded = Math.min(Math.max(index, 0), this.measuredSizes.length);
     this.viewport?.scrollToOffset(this.offsetFor(bounded), behavior);
+  }
+
+  resetMeasurements(length: number, estimatedRowSize: number): void {
+    this.estimatedRowSize = Math.max(1, estimatedRowSize);
+    this.resetSizes(length);
+    this.update();
   }
 
   private resetSizes(length: number): void {
@@ -128,9 +119,19 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
       return;
     }
     this.contentWrapper = wrapper;
-    this.resizeObserver = new ResizeObserver(() => this.update());
+    this.resizeObserver = new ResizeObserver(() => this.scheduleResizeUpdate());
     this.resizeObserver.observe(wrapper);
     this.resizeObserver.observe(host);
+  }
+
+  private scheduleResizeUpdate(): void {
+    if (this.resizeFrame !== null) {
+      return;
+    }
+    this.resizeFrame = requestAnimationFrame(() => {
+      this.resizeFrame = null;
+      this.update();
+    });
   }
 
   private measureRenderedRows(): void {
@@ -147,7 +148,7 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
       if (index >= this.measuredSizes.length) {
         return;
       }
-      const size = (rows[position] as HTMLElement).offsetHeight;
+      const size = this.rowBlockSize(rows[position] as HTMLElement);
       if (size <= 0 || size === this.measuredSizes[index]) {
         continue;
       }
@@ -157,6 +158,16 @@ export class MeasuredRowVirtualScrollStrategy implements VirtualScrollStrategy {
       this.measuredSizes[index] = size;
       this.deltas.add(index, size - this.estimatedRowSize - previousDelta);
     }
+  }
+
+  private rowBlockSize(row: HTMLElement): number {
+    const style = getComputedStyle(row);
+    return row.offsetHeight + this.pixelValue(style.marginBlockStart) + this.pixelValue(style.marginBlockEnd);
+  }
+
+  private pixelValue(value: string): number {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : 0;
   }
 
   private offsetFor(index: number): number {

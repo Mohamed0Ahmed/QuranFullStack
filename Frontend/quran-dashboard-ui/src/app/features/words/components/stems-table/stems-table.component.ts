@@ -20,7 +20,7 @@ import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-displ
 import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 108;
+const ROW_HEIGHT_COMPACT = 207;
 const STEM_TABLE_WIDE_COLUMN_COUNT = 9;
 const STEM_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;

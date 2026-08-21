@@ -42,7 +42,7 @@ export interface WordTypeCountOpenedEvent {
 }
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 80;
+const ROW_HEIGHT_COMPACT = 127;
 const WORD_TYPES_WIDE_COLUMN_COUNT = 9;
 const WORD_TYPES_MEDIUM_COLUMN_COUNT = 6;
 const WORD_TYPES_GROUPED_COLUMN_COUNT = 5;

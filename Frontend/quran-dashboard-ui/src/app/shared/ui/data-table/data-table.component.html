@@ -38,7 +38,39 @@
 }
 
 <ng-template #readyTable>
-    @if (isCompact()) {
+    @if (useVirtualScroll()) {
+      <cdk-virtual-scroll-viewport
+        class="qd-data-table__body qd-data-table__body--virtual"
+        [class.qd-data-table__body--compact]="isCompact()"
+        data-testid="qd-data-table-body"
+        [attr.role]="isCompact() ? 'list' : 'rowgroup'"
+        [attr.aria-label]="bodyAriaLabel()"
+      >
+        <div
+          *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRow"
+          class="qd-data-table__row"
+          [class.qd-data-table__row--compact]="isCompact()"
+          [attr.role]="isCompact() ? 'listitem' : 'row'"
+          [class.qd-data-table__row--selected]="isSelected(row)"
+          [class.qd-is-selected]="isSelected(row)"
+          [attr.aria-selected]="isSelected(row)"
+          [attr.aria-current]="isSelected(row) ? 'true' : null"
+          [attr.data-row-id]="rowId()(row)"
+          [attr.data-row-index]="index"
+          [attr.aria-posinset]="isCompact() ? index + 1 : null"
+          [attr.aria-setsize]="isCompact() ? totalRowCount() : null"
+          [attr.tabindex]="canSelect() ? 0 : null"
+          (click)="selectRow(row)"
+          (keydown)="onRowKeydown($event, row)"
+        >
+          @if (isCompact() && compactRowTemplate(); as compactRow) {
+            <ng-container *ngTemplateOutlet="compactRow; context: rowContext(row, index)" />
+          } @else if (rowTemplate(); as rowTemplate) {
+            <ng-container *ngTemplateOutlet="rowTemplate; context: rowContext(row, index)" />
+          }
+        </div>
+      </cdk-virtual-scroll-viewport>
+    } @else if (isCompact()) {
       <div class="qd-data-table__body qd-data-table__body--compact" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
         @for (row of rows(); track rowId()(row); let index = $index) {
           <div
@@ -63,34 +95,6 @@
           </div>
         }
       </div>
-    } @else if (useVirtualScroll()) {
-      <cdk-virtual-scroll-viewport
-        class="qd-data-table__body qd-data-table__body--virtual"
-        data-testid="qd-data-table-body"
-        [itemSize]="rowHeight()"
-        [minBufferPx]="rowHeight() * 4"
-        [maxBufferPx]="rowHeight() * 8"
-        role="rowgroup"
-        [attr.aria-label]="bodyAriaLabel()"
-      >
-        <div
-          *cdkVirtualFor="let row of rows(); let index = index; trackBy: trackRow"
-          class="qd-data-table__row"
-          role="row"
-          [class.qd-data-table__row--selected]="isSelected(row)"
-          [class.qd-is-selected]="isSelected(row)"
-          [attr.aria-selected]="isSelected(row)"
-          [attr.aria-current]="isSelected(row) ? 'true' : null"
-          [attr.data-row-id]="rowId()(row)"
-          [attr.tabindex]="canSelect() ? 0 : null"
-          (click)="selectRow(row)"
-          (keydown)="onRowKeydown($event, row)"
-        >
-          @if (rowTemplate(); as rowTemplate) {
-            <ng-container *ngTemplateOutlet="rowTemplate; context: rowContext(row, index)" />
-          }
-        </div>
-      </cdk-virtual-scroll-viewport>
     } @else {
       <div class="qd-data-table__body" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
         @for (row of rows(); track rowId()(row); let index = $index) {
