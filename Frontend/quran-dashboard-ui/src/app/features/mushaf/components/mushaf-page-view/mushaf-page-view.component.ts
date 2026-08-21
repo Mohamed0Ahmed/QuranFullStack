@@ -13,6 +13,10 @@ import { CommonModule } from '@angular/common';
 import { MushafPageViewModel } from '../../models/mushaf.models';
 import { clampMushafPageNumber } from '../../state/mushaf-url-sync';
 import { MushafLineComponent } from '../mushaf-line/mushaf-line.component';
+import {
+  MushafPageSwipeDirection,
+  MushafPageSwipeDirective,
+} from './mushaf-page-swipe.directive';
 import { mushafJuzNumberLigature } from '../mushaf-line/mushaf-juz-number-ligature';
 import {
   mushafSurahIconLigature,
@@ -22,7 +26,7 @@ import {
 @Component({
   selector: 'qd-mushaf-page-view',
   standalone: true,
-  imports: [CommonModule, MushafLineComponent],
+  imports: [CommonModule, MushafLineComponent, MushafPageSwipeDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mushaf-page-view.component.html',
   styleUrls: ['./mushaf-page-view.component.scss'],
@@ -76,6 +80,14 @@ export class MushafPageViewComponent {
 
   protected juzNumberLigature(juzNumber: number): string {
     return mushafJuzNumberLigature(juzNumber) ?? '';
+  }
+
+  protected onPageSwipe(direction: MushafPageSwipeDirection): void {
+    const page = this.page();
+    const targetPage = direction === 'next' ? page.nextPageNumber : page.previousPageNumber;
+    if (targetPage !== null) {
+      this.pageChange.emit(targetPage);
+    }
   }
 
   protected startPageEdit(): void {

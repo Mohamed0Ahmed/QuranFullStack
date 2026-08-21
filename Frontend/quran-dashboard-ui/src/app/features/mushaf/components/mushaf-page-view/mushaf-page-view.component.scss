@@ -146,6 +146,7 @@
     flex: none;
     min-height: auto;
     overflow-y: visible;
+    touch-action: pan-y pinch-zoom;
   }
 }
 
