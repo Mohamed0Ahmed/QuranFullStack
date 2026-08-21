@@ -219,7 +219,7 @@ export class AbwabManagementPickerComponent {
       return;
     }
     this.overlays.setContextMenuPosition(request.x, request.y);
-    this.overlays.requestContextMenu(request.id);
+    this.overlays.requestContextMenu(request.id, 'operations');
   }
 
   protected addChild(doorId: number): void {

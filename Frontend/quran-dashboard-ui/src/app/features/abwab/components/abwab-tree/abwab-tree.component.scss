@@ -1,4 +1,5 @@
 @use '../../../../../styles/breakpoints' as bp;
+@use './abwab-tree-mobile' as mobile;
 
 .abwab-tree-frame {
   display: grid;
@@ -180,6 +181,10 @@
   font-size: 0.6875rem;
 }
 
+.abwab-tree__compact-count-label {
+  display: none;
+}
+
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-tree__count--wide {
     display: none;
@@ -225,6 +230,10 @@
   flex: none;
 }
 
+.abwab-tree__act--more-compact {
+  display: none;
+}
+
 .abwab-tree-frame--selection .abwab-tree__lead {
   padding-inline-start: calc(
     min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
@@ -236,30 +245,4 @@
   padding-inline-end: 0;
 }
 
-@media (max-width: bp.$qd-bp-compact-max) {
-  .abwab-tree-frame {
-    --abwab-tree-row-control: var(--qd-control-lg);
-    --abwab-tree-indent-step: var(--qd-space-3);
-  }
-
-  .abwab-tree__row {
-    min-block-size: var(--qd-control-lg);
-  }
-
-  .abwab-tree-frame--selection {
-    grid-template-columns: minmax(0, 1fr) auto;
-    --abwab-tree-row-control: var(--qd-s-24);
-    --abwab-tree-indent-step: var(--qd-s-12);
-  }
-
-  .abwab-tree-frame--selection > .abwab-tree__header,
-  .abwab-tree-frame--selection .abwab-tree__count-cell,
-  .abwab-tree-frame--selection .abwab-tree__flags,
-  .abwab-tree-frame--selection qd-abwab-tree-branches {
-    display: none;
-  }
-
-  .abwab-tree-frame--selection .abwab-tree__act {
-    --qd-action-size: var(--qd-control-sm);
-  }
-}
+@include mobile.apply;

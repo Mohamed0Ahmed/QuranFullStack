@@ -203,6 +203,10 @@ export class AbwabTreeComponent {
     return ABWAB_LABELS.rowMenuAriaLabel(name);
   }
 
+  protected detailsAriaLabel(name: string): string {
+    return `تفاصيل «${name}»`;
+  }
+
   protected expandAriaLabel(row: AbwabTreeRow, node: AbwabNode): string {
     return row.isExpanded
       ? ABWAB_LABELS.relationPickerCollapseAriaLabel(node.name)
@@ -229,6 +233,10 @@ export class AbwabTreeComponent {
 
   protected onMoreClick(event: MouseEvent, id: number): void {
     this.contextMenu.openFromButton(event, id);
+  }
+
+  protected onDetailsClick(event: MouseEvent, id: number): void {
+    this.contextMenu.openDetailsFromButton(event, id);
   }
 
   protected onRowDblClick(row: AbwabTreeRow): void {

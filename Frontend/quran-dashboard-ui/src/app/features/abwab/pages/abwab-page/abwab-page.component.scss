@@ -92,6 +92,31 @@
   }
 }
 
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-page__frame {
+    padding-block-end: var(--qd-space-3);
+  }
+
+  .abwab-page__stats {
+    gap: var(--qd-space-3);
+    margin-block-end: var(--qd-space-2);
+  }
+
+  .abwab-page__layout {
+    gap: var(--qd-space-2);
+    margin-block-start: var(--qd-space-2);
+  }
+
+  .abwab-page__tree-card {
+    padding-block: var(--qd-space-1);
+    padding-inline: 0;
+  }
+
+  .abwab-page__side:not(.abwab-page__side--has-selection) {
+    display: none;
+  }
+}
+
 @media (max-height: 32rem) {
   .abwab-page__side {
     position: static;

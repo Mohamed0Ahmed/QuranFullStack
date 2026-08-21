@@ -14,6 +14,8 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 })
 export class AbwabSidePanelComponent {
   readonly selectedDoor = input<AbwabDoorDto | null>(null);
+  readonly linkCount = input(0);
+  readonly relationCount = input(0);
   readonly bulkMode = input(false);
   readonly bulkCount = input(0);
   readonly bulkNames = input<readonly string[]>([]);
@@ -37,6 +39,9 @@ export class AbwabSidePanelComponent {
   readonly bulkRelationsRequested = output<void>();
   readonly bulkArchiveRequested = output<void>();
   readonly bulkClearRequested = output<void>();
+  readonly operationsRequested = output<{ x: number; y: number }>();
+  readonly compactLinksRequested = output<number>();
+  readonly compactRelationsRequested = output<number>();
 
   protected get activeDoorHeading(): string { return ABWAB_LABELS.activeDoorHeading; }
   protected get noSelectionHint(): string { return ABWAB_LABELS.noSelectionHint; }
@@ -48,6 +53,7 @@ export class AbwabSidePanelComponent {
   protected get moveLabel(): string { return ABWAB_LABELS.moveOp; }
   protected get inclusionsLabel(): string { return ABWAB_LABELS.inclusionsOp; }
   protected get relationsLabel(): string { return ABWAB_LABELS.relationsOp; }
+  protected get linksLabel(): string { return ABWAB_LABELS.rowHeaderLinks; }
   protected get archiveLabel(): string { return ABWAB_LABELS.archiveOp; }
   protected readonly bulkCountText = computed(() => ABWAB_LABELS.bulkSelectedCount(this.bulkCount()));
   protected get bulkMoveAllLabel(): string { return ABWAB_LABELS.bulkMoveAll; }
@@ -67,5 +73,19 @@ export class AbwabSidePanelComponent {
     if (door !== null && !this.bulkMode()) {
       this.inclusionsRequested.emit(door.id);
     }
+  }
+
+  protected requestOperations(event: MouseEvent): void {
+    const button = event.currentTarget as HTMLElement;
+    const rect = button.getBoundingClientRect();
+    this.operationsRequested.emit({ x: rect.left, y: rect.top });
+  }
+
+  protected linksAriaLabel(name: string): string {
+    return ABWAB_LABELS.rowLinksAriaLabel(name, this.linkCount());
+  }
+
+  protected relationsAriaLabel(name: string): string {
+    return ABWAB_LABELS.rowRelationsAriaLabel(name, this.relationCount());
   }
 }

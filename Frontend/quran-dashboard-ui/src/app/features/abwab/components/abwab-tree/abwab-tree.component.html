@@ -121,6 +121,7 @@
         </span>
 
         <span class="abwab-tree__count-cell abwab-tree__positions">
+          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerPositionsLabel }}</span>
           <span
             class="abwab-tree__count qd-chip__count"
             [class.text-qd-ink-muted]="node.selectedWordCount === 0"
@@ -133,6 +134,7 @@
         </span>
 
         <span class="abwab-tree__count-cell">
+          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerLinksLabel }}</span>
           <button
             type="button"
             qdAction="row-action"
@@ -155,6 +157,7 @@
         </span>
 
         <span class="abwab-tree__count-cell">
+          <span class="abwab-tree__compact-count-label" aria-hidden="true">{{ headerDirectLabel }}</span>
           @if (row.hasChildren) {
             <span
               class="abwab-tree__count qd-chip__count"
@@ -207,10 +210,10 @@
           <span class="abwab-tree__actions">
             @if (canCreateDoor() && !selectionMode()) {
               <button
-                type="button"
-                qdAction="row-action"
-                class="abwab-tree__act"
-                [attr.aria-label]="addChildAriaLabel(node.name)"
+              type="button"
+              qdAction="row-action"
+              class="abwab-tree__act abwab-tree__act--add-child"
+              [attr.aria-label]="addChildAriaLabel(node.name)"
                 [attr.data-testid]="'abwab-tree-add-child-' + node.id"
                 [attr.tabindex]="-1"
                 (click)="onAddChildClick($event, node.id)"
@@ -221,11 +224,22 @@
             <button
               type="button"
               qdAction="row-action"
-              class="abwab-tree__act"
+              class="abwab-tree__act abwab-tree__act--more-wide"
               [attr.aria-label]="menuAriaLabel(node.name)"
               [attr.data-testid]="'abwab-tree-more-' + node.id"
               [attr.tabindex]="-1"
               (click)="onMoreClick($event, node.id)"
+            >
+              <span aria-hidden="true">⋯</span>
+            </button>
+            <button
+              type="button"
+              qdAction="row-action"
+              class="abwab-tree__act abwab-tree__act--more-compact"
+              [attr.aria-label]="detailsAriaLabel(node.name)"
+              [attr.data-testid]="'abwab-tree-details-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onDetailsClick($event, node.id)"
             >
               <span aria-hidden="true">⋯</span>
             </button>

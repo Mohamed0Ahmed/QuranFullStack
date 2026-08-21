@@ -405,8 +405,10 @@ export class AbwabPageOverlaysController {
 
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });
+  readonly contextMenuKind = signal<'details' | 'operations'>('operations');
 
-  requestContextMenu(id: number): void {
+  requestContextMenu(id: number, kind: 'details' | 'operations'): void {
+    this.contextMenuKind.set(kind);
     this.contextMenuDoorId.set(id);
   }
 

@@ -112,7 +112,7 @@
         data-testid="abwab-toolbar-tab-all"
         (click)="selectSection(null)"
       >
-        {{ allDoorsTabLabel }}
+        <span class="abwab-toolbar__tab-label">{{ allDoorsTabLabel }}</span>
         <span
           class="qd-tabs__count"
           [class.qd-tabs__count--empty]="totalRootCount() === 0"
@@ -130,7 +130,7 @@
           [attr.data-testid]="'abwab-toolbar-tab-' + section.id"
           (click)="selectSection(section.id)"
         >
-          {{ section.name }}
+          <span class="abwab-toolbar__tab-label" [title]="section.name">{{ section.name }}</span>
           <span
             class="qd-tabs__count"
             [class.qd-tabs__count--empty]="rootCountFor(section.id) === 0"

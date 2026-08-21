@@ -188,6 +188,10 @@ export class AbwabPageComponent implements OnInit {
   });
 
   protected readonly selectedDoor = this.overlays.selectedDoor;
+  protected readonly selectedDoorNode = computed(() => {
+    const id = this.selection.selectedDoorId();
+    return id === null ? null : (this.byId().get(id) ?? null);
+  });
 
   protected get pageTitle(): string { return ABWAB_LABELS.pageTitle; }
   protected get pageSubtitle(): string { return ABWAB_LABELS.pageSubtitle; }

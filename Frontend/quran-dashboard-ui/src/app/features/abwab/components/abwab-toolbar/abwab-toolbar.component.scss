@@ -14,6 +14,13 @@
   --qd-tabs-track-floor: 8.5rem;
 }
 
+.abwab-toolbar__tab-label {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .abwab-toolbar__search {
   flex: 1 1 0;
   min-inline-size: 12rem;
@@ -96,5 +103,50 @@
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-toolbar__search {
     flex-basis: 100%;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-toolbar {
+    gap: var(--qd-space-2);
+  }
+
+  .abwab-toolbar__controls {
+    gap: var(--qd-space-2);
+  }
+
+  .abwab-toolbar__search {
+    min-inline-size: 100%;
+  }
+
+  .abwab-toolbar__tree-expansion {
+    flex: 1 1 0;
+  }
+
+  .abwab-toolbar__tree-expansion .qd-action {
+    flex: 1 1 0;
+  }
+
+  .abwab-toolbar__view-toggle {
+    flex: 0 0 auto;
+  }
+
+  .abwab-toolbar__tabs.qd-tabs--tracks {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--qd-space-1);
+  }
+
+  .abwab-toolbar__tabs .qd-tabs__tab {
+    gap: var(--qd-space-1);
+    min-block-size: var(--qd-hit-target-min);
+    padding-inline: var(--qd-space-2);
+  }
+
+  .abwab-toolbar__tab-label {
+    flex: 1 1 auto;
+  }
+
+  .abwab-toolbar__tabs .qd-tabs__count {
+    flex: none;
   }
 }

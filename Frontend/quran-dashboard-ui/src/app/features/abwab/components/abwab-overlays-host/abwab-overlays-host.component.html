@@ -94,6 +94,21 @@
     (dismissed)="overlays.closeContextMenu()"
   >
     @if (byId().get(overlays.contextMenuDoorId() ?? -1); as contextDoor) {
+      <div
+        class="abwab-overlays-host__compact-menu-stats"
+        [class.abwab-overlays-host__compact-menu-stats--visible]="overlays.contextMenuKind() === 'details'"
+        role="presentation"
+      >
+        <span>{{ labels.rowHeaderPositions }}: {{ contextDoor.selectedWordCount }}</span>
+        <span>{{ labels.rowHeaderLinks }}: {{ contextDoor.linkCount }}</span>
+        <span>{{ labels.rowHeaderDirect }}: {{ contextDoor.liveChildCount }}</span>
+        <span>{{ labels.rowHeaderTotal }}: {{ contextDoor.liveDescendantCount }}</span>
+        <span>{{ labels.rowHeaderDepth }}: {{ contextDoor.maxRelativeDepth }}</span>
+        <span>{{ labels.rowHeaderRelations }}: {{ contextDoor.relationCount }}</span>
+      </div>
+    }
+    <div [hidden]="overlays.contextMenuKind() === 'details'">
+      @if (byId().get(overlays.contextMenuDoorId() ?? -1); as contextDoor) {
       @if (contextDoor.children.length > 0) {
         <button
           type="button"
@@ -120,17 +135,17 @@
           {{ labels.treeCollapseBranch }}
         </button>
       }
-    }
-    @if (permissions.canEditDoor()) {
+      }
+      @if (permissions.canEditDoor()) {
       <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="interactions.onCtxEdit()">{{ labels.editOp }}</button>
-    }
-    @if (permissions.canCreateDoor()) {
+      }
+      @if (permissions.canCreateDoor()) {
       <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="interactions.onCtxAddChild()">{{ labels.addChildOp }}</button>
-    }
-    @if (permissions.canMoveDoor()) {
+      }
+      @if (permissions.canMoveDoor()) {
       <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="interactions.onCtxMove()">{{ labels.moveOp }}</button>
-    }
-    @if (byId().get(overlays.contextMenuDoorId() ?? -1); as inclusionTarget) {
+      }
+      @if (byId().get(overlays.contextMenuDoorId() ?? -1); as inclusionTarget) {
       <button
         type="button"
         role="menuitem"
@@ -144,13 +159,14 @@
           {{ labels.inclusionsContextMenuCounts(inclusionTarget.inclusionSourceCount, inclusionTarget.inclusionConsumerCount) }}
         </span>
       </button>
-    }
-    <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="interactions.onCtxRelations()">{{ labels.relationsOp }}</button>
-    @if (permissions.canArchiveDoor()) {
+      }
+      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="interactions.onCtxRelations()">{{ labels.relationsOp }}</button>
+      @if (permissions.canArchiveDoor()) {
       <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
         {{ labels.archiveOp }}
       </button>
-    }
+      }
+    </div>
   </qd-context-menu>
 }
 

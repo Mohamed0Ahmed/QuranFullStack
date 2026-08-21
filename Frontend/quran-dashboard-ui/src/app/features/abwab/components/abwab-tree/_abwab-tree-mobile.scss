@@ -1,0 +1,91 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+@mixin apply {
+  @media (max-width: bp.$qd-bp-compact-max) {
+    .abwab-tree-frame {
+    --abwab-tree-count-col: auto;
+    --abwab-tree-row-control: var(--qd-control-sm);
+    --abwab-tree-indent-step: var(--qd-space-3);
+
+    grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: var(--qd-space-1);
+  }
+
+  .abwab-tree__row {
+    min-block-size: var(--qd-hit-target-min);
+    border-radius: 0;
+    border-block-end: var(--qd-hairline);
+  }
+
+  .abwab-tree__header {
+    display: none;
+  }
+
+  .abwab-tree__lead {
+    gap: var(--qd-space-1);
+    padding-inline-start: calc(
+      min(var(--abwab-tree-depth, 0), var(--abwab-tree-depth-budget)) *
+        var(--abwab-tree-indent-step) +
+        var(--qd-space-1)
+    );
+  }
+
+  .abwab-tree__chevron {
+    --qd-action-size: var(--qd-control-sm);
+
+    inline-size: var(--qd-control-sm);
+  }
+
+  .abwab-tree__order {
+    min-inline-size: 1.5rem;
+    block-size: 1.5rem;
+  }
+
+  .abwab-tree__name-text {
+    padding-inline: var(--qd-space-1);
+    font-size: 0.8125rem;
+  }
+
+  .abwab-tree__count-cell,
+  .abwab-tree__flags,
+  .abwab-tree__act--add-child {
+    display: none;
+  }
+
+  .abwab-tree__actions {
+    gap: 0;
+  }
+
+  .abwab-tree__act {
+    --qd-action-size: var(--qd-control-sm);
+
+    min-block-size: var(--qd-hit-target-min);
+    padding-inline: var(--qd-space-1);
+  }
+
+  .abwab-tree__act--more-wide {
+    display: none;
+  }
+
+  .abwab-tree__act--more-compact {
+    display: inline-flex;
+  }
+
+  .abwab-tree-frame--selection {
+    grid-template-columns: minmax(0, 1fr) auto;
+    --abwab-tree-row-control: var(--qd-s-24);
+    --abwab-tree-indent-step: var(--qd-s-12);
+  }
+
+  .abwab-tree-frame--selection > .abwab-tree__header,
+  .abwab-tree-frame--selection .abwab-tree__count-cell,
+  .abwab-tree-frame--selection .abwab-tree__flags,
+  .abwab-tree-frame--selection qd-abwab-tree-branches {
+    display: none;
+  }
+
+    .abwab-tree-frame--selection .abwab-tree__act {
+      --qd-action-size: var(--qd-control-sm);
+    }
+  }
+}
