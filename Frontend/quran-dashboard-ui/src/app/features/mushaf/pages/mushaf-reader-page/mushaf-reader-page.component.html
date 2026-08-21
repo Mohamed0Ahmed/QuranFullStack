@@ -55,15 +55,26 @@
 
 @if (doorDetails(); as details) {
   <qd-context-menu
-    variant="disclosure-popover"
+    [variant]="details.presentation === 'tooltip' ? 'tooltip' : 'disclosure-popover'"
     [position]="details.position"
-    menuAriaLabel="أبواب الكلمة"
-    menuTestId="mushaf-door-details-popover"
-    backdropTestId="mushaf-door-details-backdrop"
+    [anchorElement]="details.anchorElement"
+    [controlElement]="details.anchorElement"
+    [blockingBackdrop]="details.presentation !== 'tooltip'"
+    menuAriaLabel="الأبواب"
+    [menuTestId]="
+      details.presentation === 'tooltip'
+        ? 'mushaf-door-preview-tooltip'
+        : 'mushaf-door-details-popover'
+    "
+    [backdropTestId]="
+      details.presentation === 'tooltip'
+        ? 'mushaf-door-preview-backdrop'
+        : 'mushaf-door-details-backdrop'
+    "
     (dismissed)="closeDoorDetails()"
   >
     <div class="mushaf-reader__door-details">
-      <strong>أبواب الكلمة</strong>
+      <strong>الأبواب</strong>
       <ul>
         @for (door of details.highlight.doors; track door.id) {
           <li>{{ door.name }}</li>

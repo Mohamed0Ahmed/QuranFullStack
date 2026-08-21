@@ -7,7 +7,8 @@
   [class.mushaf-word--ayah-selection]="isSelectedAyah()"
   [class.mushaf-word--door-highlight]="doorHighlight() !== null"
   [attr.data-door-color-slot]="doorHighlight()?.colorSlot ?? null"
-  [disabled]="word().isAyahMarker"
+  [attr.aria-disabled]="word().isAyahMarker ? true : null"
+  [attr.tabindex]="word().isAyahMarker ? -1 : null"
   [attr.aria-label]="interactionLabel()"
   [attr.aria-pressed]="selectionLabel() ? isSelectedAyah() : null"
   [attr.data-word-location]="word().wordLocation"
@@ -16,15 +17,13 @@
   (pointermove)="onPointerMove($event)"
   (pointerup)="onPointerEnd($event)"
   (pointercancel)="onPointerEnd($event)"
+  (pointerenter)="onPointerEnter($event)"
+  (pointerleave)="onPointerLeave($event)"
   (contextmenu)="onContextMenu($event)"
   (click)="onWordClick($event)"
 >
   @if (doorHighlight() && !word().isAyahMarker) {
-    <span
-      class="mushaf-word__door-background"
-      [style.--qd-mushaf-door-background]="doorBackground()"
-      aria-hidden="true"
-    ></span>
+    <span class="mushaf-word__door-background" aria-hidden="true"></span>
   }
   <span class="mushaf-word__text">{{ displayText() }}</span>
 </button>

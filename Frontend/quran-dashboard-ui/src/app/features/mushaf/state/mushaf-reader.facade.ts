@@ -42,6 +42,7 @@ import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 import {
   MushafUrlSnapshot,
+  buildMushafWordSelectionQuery,
   buildUrlEnumCorrections,
   parseMushafUrlParams,
 } from './mushaf-url-sync';
@@ -301,19 +302,9 @@ export class MushafReaderFacade {
 
   selectWord(wordLocation: string): void {
     this.cancelPeekFlashClearTimer();
-    const verseKey = verseKeyFromWordLocation(wordLocation);
-    const queryParams: Partial<
-      Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
-    > = {
-      [MUSHAF_URL_KEYS.word]: wordLocation,
-      [MUSHAF_URL_KEYS.focusAyah]: null,
-    };
-
-    if (verseKey) {
-      queryParams[MUSHAF_URL_KEYS.ayah] = verseKey;
-    }
-
-    this.patchUrlQuery(queryParams);
+    this.patchUrlQuery(
+      buildMushafWordSelectionQuery(wordLocation, this._selectedWordLocation()),
+    );
   }
 
   moveSelectedWord(direction: 'previous' | 'next'): boolean {

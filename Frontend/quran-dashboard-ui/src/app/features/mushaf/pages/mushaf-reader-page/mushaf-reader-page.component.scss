@@ -38,6 +38,8 @@
   &__door-details {
     display: grid;
     gap: var(--qd-space-2);
+    max-inline-size: 16rem;
+    font-size: var(--qd-type-meta);
 
     ul {
       display: grid;

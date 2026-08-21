@@ -87,6 +87,29 @@ export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
   };
 }
 
+export function buildMushafWordSelectionQuery(
+  wordLocation: string,
+  currentWordLocation: string | null,
+): Partial<
+  Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+> {
+  if (currentWordLocation === wordLocation) {
+    return {
+      [MUSHAF_URL_KEYS.word]: null,
+      [MUSHAF_URL_KEYS.segment]: null,
+      [MUSHAF_URL_KEYS.ayah]: null,
+      [MUSHAF_URL_KEYS.focusAyah]: null,
+    };
+  }
+
+  const verseKey = verseKeyFromWordLocation(wordLocation);
+  return {
+    [MUSHAF_URL_KEYS.word]: wordLocation,
+    [MUSHAF_URL_KEYS.focusAyah]: null,
+    ...(verseKey ? { [MUSHAF_URL_KEYS.ayah]: verseKey } : {}),
+  };
+}
+
 export function buildUrlEnumCorrections(
   raw: ParamMap,
   snapshot: MushafUrlSnapshot,

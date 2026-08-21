@@ -15,8 +15,8 @@
 > **Revision 3 (Mushaf door-highlighting exception).** Gradients remain prohibited except for one
 > fixed renderer treatment: a Quran word or ayah marker linked to multiple selected doors uses
 > static multi-door gradients independently of assigned colors. A light gradient appears behind the
-> word and a darker readable gradient appears within the marker glyph. The treatment changes no
-> Quran text, font, glyph shape, word boundary, line metric,
+> word, while a light borderless gradient disc appears behind the marker glyph. The treatment
+> changes no Quran text, font, glyph shape, word boundary, line metric,
 > animation, control, surface, loading state, or decorative treatment.
 
 ---

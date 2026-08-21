@@ -16,6 +16,7 @@ import {
 
 const DOOR_DETAILS_LONG_PRESS_MS = 520;
 const DOOR_DETAILS_MOVE_TOLERANCE_PX = 12;
+const DOOR_DETAILS_HOVER_DELAY_MS = 200;
 
 @Component({
   selector: 'qd-mushaf-word',
@@ -34,26 +35,17 @@ export class MushafWordComponent implements OnDestroy {
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
-  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
   private pressTimer: ReturnType<typeof setTimeout> | null = null;
   private activePointerId: number | null = null;
   private pressStartX = 0;
   private pressStartY = 0;
   private suppressNextClick = false;
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  private previewOpen = false;
 
   protected readonly displayText = computed(() => toQuranWordDisplayText(this.word().textUthmani));
-
-  protected readonly doorBackground = computed(() => {
-    const highlight = this.doorHighlight();
-    if (!highlight || this.word().isAyahMarker) {
-      return null;
-    }
-
-    return highlight.colorSlot === 'multi'
-      ? 'var(--qd-door-highlight-multi-gradient)'
-      : `var(--qd-door-highlight-${highlight.colorSlot})`;
-  });
 
   protected readonly isSelectedAyah = computed(
     () => this.ayahSelectionMode() && this.selectedVerseKeys().includes(this.word().verseKey),
@@ -76,11 +68,11 @@ export class MushafWordComponent implements OnDestroy {
     }
 
     if (this.word().isAyahMarker) {
-      return `رقم الآية ${this.word().verseKey}، مميز ضمن ${highlight.doors.length} من الأبواب`;
+      return `رقم الآية ${this.word().verseKey}، مميز ضمن الأبواب: ${this.doorNames(highlight)}، اضغط مطولًا لعرضها`;
     }
 
     const target = selectionLabel ?? `الكلمة ${this.displayText()}`;
-    return `${target}، مميز ضمن ${highlight.doors.length} من الأبواب، اضغط مطولًا لعرضها`;
+    return `${target}، مميز ضمن الأبواب: ${this.doorNames(highlight)}، اضغط مطولًا لعرضها`;
   });
 
   protected readonly isHighlightedAyahWord = computed(() => {
@@ -99,12 +91,13 @@ export class MushafWordComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.clearPress();
+    this.clearDoorPreview(false);
   }
 
   protected onPointerDown(event: PointerEvent): void {
     this.suppressNextClick = false;
     this.clearPress();
-    if (this.word().isAyahMarker || !this.doorHighlight() || !event.isPrimary || event.button !== 0) {
+    if (!this.doorHighlight() || !event.isPrimary || event.button !== 0) {
       return;
     }
     if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
@@ -132,6 +125,37 @@ export class MushafWordComponent implements OnDestroy {
   protected onPointerEnd(event: PointerEvent): void {
     if (event.pointerId === this.activePointerId) {
       this.clearPress();
+    }
+  }
+
+  protected onPointerEnter(event: PointerEvent): void {
+    const highlight = this.doorHighlight();
+    const anchorElement = event.currentTarget;
+    if (
+      event.pointerType !== 'mouse' ||
+      !highlight ||
+      !(anchorElement instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    this.clearDoorPreview(false);
+    this.previewTimer = setTimeout(() => {
+      const rect = anchorElement.getBoundingClientRect();
+      this.previewTimer = null;
+      this.previewOpen = true;
+      this.doorDetailsRequest.emit({
+        position: { x: rect.right, y: rect.bottom },
+        anchorElement,
+        presentation: 'tooltip',
+        highlight,
+      });
+    }, DOOR_DETAILS_HOVER_DELAY_MS);
+  }
+
+  protected onPointerLeave(event: PointerEvent): void {
+    if (event.pointerType === 'mouse') {
+      this.clearDoorPreview();
     }
   }
 
@@ -165,8 +189,25 @@ export class MushafWordComponent implements OnDestroy {
     this.suppressNextClick = true;
     this.doorDetailsRequest.emit({
       position: { x: this.pressStartX, y: this.pressStartY },
+      anchorElement: null,
+      presentation: 'popover',
       highlight,
     });
+  }
+
+  private doorNames(highlight: MushafDoorResolvedHighlight): string {
+    return highlight.doors.map((door) => door.name).join('، ');
+  }
+
+  private clearDoorPreview(emitDismiss = true): void {
+    if (this.previewTimer !== null) {
+      clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+    }
+    if (this.previewOpen && emitDismiss) {
+      this.doorDetailsRequest.emit(null);
+    }
+    this.previewOpen = false;
   }
 
   private clearPress(): void {

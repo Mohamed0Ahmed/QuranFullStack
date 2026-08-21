@@ -19,5 +19,7 @@ export interface MushafDoorResolvedHighlight {
 
 export interface MushafDoorDetailsRequest {
   readonly position: { readonly x: number; readonly y: number };
+  readonly anchorElement: HTMLElement | null;
+  readonly presentation: 'popover' | 'tooltip';
   readonly highlight: MushafDoorResolvedHighlight;
 }

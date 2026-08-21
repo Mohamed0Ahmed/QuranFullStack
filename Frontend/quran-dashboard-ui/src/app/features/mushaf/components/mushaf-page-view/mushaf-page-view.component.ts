@@ -47,7 +47,7 @@ export class MushafPageViewComponent {
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
   readonly pageChange = output<number>();
-  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
   private readonly pageJumpInputRef = viewChild<ElementRef<HTMLInputElement>>('pageJumpInput');
 

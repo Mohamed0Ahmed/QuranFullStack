@@ -191,6 +191,8 @@
 
   --qd-mushaf-door-highlight-inset: calc(var(--qd-s-8) + var(--qd-s-2));
   --qd-mushaf-door-tile-inline-size: 11rem;
+  --qd-mushaf-door-marker-fill-size: 1.75rem;
+  --qd-mushaf-door-marker-fill-offset: -0.875rem;
   --qd-door-highlight-1: color-mix(in oklch, oklch(0.720 0.190 25) 48%, var(--qd-surface));
   --qd-door-highlight-2: color-mix(in oklch, oklch(0.820 0.170 95) 52%, var(--qd-surface));
   --qd-door-highlight-3: color-mix(in oklch, oklch(0.700 0.170 145) 48%, var(--qd-surface));
@@ -232,10 +234,10 @@
   --qd-door-marker-multi: color-mix(in oklch, oklch(0.500 0.160 300) 72%, var(--qd-text));
   --qd-door-marker-multi-gradient: linear-gradient(
     var(--qd-door-highlight-gradient-angle),
-    var(--qd-door-marker-1) 0%,
-    var(--qd-door-marker-2) 34%,
-    var(--qd-door-marker-5) 67%,
-    var(--qd-door-marker-7) 100%
+    var(--qd-door-highlight-1) 0%,
+    var(--qd-door-highlight-2) 34%,
+    var(--qd-door-highlight-5) 67%,
+    var(--qd-door-highlight-7) 100%
   );
 
   --qd-segment-cat-1: oklch(0.521 0.089 69.2);

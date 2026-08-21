@@ -34,7 +34,7 @@ export class MushafLineComponent {
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
-  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
   basmallahText(): string {
     return MUSHAF_BASMALLAH_DISPLAY_TEXT;

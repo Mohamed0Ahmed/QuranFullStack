@@ -46,7 +46,7 @@ export class MushafPageAreaComponent {
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
   readonly ayahSelectionModeChange = output<void>();
-  readonly doorDetailsRequest = output<MushafDoorDetailsRequest>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
   private readonly headerNavigation = viewChild(MushafHeaderNavigationComponent);
 
   focusAyahSelectionAction(): void {

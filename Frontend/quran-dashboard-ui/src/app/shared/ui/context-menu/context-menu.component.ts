@@ -16,7 +16,7 @@ import { CONTEXT_MENU_LABELS } from './context-menu.labels';
 
 type QdContextSurfaceVariant = Extract<
   QdFloatingLayerVariant,
-  'action-menu' | 'disclosure-popover'
+  'action-menu' | 'disclosure-popover' | 'tooltip'
 >;
 
 @Component({

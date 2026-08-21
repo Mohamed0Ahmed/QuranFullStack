@@ -41,12 +41,13 @@ word highlights. It changes no font, text, glyph, word boundary, source data, or
 
 Door highlighting has one approved visual exception: a highlighted word uses its assigned door token
 behind unchanged Quran text, inset by the 10px `--qd-mushaf-door-highlight-inset` from both block
-edges. A word or ayah marker belonging to multiple selected doors uses fixed multi-door gradients
-independent of assigned colors: a light background gradient for the word and a darker readable
-gradient for the marker glyph. In forced-colors, solid block edges identify a single-door word and
-a system-color underline identifies a single-door marker; dashed perimeters identify multi-door
-words and markers. The treatment never changes or animates the font, text, glyph shape, word
-boundaries, or line metrics.
+edges. A highlighted ayah marker keeps its glyph unchanged over an assigned-color disc with no
+resting border. A word or ayah marker belonging to multiple selected doors uses fixed multi-door
+gradients independent of assigned colors: light gradients for both the word background and marker
+disc. In forced-colors, solid block edges identify a single-door word,
+solid outlines identify single-door markers, and dashed perimeters identify multi-door words and
+markers. The treatment never changes or animates the font, text, glyph shape, word boundaries, or
+line metrics.
 
 ## 4. Responsive bands — one vocabulary
 

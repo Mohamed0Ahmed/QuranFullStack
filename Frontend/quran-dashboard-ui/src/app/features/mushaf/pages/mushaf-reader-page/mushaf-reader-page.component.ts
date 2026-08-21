@@ -106,11 +106,13 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
   }
 
   protected onPageChange(pageNumber: number): void {
+    this.closeDoorDetails();
     this.preserveSelectionFocusBeforePageChange();
     this.facade.changePage(pageNumber);
   }
 
   protected onSurahJump(surahNumber: number): void {
+    this.closeDoorDetails();
     this.preserveSelectionFocusBeforePageChange();
     this.facade.jumpToSurah(surahNumber);
   }
@@ -137,7 +139,7 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
     this.facade.selectWord(wordLocation);
   }
 
-  protected openDoorDetails(request: MushafDoorDetailsRequest): void {
+  protected openDoorDetails(request: MushafDoorDetailsRequest | null): void {
     this.doorDetails.set(request);
   }
 

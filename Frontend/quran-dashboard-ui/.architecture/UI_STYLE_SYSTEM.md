@@ -395,12 +395,13 @@ Rules:
   background-only word highlights. It must not change text, glyphs, word boundaries, or source data.
 - Door highlighting is an approved visual exception: a highlighted word uses its assigned
   categorical door token behind unchanged Quran text, inset by the 10px
-  `--qd-mushaf-door-highlight-inset` from both block edges. A word or ayah marker belonging to
-  multiple selected doors uses fixed gradients independent of assigned colors: a light background
-  gradient for the word and a darker readable gradient for the marker glyph. In forced-colors,
-  solid block edges identify a single-door word and a system-color underline identifies a
-  single-door marker; dashed perimeters identify multi-door words and markers. It must not change or
-  animate text, fonts, glyph shape, word boundaries, or line metrics.
+  `--qd-mushaf-door-highlight-inset` from both block edges. A highlighted ayah marker keeps its glyph
+  unchanged over an assigned-color disc with no resting border. A word or ayah marker belonging to
+  multiple selected doors uses fixed gradients independent of assigned colors: light gradients for
+  both the word background and marker disc. In forced-colors, solid block
+  edges identify a single-door word, solid outlines identify single-door markers, and dashed
+  perimeters identify multi-door words and markers. It must not change or animate text, fonts, glyph
+  shape, word boundaries, or line metrics.
 
 ## 14. Definition of Done for Style / UI Foundation Changes
 
@@ -1261,6 +1262,10 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
   and the templates workshop's node tree row menu — the two pre-existing copies this
   primitive replaces).
+- **Non-interactive preview variant:** `variant="tooltip"` keeps the same anchored floating-layer
+  placement but renders `role="tooltip"`, never takes focus, uses a non-blocking backdrop, and lets
+  its control anchor keep pointer ownership. It is reserved for short hover disclosures with no
+  actions; pointer exit is owned by the feature trigger and dismisses the surface.
 - **Inputs / outputs:** `position: {x, y}` (positions the menu via
   `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
   `backdropTestId` (both `string`, required) — **non-negotiable**, because surviving consumers use
