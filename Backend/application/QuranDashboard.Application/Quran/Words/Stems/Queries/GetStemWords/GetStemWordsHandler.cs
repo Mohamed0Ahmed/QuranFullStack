@@ -72,6 +72,7 @@ public sealed class GetStemWordsHandler(
         var page = await reader.GetStemWordsAsync(
             query.Id,
             kind,
+            query.TypeCode,
             query.Page,
             query.PageSize,
             cancellationToken);

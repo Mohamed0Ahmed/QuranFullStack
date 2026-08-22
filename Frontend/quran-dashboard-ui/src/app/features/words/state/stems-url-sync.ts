@@ -51,7 +51,9 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
     ? parsePositiveInt(queryParams.get(STEMS_QUERY_KEYS.detailPage)) ?? DEFAULT_STEM_DETAIL_PAGE
     : DEFAULT_STEM_DETAIL_PAGE;
 
-  const typeCodeRaw = view === 'ayahs' ? queryParams.get(STEMS_QUERY_KEYS.typeCode) : null;
+  const typeCodeRaw = view === 'ayahs' || view === 'words'
+    ? queryParams.get(STEMS_QUERY_KEYS.typeCode)
+    : null;
   const typeCode = normalizeOptionalText(typeCodeRaw);
 
   return {

@@ -50,8 +50,6 @@ const INITIAL_PANEL: StemsPanelState = {
   errorMessage: '',
 };
 
-// Complete stem detail identity: every field participates in equality. Unlike roots, the ayahs
-// view's typeCode filter is part of the identity (and of StemsCacheKeys.ayahs).
 export interface StemsDetailUrlState {
   readonly stemId: number;
   readonly view: StemView;
@@ -141,6 +139,7 @@ export class StemsDetailController extends AbstractDetailController<
     const detailPage = DEFAULT_STEM_DETAIL_PAGE;
     const wordView = view === 'words' ? current.wordView : DEFAULT_STEM_WORD_VIEW;
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_STEM_SURAHS_VIEW;
+    const typeCode = view === 'ayahs' || view === 'words' ? current.ayahTypeCode : null;
 
     const token = this.requests.beginTransition();
     const nextState: StemsDetailUrlState = {
@@ -149,7 +148,7 @@ export class StemsDetailController extends AbstractDetailController<
       wordView,
       surahView,
       detailPage,
-      typeCode: null,
+      typeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -157,7 +156,7 @@ export class StemsDetailController extends AbstractDetailController<
       view,
       wordView,
       surahView,
-      ayahTypeCode: null,
+      ayahTypeCode: typeCode,
       detailPage,
       status: 'loading',
       errorMessage: '',
@@ -183,14 +182,13 @@ export class StemsDetailController extends AbstractDetailController<
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
-      typeCode: null,
+      typeCode: current.ayahTypeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
       ...s,
       wordView,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,
-      ayahTypeCode: null,
       status: 'loading',
       errorMessage: '',
     }));
@@ -245,7 +243,7 @@ export class StemsDetailController extends AbstractDetailController<
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
-      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
+      typeCode: current.view === 'ayahs' || current.view === 'words' ? current.ayahTypeCode : null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -259,7 +257,11 @@ export class StemsDetailController extends AbstractDetailController<
 
   setAyahTypeCode(typeCode: string | null): void {
     const current = this._panel();
-    if (current.selectedStemId === null || current.summary === null || current.view !== 'ayahs') {
+    if (
+      current.selectedStemId === null ||
+      current.summary === null ||
+      (current.view !== 'ayahs' && current.view !== 'words')
+    ) {
       return;
     }
 
@@ -271,7 +273,7 @@ export class StemsDetailController extends AbstractDetailController<
     const token = this.requests.beginTransition();
     const nextState: StemsDetailUrlState = {
       stemId: current.selectedStemId,
-      view: 'ayahs',
+      view: current.view,
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_STEM_DETAIL_PAGE,

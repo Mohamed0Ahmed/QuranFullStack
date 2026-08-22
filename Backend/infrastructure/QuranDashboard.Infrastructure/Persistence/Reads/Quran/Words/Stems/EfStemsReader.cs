@@ -31,10 +31,11 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
     public Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => GetStemWordsPageAsync(id, wordKind, page, pageSize, cancellationToken);
+        => GetStemWordsPageAsync(id, wordKind, typeCode, page, pageSize, cancellationToken);
 
     public async Task<PagedResult<StemAyahMatchDto>?> GetStemAyahMatchesAsync(
         int id,
@@ -266,12 +267,10 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    // Loads the whole grouped/ordered word list in one pass (null when the stem is absent). This is the
-    // identity-grain unit CachedStemsReader caches once, so paging slices the cached list instead of
-    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<StemWordItemDto>?> LoadStemWordGroupsAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
         var stemExists = await _db.QuranStems
@@ -282,9 +281,10 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             return null;
         }
 
+        var normalizedTypeCode = StemsAyahTypeCode.Normalize(typeCode);
         var rows = wordKind == StemWordKind.Simple
-            ? await LoadStemWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
-            : await LoadStemWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
+            ? await LoadStemWordRowsAsync(id, normalizedTypeCode, useSimpleWordIds: true, cancellationToken)
+            : await LoadStemWordRowsAsync(id, normalizedTypeCode, useSimpleWordIds: false, cancellationToken);
 
         return rows
             .Where(r => r.UniqueWordId.HasValue)
@@ -335,16 +335,18 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
     private async Task<PagedResult<StemWordItemDto>?> GetStemWordsPageAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var grouped = await LoadStemWordGroupsAsync(id, wordKind, cancellationToken);
+        var grouped = await LoadStemWordGroupsAsync(id, wordKind, typeCode, cancellationToken);
         return grouped is null ? null : SliceStemWordsPage(grouped, page, pageSize);
     }
 
     private async Task<IReadOnlyList<StemWordOccurrenceRow>> LoadStemWordRowsAsync(
         int id,
+        string? typeCode,
         bool useSimpleWordIds,
         CancellationToken cancellationToken)
     {
@@ -352,7 +354,10 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             ? await (
                 from s in _db.WordMorphologySegments.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-                where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
+                where s.Kind == "STEM"
+                    && s.StemId == id
+                    && (typeCode == null || s.Pos == typeCode)
+                    && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueSimpleWordId,
                     w.TextUthmaniSimple,
@@ -364,7 +369,10 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
             : await (
                 from s in _db.WordMorphologySegments.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-                where s.Kind == "STEM" && s.StemId == id && !w.IsAyahMarker
+                where s.Kind == "STEM"
+                    && s.StemId == id
+                    && (typeCode == null || s.Pos == typeCode)
+                    && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueTashkeelWordId,
                     w.TextUthmani,

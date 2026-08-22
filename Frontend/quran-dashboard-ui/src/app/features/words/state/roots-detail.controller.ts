@@ -132,7 +132,11 @@ export class RootsDetailController extends AbstractDetailController<
 
   setAyahTypeCode(typeCode: string | null): void {
     const current = this._panel();
-    if (current.selectedRootId === null || current.summary === null || current.view !== 'ayahs') {
+    if (
+      current.selectedRootId === null ||
+      current.summary === null ||
+      (current.view !== 'ayahs' && current.view !== 'words')
+    ) {
       return;
     }
 
@@ -144,7 +148,7 @@ export class RootsDetailController extends AbstractDetailController<
     const token = this.requests.beginTransition();
     const nextState: RootsDetailUrlState = {
       rootId: current.selectedRootId,
-      view: 'ayahs',
+      view: current.view,
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
@@ -170,6 +174,7 @@ export class RootsDetailController extends AbstractDetailController<
     const detailPage = DEFAULT_ROOT_DETAIL_PAGE;
     const wordView = view === 'words' ? current.wordView : DEFAULT_ROOT_WORD_VIEW;
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_ROOT_SURAHS_VIEW;
+    const typeCode = view === 'ayahs' || view === 'words' ? current.ayahTypeCode : null;
 
     const token = this.requests.beginTransition();
     const nextState: RootsDetailUrlState = {
@@ -178,7 +183,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView,
       surahView,
       detailPage,
-      typeCode: null,
+      typeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -186,7 +191,7 @@ export class RootsDetailController extends AbstractDetailController<
       view,
       wordView,
       surahView,
-      ayahTypeCode: null,
+      ayahTypeCode: typeCode,
       detailPage,
       status: 'loading',
       errorMessage: '',
@@ -212,7 +217,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
-      typeCode: null,
+      typeCode: current.ayahTypeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -272,7 +277,7 @@ export class RootsDetailController extends AbstractDetailController<
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
-      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
+      typeCode: current.view === 'ayahs' || current.view === 'words' ? current.ayahTypeCode : null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({

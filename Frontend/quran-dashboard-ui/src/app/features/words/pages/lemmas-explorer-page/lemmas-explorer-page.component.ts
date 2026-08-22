@@ -168,7 +168,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const state = this.panelState();
-      if (state.selectedLemmaId === null || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.selectedLemmaId === null || (state.view !== 'ayahs' && state.view !== 'words') || state.ayahTypeCode === null || state.summary === null) return;
       if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
       this.detailFacade.setAyahTypeCode(null);
       this.updateQueryParams(buildLemmasQueryParams({ typeCode: null, detailPage: 1 }));
@@ -245,18 +245,19 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onPanelViewChange(view: LemmaView): void {
+    const typeCode = view === 'ayahs' || view === 'words' ? this.panelState().ayahTypeCode : null;
     this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildLemmasQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: this.detailPageForView(view), wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode: null }));
+    this.updateQueryParams(buildLemmasQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: this.detailPageForView(view), wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode }));
   }
 
   protected onAyahTypeChange(typeCode: string | null): void {
     const current = this.panelState();
-    if (current.selectedLemmaId === null || current.view !== 'ayahs') return;
+    if (current.selectedLemmaId === null || (current.view !== 'ayahs' && current.view !== 'words')) return;
     if (current.ayahTypeCode === typeCode && current.detailPage === 1) return;
     this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
-    this.updateQueryParams(buildLemmasQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+    this.updateQueryParams(buildLemmasQueryParams({ view: current.view, column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
   }
 
   protected subViewTabId(option: string): string {
@@ -266,7 +267,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: LemmaWordView): void {
     this.syncTableFocusToPanelView('words', wordView);
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: 1, typeCode: null }));
+    this.updateQueryParams(buildLemmasQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: 1, typeCode: this.panelState().ayahTypeCode }));
   }
 
   protected onSurahViewChange(surahView: LemmaSurahView): void {

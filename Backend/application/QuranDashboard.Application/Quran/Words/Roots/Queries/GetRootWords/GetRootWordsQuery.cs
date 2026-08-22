@@ -1,3 +1,3 @@
 namespace QuranDashboard.Application.Quran.Words.Roots.Queries.GetRootWords;
 
-public sealed record GetRootWordsQuery(int Id, string? Kind, int Page, int PageSize);
+public sealed record GetRootWordsQuery(int Id, string? Kind, string? TypeCode, int Page, int PageSize);

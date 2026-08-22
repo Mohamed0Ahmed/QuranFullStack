@@ -20,6 +20,7 @@ public interface IRootsReader
     Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

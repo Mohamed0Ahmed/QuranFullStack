@@ -70,13 +70,19 @@ export class StemsDetailViewLoader {
       case 'words':
         return this.subscribe(
           this.cache.getOrLoad(
-            StemsCacheKeys.words(context.stemId, context.wordView, context.detailPage),
+            StemsCacheKeys.words(
+              context.stemId,
+              context.wordView,
+              context.detailPage,
+              context.ayahTypeCode,
+            ),
             () =>
               this.api.getStemWords(
                 context.stemId,
                 context.wordView,
                 context.detailPage,
                 STEM_DETAIL_PAGE_SIZE,
+                context.ayahTypeCode,
               ),
           ),
           handlers.onWords,

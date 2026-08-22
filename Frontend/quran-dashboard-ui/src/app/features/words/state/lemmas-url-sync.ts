@@ -51,7 +51,9 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     ? parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.detailPage)) ?? DEFAULT_LEMMA_DETAIL_PAGE
     : DEFAULT_LEMMA_DETAIL_PAGE;
 
-  const typeCodeRaw = view === 'ayahs' ? queryParams.get(LEMMAS_QUERY_KEYS.typeCode) : null;
+  const typeCodeRaw = view === 'ayahs' || view === 'words'
+    ? queryParams.get(LEMMAS_QUERY_KEYS.typeCode)
+    : null;
   const typeCode = normalizeOptionalText(typeCodeRaw);
 
   return {

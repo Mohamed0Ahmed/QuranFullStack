@@ -45,11 +45,12 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var grouped = await GetOrLoadGroupedWordsAsync(id, wordKind, cancellationToken);
+        var grouped = await GetOrLoadGroupedWordsAsync(id, wordKind, typeCode, cancellationToken);
         return grouped is null
             ? null
             : RootsWordsDerivation.ToPage(grouped, page, pageSize);
@@ -153,16 +154,17 @@ public sealed class CachedRootsReader(EfRootsReader efReader, IMemoryCache cache
     private async Task<IReadOnlyList<RootWordItemDto>?> GetOrLoadGroupedWordsAsync(
         int id,
         RootWordKind wordKind,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
-        var key = RootsCacheKeys.WordsAll(id, wordKind);
+        var key = RootsCacheKeys.WordsAll(id, wordKind, typeCode);
 
         if (_cache.TryGetValue(key, out IReadOnlyList<RootWordItemDto>? cached))
         {
             return cached;
         }
 
-        var grouped = await _ef.LoadGroupedRootWordsAsync(id, wordKind, cancellationToken);
+        var grouped = await _ef.LoadGroupedRootWordsAsync(id, wordKind, typeCode, cancellationToken);
         if (grouped is not null)
         {
             _cache.Set(key, grouped, RootsCacheEntryOptions.GroupedWords());

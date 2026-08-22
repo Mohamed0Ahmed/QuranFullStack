@@ -32,6 +32,7 @@ export class RootWordsListComponent {
   readonly page = input.required<PagedResultDto<RootWordItemDto>>();
   readonly currentPage = input.required<number>();
   readonly wordView = input.required<RootWordView>();
+  readonly typeCode = input<string | null>(null);
   readonly loading = input(false);
 
   readonly pageChange = output<number>();
@@ -55,7 +56,7 @@ export class RootWordsListComponent {
         id: item.uniqueWordId,
         view: 'ayahs',
         ayahPage: 1,
-        typeCode: null,
+        typeCode: this.typeCode(),
       },
     }));
   });

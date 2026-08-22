@@ -167,7 +167,7 @@
 
   <ng-template #stemsPanelContent>
     @if (!emptySelection()) {
-      @if (activeView() === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+      @if ((activeView() === 'ayahs' || activeView() === 'words') && (panelState().summary || panelState().status === 'loading')) {
         <qd-stem-ayah-type-filters
           [items]="panelState().summary?.typeDistribution ?? []"
           [selectedTypeCode]="panelState().ayahTypeCode"
@@ -237,6 +237,7 @@
             [page]="emptyWordsPage"
             [wordView]="panelState().wordView"
             [currentPage]="panelState().detailPage"
+            [typeCode]="panelState().ayahTypeCode"
             data-testid="stems-words-view"
             (pageChange)="onDetailPageChange($event)"
           />
@@ -294,6 +295,7 @@
               [page]="wordsPage"
               [wordView]="panelState().wordView"
               [currentPage]="panelState().detailPage"
+              [typeCode]="panelState().ayahTypeCode"
               data-testid="stems-words-view"
               (pageChange)="onDetailPageChange($event)"
             />

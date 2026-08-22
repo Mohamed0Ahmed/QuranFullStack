@@ -73,6 +73,7 @@ public sealed class GetRootWordsHandler(
         var page = await reader.GetRootWordsAsync(
             query.Id,
             kind,
+            query.TypeCode,
             query.Page,
             query.PageSize,
             cancellationToken);

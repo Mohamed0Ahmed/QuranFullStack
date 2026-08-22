@@ -64,8 +64,12 @@ export class LemmasApi {
     wordView: LemmaWordView,
     page: number,
     pageSize: number,
+    typeCode: string | null = null,
   ): Observable<ApiResponse<PagedResultDto<LemmaWordItemDto>>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (typeCode !== null && typeCode.trim().length > 0) {
+      params = params.set('typeCode', typeCode.trim());
+    }
     return this.http.get<ApiResponse<PagedResultDto<LemmaWordItemDto>>>(
       `${this.baseUrl}/api/words/lemmas/${id}/words/${encodeURIComponent(wordView)}`,
       { params },

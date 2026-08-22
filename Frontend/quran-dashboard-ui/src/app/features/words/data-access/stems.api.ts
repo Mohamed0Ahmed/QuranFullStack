@@ -65,8 +65,12 @@ export class StemsApi {
     wordView: StemWordView,
     page: number,
     pageSize: number,
+    typeCode: string | null = null,
   ): Observable<ApiResponse<PagedResultDto<StemWordItemDto>>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (typeCode !== null && typeCode.trim().length > 0) {
+      params = params.set('typeCode', typeCode.trim());
+    }
     return this.http.get<ApiResponse<PagedResultDto<StemWordItemDto>>>(
       `${this.baseUrl}/api/words/stems/${id}/words/${encodeURIComponent(wordView)}`,
       { params },

@@ -99,6 +99,7 @@ public sealed class StemsController(
     public async Task<ActionResult<ApiResponse<PagedResult<StemWordItemDto>>>> GetWords(
         int id,
         string wordKind,
+        [FromQuery(Name = "typeCode")] string? typeCode,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -107,6 +108,7 @@ public sealed class StemsController(
             new GetStemWordsQuery(
                 id,
                 wordKind,
+                typeCode,
                 page ?? DefaultPage,
                 pageSize ?? DefaultDetailPageSize),
             cancellationToken);

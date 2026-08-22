@@ -46,11 +46,12 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
     public async Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var all = await GetOrLoadWordGroupsAsync(id, wordKind, cancellationToken);
+        var all = await GetOrLoadWordGroupsAsync(id, wordKind, typeCode, cancellationToken);
         return all is null ? null : EfStemsReader.SliceStemWordsPage(all, page, pageSize);
     }
 
@@ -142,17 +143,15 @@ public sealed class CachedStemsReader(EfStemsReader efReader, IMemoryCache cache
         return ayahs;
     }
 
-    // Caches the complete grouped word list once per (stem, kind); every page slices it in memory
-    // instead of re-issuing the full occurrence query per page (perf finding B6). Concurrent cold
-    // callers share one load via CacheLoadGate.
     private Task<IReadOnlyList<StemWordItemDto>?> GetOrLoadWordGroupsAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         CancellationToken cancellationToken) =>
         CacheLoadGate.GetOrLoadAsync(
             _cache,
-            StemsCacheKeys.WordsAll(id, wordKind),
-            ct => _ef.LoadStemWordGroupsAsync(id, wordKind, ct),
+            StemsCacheKeys.WordsAll(id, wordKind, typeCode),
+            ct => _ef.LoadStemWordGroupsAsync(id, wordKind, typeCode, ct),
             StemsCacheEntryOptions.GroupedWords,
             cancellationToken);
 

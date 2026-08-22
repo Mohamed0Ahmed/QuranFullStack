@@ -5,6 +5,7 @@
       [page]="emptyWordsPage"
       [currentPage]="panelState().detailPage"
       [kind]="panelState().wordView"
+      [typeCode]="frame().typeCode"
       data-testid="overlay-lemmas-words-view"
     />
   } @else if (frame().view === 'ayahs') {
@@ -42,7 +43,7 @@
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >
-  @if (frame().view === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+  @if ((frame().view === 'ayahs' || frame().view === 'words') && (panelState().summary || panelState().status === 'loading')) {
     <qd-lemma-ayah-type-filters
       [items]="panelState().summary?.typeDistribution ?? []"
       [selectedTypeCode]="frame().typeCode"
@@ -140,6 +141,7 @@
           [page]="wordsPage"
           [currentPage]="panelState().detailPage"
           [kind]="panelState().wordView"
+          [typeCode]="frame().typeCode"
           data-testid="overlay-lemmas-words-view"
           (pageChange)="onDetailPageChange($event)"
         />

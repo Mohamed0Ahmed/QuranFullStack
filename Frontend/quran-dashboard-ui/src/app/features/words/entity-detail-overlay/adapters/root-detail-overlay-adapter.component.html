@@ -13,6 +13,7 @@
       [page]="emptyWordsPage"
       [currentPage]="panelState().detailPage"
       [wordView]="panelState().wordView"
+      [typeCode]="frame().typeCode"
       data-testid="overlay-roots-words-view"
     />
   } @else if (frame().view === 'surahs' && panelState().surahView === 'missing') {
@@ -54,7 +55,7 @@
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >
-  @if (frame().view === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+  @if ((frame().view === 'ayahs' || frame().view === 'words') && (panelState().summary || panelState().status === 'loading')) {
     <qd-ayah-type-filters
       [items]="panelState().summary?.typeDistribution ?? []"
       [selectedTypeCode]="frame().typeCode"
@@ -152,6 +153,7 @@
           [page]="wordsPage"
           [currentPage]="panelState().detailPage"
           [wordView]="panelState().wordView"
+          [typeCode]="frame().typeCode"
           data-testid="overlay-roots-words-view"
           (pageChange)="onDetailPageChange($event)"
         />

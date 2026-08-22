@@ -99,7 +99,7 @@ export const STEMS_ROOT_MISSING_ARIA = 'لا يوجد جذر مرتبط';
 export const STEMS_TYPE_DISTRIBUTION_LABEL = 'توزيع الأنواع';
 export const STEMS_TYPE_DISTRIBUTION_LOADING_LABEL = 'جارٍ تحميل توزيع الأنواع…';
 export const STEMS_TYPE_DISTRIBUTION_EMPTY_LABEL = 'لا توجد أنواع';
-export const STEMS_AYAH_TYPE_FILTERS_LABEL = 'تصفية الأنواع في الآيات';
+export const STEMS_AYAH_TYPE_FILTERS_LABEL = 'تصفية حسب نوع الكلمة';
 export const STEMS_AYAH_TYPE_ALL_LABEL = 'عرض الكل';
 
 export const STEMS_SORT_LABELS = {

@@ -20,8 +20,9 @@ export const StemsCacheKeys = {
     return `stems:${stemId}:summary`;
   },
 
-  words(stemId: number, wordView: StemWordView, page: number): string {
-    return `stems:${stemId}:words:${wordView}:p${page}`;
+  words(stemId: number, wordView: StemWordView, page: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `stems:${stemId}:words:${wordView}:${normalizedTypeCode}:p${page}`;
   },
 
   ayahs(stemId: number, page: number, pageSize: number, typeCode: string | null): string {

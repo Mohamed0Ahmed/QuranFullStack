@@ -51,7 +51,7 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
     ? parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.detailPage)) ?? DEFAULT_ROOT_DETAIL_PAGE
     : DEFAULT_ROOT_DETAIL_PAGE;
 
-  const typeCode = view === 'ayahs'
+  const typeCode = view === 'ayahs' || view === 'words'
     ? parsePosCodeParam(queryParams.get(ROOTS_QUERY_KEYS.typeCode))
     : null;
 

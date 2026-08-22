@@ -70,13 +70,19 @@ export class LemmasDetailViewLoader {
       case 'words':
         return this.subscribe(
           this.cache.getOrLoad(
-            LemmasCacheKeys.words(context.lemmaId, context.wordView, context.detailPage),
+            LemmasCacheKeys.words(
+              context.lemmaId,
+              context.wordView,
+              context.detailPage,
+              context.ayahTypeCode,
+            ),
             () =>
               this.api.getLemmaWords(
                 context.lemmaId,
                 context.wordView,
                 context.detailPage,
                 LEMMA_DETAIL_PAGE_SIZE,
+                context.ayahTypeCode,
               ),
           ),
           handlers.onWords,

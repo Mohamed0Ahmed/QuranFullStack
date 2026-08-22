@@ -23,6 +23,7 @@ public interface ILemmasReader
     Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsAsync(
         int id,
         LemmaWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken);
