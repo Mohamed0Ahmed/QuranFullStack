@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, viewChild } from '@angular/core';
 
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { LemmaDetailFrame, RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
@@ -16,13 +16,11 @@ import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../uti
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-
-import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
+import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
+import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_COMPACT = 207;
-const STEM_TABLE_WIDE_COLUMN_COUNT = 9;
-const STEM_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 
@@ -34,6 +32,18 @@ const STEM_TABLE_COLUMN_ORDER = [
   'occurrences',
   'lemmas',
 ] as const satisfies readonly StemTableColumnKey[];
+
+const STEM_TABLE_COLUMNS: readonly ExplorerTableColumnDefinition[] = [
+  { key: 'rowNumber', label: STEMS_COLUMN_HEADERS.rowNumber, track: 'minmax(2.5rem, 0.28fr)', reorderLocked: true },
+  { key: 'stem', label: STEMS_COLUMN_HEADERS.stem, track: 'minmax(0, 1.35fr)', locked: true, reorderLocked: true },
+  { key: 'lemma', label: STEMS_COLUMN_HEADERS.lemma, track: 'minmax(0, 1.1fr)' },
+  { key: 'root', label: STEMS_COLUMN_HEADERS.root, track: 'minmax(0, 1fr)' },
+  { key: 'occurrences', label: STEMS_COLUMN_HEADERS.occurrences, track: 'minmax(4.25rem, 0.9fr)' },
+  { key: 'ayahs', label: STEMS_COLUMN_HEADERS.ayahs, track: 'minmax(4.25rem, 0.9fr)' },
+  { key: 'surahs', label: STEMS_COLUMN_HEADERS.surahs, track: 'minmax(4.25rem, 0.9fr)' },
+  { key: 'simple', label: STEMS_COLUMN_HEADERS.simpleWords, track: 'minmax(4.25rem, 0.9fr)' },
+  { key: 'tashkeel', label: STEMS_COLUMN_HEADERS.tashkeelWords, track: 'minmax(4.25rem, 0.9fr)' },
+];
 
 export interface StemCountOpenedEvent {
   stem: StemListItemViewModel;
@@ -47,7 +57,7 @@ export interface StemCountOpenedEvent {
 @Component({
   selector: 'qd-stems-table',
   standalone: true,
-  imports: [DetailOverlayLinkDirective, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [DetailOverlayLinkDirective, ExplorerTableColumnSettingsComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './stems-table.component.html',
   styleUrls: ['./stems-table.component.scss', './stems-table.component.responsive.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -99,8 +109,18 @@ export class StemsTableComponent {
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
   protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
-  protected readonly isMedium = signal(false);
-  protected readonly columnCount = computed(() => this.isMedium() ? STEM_TABLE_MEDIUM_COLUMN_COUNT : STEM_TABLE_WIDE_COLUMN_COUNT);
+  protected readonly columnSettings = new ExplorerTableColumnsController('stems', STEM_TABLE_COLUMNS);
+  protected readonly columnCount = this.columnSettings.visibleColumnCount;
+  protected readonly visibleColumns = this.columnSettings.visibleColumns;
+  protected readonly mobileRelationColumns = computed(() => this.visibleColumns().filter((column) =>
+    column.key === 'lemma' || column.key === 'root',
+  ));
+  protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
+    !['rowNumber', 'stem', 'lemma', 'root'].includes(column.key),
+  ));
+  protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
+    .map((column) => column.key)
+    .filter((key): key is StemTableColumnKey => STEM_TABLE_COLUMN_ORDER.includes(key as StemTableColumnKey)));
   protected readonly tableState = computed<QdDataTableState>(() => {
     if (this.loading()) return 'loading';
     if (this.status() === 'error') return 'error';
@@ -121,16 +141,6 @@ export class StemsTableComponent {
 
   constructor() {
     afterNextRender(() => {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
-        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
-        syncMedium();
-        if (typeof mediumQuery.addEventListener === 'function') {
-          mediumQuery.addEventListener('change', syncMedium);
-          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
-        }
-      }
-
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--stems-table-scrollbar-gutter',
@@ -218,7 +228,7 @@ export class StemsTableComponent {
       rows: this.rows(),
       selectedRowId: this.selectedStemId(),
       currentColumn: this.currentColumn(),
-      columnOrder: STEM_TABLE_COLUMN_ORDER,
+      columnOrder: this.keyboardColumnOrder(),
       isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
       emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
       scrollToRow: (index, direction) => this.scrollToRow(index, direction),

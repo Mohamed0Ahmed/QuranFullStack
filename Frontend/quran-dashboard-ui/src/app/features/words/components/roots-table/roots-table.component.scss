@@ -61,11 +61,6 @@
   margin: 0;
 }
 
-.roots-table__medium-disclosure,
-.roots-table__medium-disclosure-header {
-  display: none;
-}
-
 .roots-table__disabled-reason {
   margin: 0;
   padding: var(--qd-space-2) var(--qd-space-3) 0;
@@ -78,43 +73,6 @@
   align-self: center;
   color: var(--qd-ink-muted);
   font-variant-numeric: tabular-nums;
-}
-
-@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
-  .roots-table__header-cell--secondary,
-  .roots-table__chip-cell--secondary {
-    display: none;
-  }
-
-  .roots-table__medium-disclosure,
-  .roots-table__medium-disclosure-header {
-    display: block;
-  }
-
-  .roots-table__medium-disclosure {
-    min-inline-size: 0;
-    padding-inline: var(--qd-space-2);
-  }
-
-  .roots-table__medium-disclosure summary {
-    min-block-size: var(--qd-control-md);
-    cursor: pointer;
-    color: var(--qd-ink-body);
-    font-size: var(--qd-type-caption);
-    line-height: var(--qd-control-md);
-  }
-
-  .roots-table__medium-disclosure-counts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--qd-space-2);
-    grid-column: 1 / -1;
-    padding-block: var(--qd-space-2);
-  }
-
-  .roots-table__medium-disclosure-counts qd-word-count-chip {
-    --word-count-chip-width: 100%;
-  }
 }
 
 @media (max-width: bp.$qd-bp-phone-max) {

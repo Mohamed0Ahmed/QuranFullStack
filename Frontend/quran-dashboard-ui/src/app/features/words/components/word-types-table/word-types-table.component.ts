@@ -1,5 +1,5 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
@@ -30,8 +30,8 @@ import {
 } from '../../models/word-types.models';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-
-import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
+import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
+import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
 
@@ -43,15 +43,24 @@ export interface WordTypeCountOpenedEvent {
 
 const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_COMPACT = 127;
-const WORD_TYPES_WIDE_COLUMN_COUNT = 9;
-const WORD_TYPES_MEDIUM_COLUMN_COUNT = 6;
-const WORD_TYPES_GROUPED_COLUMN_COUNT = 5;
 let nextDisabledReasonId = 0;
+
+const WORD_TYPES_TABLE_COLUMNS: readonly ExplorerTableColumnDefinition[] = [
+  { key: 'rowNumber', label: WORD_TYPES_TABLE_HEADERS.rowNumber, track: 'minmax(2.5rem, 0.3fr)', reorderLocked: true },
+  { key: 'identity', label: WORD_TYPES_TABLE_HEADERS.word, track: 'minmax(0, 1.65fr)', locked: true, reorderLocked: true },
+  { key: 'type', label: WORD_TYPES_TABLE_HEADERS.type, track: 'minmax(0, 1.15fr)' },
+  { key: 'root', label: WORD_TYPES_TABLE_HEADERS.root, track: 'minmax(0, 1fr)' },
+  { key: 'stem', label: WORD_TYPES_TABLE_HEADERS.stem, track: 'minmax(0, 1fr)' },
+  { key: 'lemma', label: WORD_TYPES_TABLE_HEADERS.lemma, track: 'minmax(0, 1fr)' },
+  { key: 'occurrences', label: WORD_TYPES_TABLE_HEADERS.occurrences, track: 'minmax(3.5rem, 0.72fr)' },
+  { key: 'ayahs', label: WORD_TYPES_TABLE_HEADERS.ayahs, track: 'minmax(3.5rem, 0.72fr)' },
+  { key: 'surahs', label: WORD_TYPES_TABLE_HEADERS.surahs, track: 'minmax(3.5rem, 0.72fr)' },
+];
 
 @Component({
   selector: 'qd-word-types-table',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [ExplorerTableColumnSettingsComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './word-types-table.component.html',
   styleUrl: './word-types-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -98,14 +107,24 @@ export class WordTypesTableComponent {
     this.isWordView() ? 'wide-columns' : 'grouped-rows',
   );
 
-  protected readonly isMedium = signal(false);
-
-  protected readonly columnCount = computed(() => {
-    if (!this.isWordView()) {
-      return WORD_TYPES_GROUPED_COLUMN_COUNT;
-    }
-    return this.isMedium() ? WORD_TYPES_MEDIUM_COLUMN_COUNT : WORD_TYPES_WIDE_COLUMN_COUNT;
+  protected readonly columnSettings = new ExplorerTableColumnsController('word-types', WORD_TYPES_TABLE_COLUMNS);
+  protected readonly availableColumns = computed(() => {
+    const allowed = this.isWordView()
+      ? null
+      : new Set(['rowNumber', 'identity', 'occurrences', 'ayahs', 'surahs']);
+    return this.columnSettings.columns()
+      .filter((column) => allowed === null || allowed.has(column.key))
+      .map((column) => column.key === 'identity' ? { ...column, label: this.dimensionHeader() } : column);
   });
+  protected readonly visibleColumns = computed(() => this.availableColumns().filter((column) => column.visible));
+  protected readonly mobileMetaColumns = computed(() => this.visibleColumns().filter((column) =>
+    ['type', 'root', 'stem', 'lemma'].includes(column.key),
+  ));
+  protected readonly mobileCountColumns = computed(() => this.visibleColumns().filter((column) =>
+    ['occurrences', 'ayahs', 'surahs'].includes(column.key),
+  ));
+  protected readonly columnCount = computed(() => this.visibleColumns().length);
+  protected readonly columnTemplate = computed(() => this.visibleColumns().map((column) => column.track).join(' '));
 
   protected readonly totalRowCount = computed(() => this.rows()?.totalCount ?? this.visibleRows().length);
 
@@ -132,16 +151,6 @@ export class WordTypesTableComponent {
 
   constructor() {
     afterNextRender(() => {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
-        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
-        syncMedium();
-        if (typeof mediumQuery.addEventListener === 'function') {
-          mediumQuery.addEventListener('change', syncMedium);
-          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
-        }
-      }
-
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--word-types-table-scrollbar-gutter',

@@ -1,3 +1,7 @@
+<div class="qd-explorer-table-column-settings-anchor">
+  <qd-explorer-table-column-settings [columns]="columnSettings.columns()" testIdPrefix="word-types-table" (visibilityChanged)="columnSettings.setVisible($event.key, $event.visible)" (moved)="columnSettings.move($event.key, $event.direction)" (reordered)="columnSettings.moveTo($event.fromIndex, $event.toIndex)" (resetRequested)="columnSettings.reset()" />
+</div>
+
 <qd-data-table
   class="word-types-table qd-explorer-table"
   scrollStateKey="words.table.types"
@@ -8,28 +12,29 @@
   [rowId]="rowIdentity"
   [ariaLabel]="tableLabel"
   [columnCount]="columnCount()"
+  [style.--qd-explorer-table-columns]="columnTemplate()"
   [totalRowCount]="totalRowCount()"
   [state]="tableState()"
   [selectedRow]="selectedRow()"
   [selected]="sameRow"
   [rowHeight]="rowHeight"
   [compactRowHeight]="compactRowHeight"
+  [class.qd-explorer-table--row-number-hidden]="!columnSettings.isVisible('rowNumber')"
 >
   <ng-template #headerTemplate>
     @if (hasHeader()) {
-      <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span>
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" />
-      @if (isWordView()) {
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span>
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span>
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span>
-        <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span>
-      }
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, variant: 'count' }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, variant: 'count' }" />
-      <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, variant: 'count' }" />
-      @if (isMedium() && isWordView()) {
-        <span class="word-types-table__medium-disclosure-header qd-explorer-table__header-cell" role="columnheader">كل التفاصيل</span>
+      @for (column of visibleColumns(); track column.key) {
+        @switch (column.key) {
+          @case ('rowNumber') { <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--row-number qd-explorer-table__header-cell--row-number" role="columnheader">{{ headers.rowNumber }}</span> }
+          @case ('identity') { <ng-container *ngTemplateOutlet="sortHeader; context: { column: alphaSortColumn(), variant: 'word' }" /> }
+          @case ('type') { <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.type }}</span> }
+          @case ('root') { <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.root }}</span> }
+          @case ('stem') { <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.stem }}</span> }
+          @case ('lemma') { <span class="word-types-table__header-cell qd-explorer-table__header-cell word-types-table__header-cell--meta" role="columnheader">{{ headers.lemma }}</span> }
+          @case ('occurrences') { <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.occurrences, variant: 'count' }" /> }
+          @case ('ayahs') { <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.ayahs, variant: 'count' }" /> }
+          @case ('surahs') { <ng-container *ngTemplateOutlet="sortHeader; context: { column: sortColumns.surahs, variant: 'count' }" /> }
+        }
       }
     }
   </ng-template>
@@ -39,24 +44,32 @@
   </ng-template>
 
   <ng-template #compactRowTemplate let-row let-index="index">
-    <span class="word-types-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</span>
+    @if (columnSettings.isVisible('rowNumber')) {
+      <span class="word-types-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</span>
+    }
     <div class="qd-explorer-mobile-identity">
       <span class="word-types-table__word">{{ row.displayText }}</span>
-      <div class="qd-explorer-mobile-relations">
-        @if (row.kind === 'word') {
-          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.type }}:</span><span>{{ row.typeLabel.ar }}</span></span>
-          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.root }}:</span><span>{{ row.rootText || placeholder }}</span></span>
-          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.stem }}:</span><span>{{ row.stemText || placeholder }}</span></span>
-          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.lemma }}:</span><span>{{ row.lemmaText || placeholder }}</span></span>
-        } @else {
-          <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ dimensionHeader() }}:</span><span>{{ row.displayText }}</span></span>
-        }
-      </div>
+      @if (row.kind === 'word' && mobileMetaColumns().length > 0) {
+        <div class="qd-explorer-mobile-relations">
+          @for (column of mobileMetaColumns(); track column.key) {
+            @switch (column.key) {
+              @case ('type') { <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.type }}:</span><span>{{ row.typeLabel.ar }}</span></span> }
+              @case ('root') { <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.root }}:</span><span>{{ row.rootText || placeholder }}</span></span> }
+              @case ('stem') { <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.stem }}:</span><span>{{ row.stemText || placeholder }}</span></span> }
+              @case ('lemma') { <span class="qd-explorer-mobile-meta"><span class="qd-explorer-mobile-meta-label">{{ headers.lemma }}:</span><span>{{ row.lemmaText || placeholder }}</span></span> }
+            }
+          }
+        </div>
+      }
     </div>
     <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--primary">
-      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-occurrences" data-word-count-column="occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'occurrences')" />
-      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-ayahs" data-word-count-column="ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'ayahs')" />
-      <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-surahs" data-word-count-column="surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'surahs')" />
+      @for (column of mobileCountColumns(); track column.key) {
+        @switch (column.key) {
+          @case ('occurrences') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-occurrences" data-word-count-column="occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'occurrences')" /> }
+          @case ('ayahs') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-ayahs" data-word-count-column="ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'ayahs')" /> }
+          @case ('surahs') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="word-types-table-mobile-surahs" data-word-count-column="surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, 'surahs')" /> }
+        }
+      }
     </div>
   </ng-template>
 
@@ -70,22 +83,9 @@
           role="row"
           aria-hidden="true"
         >
-          <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">
-            <span class="qd-skeleton qd-skeleton--text word-types-table__loading-number"></span>
-          </span>
-          <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
-            <span class="qd-skeleton qd-skeleton--text word-types-table__loading-word"></span>
-          </span>
-          @if (isWordView()) {
-            @for (placeholderMeta of [0, 1, 2, 3]; track placeholderMeta) {
-              <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell">
-                <span class="qd-skeleton qd-skeleton--text word-types-table__loading-meta"></span>
-              </span>
-            }
-          }
-          @for (placeholderCount of [0, 1, 2]; track placeholderCount) {
-            <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell">
-              <span class="qd-skeleton qd-skeleton--rounded-md word-types-table__loading-count"></span>
+          @for (column of visibleColumns(); track column.key) {
+            <span class="word-types-table__cell qd-explorer-table__cell" [class.word-types-table__cell--row-number]="column.key === 'rowNumber'" [class.qd-explorer-table__cell--row-number]="column.key === 'rowNumber'" [class.word-types-table__cell--word]="column.key === 'identity'" [class.word-types-table__cell--meta]="['type', 'root', 'stem', 'lemma'].includes(column.key)" [class.word-types-table__cell--count]="['occurrences', 'ayahs', 'surahs'].includes(column.key)" role="cell">
+              <span class="qd-skeleton" [class.qd-skeleton--text]="!['occurrences', 'ayahs', 'surahs'].includes(column.key)" [class.qd-skeleton--rounded-md]="['occurrences', 'ayahs', 'surahs'].includes(column.key)" [class.word-types-table__loading-number]="column.key === 'rowNumber'" [class.word-types-table__loading-word]="column.key === 'identity'" [class.word-types-table__loading-meta]="['type', 'root', 'stem', 'lemma'].includes(column.key)" [class.word-types-table__loading-count]="['occurrences', 'ayahs', 'surahs'].includes(column.key)"></span>
             </span>
           }
         </div>
@@ -126,75 +126,27 @@
 </qd-data-table>
 
 <ng-template #rowCells let-row="row" let-index="index">
-  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span>
-  @if (row.kind === 'word') {
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell">
-      <span class="word-types-table__word">{{ row.displayText }}</span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type">
-      <span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root">
-      <span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem">
-      <span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span>
-    </span>
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma">
-      <span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span>
-    </span>
-  } @else {
-    <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
-      <span class="word-types-table__word">{{ row.displayText }}</span>
-    </span>
+  @for (column of visibleColumns(); track column.key) {
+    @switch (column.key) {
+      @case ('rowNumber') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span> }
+      @case ('identity') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()"><span class="word-types-table__word">{{ row.displayText }}</span></span> }
+      @case ('type') { @if (row.kind === 'word') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type"><span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span></span> } }
+      @case ('root') { @if (row.kind === 'word') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.root"><span class="word-types-table__meta-text">{{ row.rootText || placeholder }}</span></span> } }
+      @case ('stem') { @if (row.kind === 'word') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.stem"><span class="word-types-table__meta-text">{{ row.stemText || placeholder }}</span></span> } }
+      @case ('lemma') { @if (row.kind === 'word') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.lemma"><span class="word-types-table__meta-text">{{ row.lemmaText || placeholder }}</span></span> } }
+      @case ('occurrences') { <ng-container *ngTemplateOutlet="countCell; context: { row: row, column: 'occurrences', label: headers.occurrences, count: row.occurrencesCount }" /> }
+      @case ('ayahs') { <ng-container *ngTemplateOutlet="countCell; context: { row: row, column: 'ayahs', label: headers.ayahs, count: row.ayahsCount }" /> }
+      @case ('surahs') { <ng-container *ngTemplateOutlet="countCell; context: { row: row, column: 'surahs', label: headers.surahs, count: row.surahsCount }" /> }
+    }
   }
-  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.occurrences">
-    <span class="word-types-table__count-chip" data-word-count-column="occurrences">
-      <qd-word-count-chip
-        [label]="headers.occurrences"
-        [count]="row.occurrencesCount"
-        [showLabel]="false"
-        [disabled]="row.occurrencesCount === 0"
-        [disabledReasonId]="disabledReasonId"
-        (chipClick)="openCount(row, 'occurrences')"
-      />
+</ng-template>
+
+<ng-template #countCell let-row="row" let-column="column" let-label="label" let-count="count">
+  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="label">
+    <span class="word-types-table__count-chip" [attr.data-word-count-column]="column">
+      <qd-word-count-chip [label]="label" [count]="count" [showLabel]="false" [disabled]="count === 0" [disabledReasonId]="disabledReasonId" (chipClick)="openCount(row, column)" />
     </span>
   </span>
-  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.ayahs">
-    <span class="word-types-table__count-chip" data-word-count-column="ayahs">
-      <qd-word-count-chip
-        [label]="headers.ayahs"
-        [count]="row.ayahsCount"
-        [showLabel]="false"
-        [disabled]="row.ayahsCount === 0"
-        [disabledReasonId]="disabledReasonId"
-        (chipClick)="openCount(row, 'ayahs')"
-      />
-    </span>
-  </span>
-  <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--count" role="cell" [attr.data-label]="headers.surahs">
-    <span class="word-types-table__count-chip" data-word-count-column="surahs">
-      <qd-word-count-chip
-        [label]="headers.surahs"
-        [count]="row.surahsCount"
-        [showLabel]="false"
-        [disabled]="row.surahsCount === 0"
-        [disabledReasonId]="disabledReasonId"
-        (chipClick)="openCount(row, 'surahs')"
-      />
-    </span>
-  </span>
-  @if (isMedium() && row.kind === 'word') {
-    <details class="word-types-table__medium-disclosure">
-      <summary>كل التفاصيل</summary>
-      <dl class="word-types-table__medium-disclosure-list">
-        <dt>{{ headers.type }}</dt><dd>{{ row.typeLabel.ar }}</dd>
-        <dt>{{ headers.root }}</dt><dd>{{ row.rootText || placeholder }}</dd>
-        <dt>{{ headers.stem }}</dt><dd>{{ row.stemText || placeholder }}</dd>
-        <dt>{{ headers.lemma }}</dt><dd>{{ row.lemmaText || placeholder }}</dd>
-      </dl>
-    </details>
-  }
 </ng-template>
 
 <ng-template #sortHeader let-column="column" let-variant="variant">

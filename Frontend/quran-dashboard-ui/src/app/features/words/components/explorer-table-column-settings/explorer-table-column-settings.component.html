@@ -1,0 +1,106 @@
+<button
+  #trigger
+  type="button"
+  qdAction="icon-only"
+  size="sm"
+  class="explorer-table-column-settings__trigger"
+  aria-haspopup="dialog"
+  [attr.aria-expanded]="panelOpen()"
+  [attr.aria-controls]="panelOpen() ? panelId : null"
+  aria-label="تخصيص أعمدة الجدول"
+  title="تخصيص أعمدة الجدول"
+  [attr.data-testid]="testIdPrefix() + '-columns-trigger'"
+  (click)="togglePanel()"
+>
+  <span aria-hidden="true">⚙</span>
+</button>
+
+@if (panelOpen()) {
+  <section
+    class="explorer-table-column-settings__panel"
+    qdFloatingLayer="disclosure-popover"
+    [anchorElement]="triggerElement"
+    [controlElement]="triggerElement"
+    [id]="panelId"
+    role="dialog"
+    tabindex="-1"
+    aria-label="تخصيص أعمدة الجدول"
+    [attr.data-testid]="testIdPrefix() + '-columns-panel'"
+    (dismissed)="onDismissed($event)"
+  >
+    <header class="explorer-table-column-settings__header">
+      <div>
+        <h3 class="explorer-table-column-settings__title">أعمدة الجدول</h3>
+        <p class="explorer-table-column-settings__hint">اختر الأعمدة ورتّبها كما تريد.</p>
+      </div>
+      <button
+        type="button"
+        qdAction="tertiary"
+        size="sm"
+        [attr.data-testid]="testIdPrefix() + '-columns-reset'"
+        (click)="resetRequested.emit()"
+      >
+        استعادة الافتراضي
+      </button>
+    </header>
+
+    <ul
+      cdkDropList
+      class="explorer-table-column-settings__list"
+      [cdkDropListData]="columns()"
+      (cdkDropListDropped)="drop($event)"
+    >
+      @for (column of columns(); track column.key; let index = $index) {
+        <li cdkDrag [cdkDragDisabled]="column.reorderLocked" class="explorer-table-column-settings__item">
+          <button
+            cdkDragHandle
+            type="button"
+            qdAction="icon-only"
+            size="sm"
+            class="explorer-table-column-settings__drag"
+            [disabled]="column.reorderLocked"
+            [attr.aria-label]="'سحب عمود «' + column.label + '» لإعادة ترتيبه'"
+            [title]="'إعادة ترتيب «' + column.label + '»'"
+          >
+            <span aria-hidden="true">⋮⋮</span>
+          </button>
+
+          <label class="qd-check-row explorer-table-column-settings__check">
+            <input
+              type="checkbox"
+              class="qd-checkbox"
+              [checked]="column.visible"
+              [disabled]="column.locked"
+              [attr.data-testid]="testIdPrefix() + '-column-' + column.key"
+              (change)="onVisibilityChanged(column, $event)"
+            />
+            <span>{{ column.label }}</span>
+          </label>
+
+          <div class="explorer-table-column-settings__move-actions">
+            <button
+              type="button"
+              qdAction="icon-only"
+              size="sm"
+              [disabled]="!canMoveUp(index)"
+              [attr.aria-label]="'تحريك عمود «' + column.label + '» لأعلى'"
+              (click)="move(column, 'up')"
+            >
+              <span aria-hidden="true">↑</span>
+            </button>
+            <button
+              type="button"
+              qdAction="icon-only"
+              size="sm"
+              [disabled]="!canMoveDown(index)"
+              [attr.aria-label]="'تحريك عمود «' + column.label + '» لأسفل'"
+              (click)="move(column, 'down')"
+            >
+              <span aria-hidden="true">↓</span>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  </section>
+}

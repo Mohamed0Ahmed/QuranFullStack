@@ -9,7 +9,6 @@ import {
   inject,
   input,
   output,
-  signal,
   viewChild,
 } from '@angular/core';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
@@ -50,11 +49,13 @@ import {
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
+import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
+import {
+  ExplorerTableColumnDefinition,
+  ExplorerTableColumnsController,
+} from '../../state/explorer-table-columns.controller';
 const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_COMPACT = 214;
-const ROOT_TABLE_WIDE_COLUMN_COUNT = 9;
-const ROOT_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;
 type RootTableColumnKey = MorphologyColumnKey;
 
@@ -68,6 +69,18 @@ const ROOT_TABLE_COLUMN_ORDER = [
   'occurrences',
 ] as const satisfies readonly RootTableColumnKey[];
 
+const ROOT_TABLE_COLUMNS: readonly ExplorerTableColumnDefinition[] = [
+  { key: 'rowNumber', label: ROOTS_COLUMN_HEADERS.rowNumber, track: 'minmax(2.5rem, 0.3fr)', reorderLocked: true },
+  { key: 'root', label: ROOTS_COLUMN_HEADERS.root, track: 'minmax(0, 1.6fr)', locked: true, reorderLocked: true },
+  { key: 'occurrences', label: ROOTS_COLUMN_HEADERS.occurrences, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'ayahs', label: ROOTS_COLUMN_HEADERS.ayahs, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'surahs', label: ROOTS_COLUMN_HEADERS.surahs, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'simple', label: ROOTS_COLUMN_HEADERS.simpleWords, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'tashkeel', label: ROOTS_COLUMN_HEADERS.tashkeelWords, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'lemmas', label: ROOTS_COLUMN_HEADERS.lemmas, track: 'minmax(4.5rem, 1fr)' },
+  { key: 'stems', label: ROOTS_COLUMN_HEADERS.stems, track: 'minmax(4.5rem, 1fr)' },
+];
+
 export interface RootCountOpenedEvent {
   root: RootListItemViewModel;
   column?: RootTableColumnKey;
@@ -79,7 +92,14 @@ export interface RootCountOpenedEvent {
 @Component({
   selector: 'qd-roots-table',
   standalone: true,
-  imports: [NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [
+    NgTemplateOutlet,
+    ExplorerTableColumnSettingsComponent,
+    QdActionDirective,
+    QdDataTableComponent,
+    QdSortableHeaderComponent,
+    WordCountChipComponent,
+  ],
   templateUrl: './roots-table.component.html',
   styleUrl: './roots-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -131,8 +151,15 @@ export class RootsTableComponent {
   protected readonly loadingRowPlaceholders = Array.from({ length: 10 });
   protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
   protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
-  protected readonly isMedium = signal(false);
-  protected readonly columnCount = computed(() => this.isMedium() ? ROOT_TABLE_MEDIUM_COLUMN_COUNT : ROOT_TABLE_WIDE_COLUMN_COUNT);
+  protected readonly columnSettings = new ExplorerTableColumnsController('roots', ROOT_TABLE_COLUMNS);
+  protected readonly columnCount = this.columnSettings.visibleColumnCount;
+  protected readonly visibleColumns = this.columnSettings.visibleColumns;
+  protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
+    column.key !== 'rowNumber' && column.key !== 'root',
+  ));
+  protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
+    .map((column) => column.key)
+    .filter((key): key is RootTableColumnKey => ROOT_TABLE_COLUMN_ORDER.includes(key as RootTableColumnKey)));
   protected readonly tableState = computed<QdDataTableState>(() => {
     if (this.loading()) return 'loading';
     if (this.status() === 'error') return 'error';
@@ -153,16 +180,6 @@ export class RootsTableComponent {
 
   constructor() {
     afterNextRender(() => {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
-        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
-        syncMedium();
-        if (typeof mediumQuery.addEventListener === 'function') {
-          mediumQuery.addEventListener('change', syncMedium);
-          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
-        }
-      }
-
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--roots-table-scrollbar-gutter',
@@ -226,7 +243,7 @@ export class RootsTableComponent {
       rows: this.rows(),
       selectedRowId: this.selectedRootId(),
       currentColumn: this.currentColumn(),
-      columnOrder: ROOT_TABLE_COLUMN_ORDER,
+      columnOrder: this.keyboardColumnOrder(),
       isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
       emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
       scrollToRow: (index, direction) => this.scrollToRow(index, direction),

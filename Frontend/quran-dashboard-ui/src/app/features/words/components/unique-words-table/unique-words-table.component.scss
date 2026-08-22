@@ -104,59 +104,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.unique-words-table__mobile-meta,
-.unique-words-table__medium-disclosure,
-.unique-words-table__medium-disclosure-header {
-  display: none;
-}
-
-@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
-  .unique-words-table__header-cell--type,
-  .unique-words-table__header-cell--root,
-  .unique-words-table__header-cell--secondary,
-  .unique-words-table__text-cell--wide,
-  .unique-words-table__chip-cell--secondary {
-    display: none;
-  }
-
-  .unique-words-table__mobile-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: var(--qd-space-2);
-  }
-
-  .unique-words-table__medium-disclosure,
-  .unique-words-table__medium-disclosure-header {
-    display: block;
-  }
-
-  .unique-words-table__medium-disclosure {
-    min-inline-size: 0;
-    padding-inline: var(--qd-space-2);
-  }
-
-  .unique-words-table__medium-disclosure summary {
-    min-block-size: var(--qd-control-md);
-    cursor: pointer;
-    color: var(--qd-ink-body);
-    font-size: var(--qd-type-caption);
-    line-height: var(--qd-control-md);
-  }
-
-  .unique-words-table__medium-disclosure-counts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--qd-space-2);
-    padding-block: var(--qd-space-2);
-  }
-
-  .unique-words-table__medium-disclosure-counts qd-word-count-chip {
-    --word-count-chip-width: 100%;
-  }
-}
-
 @media (max-width: bp.$qd-bp-phone-max) {
   .unique-words-table {
     block-size: auto;
