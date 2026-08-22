@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  output,
+  signal,
+  untracked,
+  viewChild,
+} from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hierarchy-keyboard.directive';
@@ -10,6 +20,7 @@ import {
   isNativeButtonActivation,
   resolveAbwabTreeKeyboardIntent,
 } from '../abwab-tree/abwab-tree-keyboard.controller';
+import { AbwabTreeExpansionController } from '../abwab-tree/abwab-tree-expansion.controller';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 @Component({
@@ -22,6 +33,7 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 })
 export class AbwabArchiveViewComponent {
   private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
+  private readonly expansion = new AbwabTreeExpansionController();
 
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly ariaLabel = input('');
@@ -32,7 +44,6 @@ export class AbwabArchiveViewComponent {
   readonly restoreRequested = output<number>();
   readonly inclusionsRequested = output<number>();
 
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly manualFocusId = signal<number | null>(null);
 
   protected get restoreLabel(): string { return ABWAB_LABELS.restoreButton; }
@@ -50,13 +61,17 @@ export class AbwabArchiveViewComponent {
     return map;
   });
 
-  protected readonly visibleRows = computed<AbwabTreeRow[]>(() => {
-    const searchExpandedIds = this.searchExpandedIds();
-    const expandedIds = searchExpandedIds.size === 0
-      ? this.expandedIds()
-      : new Set([...this.expandedIds(), ...searchExpandedIds]);
-    return flattenVisibleAbwabRows(this.roots(), expandedIds);
-  });
+  protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
+    flattenVisibleAbwabRows(this.roots(), this.expansion.effectiveIds()),
+  );
+
+  constructor() {
+    effect(() => {
+      const expandedIds = this.searchExpandedIds();
+      const matchedIds = this.matchedIds();
+      untracked(() => this.expansion.setSearchExpansion(expandedIds, matchedIds));
+    });
+  }
 
   protected readonly rovingId = computed(() => {
     const rows = this.visibleRows();
@@ -81,7 +96,7 @@ export class AbwabArchiveViewComponent {
     if (!row.hasChildren) {
       return;
     }
-    this.setExpanded(row.id, !this.expandedIds().has(row.id));
+    this.setExpanded(row.id, !row.isExpanded);
   }
 
   protected onRestoreClick(id: number): void {
@@ -172,15 +187,7 @@ export class AbwabArchiveViewComponent {
   }
 
   private setExpanded(id: number, expanded: boolean): void {
-    this.expandedIds.update((current) => {
-      const next = new Set(current);
-      if (expanded) {
-        next.add(id);
-      } else {
-        next.delete(id);
-      }
-      return next;
-    });
+    this.expansion.setExpanded(id, expanded);
   }
 
   private focusRow(id: number): void {

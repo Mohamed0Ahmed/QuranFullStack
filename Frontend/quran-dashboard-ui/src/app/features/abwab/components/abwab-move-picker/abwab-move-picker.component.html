@@ -59,12 +59,14 @@
           class="abwab-move-picker__search"
           [query]="searchQuery()"
           [matchCount]="searchMatchCount()"
+          [results]="searchMatches()"
           [hideUnrelatedRoots]="hideUnrelatedRoots()"
           [placeholder]="searchPlaceholder"
           [helper]="labels.searchScopeHintTree"
           testIdPrefix="abwab-move-picker"
           (queryChanged)="searchQuery.set($event)"
           (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
+          (resultSelected)="pickParent($event)"
         />
         <div class="abwab-move-picker__destinations">
           <button

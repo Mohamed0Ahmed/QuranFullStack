@@ -5,6 +5,7 @@ namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Response
 public sealed record WordTypeAyahMatchDto(
     string VerseKey,
     int SurahNumber,
+    string SurahNameArabic,
     int AyahNumber,
     short PageNumber,
     IReadOnlyList<int> MatchedWordPositions,

@@ -125,6 +125,7 @@ public sealed partial class EfWordTypesReader
                 return new WordTypeAyahMatchDto(
                     ayah.VerseKey,
                     ayah.SurahNumber,
+                    ayah.SurahNameArabic,
                     ayah.AyahNumber,
                     pageNumber,
                     matchedPositions,

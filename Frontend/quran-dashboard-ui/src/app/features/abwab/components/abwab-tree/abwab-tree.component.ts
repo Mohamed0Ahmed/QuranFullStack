@@ -99,9 +99,14 @@ export class AbwabTreeComponent {
       const seed = this.transientExpandSeedIds();
       untracked(() => this.expansion.setTransient(seed));
     });
+    effect(() => {
+      const expandedIds = this.searchExpandedIds();
+      const matchedIds = this.matchedIds();
+      untracked(() => this.expansion.setSearchExpansion(expandedIds, matchedIds));
+    });
   }
   private readonly effectiveExpandedIds = computed<ReadonlySet<number>>(() =>
-    this.expansion.effectiveIds(this.searchExpandedIds()),
+    this.expansion.effectiveIds(),
   );
   protected readonly nodesById = computed(() => {
     const map = new Map<number, AbwabNode>();

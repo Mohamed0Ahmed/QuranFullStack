@@ -1,12 +1,14 @@
 <qd-abwab-search-controls
   [query]="searchQuery()"
   [matchCount]="searchMatchCount()"
+  [results]="searchMatches()"
   [hideUnrelatedRoots]="hideUnrelatedRoots()"
   [placeholder]="searchPlaceholder()"
   [helper]="labels.searchScopeHintTree"
   [testIdPrefix]="testIdPrefix()"
   (queryChanged)="searchQuery.set($event)"
   (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
+  (resultSelected)="toggle($event)"
 />
 
 @if (doorsErrorMessage(); as error) {

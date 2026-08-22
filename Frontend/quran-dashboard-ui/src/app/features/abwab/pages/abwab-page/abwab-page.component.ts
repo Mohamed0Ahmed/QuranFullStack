@@ -149,10 +149,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly displayLiveRoots = computed(() => this.searchResult().displayRoots);
 
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
-  protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
-    const node = this.byId().get(id);
-    return node ? [node] : [];
-  }));
+  protected readonly searchMatches = computed(() => this.searchResult().matches);
 
   protected readonly searchMatchCount = computed(() =>
     this.archiveParam() ? this.archiveSearchResult().matchedIds.size : this.searchResult().matchedIds.size,

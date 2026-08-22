@@ -8,8 +8,6 @@ import { AbwabNode, AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
 
-const SEARCH_RESULTS_MIN_CHARACTERS = 3;
-
 @Component({
   selector: 'qd-abwab-toolbar',
   standalone: true,
@@ -32,7 +30,6 @@ export class AbwabToolbarComponent {
   readonly searchOnly = input(false);
   readonly canExpandTree = input(false);
   readonly canCollapseTree = input(false);
-  readonly treeExpansionDisabled = input(false);
 
   readonly sectionChanged = output<number | null>();
   readonly viewChanged = output<AbwabView>();
@@ -47,21 +44,9 @@ export class AbwabToolbarComponent {
   protected get viewToggleAriaLabel(): string { return ABWAB_LABELS.viewToggleAriaLabel; }
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
-  protected get searchResultsAriaLabel(): string { return ABWAB_LABELS.searchResultsAriaLabel; }
   protected get treeExpansionGroupAriaLabel(): string { return ABWAB_LABELS.treeExpansionGroupAriaLabel; }
   protected get treeExpandAllLabel(): string { return ABWAB_LABELS.treeExpandAll; }
   protected get treeCollapseAllLabel(): string { return ABWAB_LABELS.treeCollapseAll; }
-  protected get treeExpansionSearchDisabledHint(): string { return ABWAB_LABELS.treeExpansionSearchDisabledHint; }
-
-  protected readonly showSearchResults = computed(() =>
-    !this.hideSectionControls()
-    && Array.from(this.searchQuery().trim()).length >= SEARCH_RESULTS_MIN_CHARACTERS
-    && this.searchResults().length > 0,
-  );
-
-  protected searchResultAriaLabel(doorName: string): string {
-    return ABWAB_LABELS.searchResultAriaLabel(doorName);
-  }
 
   protected readonly searchScopeHint = computed(() => {
     if (this.hideSectionControls()) {
@@ -90,10 +75,6 @@ export class AbwabToolbarComponent {
 
   protected selectView(view: AbwabView): void {
     this.viewChanged.emit(view);
-  }
-
-  protected selectSearchResult(doorId: number): void {
-    this.searchResultSelected.emit(doorId);
   }
 
 }

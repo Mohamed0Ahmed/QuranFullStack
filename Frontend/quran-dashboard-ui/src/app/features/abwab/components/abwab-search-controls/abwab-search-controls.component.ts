@@ -15,15 +15,18 @@ import {
 
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 const ANNOUNCE_SETTLE_MS = 500;
 const SEARCH_SETTLE_MS = 180;
+const SEARCH_RESULTS_MIN_CHARACTERS = 3;
 
 @Component({
   selector: 'qd-abwab-search-controls',
   standalone: true,
-  imports: [QdControlDirective, QdFormFieldComponent],
+  imports: [QdActionDirective, QdControlDirective, QdFormFieldComponent],
   templateUrl: './abwab-search-controls.component.html',
   styleUrl: './abwab-search-controls.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -31,6 +34,7 @@ const SEARCH_SETTLE_MS = 180;
 export class AbwabSearchControlsComponent {
   readonly query = input<string>('');
   readonly matchCount = input<number>(0);
+  readonly results = input<readonly AbwabNode[]>([]);
   readonly hideUnrelatedRoots = input<boolean>(false);
   readonly label = input<string>(ABWAB_LABELS.searchLabel);
   readonly placeholder = input<string>(ABWAB_LABELS.searchPlaceholder);
@@ -39,6 +43,7 @@ export class AbwabSearchControlsComponent {
 
   readonly queryChanged = output<string>();
   readonly hideUnrelatedRootsChanged = output<boolean>();
+  readonly resultSelected = output<number>();
 
   private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
   protected readonly searchDraft = signal('');
@@ -46,6 +51,10 @@ export class AbwabSearchControlsComponent {
   protected readonly matchCountText = computed(() => ABWAB_LABELS.searchMatchCount(this.matchCount()));
   protected readonly toggleDisabled = computed(() => this.searchDraft().trim() === '');
   protected readonly hideUnrelatedLabel = ABWAB_LABELS.hideUnrelatedRootsLabel;
+  protected readonly searchResultsAriaLabel = ABWAB_LABELS.searchResultsAriaLabel;
+  protected readonly showResults = computed(() =>
+    Array.from(this.query().trim()).length >= SEARCH_RESULTS_MIN_CHARACTERS && this.results().length > 0,
+  );
 
   private announceTimer: ReturnType<typeof setTimeout> | null = null;
   private searchTimer: ReturnType<typeof setTimeout> | null = null;
@@ -100,6 +109,10 @@ export class AbwabSearchControlsComponent {
 
   protected onHideUnrelatedRootsChanged(event: Event): void {
     this.hideUnrelatedRootsChanged.emit((event.target as HTMLInputElement).checked);
+  }
+
+  protected resultAriaLabel(doorName: string): string {
+    return ABWAB_LABELS.searchResultAriaLabel(doorName);
   }
 
   private clearAnnounceTimer(): void {

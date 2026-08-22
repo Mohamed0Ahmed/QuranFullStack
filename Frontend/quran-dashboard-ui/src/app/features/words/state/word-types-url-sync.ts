@@ -87,7 +87,7 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
       ? DEFAULT_WORD_TYPES_DETAIL_PAGE
       : parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE,
     location: wordRouteState ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location)) : null,
-    column: wordRouteState ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)) : null,
+    column: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)),
   };
 }
 

@@ -1,52 +1,5 @@
 @use '../../../../../styles/breakpoints' as bp;
 
-@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
-  .stems-table__header-cell--relation,
-  .stems-table__lemma-cell--wide,
-  .stems-table__root-cell--wide,
-  .stems-table__header-cell--secondary,
-  .stems-table__chip-cell--secondary {
-    display: none;
-  }
-
-  .stems-table__mobile-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: var(--qd-space-2);
-  }
-
-  .stems-table__medium-disclosure,
-  .stems-table__medium-disclosure-header {
-    display: block;
-  }
-
-  .stems-table__medium-disclosure {
-    min-inline-size: 0;
-    padding-inline: var(--qd-space-2);
-  }
-
-  .stems-table__medium-disclosure summary {
-    min-block-size: var(--qd-control-md);
-    cursor: pointer;
-    color: var(--qd-ink-body);
-    font-size: var(--qd-type-caption);
-    line-height: var(--qd-control-md);
-  }
-
-  .stems-table__medium-disclosure-counts {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--qd-space-2);
-    padding-block: var(--qd-space-2);
-  }
-
-  .stems-table__medium-disclosure-counts qd-word-count-chip {
-    --word-count-chip-width: 100%;
-  }
-}
-
 @media (max-width: bp.$qd-bp-phone-max) {
   .stems-table {
     block-size: auto;

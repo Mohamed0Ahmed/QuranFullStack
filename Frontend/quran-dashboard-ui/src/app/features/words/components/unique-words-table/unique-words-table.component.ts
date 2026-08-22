@@ -9,7 +9,6 @@ import {
   inject,
   input,
   output,
-  signal,
   viewChild,
 } from '@angular/core';
 
@@ -55,13 +54,11 @@ import {
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
-
-import { QD_BP_MEDIUM_QUERY } from '../../../../shared/layout/breakpoints';
+import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
+import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 const ROW_HEIGHT_DESKTOP = 40;
 const ROW_HEIGHT_COMPACT = 188;
-const UNIQUE_TABLE_WIDE_COLUMN_COUNT = 8;
-const UNIQUE_TABLE_MEDIUM_COLUMN_COUNT = 6;
 let nextDisabledReasonId = 0;
 
 const UNIQUE_WORDS_COLUMN_ORDER = [
@@ -69,6 +66,17 @@ const UNIQUE_WORDS_COLUMN_ORDER = [
   'surahs',
   'ayahs',
 ] as const satisfies readonly UniqueWordsColumnKey[];
+
+const UNIQUE_WORDS_TABLE_COLUMNS: readonly ExplorerTableColumnDefinition[] = [
+  { key: 'rowNumber', label: ROW_NUMBER_HEADER, track: 'minmax(2.5rem, 0.35fr)', reorderLocked: true },
+  { key: 'word', label: UNIQUE_WORD_WORD_HEADER, track: 'minmax(0, 1.8fr)', locked: true, reorderLocked: true },
+  { key: 'type', label: UNIQUE_WORD_TYPE_HEADER, track: 'minmax(5rem, 0.9fr)' },
+  { key: 'root', label: UNIQUE_WORD_ROOT_HEADER, track: 'minmax(5rem, 0.9fr)' },
+  { key: 'occurrences', label: OCCURRENCES_CHIP_LABEL, track: 'minmax(5.5rem, 1fr)' },
+  { key: 'ayahs', label: WORD_DRILLDOWN_VIEW_LABELS.ayahs, track: 'minmax(5.5rem, 1fr)' },
+  { key: 'surahs', label: WORD_DRILLDOWN_VIEW_LABELS.surahs, track: 'minmax(5.5rem, 1fr)' },
+  { key: 'missing', label: WORD_DRILLDOWN_VIEW_LABELS.missing, track: 'minmax(5.5rem, 1fr)' },
+];
 
 export interface UniqueWordsDrilldownOpenEvent {
   word: UniqueWordListItemViewModel;
@@ -80,7 +88,7 @@ export interface UniqueWordsDrilldownOpenEvent {
 @Component({
   selector: 'qd-unique-words-table',
   standalone: true,
-  imports: [DetailOverlayLinkDirective, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [DetailOverlayLinkDirective, ExplorerTableColumnSettingsComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './unique-words-table.component.html',
   styleUrl: './unique-words-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -118,10 +126,18 @@ export class UniqueWordsTableComponent {
   protected readonly loadingRowPlaceholders = Array.from({ length: 12 });
   protected readonly rowHeight = ROW_HEIGHT_DESKTOP;
   protected readonly compactRowHeight = ROW_HEIGHT_COMPACT;
-  protected readonly isMedium = signal(false);
-  protected readonly columnCount = computed(() =>
-    this.isMedium() ? UNIQUE_TABLE_MEDIUM_COLUMN_COUNT : UNIQUE_TABLE_WIDE_COLUMN_COUNT,
-  );
+  protected readonly columnSettings = new ExplorerTableColumnsController('unique-words', UNIQUE_WORDS_TABLE_COLUMNS);
+  protected readonly columnCount = this.columnSettings.visibleColumnCount;
+  protected readonly visibleColumns = this.columnSettings.visibleColumns;
+  protected readonly mobileRelationColumns = computed(() => this.visibleColumns().filter((column) =>
+    column.key === 'type' || column.key === 'root',
+  ));
+  protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
+    !['rowNumber', 'word', 'type', 'root'].includes(column.key),
+  ));
+  protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
+    .map((column) => column.key)
+    .filter((key): key is UniqueWordsColumnKey => UNIQUE_WORDS_COLUMN_ORDER.includes(key as UniqueWordsColumnKey)));
   protected readonly tableState = computed<QdDataTableState>(() => {
     if (this.loading()) return 'loading';
     if (this.status() === 'error') return 'error';
@@ -154,16 +170,6 @@ export class UniqueWordsTableComponent {
 
   constructor() {
     afterNextRender(() => {
-      if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
-        const mediumQuery = window.matchMedia(QD_BP_MEDIUM_QUERY);
-        const syncMedium = () => this.isMedium.set(mediumQuery.matches);
-        syncMedium();
-        if (typeof mediumQuery.addEventListener === 'function') {
-          mediumQuery.addEventListener('change', syncMedium);
-          this.destroyRef.onDestroy(() => mediumQuery.removeEventListener('change', syncMedium));
-        }
-      }
-
       const disconnect = syncTableScrollbarGutter(
         this.host.nativeElement,
         '--unique-words-table-scrollbar-gutter',
@@ -296,7 +302,7 @@ export class UniqueWordsTableComponent {
       rows: this.rows(),
       selectedRowId: this.selectedWordId(),
       currentColumn: this.activeColumn(),
-      columnOrder: UNIQUE_WORDS_COLUMN_ORDER,
+      columnOrder: this.keyboardColumnOrder(),
       isColumnEnabled: (row, column) => this.isColumnEnabled(row, column),
       emitColumnTarget: (row, column, source) => this.emitColumnTarget(row, column, source),
       scrollToRow: (index, direction) => this.scrollToRow(index, direction),

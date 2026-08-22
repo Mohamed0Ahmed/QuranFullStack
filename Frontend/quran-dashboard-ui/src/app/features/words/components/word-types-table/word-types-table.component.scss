@@ -49,12 +49,15 @@
 }
 
 .word-types-table__word {
-  display: block;
+  display: flex;
   inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: flex-start;
   overflow: hidden;
   font-family: var(--qd-font-quran, inherit);
   font-size: var(--qd-type-body-lg);
   line-height: var(--qd-type-body-lg-lh);
+  text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -103,57 +106,6 @@
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-caption);
   line-height: var(--qd-type-caption-lh);
-}
-
-.word-types-table__medium-disclosure,
-.word-types-table__medium-disclosure-header {
-  display: none;
-}
-
-@media (min-width: bp.$qd-bp-medium-min) and (max-width: bp.$qd-bp-medium-max) {
-  .word-types-table__header-cell--meta,
-  .word-types-table__cell--meta {
-    display: none;
-  }
-
-  .word-types-table__medium-disclosure,
-  .word-types-table__medium-disclosure-header {
-    display: block;
-  }
-
-  .word-types-table__medium-disclosure {
-    min-inline-size: 0;
-    padding-inline: var(--qd-space-2);
-  }
-
-  .word-types-table__medium-disclosure summary {
-    min-block-size: var(--qd-control-md);
-    cursor: pointer;
-    color: var(--qd-ink-body);
-    font-size: var(--qd-type-caption);
-    line-height: var(--qd-control-md);
-  }
-
-  .word-types-table__medium-disclosure-list {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    gap: var(--qd-space-1) var(--qd-space-2);
-    margin: 0;
-    padding-block: var(--qd-space-2);
-    color: var(--qd-ink-body);
-    font-size: var(--qd-type-caption);
-    line-height: var(--qd-type-caption-lh);
-  }
-
-  .word-types-table__medium-disclosure-list dt {
-    color: var(--qd-ink-muted);
-  }
-
-  .word-types-table__medium-disclosure-list dd {
-    margin: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 }
 
 @media (max-width: bp.$qd-bp-phone-max) {

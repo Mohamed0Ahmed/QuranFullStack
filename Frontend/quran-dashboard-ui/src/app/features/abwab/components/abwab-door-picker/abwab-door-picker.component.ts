@@ -74,6 +74,11 @@ export class AbwabDoorPickerComponent {
   protected readonly pickedSet = computed<ReadonlySet<number>>(() => new Set(this.pickedIds()));
   protected readonly excludedSet = computed<ReadonlySet<number>>(() => new Set(this.excludedIds()));
   protected readonly disabledSet = computed<ReadonlySet<number>>(() => new Set(this.disabledIds()));
+  protected readonly searchMatches = computed(() => {
+    const excluded = this.excludedSet();
+    const disabled = this.disabledSet();
+    return this.searchResult().matches.filter((node) => !excluded.has(node.id) && !disabled.has(node.id));
+  });
   protected readonly selectedId = computed(() => this.single() ? (this.pickedIds()[0] ?? null) : null);
   protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
     const excluded = this.excludedSet();

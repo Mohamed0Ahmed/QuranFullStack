@@ -280,13 +280,16 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
         var pageAyahs = await (
                 from ayah in _dbContext.QuranAyahs.AsNoTracking()
+                join surah in _dbContext.QuranSurahs.AsNoTracking()
+                    on ayah.SurahNumber equals surah.SurahNumber
                 where matchedAyahIds.Contains(ayah.Id)
                 orderby ayah.SurahNumber, ayah.AyahNumber
                 select new AyahMetaRow(
                     ayah.Id,
                     ayah.VerseKey,
                     ayah.SurahNumber,
-                    ayah.AyahNumber))
+                    ayah.AyahNumber,
+                    surah.NameArabic))
             .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -323,6 +326,7 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 return new WordTypeAyahMatchDto(
                     ayah.VerseKey,
                     ayah.SurahNumber,
+                    ayah.SurahNameArabic,
                     ayah.AyahNumber,
                     pageNumber,
                     matchedPositions,
@@ -534,7 +538,12 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         int? LemmaId,
         int? StemId);
 
-    private sealed record AyahMetaRow(int AyahId, string VerseKey, int SurahNumber, int AyahNumber);
+    private sealed record AyahMetaRow(
+        int AyahId,
+        string VerseKey,
+        int SurahNumber,
+        int AyahNumber,
+        string SurahNameArabic);
 
     private sealed record MatchedWordRow(int AyahId, int QuranWordId, int WordNumber);
 

@@ -20,8 +20,8 @@ import {
   WordTypesPresenceFilterComponent,
 } from '../../components/word-types-presence-filter/word-types-presence-filter.component';
 import {
-  WordTypeCountColumn,
   WordTypeCountOpenedEvent,
+  WordTypeTableFocusColumn,
   WordTypesTableComponent,
 } from '../../components/word-types-table/word-types-table.component';
 import {
@@ -68,7 +68,6 @@ import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import {
   buildWordTypesQueryParams,
-  buildWordTypesDetailScopeQuery,
   canonicalWordTypesDetailPage,
   clearWordTypesSelection,
   parseWordTypesQueryParams,
@@ -84,6 +83,10 @@ import {
   wordTypeMentionedSurahViews,
   wordTypeMissingSurahViews,
 } from './word-types-detail-panel.view-model';
+import {
+  buildWordTypeTableDetailQuery,
+  defaultWordTypeTableDetailView,
+} from './word-types-table-detail-selection';
 
 const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelectionKind> = {
   words: 'word',
@@ -284,35 +287,25 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onCountOpened(event: WordTypeCountOpenedEvent): void {
+    this.openTableDetail(event.row, event.view, event.column);
+  }
+
+  protected onRowSelected(row: WordTypeTableRowDto): void {
+    this.openTableDetail(row, defaultWordTypeTableDetailView(row), 'identity');
+  }
+
+  private openTableDetail(
+    row: WordTypeTableRowDto,
+    view: WordTypeDetailView,
+    column: WordTypeTableFocusColumn,
+  ): void {
     const scope = this.currentScope();
-    let keyChange: { word: number; contextCode: string } | { root: number } | { stem: number } | { lemma: number };
-
-    if (event.row.kind === 'word') {
-      const identity = normalizeWordTableRow(event.row);
-      keyChange = { word: event.row.tashkeelWordId, contextCode: event.row.contextCode };
-      this.detailFacade.selectRow(identity, scope, event.view);
+    if (row.kind === 'word') {
+      this.detailFacade.selectRow(normalizeWordTableRow(row), scope, view);
     } else {
-      this.detailFacade.selectGroupedRow(event.row, scope, event.view);
-      keyChange = event.row.kind === 'root'
-        ? { root: event.row.rootId }
-        : event.row.kind === 'stem'
-          ? { stem: event.row.stemId }
-          : { lemma: event.row.lemmaId };
+      this.detailFacade.selectGroupedRow(row, scope, view);
     }
-
-    this.updateQueryParams(
-      {
-        ...clearWordTypesSelection(),
-        ...buildWordTypesQueryParams({
-          ...keyChange,
-          ...buildWordTypesDetailScopeQuery({ scope }),
-          view: event.view,
-          detailPage: canonicalWordTypesDetailPage(event.view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
-          location: null,
-          column: event.row.kind === 'word' ? event.column : null,
-        }),
-      },
-    );
+    this.updateQueryParams(buildWordTypeTableDetailQuery(row, scope, view, column));
   }
 
   protected onPanelViewChange(view: WordTypeDetailView): void {
@@ -333,12 +326,12 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected clearSelection(): void {
     const selectedRow = this.selectedRow();
     const view = this.panelState().view;
-    const column = this.toCountColumn(this.listState().query.column);
+    const column = this.toFocusColumn(this.listState().query.column);
     this.detailFacade.clearSelection();
     this.updateQueryParams(clearWordTypesSelection());
 
     if (selectedRow) {
-      this.table()?.focusStatistic(selectedRow, view, column);
+      this.table()?.focusTarget(selectedRow, view, column);
       return;
     }
 
@@ -369,8 +362,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     return this.activeSummary()?.label ?? '';
   }
 
-  private toCountColumn(column: string | null): WordTypeCountColumn | null {
-    return column === 'occurrences' || column === 'ayahs' || column === 'surahs' ? column : null;
+  private toFocusColumn(column: string | null): WordTypeTableFocusColumn | null {
+    return column === 'identity' || column === 'occurrences' || column === 'ayahs' || column === 'surahs'
+      ? column
+      : null;
   }
 
   protected mentionedSurahs() {

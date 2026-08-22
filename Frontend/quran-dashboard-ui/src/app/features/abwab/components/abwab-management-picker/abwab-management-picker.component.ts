@@ -103,10 +103,7 @@ export class AbwabManagementPickerComponent {
   ));
   protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
-  protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
-    const node = this.byId().get(id);
-    return node ? [node] : [];
-  }));
+  protected readonly searchMatches = computed(() => this.searchResult().matches);
   protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {
     const ids = this.searchResult().autoExpandedIds;
     return ids.size === 0 ? NO_IDS : ids;

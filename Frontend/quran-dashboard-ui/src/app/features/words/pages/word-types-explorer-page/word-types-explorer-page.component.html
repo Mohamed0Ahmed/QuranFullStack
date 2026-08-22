@@ -134,6 +134,7 @@
         [retryLabel]="retryLabel"
         [selectedRow]="selectedRow()"
         [sort]="listState().query.sort"
+        (rowSelected)="onRowSelected($event)"
         (countOpened)="onCountOpened($event)"
         (retry)="retryList()"
         (sortChange)="onSortChange($event)"

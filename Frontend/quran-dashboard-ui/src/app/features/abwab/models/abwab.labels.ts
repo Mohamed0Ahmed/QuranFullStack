@@ -104,7 +104,6 @@ export const ABWAB_LABELS = {
   treeCollapseAll: 'طي الكل',
   treeExpandBranch: 'فتح الفرع بالكامل',
   treeCollapseBranch: 'طي الفرع بالكامل',
-  treeExpansionSearchDisabledHint: 'امسح البحث للتحكم في فتح الشجرة',
   archiveButton: 'الأرشيف',
   manageSectionsButton: 'إدارة الأقسام',
   addRootDoorButton: 'باب رئيسي جديد',
