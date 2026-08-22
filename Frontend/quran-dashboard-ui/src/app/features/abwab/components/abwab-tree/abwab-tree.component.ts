@@ -17,12 +17,14 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
 import {
   AbwabTreeContextMenuController,
   AbwabTreeMenuRequest,
 } from './abwab-tree-context-menu.controller';
 import { AbwabTreeExpansionCommands, AbwabTreeExpansionController } from './abwab-tree-expansion.controller';
+import { AbwabTreeOrderController } from './abwab-tree-order.controller';
 import {
   AbwabTreeRow,
   buildAbwabTreeBranchGuides,
@@ -43,7 +45,7 @@ const NO_IDS: ReadonlySet<number> = new Set<number>();
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabTreeComponent {
-  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
   private readonly expansion = new AbwabTreeExpansionController();
 
@@ -81,7 +83,6 @@ export class AbwabTreeComponent {
   readonly expandedIdsChanged = output<ReadonlySet<number>>();
 
   private readonly manualFocusId = signal<number | null>(null);
-  protected readonly editingId = signal<number | null>(null);
   protected readonly labels = ABWAB_LABELS;
   private readonly contextMenu = new AbwabTreeContextMenuController(
     (id) => this.manualFocusId.set(id),
@@ -111,10 +112,18 @@ export class AbwabTreeComponent {
     this.roots().forEach(walk);
     return map;
   });
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.roots()));
   protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
     flattenVisibleAbwabRows(this.roots(), this.effectiveExpandedIds()),
   );
   protected readonly branchGuidesById = computed(() => buildAbwabTreeBranchGuides(this.roots(), 6));
+  protected readonly orderEditing = new AbwabTreeOrderController(
+    this.host,
+    () => this.canReorderDoor(),
+    () => this.nodesById(),
+    () => this.orderScope(),
+    (commit) => this.orderCommitted.emit(commit),
+  );
   readonly expansionCommands = new AbwabTreeExpansionCommands(
     this.expansion,
     () => this.roots(),
@@ -138,7 +147,7 @@ export class AbwabTreeComponent {
   });
 
   protected onRowClick(id: number): void {
-    if (this.editingId() !== null || this.isUnavailable(id)) {
+    if (this.orderEditing.editingId() !== null || this.isUnavailable(id)) {
       return;
     }
     if (this.bulkMode()) {
@@ -228,6 +237,14 @@ export class AbwabTreeComponent {
     return tag === '' ? node.name : `${node.name} — ${tag}`;
   }
 
+  protected nodePath(id: number): string {
+    return this.pathsById().get(id) ?? this.nodesById().get(id)?.name ?? String(id);
+  }
+
+  protected pathAriaDescription(id: number): string {
+    return ABWAB_LABELS.doorPathAriaDescription(this.nodePath(id));
+  }
+
   protected linksAriaLabel(node: AbwabNode): string {
     return ABWAB_LABELS.rowLinksAriaLabel(node.name, node.linkCount);
   }
@@ -247,10 +264,6 @@ export class AbwabTreeComponent {
     return row.isExpanded
       ? ABWAB_LABELS.relationPickerCollapseAriaLabel(node.name)
       : ABWAB_LABELS.relationPickerExpandAriaLabel(node.name);
-  }
-
-  protected orderEditAriaLabel(node: AbwabNode): string {
-    return ABWAB_LABELS.rowOrderEditAriaLabel(node.name, this.displayOrder(node));
   }
 
   protected onRowContextMenu(event: MouseEvent, id: number): void {
@@ -292,72 +305,6 @@ export class AbwabTreeComponent {
       return;
     }
     this.toggleExpanded(row.id);
-  }
-
-  protected scopeFor(node: AbwabNode): AbwabOrderScope {
-    return node.depth === 0 && this.orderScope() === 'global' ? 'global' : 'section';
-  }
-
-  protected displayOrder(node: AbwabNode): number {
-    return this.scopeFor(node) === 'global' ? (node.globalOrderValue ?? node.orderValue) : node.orderValue;
-  }
-
-  protected onOrderClick(event: Event, id: number): void {
-    event.stopPropagation();
-    if (!this.canReorderDoor()) {
-      return;
-    }
-    this.editingId.set(id);
-    setTimeout(() => this.orderInput(id)?.focus());
-  }
-
-  private orderInput(id: number): HTMLInputElement | null {
-    return this.elementRef.nativeElement.querySelector<HTMLInputElement>(
-      `[data-testid="abwab-tree-order-input-${id}"]`,
-    );
-  }
-
-  private focusOrderChip(id: number): void {
-    setTimeout(() =>
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-testid="abwab-tree-order-${id}"]`)
-        ?.focus(),
-    );
-  }
-
-  protected onOrderKeydown(event: KeyboardEvent, id: number): void {
-    event.stopPropagation();
-    if (!this.canReorderDoor()) {
-      this.cancelOrderEdit(id);
-      return;
-    }
-    if (event.key === 'Enter') {
-      this.commitOrderEdit(id, event.target);
-      this.focusOrderChip(id);
-    } else if (event.key === 'Escape') {
-      this.cancelOrderEdit(id);
-      this.focusOrderChip(id);
-    }
-  }
-
-  protected cancelOrderEdit(id: number): void {
-    if (this.editingId() !== id) {
-      return;
-    }
-    this.editingId.set(null);
-  }
-
-  protected commitOrderEdit(id: number, target: EventTarget | null): void {
-    if (!this.canReorderDoor() || this.editingId() !== id) {
-      return;
-    }
-    this.editingId.set(null);
-    const input = target as HTMLInputElement | null;
-    const value = input ? Number(input.value) : Number.NaN;
-    const node = this.nodesById().get(id);
-    if (node && Number.isInteger(value) && value >= 1) {
-      this.orderCommitted.emit({ id, position: value, scope: this.scopeFor(node) });
-    }
   }
 
   protected onKeydown(event: KeyboardEvent): void {

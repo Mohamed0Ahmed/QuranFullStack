@@ -69,6 +69,10 @@
   gap: var(--qd-space-2);
 }
 
+.abwab-relations-modal__chip {
+  display: inline-flex;
+}
+
 .abwab-relations-modal__targets {
   margin-block-end: var(--qd-space-3);
 }

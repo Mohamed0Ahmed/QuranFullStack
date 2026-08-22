@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 
 export interface AbwabCardsCrumb {
-  readonly id: number | null;
+  readonly id: number;
   readonly name: string;
 }
 
@@ -37,6 +38,16 @@ export class AbwabCardsComponent {
 
   protected get allDoorsCrumbLabel(): string {
     return ABWAB_LABELS.allDoorsTab;
+  }
+
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.roots()));
+
+  protected nodePath(id: number, fallback: string): string {
+    return this.pathsById().get(id) ?? fallback;
+  }
+
+  protected pathAriaDescription(id: number, fallback: string): string {
+    return ABWAB_LABELS.doorPathAriaDescription(this.nodePath(id, fallback));
   }
 
   private readonly path = computed<readonly AbwabNode[]>(() => {

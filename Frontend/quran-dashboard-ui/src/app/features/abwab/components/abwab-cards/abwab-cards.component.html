@@ -13,14 +13,14 @@
       {{ allDoorsCrumbLabel }}
     </button>
     @for (crumb of crumbs(); track crumb.id) {
-      <span class="abwab-cards__crumb-sep" aria-hidden="true">‹</span>
+      <span class="abwab-cards__crumb-sep" aria-hidden="true">›</span>
       <button
         type="button"
         qdAction="tertiary"
         size="sm"
         class="abwab-cards__crumb qd-truncate"
         [class.abwab-cards__crumb--current]="$last"
-        [title]="crumb.name"
+        [title]="nodePath(crumb.id, crumb.name)"
         data-testid="abwab-cards-crumb"
         (click)="onCrumbClick(crumb.id)"
       >
@@ -42,6 +42,8 @@
             [class.abwab-cards__card--selected]="selectedId() === node.id"
             [class.abwab-cards__card--checked]="bulkSelectedIds().has(node.id)"
             [attr.aria-label]="node.name"
+            [attr.aria-description]="pathAriaDescription(node.id, node.name)"
+            [attr.title]="nodePath(node.id, node.name)"
             [attr.data-testid]="'abwab-card-' + node.id"
             (click)="onCardClick(node)"
           >
@@ -50,7 +52,7 @@
               <span
                 class="abwab-cards__name qd-truncate rounded-qd-sm px-qd-4"
                 [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
-                [title]="node.name"
+                [title]="nodePath(node.id, node.name)"
               >{{ node.name }}</span>
             </span>
             <span

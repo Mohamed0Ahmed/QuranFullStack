@@ -287,7 +287,7 @@ export const ABWAB_LABELS = {
   relationsLoading: 'يتم تحميل العلاقات…',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
   relationDeleteAriaLabel: (doorName: string): string => `حذف العلاقة مع «${doorName}»`,
-  relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  doorRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
   relationDeleteConfirmTitle: 'حذف العلاقة',
   relationDeleteConfirmBody: (anchorName: string, otherName: string, group: AbwabRelationGroupKey): string => {
     switch (group) {
@@ -349,10 +349,19 @@ export const ABWAB_LABELS = {
   relationAddButton: (count: number): string =>
     count <= 1 ? 'أضف العلاقة' : `أضف ${countPhrase(count, RELATION_FORMS)}`,
   relationsCloseButton: 'إغلاق',
+  doorPathAriaDescription: (path: string): string => `مسار الباب: ${path}`,
 
   inclusionsOp: 'إدارة مصادر الباب',
   inclusionsModalTitle: 'إدارة مصادر الباب',
   inclusionsModalDescription: 'اختر بابًا أو أكثر لإضافة محتواها الحالي إلى الباب المستهدف في عملية واحدة.',
+  inclusionsOverviewDescription: (doorName: string): string =>
+    `توضح القائمتان اتجاه مشاركة المحتوى بالنسبة إلى «${doorName}». راجع الفرق بين المصدر والمستفيد قبل إجراء أي تغيير.`,
+  inclusionsSourcesDescription: (doorName: string): string =>
+    `هي الأبواب التي يستفيد «${doorName}» من محتواها. يظهر محتوى كل باب مصدر داخل الباب المستهدف، مع بقاء باب المصدر ومحتواه مستقلين. ويمكن فصل المصدر لاحقًا دون حذف أي باب.`,
+  inclusionsConsumersDescription: (doorName: string): string =>
+    `هي الأبواب التي اختارت «${doorName}» مصدرًا لها، ولذلك يصل إليها محتواه المتزامن. يظل «${doorName}» ومحتواه الأصلي دون تغيير، وتُدار كل استفادة من بابها المستفيد.`,
+  inclusionsStartAddButton: 'إضافة أبواب مصدر',
+  inclusionsBackButton: 'رجوع إلى المصادر',
   inclusionsArchivedTargetDescription: 'هذا الباب مؤرشف. يمكنك مراجعة مصادره فقط، ويظل المحتوى المتزامن محفوظًا.',
   inclusionsTargetLabel: 'الباب المستهدف',
   inclusionsSourcesHeading: 'أبواب المصدر',

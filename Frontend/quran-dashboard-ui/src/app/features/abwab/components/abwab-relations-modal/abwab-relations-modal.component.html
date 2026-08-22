@@ -17,14 +17,16 @@
       </span>
     }
 
-    <p qdModalShellHeaderSupport class="abwab-relations-modal__desc">{{ descriptionText }}</p>
+    <p qdModalShellHeaderSupport class="abwab-relations-modal__desc">
+      {{ presentation.description(view(), canDeleteRelation()) }}
+    </p>
 
     @if (errorMessage(); as error) {
       <qd-error-state
         [severity]="status() === 'error' ? 'read' : 'write'"
         [reserve]="true"
         [message]="error"
-        [actionLabel]="status() === 'error' ? retryLabel : null"
+        [actionLabel]="status() === 'error' ? presentation.retryLabel : null"
         testId="qd-state-error"
         actionTestId="qd-state-action"
         data-testid="abwab-relations-modal-error"
@@ -39,34 +41,43 @@
             class="abwab-relations-modal__loading"
             [count]="3"
             rowTemplate="0.5rem 6rem 1fr"
-            [loadingLabel]="loadingLabel"
+            [loadingLabel]="presentation.loadingLabel"
             data-testid="abwab-relations-modal-loading"
           />
         } @else if (status() === 'ready') {
           @if (groups().length === 0) {
-            <qd-empty-state [message]="emptyText" testId="qd-state-empty" data-testid="abwab-relations-modal-empty" />
+            <qd-empty-state
+              [message]="presentation.empty(canCreateRelation())"
+              testId="qd-state-empty"
+              data-testid="abwab-relations-modal-empty"
+            />
           } @else {
             @for (group of groups(); track group.key) {
               <section class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">
                 <h3>
-                  <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + groupDotKind(group.key)"></span>
-                  {{ groupLabel(group.key) }}
+                  <span
+                    class="abwab-relations-modal__dot"
+                    [class]="'abwab-relations-modal__dot--' + presentation.groupDotKind(group.key)"
+                  ></span>
+                  {{ presentation.groupLabel(group.key) }}
                   <span class="abwab-relations-modal__group-count">{{ group.relations.length }}</span>
                 </h3>
                 <div class="abwab-relations-modal__chips">
                   @for (relation of group.relations; track relation.id) {
-                    <qd-chip
-                      [removable]="canDeleteRelation()"
-                      [removeAriaLabel]="deleteAriaLabel(relation.otherDoorName)"
-                      [labelClickable]="canDeleteRelation()"
-                      [labelAriaLabel]="revealAriaLabel(relation.otherDoorName)"
-                      [ariaLabel]="!canDeleteRelation() ? revealAriaLabel(relation.otherDoorName) : null"
-                      (remove)="remove(relation)"
-                      (labelClick)="requestReveal(relation.otherDoorId)"
-                      (chipClick)="requestReveal(relation.otherDoorId)"
-                    >
-                      {{ relation.otherDoorName }}
-                    </qd-chip>
+                    <span class="abwab-relations-modal__chip" [title]="doorPath(relation.otherDoorId, relation.otherDoorName)">
+                      <qd-chip
+                        [removable]="canDeleteRelation()"
+                        [removeAriaLabel]="presentation.deleteAriaLabel(relation.otherDoorName)"
+                        [labelClickable]="canDeleteRelation()"
+                        [labelAriaLabel]="presentation.revealAriaLabel(relation.otherDoorName)"
+                        [ariaLabel]="!canDeleteRelation() ? presentation.revealAriaLabel(relation.otherDoorName) : null"
+                        (remove)="remove(relation)"
+                        (labelClick)="requestReveal(relation.otherDoorId)"
+                        (chipClick)="requestReveal(relation.otherDoorId)"
+                      >
+                        {{ relation.otherDoorName }}
+                      </qd-chip>
+                    </span>
                   }
                 </div>
               </section>
@@ -76,17 +87,17 @@
       </div>
     } @else {
       <section class="abwab-relations-modal__add" data-testid="abwab-relations-modal-add-view">
-        <h3 class="abwab-relations-modal__add-title">{{ addTitle }}</h3>
+        <h3 class="abwab-relations-modal__add-title">{{ presentation.addTitle }}</h3>
 
         @if (anchorPickMode()) {
           <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
             @for (target of bulkTargets(); track target.id) {
-              <span class="abwab-relations-modal__target">{{ target.name }}</span>
+              <span class="abwab-relations-modal__target" [title]="doorPath(target.id, target.name)">{{ target.name }}</span>
             }
           </div>
         }
 
-        <qd-tabs [ariaLabel]="typeTabsAriaLabel" class="abwab-relations-modal__types">
+        <qd-tabs [ariaLabel]="presentation.typeTabsAriaLabel" class="abwab-relations-modal__types">
           @for (kind of typeOptions; track kind) {
             <button
               type="button"
@@ -96,14 +107,14 @@
               (click)="pickType(kind)"
             >
               <span class="abwab-relations-modal__dot" [class]="'abwab-relations-modal__dot--' + kind"></span>
-              {{ typeLabel(kind) }}
+              {{ presentation.typeLabel(kind) }}
             </button>
           }
         </qd-tabs>
 
         @if (directionRowVisible()) {
           <div class="abwab-relations-modal__direction" data-testid="abwab-relations-modal-direction">
-            <span>{{ directionLabel }}</span>
+            <span>{{ presentation.directionLabel }}</span>
             <div class="abwab-relations-modal__pill">
               <button
                 type="button"
@@ -132,7 +143,7 @@
 
         <div class="abwab-relations-modal__picker">
           @if (anchorPickMode()) {
-            <p class="abwab-relations-modal__picker-hint">{{ bulkAnchorHint }}</p>
+            <p class="abwab-relations-modal__picker-hint">{{ presentation.bulkAnchorHint }}</p>
           }
           <qd-abwab-door-picker
             [nodes]="liveRoots()"
@@ -140,15 +151,15 @@
             [excludedIds]="excludedIdList()"
             [excludedTag]="excludedTagLabel()"
             [disabledIds]="linkedIdList()"
-            [disabledTag]="alreadyLinkedLabel"
-            [emptyMessage]="pickerEmptyLabel"
+            [disabledTag]="presentation.alreadyLinkedLabel"
+            [emptyMessage]="presentation.pickerEmptyLabel"
             [single]="anchorPickMode()"
             [searchPlaceholder]="searchPlaceholder()"
             testIdPrefix="abwab-relations-modal"
             (toggled)="togglePicked($event)"
           />
           <p class="abwab-relations-modal__selected" aria-live="polite" data-testid="abwab-relations-modal-selected">
-            {{ pickedIds().size === 0 ? noneSelectedLabel : selectedSummary() }}
+            {{ pickedIds().size === 0 ? presentation.noneSelectedLabel : selectedSummary() }}
           </p>
         </div>
       </section>
@@ -157,7 +168,7 @@
     @if (view() === 'overview' && canCreateRelation()) {
       <div qdModalShellFooter class="abwab-relations-modal__foot">
         <button type="button" qdAction="primary" data-testid="abwab-relations-modal-start-add" (click)="openAdd()">
-          {{ startAddLabel }}
+          {{ presentation.startAddLabel }}
         </button>
       </div>
     } @else if (view() === 'add') {
@@ -173,11 +184,11 @@
         </button>
         @if (anchorPickMode()) {
           <button type="button" qdAction="tertiary" data-testid="abwab-relations-modal-close" (click)="close()">
-            {{ closeLabel }}
+            {{ presentation.closeLabel }}
           </button>
         } @else {
           <button type="button" qdAction="tertiary" data-testid="abwab-relations-modal-back" (click)="backToOverview()">
-            {{ backLabel }}
+            {{ presentation.backLabel }}
           </button>
         }
       </div>
@@ -188,16 +199,16 @@
     <qd-confirm-dialog
       testIdPrefix="abwab-relations-delete-confirm"
       [open]="true"
-      [titleText]="deleteConfirmTitle"
-      [confirmLabel]="deleteConfirmLabel"
-      [cancelLabel]="cancelLabel"
+      [titleText]="presentation.deleteConfirmTitle"
+      [confirmLabel]="presentation.deleteConfirmLabel"
+      [cancelLabel]="presentation.cancelLabel"
       tone="danger"
       [busy]="deleteBusy()"
       (confirmed)="confirmRemove()"
       (cancelled)="cancelRemove()"
     >
-      <p>{{ deleteConfirmBody(relation) }}</p>
-      <p>{{ deleteConfirmSides }}</p>
+      <p>{{ presentation.deleteConfirmBody(anchorDoorName(), relation) }}</p>
+      <p>{{ presentation.deleteConfirmSides }}</p>
       @if (deleteError(); as message) {
         <qd-error-state severity="write" [message]="message" testId="qd-state-error" data-testid="abwab-relations-delete-confirm-error" />
       }

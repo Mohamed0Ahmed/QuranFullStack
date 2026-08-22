@@ -39,6 +39,8 @@
         [attr.aria-selected]="isSelected(node.id)"
         [attr.aria-disabled]="isUnavailable(node.id) && !row.hasChildren ? true : null"
         [attr.aria-label]="rowAriaLabel(node)"
+        [attr.aria-description]="pathAriaDescription(node.id)"
+        [attr.title]="nodePath(node.id)"
         [attr.tabindex]="rovingId() === node.id ? 0 : -1"
         [style.--at-d]="node.depth"
         [attr.data-qd-hierarchy-id]="node.id"
@@ -70,27 +72,27 @@
         </button>
 
         @if (canReorderDoor()) {
-          @if (editingId() === node.id) {
+          @if (orderEditing.editingId() === node.id) {
             <input
               type="number"
               min="1"
               class="a-order-input"
-              [value]="displayOrder(node)"
+              [value]="orderEditing.displayOrder(node)"
               [attr.data-testid]="'abwab-tree-order-input-' + node.id"
               (click)="$event.stopPropagation()"
-              (keydown)="onOrderKeydown($event, node.id)"
-              (blur)="cancelOrderEdit(node.id)"
+              (keydown)="orderEditing.onKeydown($event, node.id)"
+              (blur)="orderEditing.cancel(node.id)"
             />
           } @else {
             <button
               type="button"
               class="a-order qd-chip qd-is-selected"
-              [attr.aria-label]="orderEditAriaLabel(node)"
+              [attr.aria-label]="orderEditing.ariaLabel(node)"
               [attr.data-testid]="'abwab-tree-order-' + node.id"
               [attr.tabindex]="rovingId() === node.id ? 0 : -1"
-              (click)="onOrderClick($event, node.id)"
+              (click)="orderEditing.start($event, node.id)"
             >
-              {{ displayOrder(node) }}
+              {{ orderEditing.displayOrder(node) }}
             </button>
           }
         } @else {
@@ -98,11 +100,11 @@
             class="a-order qd-chip qd-chip--static qd-is-selected"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
           >
-            {{ displayOrder(node) }}
+            {{ orderEditing.displayOrder(node) }}
           </span>
         }
 
-        <span class="a-name" [title]="node.name">
+        <span class="a-name" [title]="nodePath(node.id)">
           <span
             class="a-name-text inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
             [class.qd-truncate]="!selectionMode()"

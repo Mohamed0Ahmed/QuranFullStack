@@ -67,6 +67,7 @@
 <qd-abwab-inclusions-modal
   [liveRoots]="liveRoots()"
   (closed)="inclusionsModalClosed.emit()"
+  (revealRequested)="revealRequested.emit($event)"
 />
 
 <qd-confirm-dialog
