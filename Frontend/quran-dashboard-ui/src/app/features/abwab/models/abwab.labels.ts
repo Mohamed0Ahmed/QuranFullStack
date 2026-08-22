@@ -92,9 +92,10 @@ export const ABWAB_LABELS = {
   searchMatchCount: (count: number): string => countPhrase(count, RESULT_FORMS),
   searchResultsAriaLabel: 'نتائج البحث في الأبواب',
   searchResultAriaLabel: (doorName: string): string => `الانتقال إلى باب «${doorName}»`,
-  searchScopeHintTree: 'يُبرز المطابق مع بقاء التسلسل كاملًا',
-  searchScopeHintCards: 'يرشّح المستوى المعروض فقط',
-  searchScopeHintArchive: 'يرشّح المسارات المؤرشفة المطابقة',
+  searchScopeHintTree: 'يبحث في أسماء الأبواب وأسمائها البديلة',
+  searchScopeHintCards: 'يبحث في أسماء الأبواب وأسمائها البديلة',
+  searchScopeHintArchive: 'يبحث في أسماء الأبواب المؤرشفة وأسمائها البديلة',
+  hideUnrelatedRootsLabel: 'إخفاء الأبواب الرئيسية بلا نتائج',
   viewToggleTree: 'شجرة',
   viewToggleCards: 'بطاقات',
   viewToggleAriaLabel: 'طريقة العرض',
@@ -281,12 +282,12 @@ export const ABWAB_LABELS = {
   relationsModalTitle: (doorName: string): string => `علاقات «${doorName}»`,
   relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
   relationsReadOnlyDescription: 'اختر بابًا مرتبطًا للانتقال إليه في الشجرة.',
-  relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
+  relationsEmpty: 'لا توجد علاقات لهذا الباب.',
   relationsReadOnlyEmpty: 'لا توجد علاقات لهذا الباب.',
   relationsLoading: 'يتم تحميل العلاقات…',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
   relationDeleteAriaLabel: (doorName: string): string => `حذف العلاقة مع «${doorName}»`,
-  relationRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
+  doorRevealAriaLabel: (doorName: string): string => `إظهار «${doorName}» في الشجرة`,
   relationDeleteConfirmTitle: 'حذف العلاقة',
   relationDeleteConfirmBody: (anchorName: string, otherName: string, group: AbwabRelationGroupKey): string => {
     switch (group) {
@@ -323,6 +324,9 @@ export const ABWAB_LABELS = {
   relationGroupLessComprehensive: 'أبواب أقل شمولية',
 
   relationAddTitle: 'إضافة علاقة جديدة',
+  relationAddDescription: 'اختر الباب أو الأبواب، ثم حدد نوع العلاقة واتجاه الشمولية إن لزم.',
+  relationStartAddButton: 'أضف علاقة لهذا الباب',
+  relationBackButton: 'رجوع إلى العلاقات',
   relationTypeTabsAriaLabel: 'نوع العلاقة',
   relationTypeSimilarity: 'تشابه',
   relationTypeOpposition: 'تضاد',
@@ -345,10 +349,19 @@ export const ABWAB_LABELS = {
   relationAddButton: (count: number): string =>
     count <= 1 ? 'أضف العلاقة' : `أضف ${countPhrase(count, RELATION_FORMS)}`,
   relationsCloseButton: 'إغلاق',
+  doorPathAriaDescription: (path: string): string => `مسار الباب: ${path}`,
 
   inclusionsOp: 'إدارة مصادر الباب',
   inclusionsModalTitle: 'إدارة مصادر الباب',
   inclusionsModalDescription: 'اختر بابًا أو أكثر لإضافة محتواها الحالي إلى الباب المستهدف في عملية واحدة.',
+  inclusionsOverviewDescription: (doorName: string): string =>
+    `توضح القائمتان اتجاه مشاركة المحتوى بالنسبة إلى «${doorName}». راجع الفرق بين المصدر والمستفيد قبل إجراء أي تغيير.`,
+  inclusionsSourcesDescription: (doorName: string): string =>
+    `هي الأبواب التي يستفيد «${doorName}» من محتواها. يظهر محتوى كل باب مصدر داخل الباب المستهدف، مع بقاء باب المصدر ومحتواه مستقلين. ويمكن فصل المصدر لاحقًا دون حذف أي باب.`,
+  inclusionsConsumersDescription: (doorName: string): string =>
+    `هي الأبواب التي اختارت «${doorName}» مصدرًا لها، ولذلك يصل إليها محتواه المتزامن. يظل «${doorName}» ومحتواه الأصلي دون تغيير، وتُدار كل استفادة من بابها المستفيد.`,
+  inclusionsStartAddButton: 'إضافة أبواب مصدر',
+  inclusionsBackButton: 'رجوع إلى المصادر',
   inclusionsArchivedTargetDescription: 'هذا الباب مؤرشف. يمكنك مراجعة مصادره فقط، ويظل المحتوى المتزامن محفوظًا.',
   inclusionsTargetLabel: 'الباب المستهدف',
   inclusionsSourcesHeading: 'أبواب المصدر',

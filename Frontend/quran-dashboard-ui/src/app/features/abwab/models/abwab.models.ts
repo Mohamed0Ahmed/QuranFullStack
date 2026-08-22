@@ -168,6 +168,7 @@ export const ABWAB_QUERY_KEYS = {
   door: 'door',
   card: 'card',
   q: 'q',
+  hideUnrelatedRoots: 'hideUnrelatedRoots',
   modal: 'modal',
 } as const;
 
@@ -178,6 +179,7 @@ export interface AbwabQueryState {
   readonly door: number | null;
   readonly card: number | null;
   readonly q: string;
+  readonly hideUnrelatedRoots: boolean;
   readonly modal: AbwabModalState | null;
 }
 
@@ -188,5 +190,6 @@ export const ABWAB_QUERY_DEFAULTS: AbwabQueryState = {
   door: null,
   card: null,
   q: '',
+  hideUnrelatedRoots: false,
   modal: null,
 };

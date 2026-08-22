@@ -26,6 +26,8 @@ export class AbwabArchiveViewComponent {
   readonly roots = input<readonly AbwabNode[]>([]);
   readonly ariaLabel = input('');
   readonly canRestoreDoor = input(false);
+  readonly matchedIds = input<ReadonlySet<number>>(new Set());
+  readonly searchExpandedIds = input<ReadonlySet<number>>(new Set());
 
   readonly restoreRequested = output<number>();
   readonly inclusionsRequested = output<number>();
@@ -48,9 +50,13 @@ export class AbwabArchiveViewComponent {
     return map;
   });
 
-  protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
-    flattenVisibleAbwabRows(this.roots(), this.expandedIds()),
-  );
+  protected readonly visibleRows = computed<AbwabTreeRow[]>(() => {
+    const searchExpandedIds = this.searchExpandedIds();
+    const expandedIds = searchExpandedIds.size === 0
+      ? this.expandedIds()
+      : new Set([...this.expandedIds(), ...searchExpandedIds]);
+    return flattenVisibleAbwabRows(this.roots(), expandedIds);
+  });
 
   protected readonly rovingId = computed(() => {
     const rows = this.visibleRows();

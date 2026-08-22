@@ -386,11 +386,6 @@ export class AbwabPageOverlaysController {
     return id === null ? '' : (this.byId().get(id)?.name ?? '');
   });
 
-  readonly relationsAnchorCount = computed(() => {
-    const id = this.relationsAnchorId();
-    return id === null ? 0 : (this.byId().get(id)?.relationCount ?? 0);
-  });
-
   readonly relationsBulkTargets = computed(() => {
     const byId = this.byId();
     return Array.from(this.selection.bulkSet().keys(), (id) => ({

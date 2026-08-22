@@ -55,6 +55,10 @@ export class AbwabPageInteractionsController {
     this.updateQueryParams(buildAbwabQueryParams({ q }), true);
   }
 
+  onHideUnrelatedRootsChanged(hideUnrelatedRoots: boolean): void {
+    this.updateQueryParams(buildAbwabQueryParams({ hideUnrelatedRoots }), true);
+  }
+
   onCardDrilled(id: number): void {
     this.updateQueryParams(buildAbwabQueryParams({ card: id }));
   }

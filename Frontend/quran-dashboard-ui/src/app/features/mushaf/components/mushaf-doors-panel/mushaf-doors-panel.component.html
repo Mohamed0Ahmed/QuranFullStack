@@ -35,7 +35,9 @@
         [searchQuery]="searchQuery()"
         [searchMatchCount]="matchedIds().size"
         [searchResults]="searchMatches()"
+        [hideUnrelatedRoots]="hideUnrelatedRoots()"
         (searchQueryChanged)="searchQuery.set($event)"
+        (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
         (searchResultSelected)="revealDoor($event)"
       />
       @if (tree.isLoading() && !tree.snapshot()) {
@@ -57,10 +59,12 @@
         />
       } @else if (tree.isEmpty()) {
         <qd-empty-state message="لا توجد أبواب متاحة حاليًا." testId="mushaf-doors-tree-empty" />
+      } @else if (displayRoots().length === 0) {
+        <qd-empty-state [message]="searchEmptyMessage()" testId="mushaf-doors-tree-empty" />
       } @else {
         <div class="mushaf-doors-panel__tree">
           <qd-abwab-tree
-            [roots]="liveRoots()"
+            [roots]="displayRoots()"
             ariaLabel="اختر أبوابًا لتمييزها في المصحف"
             [bulkMode]="true"
             [bulkSelectedIds]="highlights.draftDoorIds()"
@@ -182,7 +186,6 @@
     [open]="true"
     [anchorDoorId]="door.id"
     [anchorDoorName]="door.name"
-    [anchorRelationCount]="door.relationCount"
     [anchorPickMode]="false"
     [bulkTargets]="[]"
     [liveRoots]="liveRoots()"

@@ -2,11 +2,12 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 
 export interface AbwabCardsCrumb {
-  readonly id: number | null;
+  readonly id: number;
   readonly name: string;
 }
 
@@ -26,8 +27,9 @@ export class AbwabCardsComponent {
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
+  readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly isFiltering = input(false);
-  readonly visibleIds = input<ReadonlySet<number>>(new Set());
+  readonly hideUnrelatedRoots = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -36,6 +38,16 @@ export class AbwabCardsComponent {
 
   protected get allDoorsCrumbLabel(): string {
     return ABWAB_LABELS.allDoorsTab;
+  }
+
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.roots()));
+
+  protected nodePath(id: number, fallback: string): string {
+    return this.pathsById().get(id) ?? fallback;
+  }
+
+  protected pathAriaDescription(id: number, fallback: string): string {
+    return ABWAB_LABELS.doorPathAriaDescription(this.nodePath(id, fallback));
   }
 
   private readonly path = computed<readonly AbwabNode[]>(() => {
@@ -53,6 +65,10 @@ export class AbwabCardsComponent {
       chain.unshift(current);
       current = current.parentId !== null ? this.byId().get(current.parentId) : undefined;
     }
+    const rootId = chain[0]?.id;
+    if (rootId === undefined || !this.roots().some((root) => root.id === rootId)) {
+      return [];
+    }
     return chain;
   });
 
@@ -65,17 +81,10 @@ export class AbwabCardsComponent {
     return path.length > 0 ? path[path.length - 1].children : this.roots();
   });
 
-  protected readonly visibleLevel = computed<readonly AbwabNode[]>(() => {
-    const level = this.level();
-    if (!this.isFiltering()) {
-      return level;
-    }
-    const visibleIds = this.visibleIds();
-    return level.filter((node) => visibleIds.has(node.id));
-  });
+  protected readonly visibleLevel = computed<readonly AbwabNode[]>(() => this.level());
 
   protected readonly emptyStateMessage = computed<string>(() =>
-    this.isFiltering() && this.level().length > 0
+    this.isFiltering() && this.hideUnrelatedRoots() && this.roots().length === 0
       ? ABWAB_LABELS.noSearchMatchesMessage
       : ABWAB_LABELS.emptyTreeMessage,
   );
@@ -98,11 +107,6 @@ export class AbwabCardsComponent {
     if (node.children.length > 0) {
       this.drilled.emit(node.id);
     }
-  }
-
-  protected onCheckboxClick(event: Event, id: number): void {
-    event.stopPropagation();
-    this.bulkToggled.emit(id);
   }
 
   protected onCrumbClick(id: number | null): void {

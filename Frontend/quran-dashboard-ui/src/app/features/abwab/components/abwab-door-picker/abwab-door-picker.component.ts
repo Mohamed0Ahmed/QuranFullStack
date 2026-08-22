@@ -1,36 +1,24 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
 
-import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { searchAbwabNodes } from '../../state/abwab-tree-search';
+import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
+import { AbwabTreeComponent } from '../abwab-tree/abwab-tree.component';
 
 export type AbwabDoorPickerStatus = 'ready' | 'loading' | 'error' | 'empty';
 
-let nextPickerId = 0;
-
-interface AbwabDoorPickerRow {
-  readonly node: AbwabNode;
-  readonly depth: number;
-  readonly hasChildren: boolean;
-  readonly isExpanded: boolean;
-  readonly isDisabled: boolean;
-  readonly isExcluded: boolean;
-}
-
-function subtreeMatches(node: AbwabNode, query: string): boolean {
-  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
-}
+const NO_IDS: ReadonlySet<number> = new Set<number>();
 
 @Component({
   selector: 'qd-abwab-door-picker',
   standalone: true,
   imports: [
-    QdActionDirective,
-    QdControlDirective,
+    AbwabSearchControlsComponent,
+    AbwabTreeComponent,
     QdSkeletonRowsComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -56,135 +44,74 @@ export class AbwabDoorPickerComponent {
   readonly toggled = output<number>();
   readonly retry = output<void>();
 
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly searchControls = viewChild(AbwabSearchControlsComponent);
 
   protected readonly searchQuery = signal('');
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
-  private readonly collapsedExcludedIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly hideUnrelatedRoots = signal(false);
+  private readonly expandedIds = signal<ReadonlySet<number>>(NO_IDS);
+  protected readonly labels = ABWAB_LABELS;
 
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get noMatchesLabel(): string { return ABWAB_LABELS.pickerNoMatches; }
-  protected get linksLabel(): string { return ABWAB_LABELS.rowHeaderLinks; }
-  protected get directChildrenLabel(): string { return ABWAB_LABELS.rowHeaderDirect; }
-  protected get allDescendantsLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
-  protected get depthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
-  protected get relationsLabel(): string { return ABWAB_LABELS.relationsFlagLabel; }
-
-  protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
 
   protected readonly doorsErrorMessage = computed(() => (this.status() === 'error' ? this.errorMessage() : ''));
-
-  protected readonly searchFoundNothing = computed(
-    () => this.searchQuery().trim() !== '' && this.nodes().length > 0,
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.nodes(),
+    this.searchQuery(),
+    { hideUnrelatedRoots: this.hideUnrelatedRoots() },
+  ));
+  protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
+  protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
+  protected readonly searchExpandedIds = computed(() => this.searchResult().autoExpandedIds);
+  protected readonly searchMatchCount = computed(() => this.searchResult().matchedIds.size);
+  protected readonly searchFoundNothing = computed(() =>
+    this.searchResult().isFiltering
+    && this.hideUnrelatedRoots()
+    && this.nodes().length > 0
+    && this.searchResult().displayRoots.length === 0,
   );
-
-  private readonly pickedSet = computed(() => new Set(this.pickedIds()));
-
-  protected readonly rows = computed<readonly AbwabDoorPickerRow[]>(() => {
-    const query = this.searchQuery().trim();
-    const excluded = new Set(this.excludedIds());
-    const disabled = new Set(this.disabledIds());
-    const expanded = this.expandedIds();
-    const collapsedExcluded = this.collapsedExcludedIds();
-    const rows: AbwabDoorPickerRow[] = [];
-
-    const walk = (node: AbwabNode, depth: number): void => {
-      if (query !== '' && !subtreeMatches(node, query)) {
-        return;
-      }
-      const hasChildren = node.children.length > 0;
-      const isExcluded = excluded.has(node.id);
-      const defaultExpanded = isExcluded ? !collapsedExcluded.has(node.id) : expanded.has(node.id);
-      const isExpanded = defaultExpanded || (query !== '' && hasChildren);
-      rows.push({ node, depth, hasChildren, isExpanded, isDisabled: disabled.has(node.id), isExcluded });
-      if (isExpanded) {
-        node.children.forEach((child) => walk(child, depth + 1));
-      }
+  protected readonly pickedSet = computed<ReadonlySet<number>>(() => new Set(this.pickedIds()));
+  protected readonly excludedSet = computed<ReadonlySet<number>>(() => new Set(this.excludedIds()));
+  protected readonly disabledSet = computed<ReadonlySet<number>>(() => new Set(this.disabledIds()));
+  protected readonly selectedId = computed(() => this.single() ? (this.pickedIds()[0] ?? null) : null);
+  protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+    const excluded = this.excludedSet();
+    if (excluded.size === 0) {
+      return this.expandedIds();
+    }
+    const byId = new Map<number, AbwabNode>();
+    const visit = (node: AbwabNode): void => {
+      byId.set(node.id, node);
+      node.children.forEach(visit);
     };
-
-    this.nodes().forEach((root) => walk(root, 0));
-    return rows;
+    this.nodes().forEach(visit);
+    const next = new Set(this.expandedIds());
+    for (const id of excluded) {
+      let current = byId.get(id)?.parentId ?? null;
+      while (current !== null) {
+        next.add(current);
+        current = byId.get(current)?.parentId ?? null;
+      }
+    }
+    return next;
   });
 
   focusSearch(): void {
-    this.searchInput()?.nativeElement.focus();
+    this.searchControls()?.focusInput();
   }
 
-  protected isPicked(doorId: number): boolean {
-    return this.pickedSet().has(doorId);
+  protected toggle(doorId: number): void {
+    this.toggled.emit(doorId);
   }
 
-  protected rowAriaLabel(row: AbwabDoorPickerRow): string {
-    const tag = this.disabledTag();
-    return row.isDisabled && tag !== '' ? `${row.node.name} — ${tag}` : row.node.name;
-  }
-
-  protected excludedRowAriaLabel(row: AbwabDoorPickerRow): string | null {
-    const tag = this.excludedTag();
-    if (!row.isExcluded) {
-      return null;
-    }
-    return tag === '' ? row.node.name : `${row.node.name} — ${tag}`;
-  }
-
-  protected linksAriaLabel(node: AbwabNode): string {
-    return ABWAB_LABELS.rowLinksAriaLabel(node.name, node.linkCount);
-  }
-
-  protected childCountAriaLabel(count: number): string {
-    return ABWAB_LABELS.rowChildCountAriaLabel(count);
-  }
-
-  protected descendantCountAriaLabel(count: number): string {
-    return ABWAB_LABELS.rowDescendantCountAriaLabel(count);
-  }
-
-  protected depthAriaLabel(depth: number): string {
-    return ABWAB_LABELS.rowDepthAriaLabel(depth);
-  }
-
-  protected relationsAriaLabel(node: AbwabNode): string {
-    return ABWAB_LABELS.rowRelationsAriaLabel(node.name, node.relationCount);
-  }
-
-  protected expandAriaLabel(row: AbwabDoorPickerRow): string {
-    return row.isExpanded
-      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
-  }
-
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-  }
-
-  protected toggleExpanded(event: Event, row: AbwabDoorPickerRow): void {
-    event.stopPropagation();
-    if (row.isExcluded) {
-      const next = new Set(this.collapsedExcludedIds());
-      if (!next.delete(row.node.id)) {
-        next.add(row.node.id);
-      }
-      this.collapsedExcludedIds.set(next);
-      return;
-    }
-    const next = new Set(this.expandedIds());
-    if (!next.delete(row.node.id)) {
-      next.add(row.node.id);
-    }
-    this.expandedIds.set(next);
-  }
-
-  protected togglePicked(row: AbwabDoorPickerRow): void {
-    if (row.isDisabled || row.isExcluded) {
-      return;
-    }
-    this.toggled.emit(row.node.id);
+  protected rememberExpanded(ids: ReadonlySet<number>): void {
+    this.expandedIds.set(ids);
   }
 
   reset(): void {
     this.searchQuery.set('');
-    this.expandedIds.set(new Set());
-    this.collapsedExcludedIds.set(new Set());
+    this.hideUnrelatedRoots.set(false);
+    this.expandedIds.set(NO_IDS);
   }
 }

@@ -1,28 +1,15 @@
 <div class="abwab-toolbar">
   <div class="abwab-toolbar__controls qd-toolbar">
     <div class="abwab-toolbar__search qd-toolbar__filters">
-      <qd-form-field
-        class="abwab-toolbar__search-field"
-        [label]="searchLabel"
+      <qd-abwab-search-controls
+        [query]="searchQuery()"
+        [matchCount]="searchMatchCount()"
+        [hideUnrelatedRoots]="hideUnrelatedRoots()"
         [helper]="searchScopeHint()"
-      >
-        <input
-          qdControl
-          type="search"
-          [placeholder]="searchPlaceholder"
-          [value]="searchDraft()"
-          data-testid="abwab-toolbar-search"
-          (input)="onSearchInput($event)"
-        />
-      </qd-form-field>
-      @if (searchQuery() !== '') {
-        <span class="abwab-toolbar__search-count" aria-hidden="true" data-testid="abwab-toolbar-search-count">
-          {{ matchCountText() }}
-        </span>
-      }
-      <span class="qd-sr-only" role="status" data-testid="abwab-toolbar-search-count-announce">
-        {{ announcedCountText() }}
-      </span>
+        testIdPrefix="abwab-toolbar"
+        (queryChanged)="searchQueryChanged.emit($event)"
+        (hideUnrelatedRootsChanged)="hideUnrelatedRootsChanged.emit($event)"
+      />
       @if (showSearchResults()) {
         <ul
           class="abwab-toolbar__search-results"

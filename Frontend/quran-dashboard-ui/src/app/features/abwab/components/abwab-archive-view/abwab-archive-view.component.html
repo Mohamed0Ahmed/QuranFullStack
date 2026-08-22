@@ -36,7 +36,11 @@
           }
         </button>
 
-        <span class="abwab-archive-view__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+        <span
+          class="abwab-archive-view__name qd-truncate rounded-qd-sm px-qd-4"
+          [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
+          [title]="node.name"
+        >{{ node.name }}</span>
 
         <button
           type="button"

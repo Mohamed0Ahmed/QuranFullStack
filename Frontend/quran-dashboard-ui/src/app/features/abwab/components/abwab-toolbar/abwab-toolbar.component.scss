@@ -7,7 +7,7 @@
 }
 
 .abwab-toolbar__controls {
-  align-items: flex-end;
+  align-items: center;
 }
 
 .abwab-toolbar__tabs {
@@ -24,26 +24,11 @@
 .abwab-toolbar__search {
   flex: 1 1 0;
   min-inline-size: 12rem;
-  align-items: flex-end;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-}
-
-.abwab-toolbar__search-field {
-  flex: 1 1 0;
-  min-inline-size: 0;
-}
-
-.abwab-toolbar__search-count {
-  flex: none;
-  color: var(--qd-ink-muted);
-  font-size: var(--qd-type-caption);
-  white-space: nowrap;
-  padding-block-end: var(--qd-space-2);
+  align-items: stretch;
+  flex-direction: column;
 }
 
 .abwab-toolbar__search-results {
-  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
   gap: var(--qd-space-2);

@@ -1,6 +1,6 @@
 <div
   class="a-f"
-  [class.a-f--bulk]="bulkMode()"
+  [class.a-f--bulk]="bulkMode() || !showActions()"
   [class.a-f--selection]="selectionMode()"
 >
   <div class="a-header" aria-hidden="true" data-testid="abwab-tree-header">
@@ -13,7 +13,7 @@
     <span class="a-header-cell a-count--wide">{{ headerTotalLabel }}</span>
     <span class="a-header-cell a-count--wide">{{ headerDepthLabel }}</span>
     <span></span>
-    @if (!bulkMode()) {
+    @if (!bulkMode() && showActions()) {
       <span></span>
     }
   </div>
@@ -31,10 +31,16 @@
       <div
         class="a-row"
         [class.a-row--revealed]="revealedId() === node.id"
+        [class.text-qd-ink-muted]="isUnavailable(node.id)"
+        [class.bg-qd-surface-quiet]="excludedIds().has(node.id)"
         role="treeitem"
         [attr.aria-level]="node.depth + 1"
         [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-        [attr.aria-selected]="selectedId() === node.id"
+        [attr.aria-selected]="isSelected(node.id)"
+        [attr.aria-disabled]="isUnavailable(node.id) && !row.hasChildren ? true : null"
+        [attr.aria-label]="rowAriaLabel(node)"
+        [attr.aria-description]="pathAriaDescription(node.id)"
+        [attr.title]="nodePath(node.id)"
         [attr.tabindex]="rovingId() === node.id ? 0 : -1"
         [style.--at-d]="node.depth"
         [attr.data-qd-hierarchy-id]="node.id"
@@ -49,17 +55,6 @@
             [guides]="branchGuidesById().get(node.id) ?? []"
             [expanded]="row.isExpanded"
           />
-        @if (bulkMode()) {
-          <input
-            type="checkbox"
-            class="qd-checkbox"
-            [checked]="bulkSelectedIds().has(node.id)"
-            [attr.aria-label]="node.name"
-            [attr.data-testid]="'abwab-tree-checkbox-' + node.id"
-            [attr.tabindex]="-1"
-            (click)="onCheckboxClick($event, node.id)"
-          />
-        }
         <button
           type="button"
           qdAction="row-action"
@@ -77,27 +72,27 @@
         </button>
 
         @if (canReorderDoor()) {
-          @if (editingId() === node.id) {
+          @if (orderEditing.editingId() === node.id) {
             <input
               type="number"
               min="1"
               class="a-order-input"
-              [value]="displayOrder(node)"
+              [value]="orderEditing.displayOrder(node)"
               [attr.data-testid]="'abwab-tree-order-input-' + node.id"
               (click)="$event.stopPropagation()"
-              (keydown)="onOrderKeydown($event, node.id)"
-              (blur)="cancelOrderEdit(node.id)"
+              (keydown)="orderEditing.onKeydown($event, node.id)"
+              (blur)="orderEditing.cancel(node.id)"
             />
           } @else {
             <button
               type="button"
               class="a-order qd-chip qd-is-selected"
-              [attr.aria-label]="orderEditAriaLabel(node)"
+              [attr.aria-label]="orderEditing.ariaLabel(node)"
               [attr.data-testid]="'abwab-tree-order-' + node.id"
               [attr.tabindex]="rovingId() === node.id ? 0 : -1"
-              (click)="onOrderClick($event, node.id)"
+              (click)="orderEditing.start($event, node.id)"
             >
-              {{ displayOrder(node) }}
+              {{ orderEditing.displayOrder(node) }}
             </button>
           }
         } @else {
@@ -105,11 +100,11 @@
             class="a-order qd-chip qd-chip--static qd-is-selected"
             [attr.data-testid]="'abwab-tree-order-' + node.id"
           >
-            {{ displayOrder(node) }}
+            {{ orderEditing.displayOrder(node) }}
           </span>
         }
 
-        <span class="a-name" [title]="node.name">
+        <span class="a-name" [title]="nodePath(node.id)">
           <span
             class="a-name-text inline-block box-border max-w-full rounded-qd-sm px-qd-8 py-qd-4 align-middle"
             [class.qd-truncate]="!selectionMode()"
@@ -117,6 +112,9 @@
           >
             {{ node.name }}
           </span>
+          @if (unavailableTag(node.id); as tag) {
+            <span class="qd-chip qd-chip--static qd-truncate text-qd-ink-muted">{{ tag }}</span>
+          }
         </span>
         </span>
 
@@ -135,25 +133,35 @@
 
         <span class="a-count-cell">
           <span class="a-compact-count-label" aria-hidden="true">{{ headerLinksLabel }}</span>
-          <button
-            type="button"
-            qdAction="row-action"
-            size="sm"
-            class="a-links-count a-count"
-            [class.text-qd-ink-muted]="node.linkCount === 0"
-            [class.text-qd-green-text]="node.linkCount !== 0"
-            [class.bg-qd-green-tint]="openLinksDoorId() === node.id"
-            [class.border-qd-green-quiet]="openLinksDoorId() === node.id"
-            [attr.aria-label]="linksAriaLabel(node)"
-            aria-haspopup="dialog"
-            [attr.aria-expanded]="openLinksDoorId() === node.id"
-            [attr.aria-controls]="'abwab-door-links-panel-' + node.id"
-            [attr.data-testid]="'abwab-tree-links-' + node.id"
-            (click)="onLinksClick($event, node.id)"
-            (keydown)="$event.stopPropagation()"
-          >
-            {{ node.linkCount }}
-          </button>
+          @if (linksClickable()) {
+            <button
+              type="button"
+              qdAction="row-action"
+              size="sm"
+              class="a-links-count a-count"
+              [class.text-qd-ink-muted]="node.linkCount === 0"
+              [class.text-qd-green-text]="node.linkCount !== 0"
+              [class.bg-qd-green-tint]="openLinksDoorId() === node.id"
+              [class.border-qd-green-quiet]="openLinksDoorId() === node.id"
+              [attr.aria-label]="linksAriaLabel(node)"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="openLinksDoorId() === node.id"
+              [attr.aria-controls]="'abwab-door-links-panel-' + node.id"
+              [attr.data-testid]="'abwab-tree-links-' + node.id"
+              (click)="onLinksClick($event, node.id)"
+              (keydown)="$event.stopPropagation()"
+            >
+              {{ node.linkCount }}
+            </button>
+          } @else {
+            <span
+              class="a-count qd-chip__count"
+              [class.text-qd-ink-muted]="node.linkCount === 0"
+              [class.text-qd-green-text]="node.linkCount !== 0"
+              [attr.aria-label]="linksAriaLabel(node)"
+              [attr.data-testid]="'abwab-tree-links-' + node.id"
+            >{{ node.linkCount }}</span>
+          }
         </span>
 
         <span class="a-count-cell">
@@ -188,62 +196,80 @@
           }
         </span>
         <span class="a-flags">
-          <button
-            type="button"
-            class="a-flag qd-chip qd-chip--pill"
-            [class.a-flag--empty]="node.relationCount === 0"
-            [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
-            aria-haspopup="dialog"
-            [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
-            [attr.tabindex]="-1"
-            (click)="onFlagClick($event, node.id)"
-          >
-            {{ relationsFlagLabel }}
-            <span
-              class="a-flag-count"
-              [attr.data-testid]="'abwab-tree-relations-count-' + node.id"
-              >{{ node.relationCount }}</span
+          @if (relationsClickable()) {
+            <button
+              type="button"
+              class="a-flag qd-chip qd-chip--pill"
+              [class.a-flag--empty]="node.relationCount === 0"
+              [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+              aria-haspopup="dialog"
+              [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
+              [attr.tabindex]="-1"
+              (click)="onFlagClick($event, node.id)"
             >
-          </button>
+              {{ relationsFlagLabel }}
+              <span
+                class="a-flag-count"
+                [attr.data-testid]="'abwab-tree-relations-count-' + node.id"
+                >{{ node.relationCount }}</span
+              >
+            </button>
+          } @else {
+            <span
+              class="a-flag qd-chip qd-chip--pill qd-chip--static"
+              [class.a-flag--empty]="node.relationCount === 0"
+              [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+              [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
+            >
+              {{ relationsFlagLabel }}
+              <span
+                class="a-flag-count"
+                [attr.data-testid]="'abwab-tree-relations-count-' + node.id"
+                >{{ node.relationCount }}</span
+              >
+            </span>
+          }
         </span>
 
-        @if (!bulkMode()) {
+        @if (!bulkMode() && showActions()) {
           <span class="a-actions">
-            @if (canCreateDoor() && !selectionMode()) {
+            @if (!isUnavailable(node.id)) {
+              @if (canCreateDoor() && !selectionMode()) {
+                <button
+                type="button"
+                qdAction="row-action"
+                class="a-act a-act--add-child"
+                [attr.aria-label]="addChildAriaLabel(node.name)"
+                  [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+                  [attr.tabindex]="-1"
+                  (click)="onAddChildClick($event, node.id)"
+                >
+                  <span aria-hidden="true">＋</span>
+                </button>
+              }
               <button
-              type="button"
-              qdAction="row-action"
-              class="a-act a-act--add-child"
-              [attr.aria-label]="addChildAriaLabel(node.name)"
-                [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+                type="button"
+                qdAction="row-action"
+                class="a-act a-act--more-wide"
+                [attr.aria-label]="menuAriaLabel(node.name)"
+                [attr.data-testid]="'abwab-tree-more-' + node.id"
                 [attr.tabindex]="-1"
-                (click)="onAddChildClick($event, node.id)"
+                (click)="onMoreClick($event, node.id)"
               >
-                <span aria-hidden="true">＋</span>
+                <span aria-hidden="true">⋯</span>
+              </button>
+              <button
+                type="button"
+                qdAction="row-action"
+                class="a-act a-act--more-compact"
+                [attr.aria-label]="labels.rowDetailsAriaLabel(node.name)"
+                [attr.data-testid]="'abwab-tree-details-' + node.id"
+                [attr.tabindex]="-1"
+                (click)="onDetailsClick($event, node.id)"
+              >
+                <span aria-hidden="true">⋯</span>
               </button>
             }
-            <button
-              type="button"
-              qdAction="row-action"
-              class="a-act a-act--more-wide"
-              [attr.aria-label]="menuAriaLabel(node.name)"
-              [attr.data-testid]="'abwab-tree-more-' + node.id"
-              [attr.tabindex]="-1"
-              (click)="onMoreClick($event, node.id)"
-            >
-              <span aria-hidden="true">⋯</span>
-            </button>
-            <button
-              type="button"
-              qdAction="row-action"
-              class="a-act a-act--more-compact"
-              [attr.aria-label]="labels.rowDetailsAriaLabel(node.name)"
-              [attr.data-testid]="'abwab-tree-details-' + node.id"
-              [attr.tabindex]="-1"
-              (click)="onDetailsClick($event, node.id)"
-            >
-              <span aria-hidden="true">⋯</span>
-            </button>
           </span>
         }
       </div>

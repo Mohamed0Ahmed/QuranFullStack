@@ -5,23 +5,14 @@ import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabMoveDestination } from '../../models/abwab.models';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
-
-function subtreeMatches(node: AbwabNode, query: string): boolean {
-  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
-}
-
-interface AbwabMovePickerRow {
-  readonly node: AbwabNode;
-  readonly depth: number;
-  readonly hasChildren: boolean;
-  readonly isExpanded: boolean;
-}
+import { searchAbwabNodes } from '../../state/abwab-tree-search';
+import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
+import { AbwabTreeComponent } from '../abwab-tree/abwab-tree.component';
 
 let nextModalId = 0;
 
@@ -29,8 +20,9 @@ let nextModalId = 0;
   selector: 'qd-abwab-move-picker',
   standalone: true,
   imports: [
+    AbwabSearchControlsComponent,
+    AbwabTreeComponent,
     QdActionDirective,
-    QdControlDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdModalShellComponent,
@@ -60,54 +52,43 @@ export class AbwabMovePickerComponent {
 
   protected readonly pickedSectionId = signal<number | null>(null);
   protected readonly pickedParentId = signal<number | null>(null);
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly searchQuery = signal('');
+  protected readonly hideUnrelatedRoots = signal(false);
 
   protected get descriptionText(): string { return ABWAB_LABELS.movePickerDescription; }
   protected get sectionStripLabel(): string { return ABWAB_LABELS.movePickerSectionStripLabel; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.movePickerSearchPlaceholder; }
   protected get noMatchesLabel(): string { return ABWAB_LABELS.pickerNoMatches; }
+  protected get emptyTreeLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
   protected get pickSectionHint(): string { return ABWAB_LABELS.movePickerPickSectionHint; }
   protected get asMainDoorLabel(): string { return ABWAB_LABELS.asMainDoorOption; }
   protected get confirmLabel(): string { return ABWAB_LABELS.moveConfirm; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
+  protected readonly labels = ABWAB_LABELS;
 
   protected sectionTabId(sectionId: number): string {
     return `abwab-move-picker-section-${this.modalId}-${sectionId}`;
   }
 
-  protected readonly destinationRows = computed<readonly AbwabMovePickerRow[]>(() => {
+  private readonly sectionRoots = computed(() => {
     const sectionId = this.pickedSectionId();
-    if (sectionId === null) {
-      return [];
-    }
-    const excluded = this.excludedIds();
-    const expanded = this.expandedIds();
-    const query = this.searchQuery().trim();
-    const rows: AbwabMovePickerRow[] = [];
-
-    function walk(node: AbwabNode, depth: number): void {
-      if (query !== '' && !subtreeMatches(node, query)) {
-        return;
-      }
-      const children = node.children.filter((child) => !excluded.has(child.id));
-      const hasChildren = children.length > 0;
-      const isExpanded = expanded.has(node.id) || (query !== '' && hasChildren);
-      rows.push({ node, depth, hasChildren, isExpanded });
-      if (isExpanded) {
-        for (const child of children) {
-          walk(child, depth + 1);
-        }
-      }
-    }
-
-    for (const root of this.liveRoots()) {
-      if (root.sectionId === sectionId && !excluded.has(root.id)) {
-        walk(root, 0);
-      }
-    }
-    return rows;
+    return sectionId === null
+      ? []
+      : this.liveRoots().filter((root) => root.sectionId === sectionId);
   });
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.sectionRoots(),
+    this.searchQuery(),
+    {
+      hideUnrelatedRoots: this.hideUnrelatedRoots(),
+      omittedSubtreeIds: this.excludedIds(),
+    },
+  ));
+  protected readonly searchMatchCount = computed(() => this.searchResult().matchedIds.size);
+  protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
+  protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
+  protected readonly searchExpandedIds = computed(() => this.searchResult().autoExpandedIds);
 
   private readonly sectionHasDoors = computed(() => {
     const sectionId = this.pickedSectionId();
@@ -116,7 +97,10 @@ export class AbwabMovePickerComponent {
   });
 
   protected readonly searchFoundNothing = computed(
-    () => this.searchQuery().trim() !== '' && this.sectionHasDoors() && this.destinationRows().length === 0,
+    () => this.searchResult().isFiltering
+      && this.hideUnrelatedRoots()
+      && this.sectionHasDoors()
+      && this.searchResult().displayRoots.length === 0,
   );
 
   constructor() {
@@ -130,6 +114,7 @@ export class AbwabMovePickerComponent {
         this.pickedParentId.set(null);
         this.expandedIds.set(new Set());
         this.searchQuery.set('');
+        this.hideUnrelatedRoots.set(false);
 
         const distinct = new Set(movedSectionIds);
         if (distinct.size === 1) {
@@ -145,31 +130,16 @@ export class AbwabMovePickerComponent {
     this.expandedIds.set(new Set());
   }
 
-  protected expandAriaLabel(row: AbwabMovePickerRow): string {
-    return row.isExpanded
-      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
-  }
-
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-  }
-
-  protected toggleExpanded(event: Event, row: AbwabMovePickerRow): void {
-    event.stopPropagation();
-    const next = new Set(this.expandedIds());
-    if (!next.delete(row.node.id)) {
-      next.add(row.node.id);
-    }
-    this.expandedIds.set(next);
-  }
-
   protected pickAsMain(): void {
     this.pickedParentId.set(null);
   }
 
   protected pickParent(id: number): void {
     this.pickedParentId.set(id);
+  }
+
+  protected rememberExpanded(ids: ReadonlySet<number>): void {
+    this.expandedIds.set(ids);
   }
 
   protected confirm(): void {

@@ -18,12 +18,13 @@ import {
 import { AbwabRelationsModalComponent } from '../../../abwab/components/abwab-relations-modal/abwab-relations-modal.component';
 import { AbwabToolbarComponent } from '../../../abwab/components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent } from '../../../abwab/components/abwab-tree/abwab-tree.component';
+import { ABWAB_LABELS } from '../../../abwab/models/abwab.labels';
 import { AbwabNode } from '../../../abwab/models/abwab.models';
 import { AbwabDoorLinksFacade } from '../../../abwab/state/abwab-door-links.facade';
 import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissions.controller';
 import { AbwabRelationsController } from '../../../abwab/state/abwab-relations.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
-import { searchAbwabNodes } from '../../../abwab/state/abwab-tree.builder';
+import { searchAbwabNodes } from '../../../abwab/state/abwab-tree-search';
 import { abwabPermissionDenied } from '../../../abwab/state/abwab-write.controller';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
@@ -84,6 +85,7 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
   protected readonly activeTab = signal<MushafDoorsPanelTab>('doors');
   protected readonly palettePopover = signal<DoorPalettePopover | null>(null);
   protected readonly searchQuery = signal('');
+  protected readonly hideUnrelatedRoots = signal(false);
   protected readonly revealedId = signal<number | null>(null);
   private readonly revealSeedId = signal<number | null>(null);
   private readonly relationsDoorId = signal<number | null>(null);
@@ -92,12 +94,22 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
   protected readonly liveRoots = computed<readonly AbwabNode[]>(
     () => this.tree.snapshot()?.liveRoots ?? NO_ROOTS,
   );
-  private readonly searchResult = computed(() => searchAbwabNodes(this.liveRoots(), this.searchQuery()));
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.liveRoots(),
+    this.searchQuery(),
+    { hideUnrelatedRoots: this.hideUnrelatedRoots() },
+  ));
+  protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
   protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
     const node = this.tree.snapshot()?.byId.get(id);
     return node ? [node] : [];
   }));
   protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
+  protected readonly searchEmptyMessage = computed(() =>
+    this.searchResult().isFiltering && this.hideUnrelatedRoots() && this.liveRoots().length > 0
+      ? ABWAB_LABELS.noSearchMatchesMessage
+      : 'لا توجد أبواب متاحة حاليًا.',
+  );
   protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {
     const ids = this.searchResult().autoExpandedIds;
     return ids.size === 0 ? NO_IDS : ids;

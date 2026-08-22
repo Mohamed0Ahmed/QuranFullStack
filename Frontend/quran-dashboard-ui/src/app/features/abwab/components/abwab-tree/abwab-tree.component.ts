@@ -17,12 +17,14 @@ import { QdHierarchyKeyboardDirective } from '../../../../shared/ui/hierarchy/hi
 
 import { AbwabNode, AbwabOrderScope } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import { AbwabTreeBranchesComponent } from './abwab-tree-branches.component';
 import {
   AbwabTreeContextMenuController,
   AbwabTreeMenuRequest,
 } from './abwab-tree-context-menu.controller';
 import { AbwabTreeExpansionCommands, AbwabTreeExpansionController } from './abwab-tree-expansion.controller';
+import { AbwabTreeOrderController } from './abwab-tree-order.controller';
 import {
   AbwabTreeRow,
   buildAbwabTreeBranchGuides,
@@ -31,6 +33,8 @@ import {
   resolveAbwabTreeKeyboardIntent,
 } from './abwab-tree-keyboard.controller';
 export type { AbwabTreeMenuRequest } from './abwab-tree-context-menu.controller';
+
+const NO_IDS: ReadonlySet<number> = new Set<number>();
 
 @Component({
   selector: 'qd-abwab-tree',
@@ -41,7 +45,7 @@ export type { AbwabTreeMenuRequest } from './abwab-tree-context-menu.controller'
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AbwabTreeComponent {
-  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef).nativeElement;
   private readonly hierarchy = viewChild.required(QdHierarchyKeyboardDirective);
   private readonly expansion = new AbwabTreeExpansionController();
 
@@ -50,16 +54,23 @@ export class AbwabTreeComponent {
   readonly ariaLabel = input('');
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
-  readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
-  readonly expandSeedIds = input<ReadonlySet<number>>(new Set());
-  readonly transientExpandSeedIds = input<ReadonlySet<number>>(new Set());
-  readonly searchExpandedIds = input<ReadonlySet<number>>(new Set());
-  readonly matchedIds = input<ReadonlySet<number>>(new Set());
+  readonly bulkSelectedIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly disabledIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly excludedIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly disabledTag = input('');
+  readonly excludedTag = input('');
+  readonly expandSeedIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly transientExpandSeedIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly searchExpandedIds = input<ReadonlySet<number>>(NO_IDS);
+  readonly matchedIds = input<ReadonlySet<number>>(NO_IDS);
   readonly revealedId = input<number | null>(null);
   readonly canCreateDoor = input(false);
   readonly canReorderDoor = input(false);
   readonly openLinksDoorId = input<number | null>(null);
   readonly selectionMode = input(false);
+  readonly showActions = input(true);
+  readonly linksClickable = input(true);
+  readonly relationsClickable = input(true);
   readonly relationsClickableInBulkMode = input(false);
 
   readonly selected = output<number>();
@@ -72,7 +83,6 @@ export class AbwabTreeComponent {
   readonly expandedIdsChanged = output<ReadonlySet<number>>();
 
   private readonly manualFocusId = signal<number | null>(null);
-  protected readonly editingId = signal<number | null>(null);
   protected readonly labels = ABWAB_LABELS;
   private readonly contextMenu = new AbwabTreeContextMenuController(
     (id) => this.manualFocusId.set(id),
@@ -102,10 +112,18 @@ export class AbwabTreeComponent {
     this.roots().forEach(walk);
     return map;
   });
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.roots()));
   protected readonly visibleRows = computed<AbwabTreeRow[]>(() =>
     flattenVisibleAbwabRows(this.roots(), this.effectiveExpandedIds()),
   );
   protected readonly branchGuidesById = computed(() => buildAbwabTreeBranchGuides(this.roots(), 6));
+  protected readonly orderEditing = new AbwabTreeOrderController(
+    this.host,
+    () => this.canReorderDoor(),
+    () => this.nodesById(),
+    () => this.orderScope(),
+    (commit) => this.orderCommitted.emit(commit),
+  );
   readonly expansionCommands = new AbwabTreeExpansionCommands(
     this.expansion,
     () => this.roots(),
@@ -129,7 +147,7 @@ export class AbwabTreeComponent {
   });
 
   protected onRowClick(id: number): void {
-    if (this.editingId() !== null) {
+    if (this.orderEditing.editingId() !== null || this.isUnavailable(id)) {
       return;
     }
     if (this.bulkMode()) {
@@ -138,11 +156,6 @@ export class AbwabTreeComponent {
     }
     this.manualFocusId.set(id);
     this.selected.emit(id);
-  }
-
-  protected onCheckboxClick(event: Event, id: number): void {
-    event.stopPropagation();
-    this.bulkToggled.emit(id);
   }
 
   protected get relationsFlagLabel(): string {
@@ -177,6 +190,13 @@ export class AbwabTreeComponent {
 
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
+    if (this.isUnavailable(id)) {
+      return;
+    }
+    if (!this.relationsClickable()) {
+      this.onRowClick(id);
+      return;
+    }
     if (this.bulkMode() && !this.relationsClickableInBulkMode()) {
       this.bulkToggled.emit(id);
       return;
@@ -187,7 +207,42 @@ export class AbwabTreeComponent {
 
   protected onLinksClick(event: Event, id: number): void {
     event.stopPropagation();
+    if (this.isUnavailable(id)) {
+      return;
+    }
+    if (!this.linksClickable()) {
+      this.onRowClick(id);
+      return;
+    }
     this.linksToggled.emit(id);
+  }
+
+  protected isSelected(id: number): boolean {
+    return this.bulkMode() ? this.bulkSelectedIds().has(id) : this.selectedId() === id;
+  }
+
+  protected isUnavailable(id: number): boolean {
+    return this.disabledIds().has(id) || this.excludedIds().has(id);
+  }
+
+  protected unavailableTag(id: number): string {
+    if (this.excludedIds().has(id)) {
+      return this.excludedTag();
+    }
+    return this.disabledIds().has(id) ? this.disabledTag() : '';
+  }
+
+  protected rowAriaLabel(node: AbwabNode): string {
+    const tag = this.unavailableTag(node.id);
+    return tag === '' ? node.name : `${node.name} — ${tag}`;
+  }
+
+  protected nodePath(id: number): string {
+    return this.pathsById().get(id) ?? this.nodesById().get(id)?.name ?? String(id);
+  }
+
+  protected pathAriaDescription(id: number): string {
+    return ABWAB_LABELS.doorPathAriaDescription(this.nodePath(id));
   }
 
   protected linksAriaLabel(node: AbwabNode): string {
@@ -211,11 +266,11 @@ export class AbwabTreeComponent {
       : ABWAB_LABELS.relationPickerExpandAriaLabel(node.name);
   }
 
-  protected orderEditAriaLabel(node: AbwabNode): string {
-    return ABWAB_LABELS.rowOrderEditAriaLabel(node.name, this.displayOrder(node));
-  }
-
   protected onRowContextMenu(event: MouseEvent, id: number): void {
+    if (this.isUnavailable(id) || !this.showActions()) {
+      event.preventDefault();
+      return;
+    }
     this.contextMenu.openFromRow(event, id, this.bulkMode());
   }
 
@@ -252,72 +307,6 @@ export class AbwabTreeComponent {
     this.toggleExpanded(row.id);
   }
 
-  protected scopeFor(node: AbwabNode): AbwabOrderScope {
-    return node.depth === 0 && this.orderScope() === 'global' ? 'global' : 'section';
-  }
-
-  protected displayOrder(node: AbwabNode): number {
-    return this.scopeFor(node) === 'global' ? (node.globalOrderValue ?? node.orderValue) : node.orderValue;
-  }
-
-  protected onOrderClick(event: Event, id: number): void {
-    event.stopPropagation();
-    if (!this.canReorderDoor()) {
-      return;
-    }
-    this.editingId.set(id);
-    setTimeout(() => this.orderInput(id)?.focus());
-  }
-
-  private orderInput(id: number): HTMLInputElement | null {
-    return this.elementRef.nativeElement.querySelector<HTMLInputElement>(
-      `[data-testid="abwab-tree-order-input-${id}"]`,
-    );
-  }
-
-  private focusOrderChip(id: number): void {
-    setTimeout(() =>
-      this.elementRef.nativeElement
-        .querySelector<HTMLElement>(`[data-testid="abwab-tree-order-${id}"]`)
-        ?.focus(),
-    );
-  }
-
-  protected onOrderKeydown(event: KeyboardEvent, id: number): void {
-    event.stopPropagation();
-    if (!this.canReorderDoor()) {
-      this.cancelOrderEdit(id);
-      return;
-    }
-    if (event.key === 'Enter') {
-      this.commitOrderEdit(id, event.target);
-      this.focusOrderChip(id);
-    } else if (event.key === 'Escape') {
-      this.cancelOrderEdit(id);
-      this.focusOrderChip(id);
-    }
-  }
-
-  protected cancelOrderEdit(id: number): void {
-    if (this.editingId() !== id) {
-      return;
-    }
-    this.editingId.set(null);
-  }
-
-  protected commitOrderEdit(id: number, target: EventTarget | null): void {
-    if (!this.canReorderDoor() || this.editingId() !== id) {
-      return;
-    }
-    this.editingId.set(null);
-    const input = target as HTMLInputElement | null;
-    const value = input ? Number(input.value) : Number.NaN;
-    const node = this.nodesById().get(id);
-    if (node && Number.isInteger(value) && value >= 1) {
-      this.orderCommitted.emit({ id, position: value, scope: this.scopeFor(node) });
-    }
-  }
-
   protected onKeydown(event: KeyboardEvent): void {
     if (event.target !== event.currentTarget && isNativeButtonActivation(event.key)) {
       return;
@@ -352,15 +341,21 @@ export class AbwabTreeComponent {
         break;
       case 'select':
         event.preventDefault();
-        this.selected.emit(intent.id);
+        if (!this.isUnavailable(intent.id)) {
+          this.selected.emit(intent.id);
+        }
         break;
       case 'toggleBulk':
         event.preventDefault();
-        this.bulkToggled.emit(intent.id);
+        if (!this.isUnavailable(intent.id)) {
+          this.bulkToggled.emit(intent.id);
+        }
         break;
       case 'openMenu': {
         event.preventDefault();
-        this.contextMenu.openFromKeyboard(intent.id, this.rowElement(intent.id), this.resolveDirection());
+        if (this.showActions() && !this.isUnavailable(intent.id)) {
+          this.contextMenu.openFromKeyboard(intent.id, this.rowElement(intent.id), this.resolveDirection());
+        }
         break;
       }
       case 'none':

@@ -127,6 +127,18 @@ export class AbwabModalUrlController {
     this.opened = null;
   }
 
+  closeRevealOrigin(): AbwabModalState | null {
+    const opened = this.opened;
+    if (opened === null || (opened.kind !== 'relations' && opened.kind !== 'inclusions')) {
+      return null;
+    }
+    this.closeOverlayFor(opened.kind);
+    this.opened = null;
+    return opened.doorId === null
+      ? null
+      : { kind: opened.kind, closed: true, subjectDoorId: opened.doorId };
+  }
+
   openInclusionsFromContext(): void {
     const doorId = this.overlays.contextMenuDoorId();
     this.overlays.closeContextMenu();

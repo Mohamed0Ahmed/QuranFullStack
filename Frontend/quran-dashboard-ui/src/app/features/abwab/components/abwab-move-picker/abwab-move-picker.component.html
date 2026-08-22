@@ -1,6 +1,8 @@
 @if (open()) {
   <qd-modal-shell
     variant="wide"
+    [wideInlineSize]="'var(--qd-abwab-workflow-modal-inline-size)'"
+    [wideBlockSize]="'var(--qd-abwab-workflow-modal-block-size)'"
     testIdPrefix="abwab-move-picker"
     [open]="true"
     [titleText]="titleText()"
@@ -53,68 +55,52 @@
       </p>
     } @else {
       <div [id]="destinationsId" role="tabpanel" [attr.aria-labelledby]="sectionTabId(pickedSectionId()!)">
-        <input
-          qdControl
+        <qd-abwab-search-controls
           class="abwab-move-picker__search"
-          type="text"
+          [query]="searchQuery()"
+          [matchCount]="searchMatchCount()"
+          [hideUnrelatedRoots]="hideUnrelatedRoots()"
           [placeholder]="searchPlaceholder"
-          [attr.aria-label]="searchPlaceholder"
-          [value]="searchQuery()"
-          data-testid="abwab-move-picker-search"
-          (input)="onSearchInput($event)"
+          [helper]="labels.searchScopeHintTree"
+          testIdPrefix="abwab-move-picker"
+          (queryChanged)="searchQuery.set($event)"
+          (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
         />
-        <div class="abwab-move-picker__list">
-          <div class="abwab-move-picker__row" [class.abwab-move-picker__row--picked]="pickedParentId() === null">
-            <span class="abwab-move-picker__chevron abwab-move-picker__chevron--leaf" aria-hidden="true"></span>
-            <button
-              type="button"
-              qdAction="row-action"
-              class="abwab-move-picker__pick"
-              [attr.aria-pressed]="pickedParentId() === null"
-              data-testid="abwab-move-picker-dest-asmain"
-              (click)="pickAsMain()"
-            >
-              {{ asMainDoorLabel }}
-            </button>
-          </div>
-          @for (row of destinationRows(); track row.node.id) {
-            <div
-              class="abwab-move-picker__row"
-              [class.abwab-move-picker__row--picked]="pickedParentId() === row.node.id"
-              [style.--abwab-move-picker-depth]="row.depth"
-            >
-              <button
-                type="button"
-                qdAction="row-action"
-                class="abwab-move-picker__chevron qd-hit-target"
-                [class.abwab-move-picker__chevron--leaf]="!row.hasChildren"
-                [attr.tabindex]="row.hasChildren ? null : -1"
-                [attr.aria-hidden]="row.hasChildren ? null : true"
-                [attr.aria-expanded]="row.hasChildren ? row.isExpanded : null"
-                [attr.aria-label]="row.hasChildren ? expandAriaLabel(row) : null"
-                [attr.data-testid]="'abwab-move-picker-dest-chevron-' + row.node.id"
-                (click)="toggleExpanded($event, row)"
-              >
-                @if (row.hasChildren) {
-                  <span aria-hidden="true">{{ row.isExpanded ? '⌄' : '‹' }}</span>
-                }
-              </button>
-              <button
-                type="button"
-                qdAction="row-action"
-                class="abwab-move-picker__pick"
-                [title]="row.node.name"
-                [attr.aria-label]="row.node.name"
-                [attr.aria-pressed]="pickedParentId() === row.node.id"
-                [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
-                (click)="pickParent(row.node.id)"
-              >
-                <span class="abwab-move-picker__name qd-truncate">{{ row.node.name }}</span>
-              </button>
+        <div class="abwab-move-picker__destinations">
+          <button
+            type="button"
+            qdAction="tertiary"
+            class="abwab-move-picker__as-main"
+            [class.qd-is-selected]="pickedParentId() === null"
+            [attr.aria-pressed]="pickedParentId() === null"
+            data-testid="abwab-move-picker-dest-asmain"
+            (click)="pickAsMain()"
+          >
+            {{ asMainDoorLabel }}
+          </button>
+
+          @if (displayRoots().length > 0) {
+            <div class="abwab-move-picker__tree qd-scroll-stable">
+              <qd-abwab-tree
+                [roots]="displayRoots()"
+                [ariaLabel]="labels.treeAriaLabel"
+                orderScope="global"
+                [selectedId]="pickedParentId()"
+                [expandSeedIds]="expandedIds()"
+                [searchExpandedIds]="searchExpandedIds()"
+                [matchedIds]="matchedIds()"
+                [selectionMode]="true"
+                [showActions]="false"
+                [linksClickable]="false"
+                [relationsClickable]="false"
+                (selected)="pickParent($event)"
+                (expandedIdsChanged)="rememberExpanded($event)"
+              />
             </div>
-          }
-          @if (searchFoundNothing()) {
+          } @else if (searchFoundNothing()) {
             <qd-empty-state [message]="noMatchesLabel" testId="abwab-move-picker-no-matches" />
+          } @else {
+            <qd-empty-state [message]="emptyTreeLabel" testId="abwab-move-picker-empty" />
           }
         </div>
       </div>

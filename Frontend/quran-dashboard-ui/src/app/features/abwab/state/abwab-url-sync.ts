@@ -70,6 +70,7 @@ export function parseAbwabQueryParams(queryParams: ParamMap): AbwabQueryState {
     door,
     card: parsePositiveId(queryParams.get(ABWAB_QUERY_KEYS.card)),
     q: queryParams.get(ABWAB_QUERY_KEYS.q) ?? ABWAB_QUERY_DEFAULTS.q,
+    hideUnrelatedRoots: queryParams.get(ABWAB_QUERY_KEYS.hideUnrelatedRoots) === '1',
     modal: parseModal(queryParams.get(ABWAB_QUERY_KEYS.modal), door),
   };
 }
@@ -81,6 +82,7 @@ export type AbwabQueryChange = Partial<{
   door: number | null;
   card: number | null;
   q: string;
+  hideUnrelatedRoots: boolean;
   modal: AbwabModalState | null;
 }>;
 
@@ -98,6 +100,9 @@ export function buildAbwabQueryParams(changes: AbwabQueryChange): Record<string,
   }
   if (changes.q !== undefined) {
     params[ABWAB_QUERY_KEYS.q] = changes.q === '' ? null : changes.q;
+  }
+  if (changes.hideUnrelatedRoots !== undefined) {
+    params[ABWAB_QUERY_KEYS.hideUnrelatedRoots] = changes.hideUnrelatedRoots ? '1' : null;
   }
 
   const invalidatesSelection = changes.section !== undefined || changes.archive === true;

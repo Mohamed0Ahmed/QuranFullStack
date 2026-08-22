@@ -32,6 +32,7 @@ export class AbwabInclusionsController {
   private readonly detachCandidateState = signal<AbwabDirectInclusionDoorDto | null>(null);
   private readonly detachErrorState = signal<string | null>(null);
   private readonly selectedSourceIdsState = signal<ReadonlySet<number>>(NO_SOURCE_IDS);
+  private readonly addCompletionState = signal(0);
 
   private topologyRequest: Subscription | null = null;
   private writeRequest: Subscription | null = null;
@@ -55,6 +56,7 @@ export class AbwabInclusionsController {
   readonly detachCandidate = this.detachCandidateState.asReadonly();
   readonly detachError = this.detachErrorState.asReadonly();
   readonly selectedSourceIds = this.selectedSourceIdsState.asReadonly();
+  readonly addCompletion = this.addCompletionState.asReadonly();
   readonly selectedSourceCount = computed(() => this.selectedSourceIdsState().size);
   readonly directSourceIds = computed<ReadonlySet<number>>(() => {
     const topology = this.topologyState();
@@ -81,6 +83,7 @@ export class AbwabInclusionsController {
     this.topologyState.set(null);
     this.doorVersionState.set(null);
     this.selectedSourceIdsState.set(NO_SOURCE_IDS);
+    this.addCompletionState.set(0);
     this.readErrorState.set(null);
     this.writeErrorState.set(null);
     this.noticeState.set(null);
@@ -98,6 +101,7 @@ export class AbwabInclusionsController {
     this.topologyState.set(null);
     this.doorVersionState.set(null);
     this.selectedSourceIdsState.set(NO_SOURCE_IDS);
+    this.addCompletionState.set(0);
     this.initialLoadingState.set(false);
     this.refreshingState.set(false);
     this.readErrorState.set(null);
@@ -130,6 +134,11 @@ export class AbwabInclusionsController {
     this.selectedSourceIdsState.set(next.size === 0 ? NO_SOURCE_IDS : next);
     this.writeErrorState.set(null);
     this.noticeState.set(null);
+  }
+
+  clearSourceDraft(): void {
+    this.selectedSourceIdsState.set(NO_SOURCE_IDS);
+    this.writeErrorState.set(null);
   }
 
   submit(): void {
@@ -166,6 +175,7 @@ export class AbwabInclusionsController {
 
         this.doorVersionState.set(response.data.targetDoorVersion);
         this.selectedSourceIdsState.set(NO_SOURCE_IDS);
+        this.addCompletionState.update((value) => value + 1);
         this.noticeState.set(response.message ?? ABWAB_LABELS.inclusionsAddedNotice);
         this.loadTopology();
         this.snapshot.refresh();

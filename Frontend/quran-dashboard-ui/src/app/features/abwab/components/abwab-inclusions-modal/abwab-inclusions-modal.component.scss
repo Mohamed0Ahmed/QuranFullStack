@@ -36,15 +36,17 @@
 .abwab-inclusions-modal__topology {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--qd-space-3);
+  align-items: start;
+  gap: var(--qd-space-4);
 }
 
 .abwab-inclusions-modal__section,
 .abwab-inclusions-modal__picker {
   background: var(--qd-section-bg);
   border: 1px solid var(--qd-border);
+  border-block-start-color: var(--qd-accent);
   border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-3);
+  padding: var(--qd-space-4);
 }
 
 .abwab-inclusions-modal__section h3,
@@ -57,11 +59,30 @@
   margin-block-end: var(--qd-space-2);
 }
 
+.abwab-inclusions-modal__count {
+  display: inline-grid;
+  place-items: center;
+  min-inline-size: var(--qd-space-6);
+  block-size: var(--qd-space-6);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+  font-size: var(--qd-type-caption);
+}
+
+.abwab-inclusions-modal__section-description {
+  min-block-size: 4.5em;
+  margin: 0;
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-meta);
+  line-height: 1.75;
+}
+
 .abwab-inclusions-modal__list {
   display: grid;
   gap: var(--qd-space-2);
   list-style: none;
-  margin: 0;
+  margin: var(--qd-space-3) 0 0;
   padding: 0;
 }
 
@@ -80,9 +101,34 @@
   padding-block-end: 0;
 }
 
-.abwab-inclusions-modal__list li > span:first-child {
+.abwab-inclusions-modal__door {
+  display: grid;
+  flex: 1 1 auto;
+  gap: var(--qd-space-1);
   min-inline-size: 0;
+}
+
+.abwab-inclusions-modal__door strong,
+.abwab-inclusions-modal__door-link,
+.abwab-inclusions-modal__door small {
   overflow-wrap: anywhere;
+}
+
+.abwab-inclusions-modal__door strong,
+.abwab-inclusions-modal__door-link {
+  font-weight: 700;
+}
+
+.abwab-inclusions-modal__door-link {
+  justify-self: start;
+  max-inline-size: 100%;
+  color: var(--qd-accent-text);
+  text-align: start;
+}
+
+.abwab-inclusions-modal__door small {
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
 }
 
 .abwab-inclusions-modal__status {
@@ -100,7 +146,7 @@
 }
 
 .abwab-inclusions-modal__picker {
-  margin-block-start: var(--qd-space-4);
+  min-block-size: 100%;
 }
 
 .abwab-inclusions-modal__selection {
@@ -123,5 +169,9 @@
 @media (max-width: bp.$qd-bp-medium-max) {
   .abwab-inclusions-modal__topology {
     grid-template-columns: 1fr;
+  }
+
+  .abwab-inclusions-modal__section-description {
+    min-block-size: 0;
   }
 }

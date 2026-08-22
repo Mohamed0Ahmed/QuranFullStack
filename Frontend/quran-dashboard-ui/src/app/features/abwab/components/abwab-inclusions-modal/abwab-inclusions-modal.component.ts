@@ -6,6 +6,7 @@ import {
   inject,
   input,
   output,
+  signal,
   untracked,
   viewChild,
 } from '@angular/core';
@@ -14,6 +15,7 @@ import { AbwabInclusionsController } from '../../state/abwab-inclusions.controll
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
@@ -25,6 +27,8 @@ import {
   QdRefreshingIndicatorComponent,
 } from '../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
+
+type AbwabInclusionsView = 'overview' | 'add';
 
 @Component({
   selector: 'qd-abwab-inclusions-modal',
@@ -47,12 +51,16 @@ import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/con
 export class AbwabInclusionsModalComponent {
   readonly liveRoots = input.required<readonly AbwabNode[]>();
   readonly closed = output<void>();
+  readonly revealRequested = output<number>();
 
   protected readonly controller = inject(AbwabInclusionsController);
   protected readonly permissions = inject(AbwabPermissionsController);
   protected readonly labels = ABWAB_LABELS;
+  protected readonly view = signal<AbwabInclusionsView>('overview');
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
+  private activeTargetId: number | null = null;
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.liveRoots()));
   private readonly nodesById = computed(() => {
     const nodes = new Map<number, AbwabNode>();
     const visit = (node: AbwabNode): void => {
@@ -98,9 +106,22 @@ export class AbwabInclusionsModalComponent {
   constructor() {
     effect(() => {
       const open = this.controller.isOpen();
-      const loaded = this.controller.topology() !== null;
+      const targetId = this.controller.target()?.id ?? null;
+      const addCompletion = this.controller.addCompletion();
       untracked(() => {
-        if (open && loaded && this.canCreateSources()) {
+        if (!open || targetId !== this.activeTargetId || addCompletion > 0) {
+          this.view.set('overview');
+        }
+        this.activeTargetId = open ? targetId : null;
+      });
+    });
+
+    effect(() => {
+      const open = this.controller.isOpen();
+      const loaded = this.controller.topology() !== null;
+      const view = this.view();
+      untracked(() => {
+        if (open && loaded && view === 'add' && this.canCreateSources()) {
           setTimeout(() => this.picker()?.focusSearch());
         }
       });
@@ -109,6 +130,38 @@ export class AbwabInclusionsModalComponent {
 
   protected close(): void {
     this.closed.emit();
+  }
+
+  protected openAddSources(): void {
+    if (!this.canCreateSources()) {
+      return;
+    }
+    this.controller.clearSourceDraft();
+    this.controller.clearNotice();
+    this.view.set('add');
+  }
+
+  protected backToOverview(): void {
+    this.controller.clearSourceDraft();
+    this.view.set('overview');
+  }
+
+  protected submit(): void {
+    if (this.view() === 'add') {
+      this.controller.submit();
+    }
+  }
+
+  protected doorPath(doorId: number, doorName: string): string {
+    return this.pathsById().get(doorId) ?? doorName;
+  }
+
+  protected revealAriaLabel(doorName: string): string {
+    return ABWAB_LABELS.doorRevealAriaLabel(doorName);
+  }
+
+  protected requestReveal(doorId: number): void {
+    this.revealRequested.emit(doorId);
   }
 
   protected detachAriaLabel(doorName: string): string {

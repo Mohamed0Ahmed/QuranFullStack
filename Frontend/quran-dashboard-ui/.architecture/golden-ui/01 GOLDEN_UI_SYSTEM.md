@@ -344,6 +344,10 @@ One shell, four named widths, one geometry contract:
 
 Contract: exactly one body scroller; header (title + optional identity/count + Close) and footer (actions) are sticky and never scroll; **padding is owned by the shell only** (sections add none); focus trap + focus return; `aria-labelledby` on the title; Escape closes unless dirty; dirty close raises the nested `alertdialog` strip **inside the footer** (not a second modal); server errors render above the footer, near the submitting action; busy disables the footer without moving it.
 
+Abwab workflow pickers use the existing `wide` override contract at `min(60rem, 100%)` by
+`min(94dvh, 48rem)` for move, template copy, inclusions, and relations. Compact keeps the shared
+full-bleed override above.
+
 ### 6.4 Async and feedback (F12 — D39, D40, D41)
 
 Five separate concepts replace one `qd-state`:
