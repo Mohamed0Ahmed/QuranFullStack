@@ -10,6 +10,7 @@ export interface AbwabSearchOptions {
 export interface AbwabSearchResult {
   readonly isFiltering: boolean;
   readonly matchedIds: ReadonlySet<number>;
+  readonly matches: readonly AbwabNode[];
   readonly matchingRootIds: ReadonlySet<number>;
   readonly autoExpandedIds: ReadonlySet<number>;
   readonly displayRoots: readonly AbwabNode[];
@@ -26,6 +27,7 @@ export function searchAbwabNodes(
     return {
       isFiltering: false,
       matchedIds: new Set(),
+      matches: [],
       matchingRootIds: new Set(),
       autoExpandedIds: new Set(),
       displayRoots: eligibleRoots,
@@ -33,6 +35,7 @@ export function searchAbwabNodes(
   }
 
   const matchedIds = new Set<number>();
+  const matches: AbwabNode[] = [];
   const matchingRootIds = new Set<number>();
   const pathExpandedIds = new Set<number>();
   const ancestors: AbwabNode[] = [];
@@ -41,6 +44,7 @@ export function searchAbwabNodes(
     const isMatch = nodeMatchesQuery(node, normalizedQuery);
     if (isMatch) {
       matchedIds.add(node.id);
+      matches.push(node);
       ancestors.forEach((ancestor) => pathExpandedIds.add(ancestor.id));
     }
 
@@ -67,8 +71,9 @@ export function searchAbwabNodes(
   return {
     isFiltering: true,
     matchedIds,
+    matches,
     matchingRootIds,
-    autoExpandedIds: hideUnrelatedRoots ? collectExpandableIds(displayRoots) : pathExpandedIds,
+    autoExpandedIds: pathExpandedIds,
     displayRoots,
   };
 }
@@ -76,18 +81,6 @@ export function searchAbwabNodes(
 function nodeMatchesQuery(node: AbwabNode, normalizedQuery: string): boolean {
   return [node.name, ...node.aliases]
     .some((candidate) => normalizeArabicForSearch(candidate).includes(normalizedQuery));
-}
-
-function collectExpandableIds(roots: readonly AbwabNode[]): ReadonlySet<number> {
-  const ids = new Set<number>();
-  const visit = (node: AbwabNode): void => {
-    if (node.children.length > 0) {
-      ids.add(node.id);
-      node.children.forEach(visit);
-    }
-  };
-  roots.forEach(visit);
-  return ids;
 }
 
 function omitAbwabSubtrees(

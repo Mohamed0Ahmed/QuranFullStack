@@ -43,6 +43,33 @@
     </div>
   </qd-form-field>
 
+  <ng-content select="[abwabSearchActions]" />
+
+  @if (showResults()) {
+    <ul
+      class="abwab-search-controls__results"
+      [attr.aria-label]="searchResultsAriaLabel"
+      [attr.data-testid]="testIdPrefix() + '-search-results'"
+    >
+      @for (door of results(); track door.id) {
+        <li class="abwab-search-controls__result-item">
+          <button
+            type="button"
+            qdAction="secondary"
+            size="sm"
+            class="abwab-search-controls__result"
+            [title]="door.name"
+            [attr.aria-label]="resultAriaLabel(door.name)"
+            [attr.data-testid]="testIdPrefix() + '-search-result-' + door.id"
+            (click)="resultSelected.emit(door.id)"
+          >
+            <span class="abwab-search-controls__result-name">{{ door.name }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+
   <span
     class="qd-sr-only"
     role="status"

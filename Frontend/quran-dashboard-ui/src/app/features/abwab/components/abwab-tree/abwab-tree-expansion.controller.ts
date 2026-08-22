@@ -5,13 +5,31 @@ import { AbwabNode } from '../../models/abwab.models';
 export class AbwabTreeExpansionController {
   private readonly manualExpandedIdsSignal = signal<ReadonlySet<number>>(new Set());
   private readonly transientExpandedIdsSignal = signal<ReadonlySet<number>>(new Set());
+  private readonly searchExpandedIdsSignal = signal<ReadonlySet<number>>(new Set());
+  private readonly searchMatchedIdsSignal = signal<ReadonlySet<number>>(new Set());
+  private readonly suppressedSearchIdsSignal = signal<ReadonlySet<number>>(new Set());
 
-  effectiveIds(searchExpandedIds: ReadonlySet<number>): ReadonlySet<number> {
+  effectiveIds(): ReadonlySet<number> {
     const manualIds = this.manualExpandedIdsSignal();
     const transientIds = this.transientExpandedIdsSignal();
-    return transientIds.size === 0 && searchExpandedIds.size === 0
+    const searchIds = this.searchExpandedIdsSignal();
+    const suppressedSearchIds = this.suppressedSearchIdsSignal();
+    const effectiveSearchIds = suppressedSearchIds.size === 0
+      ? searchIds
+      : new Set([...searchIds].filter((id) => !suppressedSearchIds.has(id)));
+    return transientIds.size === 0 && effectiveSearchIds.size === 0
       ? manualIds
-      : new Set([...manualIds, ...transientIds, ...searchExpandedIds]);
+      : new Set([...manualIds, ...transientIds, ...effectiveSearchIds]);
+  }
+
+  setSearchExpansion(expandedIds: ReadonlySet<number>, matchedIds: ReadonlySet<number>): void {
+    const resultsChanged = !setsEqual(this.searchExpandedIdsSignal(), expandedIds)
+      || !setsEqual(this.searchMatchedIdsSignal(), matchedIds);
+    this.searchExpandedIdsSignal.set(new Set(expandedIds));
+    this.searchMatchedIdsSignal.set(new Set(matchedIds));
+    if (resultsChanged) {
+      this.suppressedSearchIdsSignal.set(new Set());
+    }
   }
 
   seed(ids: ReadonlySet<number>): void {
@@ -28,8 +46,11 @@ export class AbwabTreeExpansionController {
     const next = new Set(this.manualExpandedIdsSignal());
     expanded ? next.add(id) : next.delete(id);
     this.manualExpandedIdsSignal.set(next);
-    if (!expanded) {
+    if (expanded) {
+      this.removeSuppressedSearchIds([id]);
+    } else {
       this.removeTransientIds([id]);
+      this.addSuppressedSearchIds([id]);
     }
     return next;
   }
@@ -51,7 +72,7 @@ export class AbwabTreeExpansionController {
   }
 
   canExpandAll(roots: readonly AbwabNode[]): boolean {
-    const expandedIds = this.baseExpandedIds();
+    const expandedIds = this.effectiveIds();
     return collectIds(roots, true).some((id) => !expandedIds.has(id));
   }
 
@@ -60,7 +81,7 @@ export class AbwabTreeExpansionController {
   }
 
   canExpandBranch(node: AbwabNode): boolean {
-    const expandedIds = this.baseExpandedIds();
+    const expandedIds = this.effectiveIds();
     return collectIds([node], true).some((id) => !expandedIds.has(id));
   }
 
@@ -72,6 +93,7 @@ export class AbwabTreeExpansionController {
     const next = new Set(this.manualExpandedIdsSignal());
     ids.forEach((id) => next.add(id));
     this.manualExpandedIdsSignal.set(next);
+    this.removeSuppressedSearchIds(ids);
     return next;
   }
 
@@ -80,24 +102,36 @@ export class AbwabTreeExpansionController {
     ids.forEach((id) => next.delete(id));
     this.manualExpandedIdsSignal.set(next);
     this.removeTransientIds(ids);
+    this.addSuppressedSearchIds(ids);
     return next;
   }
 
   private hasExpandedId(ids: readonly number[]): boolean {
-    const expandedIds = this.baseExpandedIds();
+    const expandedIds = this.effectiveIds();
     return ids.some((id) => expandedIds.has(id));
-  }
-
-  private baseExpandedIds(): ReadonlySet<number> {
-    const manualIds = this.manualExpandedIdsSignal();
-    const transientIds = this.transientExpandedIdsSignal();
-    return transientIds.size === 0 ? manualIds : new Set([...manualIds, ...transientIds]);
   }
 
   private removeTransientIds(ids: readonly number[]): void {
     const next = new Set(this.transientExpandedIdsSignal());
     ids.forEach((id) => next.delete(id));
     this.transientExpandedIdsSignal.set(next);
+  }
+
+  private addSuppressedSearchIds(ids: readonly number[]): void {
+    const searchIds = this.searchExpandedIdsSignal();
+    const next = new Set(this.suppressedSearchIdsSignal());
+    ids.forEach((id) => {
+      if (searchIds.has(id)) {
+        next.add(id);
+      }
+    });
+    this.suppressedSearchIdsSignal.set(next);
+  }
+
+  private removeSuppressedSearchIds(ids: readonly number[]): void {
+    const next = new Set(this.suppressedSearchIdsSignal());
+    ids.forEach((id) => next.delete(id));
+    this.suppressedSearchIdsSignal.set(next);
   }
 }
 
@@ -142,4 +176,8 @@ function collectIds(nodes: readonly AbwabNode[], expandableOnly: boolean): numbe
   };
   nodes.forEach(visit);
   return ids;
+}
+
+function setsEqual(left: ReadonlySet<number>, right: ReadonlySet<number>): boolean {
+  return left.size === right.size && [...left].every((id) => right.has(id));
 }

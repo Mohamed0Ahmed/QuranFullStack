@@ -1,92 +1,71 @@
 <div class="abwab-toolbar">
   <div class="abwab-toolbar__controls qd-toolbar">
-    <div class="abwab-toolbar__search qd-toolbar__filters">
-      <qd-abwab-search-controls
-        [query]="searchQuery()"
-        [matchCount]="searchMatchCount()"
-        [hideUnrelatedRoots]="hideUnrelatedRoots()"
-        [helper]="searchScopeHint()"
-        testIdPrefix="abwab-toolbar"
-        (queryChanged)="searchQueryChanged.emit($event)"
-        (hideUnrelatedRootsChanged)="hideUnrelatedRootsChanged.emit($event)"
-      />
-      @if (showSearchResults()) {
-        <ul
-          class="abwab-toolbar__search-results"
-          [attr.aria-label]="searchResultsAriaLabel"
-          data-testid="abwab-toolbar-search-results"
-        >
-          @for (door of searchResults(); track door.id) {
-            <li class="abwab-toolbar__search-result-item">
+    <qd-abwab-search-controls
+      class="abwab-toolbar__search abwab-search-controls--with-actions"
+      [query]="searchQuery()"
+      [matchCount]="searchMatchCount()"
+      [results]="hideSectionControls() ? [] : searchResults()"
+      [hideUnrelatedRoots]="hideUnrelatedRoots()"
+      [helper]="searchScopeHint()"
+      testIdPrefix="abwab-toolbar"
+      (queryChanged)="searchQueryChanged.emit($event)"
+      (hideUnrelatedRootsChanged)="hideUnrelatedRootsChanged.emit($event)"
+      (resultSelected)="searchResultSelected.emit($event)"
+    >
+      @if (!hideSectionControls() && !searchOnly()) {
+        <div abwabSearchActions class="abwab-toolbar__side-actions">
+          @if (view() === 'tree') {
+            <div class="abwab-toolbar__tree-expansion qd-toolbar__actions" role="group" [attr.aria-label]="treeExpansionGroupAriaLabel">
               <button
                 type="button"
-                qdAction="secondary"
-                size="sm"
-                class="abwab-toolbar__search-result"
-                [title]="door.name"
-                [attr.aria-label]="searchResultAriaLabel(door.name)"
-                [attr.data-testid]="'abwab-toolbar-search-result-' + door.id"
-                (click)="selectSearchResult(door.id)"
+                qdAction="toolbar"
+                [disabled]="!canExpandTree()"
+                [title]="treeExpandAllLabel"
+                data-testid="abwab-toolbar-tree-expand-all"
+                (click)="expandAllRequested.emit()"
               >
-                <span class="abwab-toolbar__search-result-name">{{ door.name }}</span>
+                {{ treeExpandAllLabel }}
               </button>
-            </li>
+              <button
+                type="button"
+                qdAction="toolbar"
+                [disabled]="!canCollapseTree()"
+                [title]="treeCollapseAllLabel"
+                data-testid="abwab-toolbar-tree-collapse-all"
+                (click)="collapseAllRequested.emit()"
+              >
+                {{ treeCollapseAllLabel }}
+              </button>
+            </div>
           }
-        </ul>
+
+          <div class="abwab-toolbar__view-toggle qd-toolbar__actions" role="group" [attr.aria-label]="viewToggleAriaLabel">
+            <button
+              type="button"
+              qdAction="toolbar"
+              class="abwab-toolbar__view-btn"
+              [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
+              [attr.aria-pressed]="view() === 'tree'"
+              data-testid="abwab-toolbar-view-tree"
+              (click)="selectView('tree')"
+            >
+              {{ treeViewLabel }}
+            </button>
+            <button
+              type="button"
+              qdAction="toolbar"
+              class="abwab-toolbar__view-btn"
+              [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
+              [attr.aria-pressed]="view() === 'cards'"
+              data-testid="abwab-toolbar-view-cards"
+              (click)="selectView('cards')"
+            >
+              {{ cardsViewLabel }}
+            </button>
+          </div>
+        </div>
       }
-    </div>
-
-    @if (!hideSectionControls() && !searchOnly() && view() === 'tree') {
-      <div class="abwab-toolbar__tree-expansion qd-toolbar__actions" role="group" [attr.aria-label]="treeExpansionGroupAriaLabel">
-        <button
-          type="button"
-          qdAction="toolbar"
-          [disabled]="treeExpansionDisabled() || !canExpandTree()"
-          [title]="treeExpansionDisabled() ? treeExpansionSearchDisabledHint : treeExpandAllLabel"
-          data-testid="abwab-toolbar-tree-expand-all"
-          (click)="expandAllRequested.emit()"
-        >
-          {{ treeExpandAllLabel }}
-        </button>
-        <button
-          type="button"
-          qdAction="toolbar"
-          [disabled]="treeExpansionDisabled() || !canCollapseTree()"
-          [title]="treeExpansionDisabled() ? treeExpansionSearchDisabledHint : treeCollapseAllLabel"
-          data-testid="abwab-toolbar-tree-collapse-all"
-          (click)="collapseAllRequested.emit()"
-        >
-          {{ treeCollapseAllLabel }}
-        </button>
-      </div>
-    }
-
-    @if (!hideSectionControls() && !searchOnly()) {
-      <div class="abwab-toolbar__view-toggle qd-toolbar__actions" role="group" [attr.aria-label]="viewToggleAriaLabel">
-        <button
-          type="button"
-          qdAction="toolbar"
-          class="abwab-toolbar__view-btn"
-          [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
-          [attr.aria-pressed]="view() === 'tree'"
-          data-testid="abwab-toolbar-view-tree"
-          (click)="selectView('tree')"
-        >
-          {{ treeViewLabel }}
-        </button>
-        <button
-          type="button"
-          qdAction="toolbar"
-          class="abwab-toolbar__view-btn"
-          [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
-          [attr.aria-pressed]="view() === 'cards'"
-          data-testid="abwab-toolbar-view-cards"
-          (click)="selectView('cards')"
-        >
-          {{ cardsViewLabel }}
-        </button>
-      </div>
-    }
+    </qd-abwab-search-controls>
   </div>
 
   @if (!hideSectionControls() && !searchOnly()) {

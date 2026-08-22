@@ -86,6 +86,7 @@ export class AbwabMovePickerComponent {
     },
   ));
   protected readonly searchMatchCount = computed(() => this.searchResult().matchedIds.size);
+  protected readonly searchMatches = computed(() => this.searchResult().matches);
   protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
   protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
   protected readonly searchExpandedIds = computed(() => this.searchResult().autoExpandedIds);

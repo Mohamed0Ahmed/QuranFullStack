@@ -42,7 +42,6 @@ export class AbwabOverlaysHostComponent {
   readonly sections = input.required<readonly AbwabTreeSectionDto[]>();
   readonly liveRoots = input.required<readonly AbwabNode[]>();
   readonly tree = input<AbwabTreeComponent>();
-  readonly searchIsFiltering = input(false);
 
   readonly doorModalClosed = output<void>();
   readonly movePickerClosed = output<void>();

@@ -7,7 +7,7 @@
 }
 
 .abwab-toolbar__controls {
-  align-items: center;
+  align-items: stretch;
 }
 
 .abwab-toolbar__tabs {
@@ -22,41 +22,15 @@
 }
 
 .abwab-toolbar__search {
-  flex: 1 1 0;
+  flex: 1 1 100%;
   min-inline-size: 12rem;
-  align-items: stretch;
-  flex-direction: column;
 }
 
-.abwab-toolbar__search-results {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+.abwab-toolbar__side-actions {
+  display: flex;
+  align-items: center;
   gap: var(--qd-space-2);
-  inline-size: 100%;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.abwab-toolbar__search-result-item {
-  min-inline-size: 0;
-}
-
-.abwab-toolbar__search-result {
-  min-inline-size: 0;
-  max-inline-size: none;
-  inline-size: 100%;
-  background: var(--qd-surface);
-}
-
-.abwab-toolbar__search-result-name {
-  display: block;
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  inline-size: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .abwab-toolbar__view-toggle {
@@ -86,8 +60,8 @@
 }
 
 @media (max-width: bp.$qd-bp-medium-max) {
-  .abwab-toolbar__search {
-    flex-basis: 100%;
+  .abwab-toolbar__side-actions {
+    inline-size: 100%;
   }
 }
 
