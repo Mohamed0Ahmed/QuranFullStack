@@ -47,7 +47,11 @@
           >
             <span class="abwab-cards__title">
               <span class="abwab-cards__order">{{ displayOrder(node) }}</span>
-              <span class="abwab-cards__name qd-truncate" [title]="node.name">{{ node.name }}</span>
+              <span
+                class="abwab-cards__name qd-truncate rounded-qd-sm px-qd-4"
+                [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
+                [title]="node.name"
+              >{{ node.name }}</span>
             </span>
             <span
               class="abwab-cards__meta"

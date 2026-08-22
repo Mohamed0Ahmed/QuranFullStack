@@ -26,8 +26,9 @@ export class AbwabCardsComponent {
   readonly selectedId = input<number | null>(null);
   readonly bulkMode = input(false);
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
+  readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly isFiltering = input(false);
-  readonly visibleIds = input<ReadonlySet<number>>(new Set());
+  readonly hideUnrelatedRoots = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -53,6 +54,10 @@ export class AbwabCardsComponent {
       chain.unshift(current);
       current = current.parentId !== null ? this.byId().get(current.parentId) : undefined;
     }
+    const rootId = chain[0]?.id;
+    if (rootId === undefined || !this.roots().some((root) => root.id === rootId)) {
+      return [];
+    }
     return chain;
   });
 
@@ -65,17 +70,10 @@ export class AbwabCardsComponent {
     return path.length > 0 ? path[path.length - 1].children : this.roots();
   });
 
-  protected readonly visibleLevel = computed<readonly AbwabNode[]>(() => {
-    const level = this.level();
-    if (!this.isFiltering()) {
-      return level;
-    }
-    const visibleIds = this.visibleIds();
-    return level.filter((node) => visibleIds.has(node.id));
-  });
+  protected readonly visibleLevel = computed<readonly AbwabNode[]>(() => this.level());
 
   protected readonly emptyStateMessage = computed<string>(() =>
-    this.isFiltering() && this.level().length > 0
+    this.isFiltering() && this.hideUnrelatedRoots() && this.roots().length === 0
       ? ABWAB_LABELS.noSearchMatchesMessage
       : ABWAB_LABELS.emptyTreeMessage,
   );

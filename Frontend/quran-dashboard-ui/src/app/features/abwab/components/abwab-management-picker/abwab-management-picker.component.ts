@@ -25,7 +25,7 @@ import { AbwabManagementPickerSessionStore } from '../../state/abwab-management-
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
 import { AbwabSelectionStore } from '../../state/abwab-selection.store';
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
-import { searchAbwabNodes } from '../../state/abwab-tree.builder';
+import { searchAbwabNodes } from '../../state/abwab-tree-search';
 import { AbwabWriteController } from '../../state/abwab-write.controller';
 import { AbwabAnnouncerComponent } from '../abwab-announcer/abwab-announcer.component';
 import { AbwabDoorModalComponent } from '../abwab-door-modal/abwab-door-modal.component';
@@ -79,6 +79,7 @@ export class AbwabManagementPickerComponent {
   protected readonly overlays = inject(AbwabPageOverlaysController);
   protected readonly permissions = inject(AbwabPermissionsController);
   protected readonly searchQuery = signal('');
+  protected readonly hideUnrelatedRoots = signal(false);
   protected readonly revealedId = signal<number | null>(null);
 
   private readonly pendingCreatedDoorId = signal<number | null>(null);
@@ -95,7 +96,12 @@ export class AbwabManagementPickerComponent {
   protected readonly liveRoots = computed<readonly AbwabNode[]>(
     () => this.facade.snapshot()?.liveRoots ?? NO_ROOTS,
   );
-  private readonly searchResult = computed(() => searchAbwabNodes(this.liveRoots(), this.searchQuery()));
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.liveRoots(),
+    this.searchQuery(),
+    { hideUnrelatedRoots: this.hideUnrelatedRoots() },
+  ));
+  protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
   protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
     const node = this.byId().get(id);
@@ -105,6 +111,11 @@ export class AbwabManagementPickerComponent {
     const ids = this.searchResult().autoExpandedIds;
     return ids.size === 0 ? NO_IDS : ids;
   });
+  protected readonly emptyStateMessage = computed(() =>
+    this.searchResult().isFiltering && this.hideUnrelatedRoots() && this.liveRoots().length > 0
+      ? ABWAB_LABELS.noSearchMatchesMessage
+      : ABWAB_LABELS.emptyTreeMessage,
+  );
   protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
     const result = new Set(this.session.expandedDoorIds());
     const id = this.revealSeedId();

@@ -83,6 +83,7 @@
       [searchQuery]="searchQueryParam()"
       [searchMatchCount]="searchMatchCount()"
       [searchResults]="searchMatches()"
+      [hideUnrelatedRoots]="hideUnrelatedRootsParam()"
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
@@ -92,6 +93,7 @@
       (sectionChanged)="interactions.onSectionChanged($event)"
       (viewChanged)="interactions.onViewChanged($event)"
       (searchQueryChanged)="interactions.onSearchQueryChanged($event)"
+      (hideUnrelatedRootsChanged)="interactions.onHideUnrelatedRootsChanged($event)"
       (searchResultSelected)="onRevealRequested($event)"
       (expandAllRequested)="tree()?.expansionCommands?.expandAll()"
       (collapseAllRequested)="tree()?.expansionCommands?.collapseAll()"
@@ -141,6 +143,8 @@
                   [roots]="displayArchivedRoots()"
                   [ariaLabel]="archiveTreeAriaLabel"
                   [canRestoreDoor]="permissions.canRestoreDoor()"
+                  [matchedIds]="archiveMatchedIds()"
+                  [searchExpandedIds]="archiveSearchExpandedIds()"
                   (restoreRequested)="interactions.onRestoreRequested($event)"
                   (inclusionsRequested)="modalUrl.openInclusionsFromArchive($event)"
                 />
@@ -149,15 +153,16 @@
           } @else if (viewParam() === 'cards') {
             <div class="qd-card abwab-page__tree-card">
               <qd-abwab-cards
-                [roots]="visibleRoots()"
+                [roots]="displayLiveRoots()"
                 [byId]="byId()"
                 [isFiltering]="searchIsFiltering()"
-                [visibleIds]="searchVisibleIds()"
+                [hideUnrelatedRoots]="hideUnrelatedRootsParam()"
                 [cardId]="cardParam()"
                 [orderScope]="orderScope()"
                 [selectedId]="selection.selectedDoorId()"
                 [bulkMode]="selection.bulkMode()"
                 [bulkSelectedIds]="bulkSelectedIds()"
+                [matchedIds]="treeMatchedIds()"
                 (selected)="interactions.onTreeSelected($event)"
                 (bulkToggled)="interactions.onBulkToggled($event)"
                 (drilled)="interactions.onCardDrilled($event)"
@@ -166,11 +171,11 @@
             </div>
           } @else {
             <div class="qd-card abwab-page__tree-card">
-              @if (visibleRoots().length === 0) {
-                <qd-empty-state [message]="emptyLabel" testId="abwab-page-empty" />
+              @if (displayLiveRoots().length === 0) {
+                <qd-empty-state [message]="liveEmptyStateMessage()" testId="abwab-page-empty" />
               } @else {
                 <qd-abwab-tree
-                  [roots]="visibleRoots()"
+                  [roots]="displayLiveRoots()"
                   [ariaLabel]="treeAriaLabel"
                   [orderScope]="orderScope()"
                   [selectedId]="selection.selectedDoorId()"

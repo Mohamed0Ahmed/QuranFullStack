@@ -53,15 +53,16 @@
       </p>
     } @else {
       <div [id]="destinationsId" role="tabpanel" [attr.aria-labelledby]="sectionTabId(pickedSectionId()!)">
-        <input
-          qdControl
+        <qd-abwab-search-controls
           class="abwab-move-picker__search"
-          type="text"
+          [query]="searchQuery()"
+          [matchCount]="searchMatchCount()"
+          [hideUnrelatedRoots]="hideUnrelatedRoots()"
           [placeholder]="searchPlaceholder"
-          [attr.aria-label]="searchPlaceholder"
-          [value]="searchQuery()"
-          data-testid="abwab-move-picker-search"
-          (input)="onSearchInput($event)"
+          [helper]="labels.searchScopeHintTree"
+          testIdPrefix="abwab-move-picker"
+          (queryChanged)="searchQuery.set($event)"
+          (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
         />
         <div class="abwab-move-picker__list">
           <div class="abwab-move-picker__row" [class.abwab-move-picker__row--picked]="pickedParentId() === null">
@@ -109,7 +110,10 @@
                 [attr.data-testid]="'abwab-move-picker-dest-' + row.node.id"
                 (click)="pickParent(row.node.id)"
               >
-                <span class="abwab-move-picker__name qd-truncate">{{ row.node.name }}</span>
+                <span
+                  class="abwab-move-picker__name qd-truncate rounded-qd-sm px-qd-4"
+                  [class.bg-qd-warning-tint]="row.isMatched"
+                >{{ row.node.name }}</span>
               </button>
             </div>
           }

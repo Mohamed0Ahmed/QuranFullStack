@@ -1,0 +1,53 @@
+<div class="abwab-search-controls">
+  <qd-form-field
+    class="abwab-search-controls__field"
+    [label]="label()"
+    [helper]="helper()"
+  >
+    <div class="abwab-search-controls__row">
+      <input
+        #searchInput
+        cdkFocusInitial
+        qdControl
+        type="search"
+        [placeholder]="placeholder()"
+        [value]="searchDraft()"
+        [attr.data-testid]="testIdPrefix() + '-search'"
+        (input)="onSearchInput($event)"
+      />
+
+      <label
+        class="qd-check-row abwab-search-controls__toggle"
+        [class.abwab-search-controls__toggle--disabled]="toggleDisabled()"
+      >
+        <input
+          type="checkbox"
+          class="qd-checkbox"
+          [checked]="hideUnrelatedRoots()"
+          [disabled]="toggleDisabled()"
+          [attr.data-testid]="testIdPrefix() + '-hide-unrelated'"
+          (change)="onHideUnrelatedRootsChanged($event)"
+        />
+        <span>{{ hideUnrelatedLabel }}</span>
+      </label>
+
+      @if (query().trim() !== '') {
+        <span
+          class="abwab-search-controls__count"
+          aria-hidden="true"
+          [attr.data-testid]="testIdPrefix() + '-search-count'"
+        >
+          {{ matchCountText() }}
+        </span>
+      }
+    </div>
+  </qd-form-field>
+
+  <span
+    class="qd-sr-only"
+    role="status"
+    [attr.data-testid]="testIdPrefix() + '-search-count-announce'"
+  >
+    {{ announcedCountText() }}
+  </span>
+</div>

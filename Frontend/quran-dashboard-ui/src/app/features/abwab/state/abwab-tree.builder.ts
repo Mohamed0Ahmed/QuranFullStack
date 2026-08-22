@@ -107,67 +107,6 @@ export function filterAbwabRootsBySection(
   return roots.filter((root) => root.sectionId === sectionId).sort(byNodeOrderThenId);
 }
 
-export interface AbwabSearchResult {
-  readonly isFiltering: boolean;
-  readonly matchedIds: ReadonlySet<number>;
-  readonly visibleIds: ReadonlySet<number>;
-  readonly autoExpandedIds: ReadonlySet<number>;
-}
-
-const EMPTY_SEARCH_RESULT: AbwabSearchResult = {
-  isFiltering: false,
-  matchedIds: new Set(),
-  visibleIds: new Set(),
-  autoExpandedIds: new Set(),
-};
-
-function nodeMatchesQuery(node: AbwabNode, query: string): boolean {
-  if (node.name.includes(query)) {
-    return true;
-  }
-  return node.aliases.some((alias) => alias.includes(query));
-}
-
-export function searchAbwabNodes(roots: readonly AbwabNode[], query: string): AbwabSearchResult {
-  const trimmed = query.trim();
-  if (trimmed === '') {
-    return EMPTY_SEARCH_RESULT;
-  }
-
-  const matchedIds = new Set<number>();
-  const visibleIds = new Set<number>();
-  const autoExpandedIds = new Set<number>();
-  const ancestors: AbwabNode[] = [];
-
-  function walk(node: AbwabNode): boolean {
-    const isMatch = nodeMatchesQuery(node, trimmed);
-    let anyDescendantMatch = false;
-    ancestors.push(node);
-    for (const child of node.children) {
-      anyDescendantMatch = walk(child) || anyDescendantMatch;
-    }
-    ancestors.pop();
-
-    if (isMatch) {
-      matchedIds.add(node.id);
-    }
-    if (isMatch || anyDescendantMatch) {
-      visibleIds.add(node.id);
-      for (const ancestor of ancestors) {
-        visibleIds.add(ancestor.id);
-        autoExpandedIds.add(ancestor.id);
-      }
-    }
-    return isMatch || anyDescendantMatch;
-  }
-
-  for (const root of roots) {
-    walk(root);
-  }
-
-  return { isFiltering: true, matchedIds, visibleIds, autoExpandedIds };
-}
-
 export function countLiveAbwabDoors(byId: ReadonlyMap<number, AbwabNode>): number {
   let count = 0;
   for (const node of byId.values()) {
@@ -187,19 +126,4 @@ export function countAbwabDoorsInOpenScope(
     return totalLiveDoors;
   }
   return sections.find((section) => section.id === activeSectionId)?.doorsInScopeCount ?? 0;
-}
-
-export function pruneAbwabNodesToVisible(
-  nodes: readonly AbwabNode[],
-  visibleIds: ReadonlySet<number>,
-): readonly AbwabNode[] {
-  const result: AbwabNode[] = [];
-  for (const node of nodes) {
-    if (!visibleIds.has(node.id)) {
-      continue;
-    }
-    const children = pruneAbwabNodesToVisible(node.children, visibleIds);
-    result.push(children === node.children ? node : { ...node, children });
-  }
-  return result;
 }

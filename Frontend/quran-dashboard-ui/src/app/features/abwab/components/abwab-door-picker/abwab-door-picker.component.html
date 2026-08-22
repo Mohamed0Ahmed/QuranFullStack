@@ -1,13 +1,12 @@
-<input
-  #searchInput
-  cdkFocusInitial
-  qdControl
-  type="text"
+<qd-abwab-search-controls
+  [query]="searchQuery()"
+  [matchCount]="searchMatchCount()"
+  [hideUnrelatedRoots]="hideUnrelatedRoots()"
   [placeholder]="searchPlaceholder()"
-  [attr.aria-label]="searchPlaceholder()"
-  [value]="searchQuery()"
-  [attr.data-testid]="testIdPrefix() + '-search'"
-  (input)="onSearchInput($event)"
+  [helper]="labels.searchScopeHintTree"
+  [testIdPrefix]="testIdPrefix()"
+  (queryChanged)="searchQuery.set($event)"
+  (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
 />
 @if (doorsErrorMessage(); as error) {
   <qd-error-state
@@ -77,7 +76,10 @@
             (click)="$event.preventDefault()"
           />
         }
-        <span class="abwab-door-picker__name qd-truncate">{{ row.node.name }}</span>
+        <span
+          class="abwab-door-picker__name qd-truncate rounded-qd-sm px-qd-4"
+          [class.bg-qd-warning-tint]="row.isMatched"
+        >{{ row.node.name }}</span>
         @if (row.isExcluded && excludedTag()) {
           <span class="abwab-door-picker__tag">{{ excludedTag() }}</span>
         } @else if (row.isDisabled && disabledTag()) {

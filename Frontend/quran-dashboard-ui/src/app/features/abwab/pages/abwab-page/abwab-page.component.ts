@@ -29,9 +29,8 @@ import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
   filterAbwabRootsBySection,
-  pruneAbwabNodesToVisible,
-  searchAbwabNodes,
 } from '../../state/abwab-tree.builder';
+import { searchAbwabNodes } from '../../state/abwab-tree-search';
 import { parseAbwabQueryParams } from '../../state/abwab-url-sync';
 import {
   AbwabNode,
@@ -115,6 +114,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly archiveParam = signal(false);
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
+  protected readonly hideUnrelatedRootsParam = signal(false);
 
   private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
   private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
@@ -139,10 +139,14 @@ export class AbwabPageComponent implements OnInit {
     return snapshot ? filterAbwabRootsBySection(snapshot.liveRoots, this.activeSectionId()) : [];
   });
 
-  private readonly searchResult = computed(() => searchAbwabNodes(this.visibleRoots(), this.searchQueryParam()));
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.visibleRoots(),
+    this.searchQueryParam(),
+    { hideUnrelatedRoots: this.hideUnrelatedRootsParam() },
+  ));
 
   protected readonly searchIsFiltering = computed(() => this.searchResult().isFiltering);
-  protected readonly searchVisibleIds = computed(() => this.searchResult().visibleIds);
+  protected readonly displayLiveRoots = computed(() => this.searchResult().displayRoots);
 
   protected readonly treeMatchedIds = computed(() => this.searchResult().matchedIds);
   protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
@@ -172,16 +176,23 @@ export class AbwabPageComponent implements OnInit {
   protected readonly pickerLiveRoots = computed<readonly AbwabNode[]>(() => this.facade.snapshot()?.liveRoots ?? NO_ROOTS);
 
   protected readonly archivedRoots = computed(() => this.facade.snapshot()?.archivedRoots ?? []);
-  private readonly archiveSearchResult = computed(() => searchAbwabNodes(this.archivedRoots(), this.searchQueryParam()));
-  protected readonly displayArchivedRoots = computed(() => {
-    const result = this.archiveSearchResult();
-    return result.isFiltering
-      ? pruneAbwabNodesToVisible(this.archivedRoots(), result.visibleIds)
-      : this.archivedRoots();
-  });
+  private readonly archiveSearchResult = computed(() => searchAbwabNodes(
+    this.archivedRoots(),
+    this.searchQueryParam(),
+    { hideUnrelatedRoots: this.hideUnrelatedRootsParam() },
+  ));
+  protected readonly displayArchivedRoots = computed(() => this.archiveSearchResult().displayRoots);
+  protected readonly archiveMatchedIds = computed(() => this.archiveSearchResult().matchedIds);
+  protected readonly archiveSearchExpandedIds = computed(() => this.archiveSearchResult().autoExpandedIds);
+
+  protected readonly liveEmptyStateMessage = computed<string>(() =>
+    this.searchResult().isFiltering && this.hideUnrelatedRootsParam() && this.visibleRoots().length > 0
+      ? ABWAB_LABELS.noSearchMatchesMessage
+      : ABWAB_LABELS.emptyTreeMessage,
+  );
 
   protected readonly archiveEmptyStateMessage = computed<string>(() =>
-    this.archiveSearchResult().isFiltering && this.archivedRoots().length > 0
+    this.archiveSearchResult().isFiltering && this.hideUnrelatedRootsParam() && this.archivedRoots().length > 0
       ? ABWAB_LABELS.archiveNoSearchMatchesMessage
       : ABWAB_LABELS.archiveEmptyMessage,
   );
@@ -207,7 +218,6 @@ export class AbwabPageComponent implements OnInit {
   protected get templatesLabel(): string { return ABWAB_LABELS.templatesButton; }
   protected get treeAriaLabel(): string { return ABWAB_LABELS.treeAriaLabel; }
   protected get archiveTreeAriaLabel(): string { return ABWAB_LABELS.archiveTreeAriaLabel; }
-  protected get emptyLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
   protected get loadingLabel(): string { return ABWAB_LABELS.loadingTreeMessage; }
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get statAllDoorsLabel(): string { return ABWAB_LABELS.allDoorsTab; }
@@ -301,6 +311,7 @@ export class AbwabPageComponent implements OnInit {
       this.archiveParam.set(parsed.archive);
       this.cardParam.set(parsed.card);
       this.searchQueryParam.set(parsed.q);
+      this.hideUnrelatedRootsParam.set(parsed.hideUnrelatedRoots);
       this.modalUrl.syncFromUrl(parsed.modal, door);
       this.selection.setArchiveViewActive(parsed.archive);
       this.selection.setSectionScope(parsed.section);

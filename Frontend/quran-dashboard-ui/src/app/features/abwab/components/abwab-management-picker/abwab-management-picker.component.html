@@ -6,7 +6,9 @@
     [searchQuery]="searchQuery()"
     [searchMatchCount]="treeMatchedIds().size"
     [searchResults]="searchMatches()"
+    [hideUnrelatedRoots]="hideUnrelatedRoots()"
     (searchQueryChanged)="searchQuery.set($event)"
+    (hideUnrelatedRootsChanged)="hideUnrelatedRoots.set($event)"
     (searchResultSelected)="revealDoor($event)"
   />
 
@@ -39,11 +41,11 @@
       class="qd-card abwab-page__tree-card abwab-management-picker__tree-card"
       [class.abwab-management-picker__tree-card--selection]="selectionMode()"
     >
-      @if (liveRoots().length === 0) {
-        <qd-empty-state [message]="labels.emptyTreeMessage" testId="abwab-management-picker-empty" />
+      @if (displayRoots().length === 0) {
+        <qd-empty-state [message]="emptyStateMessage()" testId="abwab-management-picker-empty" />
       } @else {
         <qd-abwab-tree
-          [roots]="liveRoots()"
+          [roots]="displayRoots()"
           [ariaLabel]="labels.treeAriaLabel"
           orderScope="global"
           [selectedId]="selection.selectedDoorId()"

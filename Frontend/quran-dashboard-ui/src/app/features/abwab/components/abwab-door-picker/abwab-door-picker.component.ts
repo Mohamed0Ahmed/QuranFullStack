@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, input, output, signal, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output, signal, viewChild } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabNode } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { searchAbwabNodes } from '../../state/abwab-tree-search';
+import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
 
 export type AbwabDoorPickerStatus = 'ready' | 'loading' | 'error' | 'empty';
 
@@ -17,20 +18,17 @@ interface AbwabDoorPickerRow {
   readonly depth: number;
   readonly hasChildren: boolean;
   readonly isExpanded: boolean;
+  readonly isMatched: boolean;
   readonly isDisabled: boolean;
   readonly isExcluded: boolean;
-}
-
-function subtreeMatches(node: AbwabNode, query: string): boolean {
-  return node.name.includes(query) || node.children.some((child) => subtreeMatches(child, query));
 }
 
 @Component({
   selector: 'qd-abwab-door-picker',
   standalone: true,
   imports: [
+    AbwabSearchControlsComponent,
     QdActionDirective,
-    QdControlDirective,
     QdSkeletonRowsComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -56,9 +54,10 @@ export class AbwabDoorPickerComponent {
   readonly toggled = output<number>();
   readonly retry = output<void>();
 
-  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
+  private readonly searchControls = viewChild(AbwabSearchControlsComponent);
 
   protected readonly searchQuery = signal('');
+  protected readonly hideUnrelatedRoots = signal(false);
   private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   private readonly collapsedExcludedIds = signal<ReadonlySet<number>>(new Set());
 
@@ -70,45 +69,60 @@ export class AbwabDoorPickerComponent {
   protected get allDescendantsLabel(): string { return ABWAB_LABELS.rowHeaderTotal; }
   protected get depthLabel(): string { return ABWAB_LABELS.rowHeaderDepth; }
   protected get relationsLabel(): string { return ABWAB_LABELS.relationsFlagLabel; }
+  protected readonly labels = ABWAB_LABELS;
 
   protected readonly pickerName = `abwab-door-picker-${nextPickerId++}`;
 
   protected readonly doorsErrorMessage = computed(() => (this.status() === 'error' ? this.errorMessage() : ''));
 
-  protected readonly searchFoundNothing = computed(
-    () => this.searchQuery().trim() !== '' && this.nodes().length > 0,
+  private readonly searchResult = computed(() => searchAbwabNodes(
+    this.nodes(),
+    this.searchQuery(),
+    { hideUnrelatedRoots: this.hideUnrelatedRoots() },
+  ));
+  protected readonly searchMatchCount = computed(() => this.searchResult().matchedIds.size);
+  protected readonly searchFoundNothing = computed(() =>
+    this.searchResult().isFiltering
+    && this.hideUnrelatedRoots()
+    && this.nodes().length > 0
+    && this.searchResult().displayRoots.length === 0,
   );
 
   private readonly pickedSet = computed(() => new Set(this.pickedIds()));
 
   protected readonly rows = computed<readonly AbwabDoorPickerRow[]>(() => {
-    const query = this.searchQuery().trim();
     const excluded = new Set(this.excludedIds());
     const disabled = new Set(this.disabledIds());
     const expanded = this.expandedIds();
+    const searchExpanded = this.searchResult().autoExpandedIds;
     const collapsedExcluded = this.collapsedExcludedIds();
     const rows: AbwabDoorPickerRow[] = [];
 
     const walk = (node: AbwabNode, depth: number): void => {
-      if (query !== '' && !subtreeMatches(node, query)) {
-        return;
-      }
       const hasChildren = node.children.length > 0;
       const isExcluded = excluded.has(node.id);
       const defaultExpanded = isExcluded ? !collapsedExcluded.has(node.id) : expanded.has(node.id);
-      const isExpanded = defaultExpanded || (query !== '' && hasChildren);
-      rows.push({ node, depth, hasChildren, isExpanded, isDisabled: disabled.has(node.id), isExcluded });
+      const isExpanded = defaultExpanded || searchExpanded.has(node.id);
+      rows.push({
+        node,
+        depth,
+        hasChildren,
+        isExpanded,
+        isMatched: this.searchResult().matchedIds.has(node.id),
+        isDisabled: disabled.has(node.id),
+        isExcluded,
+      });
       if (isExpanded) {
         node.children.forEach((child) => walk(child, depth + 1));
       }
     };
 
-    this.nodes().forEach((root) => walk(root, 0));
+    this.searchResult().displayRoots.forEach((root) => walk(root, 0));
     return rows;
   });
 
   focusSearch(): void {
-    this.searchInput()?.nativeElement.focus();
+    this.searchControls()?.focusInput();
   }
 
   protected isPicked(doorId: number): boolean {
@@ -154,10 +168,6 @@ export class AbwabDoorPickerComponent {
       : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
   }
 
-  protected onSearchInput(event: Event): void {
-    this.searchQuery.set((event.target as HTMLInputElement).value);
-  }
-
   protected toggleExpanded(event: Event, row: AbwabDoorPickerRow): void {
     event.stopPropagation();
     if (row.isExcluded) {
@@ -184,6 +194,7 @@ export class AbwabDoorPickerComponent {
 
   reset(): void {
     this.searchQuery.set('');
+    this.hideUnrelatedRoots.set(false);
     this.expandedIds.set(new Set());
     this.collapsedExcludedIds.set(new Set());
   }

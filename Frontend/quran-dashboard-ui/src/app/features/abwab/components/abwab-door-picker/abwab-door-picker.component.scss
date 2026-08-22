@@ -7,10 +7,6 @@
   display: block;
 }
 
-:host > input {
-  inline-size: 100%;
-}
-
 .abwab-door-picker__error,
 .abwab-door-picker__list {
   margin-block-start: var(--qd-space-2);
