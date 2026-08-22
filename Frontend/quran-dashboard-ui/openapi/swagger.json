@@ -17930,6 +17930,7 @@
           "matchedWordIds",
           "matchedWordPositions",
           "pageNumber",
+          "surahNameArabic",
           "surahNumber",
           "verseKey",
           "words"
@@ -17942,6 +17943,9 @@
           "surahNumber": {
             "type": "integer",
             "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
           },
           "ayahNumber": {
             "type": "integer",
@@ -19014,6 +19018,9 @@
     },
     {
       "name": "LinkingWorkspace"
+    },
+    {
+      "name": "MushafAyahDoors"
     },
     {
       "name": "MushafAyahMutashabihat"

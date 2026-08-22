@@ -49,12 +49,15 @@
 }
 
 .word-types-table__word {
-  display: block;
+  display: flex;
   inline-size: 100%;
+  min-inline-size: 0;
+  justify-content: flex-start;
   overflow: hidden;
   font-family: var(--qd-font-quran, inherit);
   font-size: var(--qd-type-body-lg);
   line-height: var(--qd-type-body-lg-lh);
+  text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

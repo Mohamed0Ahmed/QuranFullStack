@@ -34,6 +34,7 @@ import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-s
 import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 export type WordTypeCountColumn = 'occurrences' | 'ayahs' | 'surahs';
+export type WordTypeTableFocusColumn = WordTypeCountColumn | 'identity';
 
 export interface WordTypeCountOpenedEvent {
   row: WordTypeTableRowDto;
@@ -80,6 +81,7 @@ export class WordTypesTableComponent {
   readonly retryLabel = input('');
   readonly selectedRow = input<WordTypeTableRowDto | null>(null);
   readonly sort = input<WordTypeSort>(DEFAULT_WORD_TYPE_SORT);
+  readonly rowSelected = output<WordTypeTableRowDto>();
   readonly countOpened = output<WordTypeCountOpenedEvent>();
   readonly retry = output<void>();
   readonly sortChange = output<WordTypeSort | null>();
@@ -225,10 +227,14 @@ export class WordTypesTableComponent {
     this.countOpened.emit({ row, column, view });
   }
 
-  focusStatistic(
+  protected selectRow(row: WordTypeTableRowDto): void {
+    this.rowSelected.emit(row);
+  }
+
+  focusTarget(
     row: WordTypeTableRowDto | null,
     view: WordTypeDetailView,
-    column: WordTypeCountColumn | null = null,
+    column: WordTypeTableFocusColumn | null = null,
   ): void {
     if (!row) {
       return;
@@ -236,9 +242,11 @@ export class WordTypesTableComponent {
 
     const resolvedColumn = column ?? (view === 'words' ? 'occurrences' : view);
     const host = this.host.nativeElement as HTMLElement;
-    const button = host.querySelector<HTMLButtonElement>(
-      `[data-row-id="${this.rowDomId(row)}"] [data-word-count-column="${resolvedColumn}"] [data-testid="word-count-chip"]`,
-    );
+    const rowSelector = `[data-row-id="${this.rowDomId(row)}"]`;
+    const targetSelector = resolvedColumn === 'identity'
+      ? '[data-testid="word-types-table-identity-button"]'
+      : `[data-word-count-column="${resolvedColumn}"] [data-testid="word-count-chip"]`;
+    const button = host.querySelector<HTMLButtonElement>(`${rowSelector} ${targetSelector}`);
     button?.focus();
   }
 

@@ -1,9 +1,7 @@
 import { AyahMatchDto } from '../models/unique-words.models';
 import { WordTypeAyahMatchDto } from '../models/word-types.models';
-import { parseVerseKey } from './verse-key';
 
 export function mapWordTypeAyahMatchToShared(match: WordTypeAyahMatchDto): AyahMatchDto {
-  const { ayahNumber } = parseVerseKey(match.verseKey);
   const matchedSet = new Set(match.matchedWordIds);
   const visibleWords = match.words.filter((word) => !word.isAyahMarker);
   const firstMatchedPosition = match.matchedWordPositions[0];
@@ -11,8 +9,8 @@ export function mapWordTypeAyahMatchToShared(match: WordTypeAyahMatchDto): AyahM
   return {
     ayahId: 0,
     verseKey: match.verseKey,
-    surahNameArabic: '',
-    ayahNumber,
+    surahNameArabic: match.surahNameArabic,
+    ayahNumber: match.ayahNumber,
     pageNumber: match.pageNumber,
     analysisLocation: firstMatchedPosition ? `${match.verseKey}:${firstMatchedPosition}` : null,
     matchedQuranWordIds: visibleWords.reduce<number[]>((ids, word, index) => {

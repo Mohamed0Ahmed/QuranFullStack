@@ -606,7 +606,8 @@ qd-sortable-header.qd-sortable-header {
   .roots-table .qd-explorer-mobile-identity .roots-table__word,
   .lemmas-table .qd-explorer-mobile-identity .lemmas-table__word,
   .stems-table .qd-explorer-mobile-identity .stems-table__stem,
-  .unique-words-table .qd-explorer-mobile-identity .unique-words-table__word {
+  .unique-words-table .qd-explorer-mobile-identity .unique-words-table__word,
+  .word-types-table .qd-explorer-mobile-identity .word-types-table__word {
     flex: 0 0 auto;
     justify-content: flex-start;
     min-block-size: var(--qd-control-sm);

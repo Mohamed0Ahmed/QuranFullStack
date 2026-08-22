@@ -83,11 +83,13 @@ public sealed partial class EfWordTypesReader
             pa.ayah_id AS "{nameof(GroupedAyahMatchSqlRow.AyahId)}",
             a.verse_key AS "{nameof(GroupedAyahMatchSqlRow.VerseKey)}",
             pa.surah_number::int AS "{nameof(GroupedAyahMatchSqlRow.SurahNumber)}",
+            s.name_arabic AS "{nameof(GroupedAyahMatchSqlRow.SurahNameArabic)}",
             pa.ayah_number::int AS "{nameof(GroupedAyahMatchSqlRow.AyahNumber)}",
             b.quran_word_id AS "{nameof(GroupedAyahMatchSqlRow.MatchedWordId)}",
             b.word_number AS "{nameof(GroupedAyahMatchSqlRow.MatchedWordNumber)}"
         FROM page_ayahs pa
         JOIN quran_ayahs a ON a.id = pa.ayah_id
+        JOIN quran_surahs s ON s.surah_number = pa.surah_number
         JOIN base b ON b.ayah_id = pa.ayah_id
         ORDER BY pa.surah_number, pa.ayah_number, b.word_number, b.quran_word_id
         """;
@@ -113,6 +115,7 @@ public sealed partial class EfWordTypesReader
         int AyahId,
         string VerseKey,
         int SurahNumber,
+        string SurahNameArabic,
         int AyahNumber,
         int MatchedWordId,
         int MatchedWordNumber);
