@@ -18,6 +18,7 @@ internal static class MushafReaderDependencyInjection
             sp.GetRequiredService<EfMushafPageReader>(),
             sp.GetRequiredService<IMemoryCache>()));
         services.AddScoped<IMushafDoorHighlightsReader, EfMushafDoorHighlightsReader>();
+        services.AddScoped<IMushafAyahDoorsReader, EfMushafAyahDoorsReader>();
 
         services.AddScoped<EfAyahStudyReader>();
         services.AddScoped<IAyahStudyReader>(sp => new CachedAyahStudyReader(

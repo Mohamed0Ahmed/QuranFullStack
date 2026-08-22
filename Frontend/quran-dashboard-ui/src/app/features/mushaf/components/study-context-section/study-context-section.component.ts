@@ -19,6 +19,7 @@ import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { SelectedAyahSectionComponent } from '../selected-ayah-section/selected-ayah-section.component';
 import { SelectedWordSectionComponent } from '../selected-word-section/selected-word-section.component';
 import { MushafDoorsPanelComponent } from '../mushaf-doors-panel/mushaf-doors-panel.component';
+import { MushafAyahDoorsSectionComponent } from '../mushaf-ayah-doors-section/mushaf-ayah-doors-section.component';
 
 export type StudyContextTab = 'analysis' | 'doors' | AyahStudyGroup;
 
@@ -54,6 +55,7 @@ let nextStudyContextInstance = 0;
   imports: [
     QdTabsComponent,
     QdTabDirective,
+    MushafAyahDoorsSectionComponent,
     MushafDoorsPanelComponent,
     SelectedWordSectionComponent,
     SelectedAyahSectionComponent,

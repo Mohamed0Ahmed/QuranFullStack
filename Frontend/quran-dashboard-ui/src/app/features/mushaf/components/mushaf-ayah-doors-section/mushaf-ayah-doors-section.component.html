@@ -1,0 +1,124 @@
+@if (verseKey()) {
+  <section
+    class="mushaf-ayah-doors"
+    aria-label="الأبواب المرتبطة بالآية"
+    data-testid="mushaf-ayah-doors-section"
+  >
+    <header class="mushaf-ayah-doors__heading">
+      <h3 class="mushaf-ayah-doors__title">الأبواب المرتبطة بالآية</h3>
+      @if (!loading() && !errorMessage()) {
+        <span class="mushaf-ayah-doors__summary" aria-live="polite">
+          <strong>{{ rows().length }}</strong>
+          أبواب
+        </span>
+      }
+    </header>
+
+    @if (loading()) {
+      <qd-skeleton-rows
+        [count]="3"
+        rowTemplate="minmax(0, 1fr) repeat(3, minmax(calc(var(--qd-hit-target-min) * 1.45), max-content))"
+        loadingLabel="جارٍ تحميل أبواب الآية..."
+        data-testid="mushaf-ayah-doors-loading"
+      />
+    } @else if (errorMessage(); as message) {
+      <qd-error-state
+        severity="read"
+        [message]="message"
+        actionLabel="إعادة المحاولة"
+        testId="mushaf-ayah-doors-error"
+        actionTestId="mushaf-ayah-doors-retry"
+        (action)="retry()"
+      />
+    } @else if (rows().length === 0) {
+      <qd-empty-state
+        message="لا ترتبط هذه الآية بأي باب حاليًا."
+        testId="mushaf-ayah-doors-empty"
+      />
+    } @else {
+      <div class="mushaf-ayah-doors__table" role="table" aria-label="الأبواب المرتبطة بالآية">
+        <div class="mushaf-ayah-doors__row mushaf-ayah-doors__row--header" role="row">
+          <span class="mushaf-ayah-doors__name" role="columnheader">الباب</span>
+          <span class="mushaf-ayah-doors__header-cell" role="columnheader">المواضع</span>
+          <span class="mushaf-ayah-doors__header-cell" role="columnheader">الروابط</span>
+          <span class="mushaf-ayah-doors__header-cell" role="columnheader">العلاقات</span>
+        </div>
+
+        @for (door of rows(); track door.id) {
+          <div class="mushaf-ayah-doors__row" role="row" [attr.data-testid]="'mushaf-ayah-door-' + door.id">
+            <span class="mushaf-ayah-doors__name" role="cell" [title]="door.name">
+              {{ door.name }}
+            </span>
+            <span
+              class="mushaf-ayah-doors__metric"
+              [class.mushaf-ayah-doors__metric--active]="door.selectedWordCount > 0"
+              role="cell"
+              [attr.aria-label]="labels.rowPositionsAriaLabel(door.name, door.selectedWordCount)"
+            >
+              <strong>{{ door.selectedWordCount }}</strong>
+            </span>
+            <button
+              type="button"
+              qdAction="row-action"
+              size="sm"
+              class="mushaf-ayah-doors__metric mushaf-ayah-doors__metric-button"
+              [class.mushaf-ayah-doors__metric--active]="door.linkCount > 0"
+              [class.mushaf-ayah-doors__metric--open]="doorLinks.openDoorId() === door.id"
+              [attr.aria-label]="labels.rowLinksAriaLabel(door.name, door.linkCount)"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="doorLinks.openDoorId() === door.id"
+              [attr.aria-controls]="'abwab-door-links-panel-' + door.id"
+              [attr.data-testid]="'mushaf-ayah-door-links-' + door.id"
+              (click)="toggleLinks(door)"
+            >
+              <strong>{{ door.linkCount }}</strong>
+            </button>
+            <button
+              type="button"
+              qdAction="row-action"
+              size="sm"
+              class="mushaf-ayah-doors__metric mushaf-ayah-doors__metric-button"
+              [class.mushaf-ayah-doors__metric--active]="door.relationCount > 0"
+              [class.mushaf-ayah-doors__metric--open]="relationsDoor()?.id === door.id"
+              [attr.aria-label]="labels.rowRelationsAriaLabel(door.name, door.relationCount)"
+              aria-haspopup="dialog"
+              [attr.aria-expanded]="relationsDoor()?.id === door.id"
+              [attr.data-testid]="'mushaf-ayah-door-relations-' + door.id"
+              (click)="openRelations(door)"
+            >
+              <strong>{{ door.relationCount }}</strong>
+            </button>
+          </div>
+        }
+      </div>
+    }
+  </section>
+}
+
+@if (openLinksDoor(); as door) {
+  <qd-abwab-door-links-panel
+    [doorId]="door.id"
+    [doorName]="door.name"
+    (dismissed)="doorLinks.close()"
+  />
+}
+
+@if (relationsDoor(); as door) {
+  <qd-abwab-relations-modal
+    [open]="true"
+    [anchorDoorId]="door.id"
+    [anchorDoorName]="door.name"
+    [anchorRelationCount]="door.relationCount"
+    [anchorPickMode]="false"
+    [bulkTargets]="[]"
+    [liveRoots]="liveRoots()"
+    [loadRelations]="loadRelations"
+    [refetchRelations]="refetchRelations"
+    [addRelations]="addRelations"
+    [deleteRelation]="deleteRelation"
+    [canCreateRelation]="permissions.canCreateRelation()"
+    [canDeleteRelation]="permissions.canDeleteRelation()"
+    (closed)="closeRelations()"
+    (revealRequested)="revealRelation($event)"
+  />
+}

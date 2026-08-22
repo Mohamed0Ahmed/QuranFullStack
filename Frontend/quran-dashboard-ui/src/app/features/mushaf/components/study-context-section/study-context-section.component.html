@@ -49,6 +49,9 @@
         [loadState]="wordLoadState()"
         [selectedWordLocation]="selectedWordLocation()"
       />
+      <qd-mushaf-ayah-doors-section
+        [verseKey]="selectedWordLocation() ? selectedVerseKey() : null"
+      />
     } @else if (activeContextTab() === 'doors') {
       <qd-mushaf-doors-panel />
     } @else {
