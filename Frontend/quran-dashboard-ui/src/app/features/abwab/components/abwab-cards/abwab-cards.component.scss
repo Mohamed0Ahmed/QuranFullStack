@@ -26,10 +26,6 @@
 }
 
 
-.abwab-cards__cell {
-  position: relative;
-}
-
 .abwab-cards__card {
   display: block;
   inline-size: 100%;
@@ -71,12 +67,6 @@
 
 .abwab-cards__card--checked {
   background: var(--qd-selected-bg);
-}
-
-.abwab-cards__checkbox {
-  position: absolute;
-  inset-block-start: var(--qd-space-3);
-  inset-inline-start: var(--qd-space-3);
 }
 
 .abwab-cards__title {

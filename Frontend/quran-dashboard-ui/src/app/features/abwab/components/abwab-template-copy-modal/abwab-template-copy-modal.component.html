@@ -1,6 +1,8 @@
 @if (open()) {
   <qd-modal-shell
     variant="wide"
+    [wideInlineSize]="'var(--qd-abwab-workflow-modal-inline-size)'"
+    [wideBlockSize]="'var(--qd-abwab-workflow-modal-block-size)'"
     testIdPrefix="abwab-template-copy-modal"
     [open]="true"
     [titleText]="titleText()"

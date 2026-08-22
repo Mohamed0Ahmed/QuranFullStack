@@ -60,16 +60,6 @@
               {{ node.liveChildCount > 0 ? node.liveChildCount : '' }}
             </span>
           </button>
-          @if (bulkMode()) {
-            <input
-              type="checkbox"
-              class="abwab-cards__checkbox qd-checkbox"
-              [checked]="bulkSelectedIds().has(node.id)"
-              [attr.aria-label]="node.name"
-              [attr.data-testid]="'abwab-card-checkbox-' + node.id"
-              (click)="onCheckboxClick($event, node.id)"
-            />
-          }
         </div>
       }
     </div>

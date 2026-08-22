@@ -1,6 +1,8 @@
 @if (controller.isOpen() && controller.target(); as target) {
   <qd-modal-shell
     variant="wide"
+    [wideInlineSize]="'var(--qd-abwab-workflow-modal-inline-size)'"
+    [wideBlockSize]="'var(--qd-abwab-workflow-modal-block-size)'"
     testIdPrefix="abwab-inclusions-modal"
     [open]="true"
     [titleText]="labels.inclusionsModalTitle"

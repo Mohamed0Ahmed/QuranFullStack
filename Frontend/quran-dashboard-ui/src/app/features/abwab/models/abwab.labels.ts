@@ -282,7 +282,7 @@ export const ABWAB_LABELS = {
   relationsModalTitle: (doorName: string): string => `علاقات «${doorName}»`,
   relationsModalDescription: 'العلاقات المتبادلة تظهر تلقائيًا عند الطرف الآخر. الحذف من هنا يحذفها من الطرفين.',
   relationsReadOnlyDescription: 'اختر بابًا مرتبطًا للانتقال إليه في الشجرة.',
-  relationsEmpty: 'لا توجد علاقات لهذا الباب بعد — أضف أول علاقة من الأسفل.',
+  relationsEmpty: 'لا توجد علاقات لهذا الباب.',
   relationsReadOnlyEmpty: 'لا توجد علاقات لهذا الباب.',
   relationsLoading: 'يتم تحميل العلاقات…',
   relationsLoadError: 'تعذر تحميل علاقات الباب.',
@@ -324,6 +324,9 @@ export const ABWAB_LABELS = {
   relationGroupLessComprehensive: 'أبواب أقل شمولية',
 
   relationAddTitle: 'إضافة علاقة جديدة',
+  relationAddDescription: 'اختر الباب أو الأبواب، ثم حدد نوع العلاقة واتجاه الشمولية إن لزم.',
+  relationStartAddButton: 'أضف علاقة لهذا الباب',
+  relationBackButton: 'رجوع إلى العلاقات',
   relationTypeTabsAriaLabel: 'نوع العلاقة',
   relationTypeSimilarity: 'تشابه',
   relationTypeOpposition: 'تضاد',

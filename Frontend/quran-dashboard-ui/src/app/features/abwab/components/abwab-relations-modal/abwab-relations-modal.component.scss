@@ -5,7 +5,7 @@
   font-size: 0.78rem;
 }
 
-.abwab-relations-modal__group h4,
+.abwab-relations-modal__group h3,
 .abwab-relations-modal__picker-hint {
   color: var(--qd-text-muted);
   font-size: 0.75rem;
@@ -23,10 +23,24 @@
   margin-block-end: var(--qd-space-4);
 }
 
-.abwab-relations-modal__group h4 {
+.abwab-relations-modal__group h3 {
   display: flex;
   align-items: center;
   gap: var(--qd-space-2);
+}
+
+.abwab-relations-modal__overview {
+  min-block-size: 9rem;
+}
+
+.abwab-relations-modal__group-count {
+  min-inline-size: 1.5rem;
+  padding-inline: var(--qd-space-1);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-section-bg);
+  color: var(--qd-text-muted);
+  font-size: 0.6875rem;
+  text-align: center;
 }
 
 .abwab-relations-modal__dot {
@@ -70,17 +84,10 @@
   overflow-wrap: anywhere;
 }
 
-.abwab-relations-modal__divider {
-  border: none;
-  block-size: 1px;
-  background: var(--qd-border);
-  margin-block: var(--qd-space-4) var(--qd-space-3);
-}
-
 .abwab-relations-modal__add-title {
-  font-size: 0.8125rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  margin-block-end: var(--qd-space-2);
+  margin-block-end: var(--qd-space-3);
 }
 
 .abwab-relations-modal__types {

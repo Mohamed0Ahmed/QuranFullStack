@@ -12,14 +12,7 @@ import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { searchAbwabNodes } from '../../state/abwab-tree-search';
 import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
-
-interface AbwabMovePickerRow {
-  readonly node: AbwabNode;
-  readonly depth: number;
-  readonly hasChildren: boolean;
-  readonly isExpanded: boolean;
-  readonly isMatched: boolean;
-}
+import { AbwabTreeComponent } from '../abwab-tree/abwab-tree.component';
 
 let nextModalId = 0;
 
@@ -28,6 +21,7 @@ let nextModalId = 0;
   standalone: true,
   imports: [
     AbwabSearchControlsComponent,
+    AbwabTreeComponent,
     QdActionDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -58,7 +52,7 @@ export class AbwabMovePickerComponent {
 
   protected readonly pickedSectionId = signal<number | null>(null);
   protected readonly pickedParentId = signal<number | null>(null);
-  private readonly expandedIds = signal<ReadonlySet<number>>(new Set());
+  protected readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly searchQuery = signal('');
   protected readonly hideUnrelatedRoots = signal(false);
 
@@ -66,6 +60,7 @@ export class AbwabMovePickerComponent {
   protected get sectionStripLabel(): string { return ABWAB_LABELS.movePickerSectionStripLabel; }
   protected get searchPlaceholder(): string { return ABWAB_LABELS.movePickerSearchPlaceholder; }
   protected get noMatchesLabel(): string { return ABWAB_LABELS.pickerNoMatches; }
+  protected get emptyTreeLabel(): string { return ABWAB_LABELS.emptyTreeMessage; }
   protected get pickSectionHint(): string { return ABWAB_LABELS.movePickerPickSectionHint; }
   protected get asMainDoorLabel(): string { return ABWAB_LABELS.asMainDoorOption; }
   protected get confirmLabel(): string { return ABWAB_LABELS.moveConfirm; }
@@ -91,38 +86,9 @@ export class AbwabMovePickerComponent {
     },
   ));
   protected readonly searchMatchCount = computed(() => this.searchResult().matchedIds.size);
-
-  protected readonly destinationRows = computed<readonly AbwabMovePickerRow[]>(() => {
-    const sectionId = this.pickedSectionId();
-    if (sectionId === null) {
-      return [];
-    }
-    const expanded = this.expandedIds();
-    const searchExpanded = this.searchResult().autoExpandedIds;
-    const matchedIds = this.searchResult().matchedIds;
-    const rows: AbwabMovePickerRow[] = [];
-
-    function walk(node: AbwabNode, depth: number): void {
-      const children = node.children;
-      const hasChildren = children.length > 0;
-      const isExpanded = expanded.has(node.id) || searchExpanded.has(node.id);
-      rows.push({
-        node,
-        depth,
-        hasChildren,
-        isExpanded,
-        isMatched: matchedIds.has(node.id),
-      });
-      if (isExpanded) {
-        for (const child of children) {
-          walk(child, depth + 1);
-        }
-      }
-    }
-
-    this.searchResult().displayRoots.forEach((root) => walk(root, 0));
-    return rows;
-  });
+  protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
+  protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
+  protected readonly searchExpandedIds = computed(() => this.searchResult().autoExpandedIds);
 
   private readonly sectionHasDoors = computed(() => {
     const sectionId = this.pickedSectionId();
@@ -164,27 +130,16 @@ export class AbwabMovePickerComponent {
     this.expandedIds.set(new Set());
   }
 
-  protected expandAriaLabel(row: AbwabMovePickerRow): string {
-    return row.isExpanded
-      ? ABWAB_LABELS.relationPickerCollapseAriaLabel(row.node.name)
-      : ABWAB_LABELS.relationPickerExpandAriaLabel(row.node.name);
-  }
-
-  protected toggleExpanded(event: Event, row: AbwabMovePickerRow): void {
-    event.stopPropagation();
-    const next = new Set(this.expandedIds());
-    if (!next.delete(row.node.id)) {
-      next.add(row.node.id);
-    }
-    this.expandedIds.set(next);
-  }
-
   protected pickAsMain(): void {
     this.pickedParentId.set(null);
   }
 
   protected pickParent(id: number): void {
     this.pickedParentId.set(id);
+  }
+
+  protected rememberExpanded(ids: ReadonlySet<number>): void {
+    this.expandedIds.set(ids);
   }
 
   protected confirm(): void {

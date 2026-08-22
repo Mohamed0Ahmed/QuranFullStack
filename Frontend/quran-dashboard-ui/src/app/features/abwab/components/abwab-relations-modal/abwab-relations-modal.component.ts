@@ -31,6 +31,8 @@ export interface AbwabRelationTarget {
   readonly name: string;
 }
 
+type AbwabRelationsView = 'overview' | 'add';
+
 const TYPE_ORDER: readonly AbwabRelationKind[] = ['similarity', 'opposition', 'comprehensiveness'];
 
 const GROUP_LABELS: Readonly<Record<AbwabRelationGroupKey, string>> = {
@@ -76,7 +78,6 @@ export class AbwabRelationsModalComponent {
   readonly open = input(false);
   readonly anchorDoorId = input<number | null>(null);
   readonly anchorDoorName = input('');
-  readonly anchorRelationCount = input(0);
   readonly anchorPickMode = input(false);
   readonly bulkTargets = input<readonly AbwabRelationTarget[]>([]);
   readonly liveRoots = input<readonly AbwabNode[]>([]);
@@ -102,6 +103,7 @@ export class AbwabRelationsModalComponent {
   protected readonly relations = signal<readonly AbwabRelationVm[]>([]);
   protected readonly status = signal<'loading' | 'ready' | 'error'>('ready');
   protected readonly errorMessage = signal<string | null>(null);
+  protected readonly view = signal<AbwabRelationsView>('overview');
   protected readonly type = signal<AbwabRelationKind>('similarity');
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
@@ -109,11 +111,17 @@ export class AbwabRelationsModalComponent {
   protected readonly pendingDelete = signal<AbwabRelationVm | null>(null);
   protected readonly deleteBusy = signal(false);
   protected readonly deleteError = signal<string | null>(null);
+  private readonly overviewReloadRequired = signal(false);
 
   protected readonly typeOptions = TYPE_ORDER;
 
   protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
-  protected get descriptionText(): string { return this.canDeleteRelation() ? ABWAB_LABELS.relationsModalDescription : ABWAB_LABELS.relationsReadOnlyDescription; }
+  protected get descriptionText(): string {
+    if (this.view() === 'add') {
+      return ABWAB_LABELS.relationAddDescription;
+    }
+    return this.canDeleteRelation() ? ABWAB_LABELS.relationsModalDescription : ABWAB_LABELS.relationsReadOnlyDescription;
+  }
   protected get emptyText(): string { return this.canCreateRelation() ? ABWAB_LABELS.relationsEmpty : ABWAB_LABELS.relationsReadOnlyEmpty; }
   protected get loadingLabel(): string { return ABWAB_LABELS.relationsLoading; }
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
@@ -124,6 +132,8 @@ export class AbwabRelationsModalComponent {
   protected get noneSelectedLabel(): string { return ABWAB_LABELS.relationNoneSelected; }
   protected get bulkAnchorHint(): string { return ABWAB_LABELS.relationsBulkAnchorHint; }
   protected get closeLabel(): string { return ABWAB_LABELS.relationsCloseButton; }
+  protected get startAddLabel(): string { return ABWAB_LABELS.relationStartAddButton; }
+  protected get backLabel(): string { return ABWAB_LABELS.relationBackButton; }
   protected get deleteConfirmTitle(): string { return ABWAB_LABELS.relationDeleteConfirmTitle; }
   protected get deleteConfirmLabel(): string { return ABWAB_LABELS.deleteConfirmButton; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
@@ -241,16 +251,20 @@ export class AbwabRelationsModalComponent {
           return;
         }
         this.resetDraft();
+        this.view.set(this.anchorPickMode() ? 'add' : 'overview');
         this.relations.set([]);
         this.errorMessage.set(null);
         this.status.set('ready');
         this.pendingDelete.set(null);
         this.deleteBusy.set(false);
         this.deleteError.set(null);
-        if (!this.anchorPickMode() && anchorId !== null && this.anchorRelationCount() > 0) {
+        this.overviewReloadRequired.set(false);
+        if (!this.anchorPickMode() && anchorId !== null) {
           this.loadWithSkeleton(anchorId);
         }
-        setTimeout(() => this.picker()?.focusSearch());
+        if (this.anchorPickMode()) {
+          setTimeout(() => this.picker()?.focusSearch());
+        }
       });
     });
 
@@ -271,6 +285,42 @@ export class AbwabRelationsModalComponent {
     }
     this.type.set(kind);
     this.pickedIds.set(new Set());
+  }
+
+  protected openAdd(): void {
+    if (!this.canCreateRelation()) {
+      return;
+    }
+    this.resetDraft();
+    this.overviewReloadRequired.set(this.status() === 'error');
+    this.status.set('ready');
+    this.errorMessage.set(null);
+    this.view.set('add');
+    setTimeout(() => this.picker()?.focusSearch());
+  }
+
+  protected backToOverview(): void {
+    if (this.anchorPickMode()) {
+      return;
+    }
+    this.resetDraft();
+    this.errorMessage.set(null);
+    this.view.set('overview');
+    if (this.overviewReloadRequired()) {
+      this.overviewReloadRequired.set(false);
+      const anchorId = this.anchorDoorId();
+      if (anchorId !== null) {
+        this.loadWithSkeleton(anchorId);
+      }
+    }
+  }
+
+  protected primaryAction(): void {
+    if (this.view() === 'add') {
+      this.add();
+      return;
+    }
+    this.openAdd();
   }
 
   protected pickDirection(value: AbwabRelationDirectionKind): void {
@@ -309,6 +359,7 @@ export class AbwabRelationsModalComponent {
         this.closed.emit();
         return;
       }
+      this.view.set('overview');
       this.refetchAfterWrite(anchorId);
     });
   }

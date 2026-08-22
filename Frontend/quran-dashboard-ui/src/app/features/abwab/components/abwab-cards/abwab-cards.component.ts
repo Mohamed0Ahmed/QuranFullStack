@@ -98,11 +98,6 @@ export class AbwabCardsComponent {
     }
   }
 
-  protected onCheckboxClick(event: Event, id: number): void {
-    event.stopPropagation();
-    this.bulkToggled.emit(id);
-  }
-
   protected onCrumbClick(id: number | null): void {
     this.crumbSelected.emit(id);
   }
