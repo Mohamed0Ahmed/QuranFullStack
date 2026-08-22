@@ -76,7 +76,6 @@
     (dismissed)="closeDoorDetails()"
   >
     <div class="mushaf-reader__door-details">
-      <strong>الأبواب</strong>
       <ul>
         @for (door of details.highlight.doors; track door.id) {
           <li>{{ door.name }}</li>

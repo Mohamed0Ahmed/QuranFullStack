@@ -57,7 +57,9 @@
             [bulkMode]="true"
             [bulkSelectedIds]="highlights.draftDoorIds()"
             [selectionMode]="true"
+            [openLinksDoorId]="doorLinks.openDoorId()"
             (bulkToggled)="toggleDoor($event)"
+            (linksToggled)="doorLinks.toggleDoor($event)"
           />
         </div>
         <div class="mushaf-doors-panel__confirm">
@@ -152,6 +154,14 @@
     }
   </div>
 </section>
+
+@if (openLinksDoor(); as door) {
+  <qd-abwab-door-links-panel
+    [doorId]="door.id"
+    [doorName]="door.name"
+    (dismissed)="doorLinks.close()"
+  />
+}
 
 @if (palettePopover(); as palette) {
   <qd-context-menu

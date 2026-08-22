@@ -1,6 +1,21 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  signal,
+  untracked,
+} from '@angular/core';
 
+import {
+  AbwabDoorLinksPanelComponent,
+} from '../../../abwab/components/abwab-door-links-panel/abwab-door-links-panel.component';
 import { AbwabTreeComponent } from '../../../abwab/components/abwab-tree/abwab-tree.component';
+import { AbwabDoorLinksFacade } from '../../../abwab/state/abwab-door-links.facade';
+import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissions.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
@@ -29,6 +44,7 @@ interface DoorPalettePopover {
   selector: 'qd-mushaf-doors-panel',
   standalone: true,
   imports: [
+    AbwabDoorLinksPanelComponent,
     AbwabTreeComponent,
     ExplorerPanelSkeletonComponent,
     QdActionDirective,
@@ -43,19 +59,44 @@ interface DoorPalettePopover {
   templateUrl: './mushaf-doors-panel.component.html',
   styleUrls: ['./mushaf-doors-panel.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [AbwabPermissionsController],
 })
-export class MushafDoorsPanelComponent implements OnInit {
+export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
   protected readonly tree = inject(AbwabSnapshotFacade);
+  protected readonly doorLinks = inject(AbwabDoorLinksFacade);
   protected readonly highlights = inject(MushafDoorsHighlightStore);
   protected readonly activeTab = signal<MushafDoorsPanelTab>('doors');
   protected readonly palettePopover = signal<DoorPalettePopover | null>(null);
+  protected readonly openLinksDoor = computed(() => {
+    const doorId = this.doorLinks.openDoorId();
+    const door = doorId === null ? null : this.tree.snapshot()?.byId.get(doorId) ?? null;
+    return door?.isArchived === false ? door : null;
+  });
+
+  constructor() {
+    effect(() => {
+      const doorId = this.doorLinks.openDoorId();
+      const snapshot = this.tree.snapshot();
+      if (doorId !== null && snapshot && this.openLinksDoor() === null) {
+        untracked(() => this.doorLinks.close());
+      }
+    });
+  }
 
   ngOnInit(): void {
+    this.doorLinks.close();
     this.tree.ensureLoaded();
+  }
+
+  ngOnDestroy(): void {
+    this.doorLinks.close();
   }
 
   protected selectTab(tab: MushafDoorsPanelTab): void {
     this.closePalette();
+    if (tab !== 'doors') {
+      this.doorLinks.close();
+    }
     this.activeTab.set(tab);
   }
 
@@ -65,7 +106,7 @@ export class MushafDoorsPanelComponent implements OnInit {
 
   protected confirmDoors(): void {
     this.highlights.confirmDraft();
-    this.activeTab.set('selected');
+    this.selectTab('selected');
   }
 
   protected setDoorColor(doorId: number, colorSlot: MushafDoorColorSlot): void {
