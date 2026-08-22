@@ -4,6 +4,14 @@
   qdSessionScrollState="abwab.main"
   qdSessionScrollTarget="viewport"
 >
+  @if (modalUrl.restorableModal(); as retained) {
+    <qd-abwab-modal-restore
+      [kind]="retained.kind"
+      [subjectDoorName]="retainedSubjectDoorName()"
+      (restore)="onModalRestoreRequested()"
+      (discard)="onModalDiscardRequested()"
+    />
+  }
   <div class="qd-page-shell qd-page-shell--full-data abwab-page__frame">
     <header class="qd-page-header abwab-page__header">
       <div>
@@ -11,14 +19,6 @@
         <p class="qd-text-muted">{{ pageSubtitle }}</p>
       </div>
       <div class="abwab-page__header-actions">
-        @if (modalUrl.restorableModal(); as retained) {
-          <qd-abwab-modal-restore
-            [kind]="retained.kind"
-            [subjectDoorName]="retainedSubjectDoorName()"
-            (restore)="onModalRestoreRequested()"
-            (discard)="onModalDiscardRequested()"
-          />
-        }
         <button
           #headerFallbackFocus
           type="button"
