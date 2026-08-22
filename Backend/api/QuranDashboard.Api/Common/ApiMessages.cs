@@ -26,6 +26,9 @@ public static class ApiMessages
     public const string NotFound = "المورد غير موجود";
 
     public const string MushafPageLoaded = "تم تحميل الصفحة بنجاح";
+    public const string MushafAyahDoorsLoaded = "تم تحميل أبواب الآية";
+    public const string MushafDoorHighlightsLoaded = "تم تحميل تمييز أبواب الصفحة";
+    public const string MushafInvalidDoorIds = "معرّفات الأبواب يجب أن تكون أرقامًا صحيحة موجبة.";
     public const string MushafSurahCatalogLoaded = "تم تحميل فهرس السور";
     public const string MushafStudySourceCatalogLoaded = "تم تحميل كتالوج مصادر الدراسة";
     public const string MushafInvalidPageNumber = "رقم الصفحة غير صالح. يجب أن يكون بين 1 و 604.";

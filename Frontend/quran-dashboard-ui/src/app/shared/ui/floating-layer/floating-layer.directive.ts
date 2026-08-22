@@ -78,6 +78,7 @@ export class QdFloatingLayerDirective implements AfterViewInit {
   readonly anchorElement = input<HTMLElement | null>(null);
   readonly anchorPoint = input<FloatingAnchorPoint | null>(null);
   readonly controlElement = input<HTMLElement | null>(null);
+  readonly dismissBoundaryElement = input<HTMLElement | null>(null);
   readonly typeAhead = input<boolean | undefined>(undefined);
 
   readonly dismissed = output<QdFloatingLayerDismissReason>();
@@ -265,7 +266,12 @@ export class QdFloatingLayerDirective implements AfterViewInit {
     if (!(target instanceof Node)) {
       return;
     }
-    const anchors = [this.elementRef.nativeElement, this.anchorElement(), this.controlElement()];
+    const anchors = [
+      this.elementRef.nativeElement,
+      this.anchorElement(),
+      this.controlElement(),
+      this.dismissBoundaryElement(),
+    ];
     if (!containsPointerTarget(target, anchors)) {
       this.close('outside');
     }

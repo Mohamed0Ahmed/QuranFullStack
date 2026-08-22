@@ -67,6 +67,7 @@ import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/expl
 import { UniqueWordsColumnKey } from '../../utils/explorer-count-active';
 import { UniqueWordsDrilldownOpenEvent } from '../../components/unique-words-table/unique-words-table.component';
 import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-controller';
+import { WordsDebouncedSearchDraftController } from '../../state/words-debounced-search-draft.controller';
 
 type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>;
 
@@ -95,10 +96,9 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
   private readonly explainerPreference = inject(WordsExplainerPreference);
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('unique', (value) => this.updateQueryParams({ search: value || null, page: null }));
 
-  private readonly searchInput = new Subject<string>();
   private readonly rootSearchInput = new Subject<string>();
-  private searchSub?: Subscription;
   private rangesSyncSub?: Subscription;
   private rootSearchSub?: Subscription;
   private typeOptionsSub?: Subscription;
@@ -110,7 +110,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly typeOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptions = signal<readonly AssociationOption[]>([]);
   protected readonly rootOptionsLoading = signal(false);
-  // M32/M43 + M74: a picker load failure must be distinguishable from a genuine empty result.
   protected readonly rootOptionsError = signal(false);
   protected readonly selectedRootLabel = signal<string | null>(null);
   protected get primaryTypeLabel(): string { return UNIQUE_WORDS_PRIMARY_TYPE_FILTER_LABEL; }
@@ -127,7 +126,6 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   protected readonly drilldownState = this.facade.drilldownState;
   protected readonly restoredNotFoundLabel = RESTORED_WORD_NOT_FOUND_LABEL;
   protected readonly pageTitle = ACTIVE_HUB_SECTION.labelAr;
-  // TDZ-safe content getter + synchronous collapse restore (no first-paint shift).
   protected get explainer() { return WORDS_EXPLAINER_CONTENT.unique; }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('unique'));
   protected readonly listPaginationLabel = UNIQUE_WORD_LIST_PAGINATION_LABEL;
@@ -139,7 +137,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
     this.isDesktop.set(event.matches);
 
-  protected readonly searchDraft = signal('');
+  protected readonly searchDraft = this.searchDraftController.draft;
   private readonly tableFocus = new ExplorerTableFocusController<
     UniqueWordsDrilldownState,
     UniqueWordsDrilldownOpenEvent,
@@ -163,7 +161,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   });
 
   private readonly table = viewChild(UniqueWordsTableComponent);
-  private lastScrolledListPage = 0;
+  private lastScrolledListPage: number | null = null;
 
   protected readonly modeLabel = computed(() => UNIQUE_WORD_KIND_LABELS[this.facade.mode()]);
   protected readonly selectedWordId = this.tableFocus.selectedRowId;
@@ -189,27 +187,11 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   constructor() {
     effect(() => {
-      this.facade.mode();
-      this.facade.search();
-      this.searchDraft.set(untracked(() => this.facade.search()));
-    });
-
-    effect(() => {
       const state = this.listState();
       const table = this.table();
-      if (
-        !table ||
-        state.status === 'loading' ||
-        state.page === this.lastScrolledListPage ||
-        (state.status !== 'success' && state.status !== 'empty')
-      ) {
-        return;
+      if (table && (state.status === 'success' || state.status === 'empty')) {
+        untracked(() => this.syncListPageScroll(state.page, table));
       }
-
-      untracked(() => {
-        table.scrollToTop();
-        this.lastScrolledListPage = state.page;
-      });
     });
 
     effect(() => {
@@ -222,15 +204,14 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.searchDraftController.start();
     this.facade.bindToRoute(this.route);
 
-    this.searchSub = this.searchInput
-      .pipe(debounceTime(300))
-      .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
-
-    this.rangesSyncSub = this.route.queryParamMap.subscribe((params) =>
-      this.ranges.set(parseUniqueWordsQueryParams(params).ranges),
-    );
+    this.rangesSyncSub = this.route.queryParamMap.subscribe((params) => {
+      const parsed = parseUniqueWordsQueryParams(params);
+      this.searchDraftController.syncCommitted(parsed.search);
+      this.ranges.set(parsed.ranges);
+    });
 
     this.typeOptionsSub = this.associationOptions
       .wordTypeOptions()
@@ -256,7 +237,7 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.facade.unbindFromRoute();
-    this.searchSub?.unsubscribe();
+    this.searchDraftController.destroy();
     this.rangesSyncSub?.unsubscribe();
     this.rootSearchSub?.unsubscribe();
     this.typeOptionsSub?.unsubscribe();
@@ -266,8 +247,15 @@ export class UniqueWordsPageComponent implements OnInit, OnDestroy {
 
   protected onSearchChange(value: string): void {
     this.clearTableFocus();
-    this.searchDraft.set(value);
-    this.searchInput.next(value);
+    this.searchDraftController.update(value);
+  }
+
+  private syncListPageScroll(page: number, table: UniqueWordsTableComponent): void {
+    const previousPage = this.lastScrolledListPage;
+    this.lastScrolledListPage = page;
+    if (previousPage !== null && previousPage !== page) {
+      table.scrollToTop();
+    }
   }
 
   protected onSortChange(sort: UniqueWordSort | null): void {

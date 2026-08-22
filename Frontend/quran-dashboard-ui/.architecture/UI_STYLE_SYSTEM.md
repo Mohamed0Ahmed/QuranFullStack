@@ -43,8 +43,8 @@ design context. Read those first and treat them as the source of truth:
 The official visual identity is the **flat parchment + single scholarly-green**
 direction — approved as static comps, adopted in full, and the comps retired once the
 shipped app became the reference: warm parchment surfaces structured by **hairline borders**, fully flat in light (no
-resting card shadows, no hover lifts, no gradients, no navbar blur — shadows exist
-only on floating layers), **one green accent that is also the primary color**, and
+resting card shadows, no hover lifts, no gradients outside the fixed multi-door Mushaf word and
+ayah-marker highlight, no navbar blur — shadows exist only on floating layers), **one green accent that is also the primary color**, and
 **navy demoted to the footer only**. The app stays **light + dark**: light implements
 this direction; dark interim-runs the previous navy + gold values pending a
 deliberate later reconciliation. Section 15 below is the superseded navy + gold
@@ -227,7 +227,8 @@ Rules:
   is not used. Near-white cards are allowed when paired with the parchment
   background and a hairline border. Structure comes from the **surface ladder +
   hairline borders alone** (the flat doctrine): no resting or hover card shadows,
-  no hover lifts, no gradients, no navbar blur — shadows exist **only** on floating
+  no hover lifts, no gradients outside the fixed multi-door Mushaf word and ayah-marker
+  highlight defined in §13, no navbar blur — shadows exist **only** on floating
   layers (dropdowns, popovers, modals, drawers).
 - The **green accent** token is used sparingly per the allowed-green list (§16.3) —
   focus ring, selection indicators, `--qd-accent-text` text emphasis, icon
@@ -392,6 +393,15 @@ Rules:
 - The linking ayah-selection card is an approved Compact exception: it may reduce only its displayed
   word size by `--qd-s-2`, use `1.55` line-height, and add `--qd-s-2` block padding to its
   background-only word highlights. It must not change text, glyphs, word boundaries, or source data.
+- Door highlighting is an approved visual exception: a highlighted word uses its assigned
+  categorical door token behind unchanged Quran text, inset by the 10px
+  `--qd-mushaf-door-highlight-inset` from both block edges. A highlighted ayah marker keeps its glyph
+  unchanged over an assigned-color disc with no resting border. A word or ayah marker belonging to
+  multiple selected doors uses fixed gradients independent of assigned colors: light gradients for
+  both the word background and marker disc. In forced-colors, solid block
+  edges identify a single-door word, solid outlines identify single-door markers, and dashed
+  perimeters identify multi-door words and markers. It must not change or animate text, fonts, glyph
+  shape, word boundaries, or line metrics.
 
 ## 14. Definition of Done for Style / UI Foundation Changes
 
@@ -1252,6 +1262,10 @@ fills, resting borders — stays **banned as solid green**: use a tint,
 - **Purpose:** the one row/node context-menu shell app-wide (Abwab's doors tree row menu
   and the templates workshop's node tree row menu — the two pre-existing copies this
   primitive replaces).
+- **Non-interactive preview variant:** `variant="tooltip"` keeps the same anchored floating-layer
+  placement but renders `role="tooltip"`, never takes focus, uses a non-blocking backdrop, and lets
+  its control anchor keep pointer ownership. It is reserved for short hover disclosures with no
+  actions; pointer exit is owned by the feature trigger and dismisses the surface.
 - **Inputs / outputs:** `position: {x, y}` (positions the menu via
   `[style.left.px]`/`[style.top.px]`, unchanged from both prior copies); `menuTestId` /
   `backdropTestId` (both `string`, required) — **non-negotiable**, because surviving consumers use

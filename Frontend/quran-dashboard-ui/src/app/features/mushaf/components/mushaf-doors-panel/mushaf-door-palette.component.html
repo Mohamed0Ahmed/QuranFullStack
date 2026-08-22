@@ -1,0 +1,31 @@
+<div class="mushaf-door-palette">
+  <strong class="mushaf-door-palette__title">{{ door().name }}</strong>
+  <span class="mushaf-door-palette__path">{{ door().path }}</span>
+  <fieldset class="mushaf-door-palette__fieldset">
+    <legend class="qd-sr-only">اختر لون تمييز الباب</legend>
+    <div class="mushaf-door-palette__swatches">
+      @for (colorSlot of palette(); track colorSlot) {
+        <label
+          class="mushaf-door-palette__option"
+          [class.mushaf-door-palette__option--selected]="door().colorSlot === colorSlot"
+          [class.mushaf-door-palette__option--reserved]="isReserved(colorSlot)"
+          [attr.data-color-slot]="colorSlot"
+          [attr.title]="colorLabel(colorSlot)"
+        >
+          <input
+            class="qd-sr-only"
+            type="radio"
+            [name]="'mushaf-door-color-' + door().id"
+            [value]="colorSlot"
+            [checked]="door().colorSlot === colorSlot"
+            [disabled]="isReserved(colorSlot)"
+            [attr.aria-label]="colorLabel(colorSlot)"
+            [attr.data-testid]="'mushaf-selected-door-color-' + door().id + '-' + colorSlot"
+            (change)="colorSelected.emit(colorSlot)"
+          />
+          <span class="mushaf-door-palette__swatch" aria-hidden="true"></span>
+        </label>
+      }
+    </div>
+  </fieldset>
+</div>

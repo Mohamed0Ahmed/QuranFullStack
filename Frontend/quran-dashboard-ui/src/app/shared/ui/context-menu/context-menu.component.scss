@@ -5,6 +5,15 @@
   background: transparent;
 }
 
+.qd-context-menu__backdrop--nonblocking {
+  pointer-events: none;
+}
+
 .qd-context-menu {
   min-inline-size: 11rem;
+}
+
+.qd-context-menu--tooltip {
+  min-inline-size: 0;
+  pointer-events: none;
 }

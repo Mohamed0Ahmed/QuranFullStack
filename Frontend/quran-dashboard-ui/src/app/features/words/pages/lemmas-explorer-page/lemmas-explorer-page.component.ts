@@ -40,6 +40,7 @@ import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-c
 import { mapLemmaAyahMatchToShared } from '../../utils/lemma-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
+import { WordsDebouncedSearchDraftController } from '../../state/words-debounced-search-draft.controller';
 
 type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
 type LemmaPanelState = ReturnType<LemmasDetailFacade['panelState']>;
@@ -62,10 +63,9 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('lemmas', (value) => this.updateQueryParams({ search: value || null, page: null }));
   private readonly restoredColumn = signal<LemmaTableColumnKey | null>(null);
-  private readonly searchInput = new Subject<string>();
   private readonly rootSearchInput = new Subject<string>();
-  private searchSub?: Subscription;
   private searchSyncSub?: Subscription;
   private rootSearchSub?: Subscription;
   private desktopQuery?: MediaQueryList;
@@ -102,7 +102,7 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly surahViewOptions: readonly LemmaSurahView[] = ['mentioned', 'missing'];
   protected readonly emptyAyahsPage: SharedPagedResultDto<AyahMatchDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
   protected readonly emptyWordsPage: PagedResultDto<LemmaWordItemDto> = { page: 1, pageSize: LEMMA_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
-  protected readonly searchDraft = signal('');
+  protected readonly searchDraft = this.searchDraftController.draft;
   protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   protected get rangeMetrics() { return LEMMAS_RANGE_METRICS; }
   protected readonly association = this.listFacade.association;
@@ -176,15 +176,15 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.searchDraftController.start();
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
     this.searchSyncSub = this.route.queryParamMap.subscribe((params) => {
       const parsed = parseLemmasQueryParams(params);
-      this.searchDraft.set(parsed.search);
+      this.searchDraftController.syncCommitted(parsed.search);
       this.ranges.set(parsed.ranges);
       this.restoredColumn.set(parseMorphologyColumnKey(parsed.column) as LemmaTableColumnKey | null);
     });
-    this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.rootSearchSub = this.rootSearchInput
       .pipe(
         debounceTime(300),
@@ -205,14 +205,14 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.listFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
-    this.searchSub?.unsubscribe();
+    this.searchDraftController.destroy();
     this.searchSyncSub?.unsubscribe();
     this.rootSearchSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
     this.tableFocus.destroy();
   }
 
-  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraft.set(value); this.searchInput.next(value); }
+  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraftController.update(value); }
   protected onRangesChange(ranges: RangeFilters): void {
     this.clearTableFocus();
     this.updateQueryParams({ ...buildRangeQueryParams(ranges, LEMMAS_RANGE_METRICS), page: null });

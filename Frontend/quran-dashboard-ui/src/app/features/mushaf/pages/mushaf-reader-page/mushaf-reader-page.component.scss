@@ -34,6 +34,32 @@
     background: transparent;
     gap: var(--qd-space-2);
   }
+
+  &__door-details {
+    inline-size: min(
+      var(--qd-mushaf-door-details-inline-size),
+      calc(100vw - 2 * var(--qd-space-3))
+    );
+    max-inline-size: 100%;
+    font-size: var(--qd-type-body-lg);
+    line-height: var(--qd-type-body-lg-lh);
+
+    ul {
+      display: grid;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    li {
+      min-block-size: var(--qd-control-md);
+      padding: var(--qd-space-2) var(--qd-space-3);
+    }
+
+    li + li {
+      border-block-start: var(--qd-hairline);
+    }
+  }
 }
 
 @media (min-width: bp.$qd-bp-wide-min) {

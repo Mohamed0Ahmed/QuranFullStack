@@ -35,7 +35,7 @@
 
     <qd-unique-words-tabs class="unique-words-mode-tabs" [activeMode]="listState().mode" />
 
-    <qd-explorer-toolbar [ariaLabel]="pageTitle">
+    <qd-explorer-toolbar [ariaLabel]="pageTitle" viewportScrollStateKey="words.viewport.unique">
       <qd-explorer-search-row
         qdExplorerToolbarPrimary
         [searchValue]="searchDraft()"

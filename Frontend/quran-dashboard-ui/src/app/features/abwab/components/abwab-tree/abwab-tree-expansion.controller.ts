@@ -3,25 +3,34 @@ import { signal } from '@angular/core';
 import { AbwabNode } from '../../models/abwab.models';
 
 export class AbwabTreeExpansionController {
-  private readonly expandedIdsSignal = signal<ReadonlySet<number>>(new Set());
+  private readonly manualExpandedIdsSignal = signal<ReadonlySet<number>>(new Set());
+  private readonly transientExpandedIdsSignal = signal<ReadonlySet<number>>(new Set());
 
   effectiveIds(searchExpandedIds: ReadonlySet<number>): ReadonlySet<number> {
-    const manualIds = this.expandedIdsSignal();
-    return searchExpandedIds.size === 0
+    const manualIds = this.manualExpandedIdsSignal();
+    const transientIds = this.transientExpandedIdsSignal();
+    return transientIds.size === 0 && searchExpandedIds.size === 0
       ? manualIds
-      : new Set([...manualIds, ...searchExpandedIds]);
+      : new Set([...manualIds, ...transientIds, ...searchExpandedIds]);
   }
 
   seed(ids: ReadonlySet<number>): void {
     if (ids.size > 0) {
-      this.expandedIdsSignal.update((current) => new Set([...current, ...ids]));
+      this.manualExpandedIdsSignal.update((current) => new Set([...current, ...ids]));
     }
   }
 
+  setTransient(ids: ReadonlySet<number>): void {
+    this.transientExpandedIdsSignal.set(new Set(ids));
+  }
+
   setExpanded(id: number, expanded: boolean): ReadonlySet<number> {
-    const next = new Set(this.expandedIdsSignal());
+    const next = new Set(this.manualExpandedIdsSignal());
     expanded ? next.add(id) : next.delete(id);
-    this.expandedIdsSignal.set(next);
+    this.manualExpandedIdsSignal.set(next);
+    if (!expanded) {
+      this.removeTransientIds([id]);
+    }
     return next;
   }
 
@@ -42,7 +51,7 @@ export class AbwabTreeExpansionController {
   }
 
   canExpandAll(roots: readonly AbwabNode[]): boolean {
-    const expandedIds = this.expandedIdsSignal();
+    const expandedIds = this.baseExpandedIds();
     return collectIds(roots, true).some((id) => !expandedIds.has(id));
   }
 
@@ -51,7 +60,7 @@ export class AbwabTreeExpansionController {
   }
 
   canExpandBranch(node: AbwabNode): boolean {
-    const expandedIds = this.expandedIdsSignal();
+    const expandedIds = this.baseExpandedIds();
     return collectIds([node], true).some((id) => !expandedIds.has(id));
   }
 
@@ -60,22 +69,35 @@ export class AbwabTreeExpansionController {
   }
 
   private addIds(ids: readonly number[]): ReadonlySet<number> {
-    const next = new Set(this.expandedIdsSignal());
+    const next = new Set(this.manualExpandedIdsSignal());
     ids.forEach((id) => next.add(id));
-    this.expandedIdsSignal.set(next);
+    this.manualExpandedIdsSignal.set(next);
     return next;
   }
 
   private removeIds(ids: readonly number[]): ReadonlySet<number> {
-    const next = new Set(this.expandedIdsSignal());
+    const next = new Set(this.manualExpandedIdsSignal());
     ids.forEach((id) => next.delete(id));
-    this.expandedIdsSignal.set(next);
+    this.manualExpandedIdsSignal.set(next);
+    this.removeTransientIds(ids);
     return next;
   }
 
   private hasExpandedId(ids: readonly number[]): boolean {
-    const expandedIds = this.expandedIdsSignal();
+    const expandedIds = this.baseExpandedIds();
     return ids.some((id) => expandedIds.has(id));
+  }
+
+  private baseExpandedIds(): ReadonlySet<number> {
+    const manualIds = this.manualExpandedIdsSignal();
+    const transientIds = this.transientExpandedIdsSignal();
+    return transientIds.size === 0 ? manualIds : new Set([...manualIds, ...transientIds]);
+  }
+
+  private removeTransientIds(ids: readonly number[]): void {
+    const next = new Set(this.transientExpandedIdsSignal());
+    ids.forEach((id) => next.delete(id));
+    this.transientExpandedIdsSignal.set(next);
   }
 }
 

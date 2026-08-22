@@ -41,6 +41,7 @@
     @if (useVirtualScroll()) {
       <cdk-virtual-scroll-viewport
         class="qd-data-table__body qd-data-table__body--virtual"
+        [qdSessionScrollState]="scrollStateKey()"
         [class.qd-data-table__body--compact]="isCompact()"
         data-testid="qd-data-table-body"
         [attr.role]="isCompact() ? 'list' : 'rowgroup'"
@@ -71,7 +72,7 @@
         </div>
       </cdk-virtual-scroll-viewport>
     } @else if (isCompact()) {
-      <div class="qd-data-table__body qd-data-table__body--compact" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+      <div class="qd-data-table__body qd-data-table__body--compact" [qdSessionScrollState]="scrollStateKey()" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
         @for (row of rows(); track rowId()(row); let index = $index) {
           <div
             class="qd-data-table__row qd-data-table__row--compact"
@@ -96,7 +97,7 @@
         }
       </div>
     } @else {
-      <div class="qd-data-table__body" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
+      <div class="qd-data-table__body" [qdSessionScrollState]="scrollStateKey()" role="rowgroup" [attr.aria-label]="bodyAriaLabel()" data-testid="qd-data-table-body">
         @for (row of rows(); track rowId()(row); let index = $index) {
           <div
             class="qd-data-table__row"

@@ -3,26 +3,42 @@ import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures/app-test';
 import { ayahTab, openReader, selectFirstWord } from './fixtures/mushaf';
 
-async function openAyahStudy(page: Page): Promise<void> {
+type AyahStudyGroup = 'sources' | 'similarity';
+
+async function openAyahStudy(page: Page, group: AyahStudyGroup = 'sources'): Promise<void> {
   await openReader(page);
   await selectFirstWord(page);
+  await page.getByTestId(`study-context-tab-${group}`).click();
   await expect(page.getByTestId('selected-ayah-section')).toBeVisible();
 }
 
-test('selecting a word opens the ayah study on the tafsir tab', async ({ page }) => {
-  await openAyahStudy(page);
+test('selecting a word opens the word analysis tab', async ({ page }) => {
+  await openReader(page);
+  await selectFirstWord(page);
 
-  await expect(page).toHaveURL(/[?&]ayah=/);
-  await expect(ayahTab(page, 'التفسير')).toHaveAttribute('aria-selected', 'true');
-  await expect(page.getByTestId('tafsir-card')).toBeVisible();
+  await expect(page).toHaveURL(/[?&]word=/);
+  await expect(page.getByTestId('study-context-tab-analysis')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(page.getByTestId('selected-word-section')).toBeVisible();
+  await expect(page.getByTestId('selected-ayah-section')).toHaveCount(0);
 });
 
-test('the translation tab renders the translation card', async ({ page }) => {
+test('selecting another word keeps the translation tab open', async ({ page }) => {
   await openAyahStudy(page);
 
   await ayahTab(page, 'الترجمة').click();
+  const firstAyah = new URL(page.url()).searchParams.get('ayah');
+  await page.locator('[data-word-location][data-is-marker="false"]').last().click();
 
   await expect(page).toHaveURL(/[?&]ayahTab=translation/);
+  await expect.poll(() => new URL(page.url()).searchParams.get('ayah')).not.toBe(firstAyah);
+  await expect(page.getByTestId('study-context-tab-sources')).toHaveAttribute(
+    'aria-selected',
+    'true',
+  );
+  await expect(ayahTab(page, 'الترجمة')).toHaveAttribute('aria-selected', 'true');
   await expect(page.getByTestId('translation-card')).toBeVisible();
 });
 
@@ -36,8 +52,9 @@ test('the full-i3rab tab renders the i3rab card', async ({ page }) => {
 });
 
 test('the similar-ayahs tab lists similar ayahs or reports none', async ({ page }) => {
-  await openAyahStudy(page);
+  await openAyahStudy(page, 'similarity');
 
+  await expect(page.getByTestId('similar-ayah-count')).toHaveText(/^\d+$/);
   await page.getByTestId('ayah-tab-similar-ayahs').click();
 
   await expect(
@@ -46,8 +63,9 @@ test('the similar-ayahs tab lists similar ayahs or reports none', async ({ page 
 });
 
 test('the mutashabihat tab lists groups or reports none', async ({ page }) => {
-  await openAyahStudy(page);
+  await openAyahStudy(page, 'similarity');
 
+  await expect(page.getByTestId('mutashabihat-group-count')).toHaveText(/^\d+$/);
   await page.getByTestId('ayah-tab-mutashabihat').click();
 
   await expect(

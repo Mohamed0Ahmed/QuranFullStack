@@ -24,6 +24,7 @@ import { AbwabRevealController } from '../../state/abwab-reveal.controller';
 import { AbwabPageInteractionsController } from '../../state/abwab-page-interactions.controller';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import { AbwabInclusionsController } from '../../state/abwab-inclusions.controller';
+import { AbwabMainTreeSessionStore } from '../../state/abwab-main-tree-session.store';
 import {
   countAbwabDoorsInOpenScope,
   countLiveAbwabDoors,
@@ -53,6 +54,7 @@ import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
+import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 
 const NO_IDS: ReadonlySet<number> = new Set<number>();
 const NO_ROOTS: readonly AbwabNode[] = [];
@@ -76,6 +78,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     QdActionDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
+    SessionScrollStateDirective,
   ],
   templateUrl: './abwab-page.component.html',
   styleUrl: './abwab-page.component.scss',
@@ -103,6 +106,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly reveal = inject(AbwabRevealController);
   protected readonly interactions = inject(AbwabPageInteractionsController);
   protected readonly doorLinks = inject(AbwabDoorLinksFacade);
+  private readonly treeSession = inject(AbwabMainTreeSessionStore);
   protected readonly templatesRoutePath = `/${ABWAB_ROUTE_PATH}/templates`;
 
   private readonly doorParam = signal<number | null>(null);
@@ -154,7 +158,8 @@ export class AbwabPageComponent implements OnInit {
   protected readonly revealAnnouncement = this.reveal.announcement;
   private readonly revealExpandSeedIds = this.reveal.expandSeedIds;
 
-  protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+  protected readonly expandSeedIds = this.treeSession.expandedDoorIds;
+  protected readonly transientExpandSeedIds = computed<ReadonlySet<number>>(() => {
     const reveal = this.revealExpandSeedIds();
     return reveal.size === 0 ? NO_IDS : reveal;
   });
@@ -317,6 +322,10 @@ export class AbwabPageComponent implements OnInit {
 
   protected onBulkArchiveConfirmed(): void {
     this.interactions.onBulkArchiveConfirmed(() => this.focusTreeRovingItem());
+  }
+
+  protected rememberExpandedDoorIds(ids: ReadonlySet<number>): void {
+    this.treeSession.rememberExpandedDoorIds(ids);
   }
 
   protected onArchiveConfirmCancelled(): void {

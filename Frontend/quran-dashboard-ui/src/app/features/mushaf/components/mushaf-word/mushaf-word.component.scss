@@ -4,7 +4,9 @@
 }
 
 .mushaf-word {
-  display: inline;
+  position: relative;
+  isolation: isolate;
+  display: inline-block;
   font-family: var(--qd-font-quran);
   font-size: var(--qd-mushaf-word-font-size);
   line-height: 1.9;
@@ -17,23 +19,31 @@
   cursor: pointer;
   transition: background-color var(--qd-t-fast);
 
-  &:disabled {
-    cursor: default;
+  &__door-background {
+    position: absolute;
+    z-index: -1;
+    inset-block: var(--qd-mushaf-door-highlight-inset);
+    inset-inline: 0;
+    box-sizing: border-box;
+    border-radius: var(--qd-radius-xs);
+    background: var(--qd-mushaf-door-fill);
+    pointer-events: none;
   }
 
   &--marker {
+    cursor: default;
     font-family: var(--qd-font-quran-ayah-marker);
     font-size: var(--qd-mushaf-ayah-marker-font-size);
     color: var(--qd-mushaf-ayah-marker-color);
   }
 
   @media (hover: hover) {
-    &:hover:not(:disabled):not(.mushaf-word--selected-word) {
+    &:hover:not(.mushaf-word--marker):not(.mushaf-word--selected-word) {
       @include word-hover-wash;
     }
   }
 
-  &:focus-visible:not(:disabled):not(.mushaf-word--selected-word) {
+  &:focus-visible:not(.mushaf-word--marker):not(.mushaf-word--selected-word) {
     @include word-hover-wash;
   }
 
@@ -57,7 +67,63 @@
     color: var(--qd-accent);
   }
 
+  &--marker.mushaf-word--door-highlight::after {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset-block-start: 50%;
+    inset-inline-start: 50%;
+    inline-size: var(--qd-mushaf-door-marker-fill-size);
+    block-size: var(--qd-mushaf-door-marker-fill-size);
+    margin-block-start: var(--qd-mushaf-door-marker-fill-offset);
+    margin-inline-start: var(--qd-mushaf-door-marker-fill-offset);
+    border-radius: var(--qd-radius-pill);
+    background: var(--qd-mushaf-door-marker-fill);
+    pointer-events: none;
+  }
+
+  &--door-highlight.mushaf-word--ayah-selection {
+    color: var(--qd-accent);
+  }
+
   &--selected-word.mushaf-word--ayah-selection {
     color: inherit;
+  }
+}
+
+@for $slot from 1 through 15 {
+  [data-door-color-slot='#{$slot}'] {
+    --qd-mushaf-door-fill: var(--qd-door-highlight-#{$slot});
+    --qd-mushaf-door-marker-fill: var(--qd-door-highlight-#{$slot});
+  }
+}
+
+[data-door-color-slot='multi'] {
+  --qd-mushaf-door-fill: var(--qd-door-highlight-multi-gradient);
+  --qd-mushaf-door-marker-fill: var(--qd-door-marker-multi-gradient);
+}
+
+@media (forced-colors: active) {
+  .mushaf-word--door-highlight:not(.mushaf-word--marker) .mushaf-word__door-background {
+    border-block: var(--qd-s-2) solid Highlight;
+    background: Canvas;
+  }
+
+  .mushaf-word--door-highlight[data-door-color-slot='multi']:not(.mushaf-word--marker)
+    .mushaf-word__door-background {
+    border: var(--qd-s-2) dashed Highlight;
+  }
+
+  .mushaf-word--marker.mushaf-word--door-highlight {
+    color: ButtonText;
+  }
+
+  .mushaf-word--marker.mushaf-word--door-highlight::after {
+    border: var(--qd-s-2) solid Highlight;
+    background: Canvas;
+  }
+
+  .mushaf-word--marker[data-door-color-slot='multi']::after {
+    border-style: dashed;
   }
 }

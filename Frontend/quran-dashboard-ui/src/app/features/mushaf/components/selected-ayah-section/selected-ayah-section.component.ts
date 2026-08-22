@@ -6,7 +6,9 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import {
+  AYAH_STUDY_TABS_BY_GROUP,
   AyahNavigationTarget,
+  AyahStudyGroup,
   AyahStudyTab,
   AyahStudyViewModel,
   AYAH_STUDY_TAB_LABELS,
@@ -29,13 +31,15 @@ interface AyahStudyTabDefinition {
   readonly countTestId: string | null;
 }
 
-const AYAH_STUDY_TABS: readonly AyahStudyTabDefinition[] = [
-  { key: 'tafsir', testId: null, countTestId: null },
-  { key: 'translation', testId: null, countTestId: null },
-  { key: 'full-i3rab', testId: null, countTestId: null },
-  { key: 'similar-ayahs', testId: 'ayah-tab-similar-ayahs', countTestId: 'similar-ayah-count' },
-  { key: 'mutashabihat', testId: 'ayah-tab-mutashabihat', countTestId: 'mutashabihat-group-count' },
-];
+const AYAH_STUDY_TAB_TEST_IDS: Partial<Record<AyahStudyTab, string>> = {
+  'similar-ayahs': 'ayah-tab-similar-ayahs',
+  mutashabihat: 'ayah-tab-mutashabihat',
+};
+
+const AYAH_STUDY_TAB_COUNT_TEST_IDS: Partial<Record<AyahStudyTab, string>> = {
+  'similar-ayahs': 'similar-ayah-count',
+  mutashabihat: 'mutashabihat-group-count',
+};
 
 let nextAyahStudyInstance = 0;
 
@@ -78,6 +82,7 @@ export class SelectedAyahSectionComponent {
     isEmpty: false,
     errorMessage: null,
   });
+  readonly group = input<AyahStudyGroup>('sources');
   readonly activeTab = input<AyahStudyTab>('tafsir');
   readonly selectedVerseKey = input<string | null>(null);
   readonly embedded = input(false);
@@ -118,7 +123,18 @@ export class SelectedAyahSectionComponent {
   });
 
   protected readonly tabLabels = AYAH_STUDY_TAB_LABELS;
-  protected readonly tabs = AYAH_STUDY_TABS;
+  protected readonly tabs = computed<readonly AyahStudyTabDefinition[]>(() =>
+    AYAH_STUDY_TABS_BY_GROUP[this.group()].map((key) => ({
+      key,
+      testId: AYAH_STUDY_TAB_TEST_IDS[key] ?? null,
+      countTestId: AYAH_STUDY_TAB_COUNT_TEST_IDS[key] ?? null,
+    })),
+  );
+  protected readonly tabsAriaLabel = computed(() =>
+    this.group() === 'sources'
+      ? 'تبويبات التفاسير والترجمات والإعراب'
+      : 'تبويبات المتشابهات والآيات القريبة',
+  );
 
   private readonly instanceId = `qd-ayah-study-${nextAyahStudyInstance++}`;
 

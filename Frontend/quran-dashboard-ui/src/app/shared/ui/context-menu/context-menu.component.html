@@ -1,10 +1,22 @@
-<div class="qd-context-menu__backdrop" [attr.data-testid]="backdropTestId()" (click)="dismissed.emit()"></div>
+<div
+  #backdrop
+  class="qd-context-menu__backdrop"
+  [class.qd-context-menu__backdrop--nonblocking]="!blockingBackdrop()"
+  [attr.data-testid]="backdropTestId()"
+  (click)="dismissed.emit()"
+></div>
 <div
   #surface
   class="qd-context-menu"
+  [class.qd-context-menu--tooltip]="variant() === 'tooltip'"
   [qdFloatingLayer]="variant()"
+  [anchorElement]="anchorElement()"
   [anchorPoint]="position()"
-  [attr.role]="variant() === 'action-menu' ? 'menu' : 'region'"
+  [controlElement]="controlElement()"
+  [dismissBoundaryElement]="backdrop"
+  [attr.role]="
+    variant() === 'action-menu' ? 'menu' : variant() === 'tooltip' ? 'tooltip' : 'region'
+  "
   [attr.tabindex]="variant() === 'disclosure-popover' ? -1 : null"
   [attr.aria-label]="menuAriaLabel()"
   [attr.data-testid]="menuTestId()"

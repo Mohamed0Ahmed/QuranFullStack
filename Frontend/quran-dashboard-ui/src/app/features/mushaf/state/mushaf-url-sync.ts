@@ -12,7 +12,7 @@ import {
 } from '../models/mushaf.models';
 import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
-const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'none']);
+const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'doors', 'none']);
 const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
   'tafsir',
   'translation',
@@ -84,6 +84,29 @@ export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
       translationSource: params.get(MUSHAF_URL_KEYS.translationSource),
       fullI3rabSource: params.get(MUSHAF_URL_KEYS.fullI3rabSource),
     },
+  };
+}
+
+export function buildMushafWordSelectionQuery(
+  wordLocation: string,
+  currentWordLocation: string | null,
+): Partial<
+  Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+> {
+  if (currentWordLocation === wordLocation) {
+    return {
+      [MUSHAF_URL_KEYS.word]: null,
+      [MUSHAF_URL_KEYS.segment]: null,
+      [MUSHAF_URL_KEYS.ayah]: null,
+      [MUSHAF_URL_KEYS.focusAyah]: null,
+    };
+  }
+
+  const verseKey = verseKeyFromWordLocation(wordLocation);
+  return {
+    [MUSHAF_URL_KEYS.word]: wordLocation,
+    [MUSHAF_URL_KEYS.focusAyah]: null,
+    ...(verseKey ? { [MUSHAF_URL_KEYS.ayah]: verseKey } : {}),
   };
 }
 
