@@ -60,6 +60,7 @@ export class AbwabTreeComponent {
   readonly canReorderDoor = input(false);
   readonly openLinksDoorId = input<number | null>(null);
   readonly selectionMode = input(false);
+  readonly relationsClickableInBulkMode = input(false);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();
@@ -176,7 +177,7 @@ export class AbwabTreeComponent {
 
   protected onFlagClick(event: Event, id: number): void {
     event.stopPropagation();
-    if (this.bulkMode()) {
+    if (this.bulkMode() && !this.relationsClickableInBulkMode()) {
       this.bulkToggled.emit(id);
       return;
     }

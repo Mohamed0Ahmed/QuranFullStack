@@ -193,6 +193,7 @@
             class="a-flag qd-chip qd-chip--pill"
             [class.a-flag--empty]="node.relationCount === 0"
             [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+            aria-haspopup="dialog"
             [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
             [attr.tabindex]="-1"
             (click)="onFlagClick($event, node.id)"

@@ -158,10 +158,10 @@ export class AbwabPageComponent implements OnInit {
   protected readonly revealAnnouncement = this.reveal.announcement;
   private readonly revealExpandSeedIds = this.reveal.expandSeedIds;
 
-  protected readonly expandSeedIds = this.treeSession.expandedDoorIds;
-  protected readonly transientExpandSeedIds = computed<ReadonlySet<number>>(() => {
-    const reveal = this.revealExpandSeedIds();
-    return reveal.size === 0 ? NO_IDS : reveal;
+  protected readonly expandSeedIds = computed<ReadonlySet<number>>(() => {
+    const remembered = this.treeSession.expandedDoorIds();
+    const revealed = this.revealExpandSeedIds();
+    return revealed.size === 0 ? remembered : new Set([...remembered, ...revealed]);
   });
 
   protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {

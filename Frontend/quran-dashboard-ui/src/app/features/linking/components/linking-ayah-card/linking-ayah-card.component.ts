@@ -45,6 +45,7 @@ export class LinkingAyahCardComponent {
   readonly resultPosition = input.required<number>();
   readonly resultCount = input.required<number>();
   readonly showResultCount = input(true);
+  readonly showResultPosition = input(true);
   readonly wordToggled = output<number>();
 
   protected readonly labels = LINKING_LABELS;

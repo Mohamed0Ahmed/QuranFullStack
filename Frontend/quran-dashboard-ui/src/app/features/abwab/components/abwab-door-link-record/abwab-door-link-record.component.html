@@ -25,6 +25,7 @@
             metaAlignment="start"
             [resultPosition]="recordPosition()"
             [resultCount]="totalRecords()"
+            [showResultPosition]="!record().isGrouped"
             (click)="toggleSelection()"
           >
             @if (isFirst && (canEdit() || selectable() || record().isGrouped)) {
