@@ -5,6 +5,7 @@
       [page]="emptyWordsPage"
       [wordView]="panelState().wordView"
       [currentPage]="panelState().detailPage"
+      [typeCode]="frame().typeCode"
       data-testid="overlay-stems-words-view"
     />
   } @else if (frame().view === 'ayahs') {
@@ -42,7 +43,7 @@
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >
-  @if (frame().view === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+  @if ((frame().view === 'ayahs' || frame().view === 'words') && (panelState().summary || panelState().status === 'loading')) {
     <qd-stem-ayah-type-filters
       [items]="panelState().summary?.typeDistribution ?? []"
       [selectedTypeCode]="frame().typeCode"
@@ -140,6 +141,7 @@
           [page]="wordsPage"
           [wordView]="panelState().wordView"
           [currentPage]="panelState().detailPage"
+          [typeCode]="frame().typeCode"
           data-testid="overlay-stems-words-view"
           (pageChange)="onDetailPageChange($event)"
         />

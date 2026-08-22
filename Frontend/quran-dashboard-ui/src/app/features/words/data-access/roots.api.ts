@@ -60,8 +60,12 @@ export class RootsApi {
     wordView: RootWordView,
     page: number,
     pageSize: number,
+    typeCode: string | null = null,
   ): Observable<ApiResponse<PagedResultDto<RootWordItemDto>>> {
-    const params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    let params = new HttpParams().set('page', page).set('pageSize', pageSize);
+    if (typeCode !== null && typeCode.trim().length > 0) {
+      params = params.set('typeCode', typeCode.trim());
+    }
     return this.http.get<ApiResponse<PagedResultDto<RootWordItemDto>>>(
       `${this.baseUrl}/api/words/roots/${id}/words/${encodeURIComponent(wordView)}`,
       { params },

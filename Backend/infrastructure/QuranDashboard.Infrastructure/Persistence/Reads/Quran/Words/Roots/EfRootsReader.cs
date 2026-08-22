@@ -37,11 +37,12 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     public async Task<PagedResult<RootWordItemDto>?> GetRootWordsAsync(
         int id,
         RootWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var grouped = await LoadGroupedRootWordsAsync(id, wordKind, cancellationToken);
+        var grouped = await LoadGroupedRootWordsAsync(id, wordKind, typeCode, cancellationToken);
         return grouped is null
             ? null
             : RootsWordsDerivation.ToPage(grouped, page, pageSize);
@@ -50,6 +51,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
     internal async Task<IReadOnlyList<RootWordItemDto>?> LoadGroupedRootWordsAsync(
         int id,
         RootWordKind wordKind,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
         var rootExists = await _db.QuranRoots
@@ -60,12 +62,15 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
             return null;
         }
 
+        var normalizedTypeCode = string.IsNullOrWhiteSpace(typeCode) ? null : typeCode.Trim();
         var rows = wordKind == RootWordKind.Simple
             ? await (
                 from m in _db.WordMorphologies.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
                 join u in _db.QuranWordsUniqueSimple.AsNoTracking() on w.UniqueSimpleWordId!.Value equals u.Id
-                where m.RootId == id && w.UniqueSimpleWordId != null
+                where m.RootId == id
+                    && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode)
+                    && w.UniqueSimpleWordId != null
                 select new RootWordOccurrenceRow(
                     w.UniqueSimpleWordId!.Value,
                     w.SurahNumber,
@@ -77,7 +82,9 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                 from m in _db.WordMorphologies.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on m.QuranWordId equals w.Id
                 join u in _db.QuranWordsUniqueTashkeel.AsNoTracking() on w.UniqueTashkeelWordId!.Value equals u.Id
-                where m.RootId == id && w.UniqueTashkeelWordId != null
+                where m.RootId == id
+                    && (normalizedTypeCode == null || m.HeadPos == normalizedTypeCode)
+                    && w.UniqueTashkeelWordId != null
                 select new RootWordOccurrenceRow(
                     w.UniqueTashkeelWordId!.Value,
                     w.SurahNumber,

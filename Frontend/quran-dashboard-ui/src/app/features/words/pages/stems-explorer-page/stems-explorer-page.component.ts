@@ -176,7 +176,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const state = this.panelState();
-      if (state.selectedStemId === null || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.selectedStemId === null || (state.view !== 'ayahs' && state.view !== 'words') || state.ayahTypeCode === null || state.summary === null) return;
       if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
       this.detailFacade.setAyahTypeCode(null);
       this.updateQueryParams(buildStemsQueryParams({ typeCode: null, detailPage: 1 }));
@@ -270,18 +270,19 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected onPanelViewChange(view: StemView): void {
+    const typeCode = view === 'ayahs' || view === 'words' ? this.panelState().ayahTypeCode : null;
     this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildStemsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: this.detailPageForView(view), wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode: null }));
+    this.updateQueryParams(buildStemsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: this.detailPageForView(view), wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode }));
   }
 
   protected onAyahTypeChange(typeCode: string | null): void {
     const current = this.panelState();
-    if (current.selectedStemId === null || current.view !== 'ayahs') return;
+    if (current.selectedStemId === null || (current.view !== 'ayahs' && current.view !== 'words')) return;
     if (current.ayahTypeCode === typeCode && current.detailPage === 1) return;
     this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
-    this.updateQueryParams(buildStemsQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+    this.updateQueryParams(buildStemsQueryParams({ view: current.view, column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
   }
 
   protected subViewTabId(option: string): string {
@@ -291,7 +292,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: StemWordView): void {
     this.syncTableFocusToPanelView('words', wordView);
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildStemsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: 1, typeCode: null }));
+    this.updateQueryParams(buildStemsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: 1, typeCode: this.panelState().ayahTypeCode }));
   }
 
   protected onSurahViewChange(surahView: StemSurahView): void {

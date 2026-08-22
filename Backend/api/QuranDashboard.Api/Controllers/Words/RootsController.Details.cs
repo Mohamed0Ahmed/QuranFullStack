@@ -69,6 +69,7 @@ public sealed partial class RootsController
     public async Task<ActionResult<ApiResponse<PagedResult<RootWordItemDto>>>> GetWords(
         int id,
         string wordKind,
+        [FromQuery] string? typeCode,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -77,6 +78,7 @@ public sealed partial class RootsController
             new GetRootWordsQuery(
                 id,
                 wordKind,
+                NormalizeTypeCode(typeCode),
                 page ?? DefaultPage,
                 pageSize ?? DefaultDetailPageSize),
             cancellationToken);

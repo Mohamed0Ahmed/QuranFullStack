@@ -62,13 +62,19 @@ export class RootsDetailViewLoader {
       case 'words':
         return this.subscribe(
           this.cache.getOrLoad(
-            RootsCacheKeys.words(context.rootId, context.wordView, context.detailPage),
+            RootsCacheKeys.words(
+              context.rootId,
+              context.wordView,
+              context.detailPage,
+              context.ayahTypeCode,
+            ),
             () =>
               this.api.getRootWords(
                 context.rootId,
                 context.wordView,
                 context.detailPage,
                 ROOT_DETAIL_PAGE_SIZE,
+                context.ayahTypeCode,
               ),
           ),
           handlers.onWords,

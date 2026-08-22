@@ -8,8 +8,8 @@ public static class RootsCacheKeys
 
     public static string Summary(int id) => $"roots:{id}:summary";
 
-    public static string WordsAll(int id, RootWordKind kind) =>
-        $"roots:{id}:words:{KindKey(kind)}:all";
+    public static string WordsAll(int id, RootWordKind kind, string? typeCode) =>
+        $"roots:{id}:words:{KindKey(kind)}:{NormalizeTypeCode(typeCode)}:all";
 
     public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
         $"roots:{id}:ayahs:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";

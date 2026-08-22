@@ -31,10 +31,11 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
     public Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsAsync(
         int id,
         LemmaWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
-        => GetLemmaWordsPageAsync(id, wordKind, page, pageSize, cancellationToken);
+        => GetLemmaWordsPageAsync(id, wordKind, typeCode, page, pageSize, cancellationToken);
 
     public async Task<PagedResult<LemmaAyahMatchDto>?> GetLemmaAyahMatchesAsync(
         int id,
@@ -367,12 +368,10 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? $"{firstSurahNumber}:{firstAyahNumber}"
             : string.Empty;
 
-    // Loads the whole grouped/ordered word list in one pass (null when the lemma is absent). This is the
-    // identity-grain unit CachedLemmasReader caches once, so paging slices the cached list instead of
-    // re-issuing the full occurrence query (perf finding B6).
     internal async Task<IReadOnlyList<LemmaWordItemDto>?> LoadLemmaWordGroupsAsync(
         int id,
         LemmaWordKind wordKind,
+        string? typeCode,
         CancellationToken cancellationToken)
     {
         var lemmaExists = await _db.QuranLemmas
@@ -383,9 +382,10 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             return null;
         }
 
+        var normalizedTypeCode = NormalizeTypeCode(typeCode);
         var rows = wordKind == LemmaWordKind.Simple
-            ? await LoadLemmaWordRowsAsync(id, useSimpleWordIds: true, cancellationToken)
-            : await LoadLemmaWordRowsAsync(id, useSimpleWordIds: false, cancellationToken);
+            ? await LoadLemmaWordRowsAsync(id, normalizedTypeCode, useSimpleWordIds: true, cancellationToken)
+            : await LoadLemmaWordRowsAsync(id, normalizedTypeCode, useSimpleWordIds: false, cancellationToken);
 
         return rows
             .Where(r => r.UniqueWordId.HasValue)
@@ -436,16 +436,18 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
     private async Task<PagedResult<LemmaWordItemDto>?> GetLemmaWordsPageAsync(
         int id,
         LemmaWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
-        var grouped = await LoadLemmaWordGroupsAsync(id, wordKind, cancellationToken);
+        var grouped = await LoadLemmaWordGroupsAsync(id, wordKind, typeCode, cancellationToken);
         return grouped is null ? null : SliceLemmaWordsPage(grouped, page, pageSize);
     }
 
     private async Task<IReadOnlyList<LemmaWordOccurrenceRow>> LoadLemmaWordRowsAsync(
         int id,
+        string? typeCode,
         bool useSimpleWordIds,
         CancellationToken cancellationToken)
     {
@@ -453,7 +455,9 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             ? await (
                 from s in _db.WordMorphologySegments.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-                where s.LemmaId == id && !w.IsAyahMarker
+                where s.LemmaId == id
+                    && (typeCode == null || s.Pos == typeCode)
+                    && !w.IsAyahMarker
                 select new LemmaWordOccurrenceRow(
                     w.UniqueSimpleWordId,
                     w.TextUthmaniSimple,
@@ -465,7 +469,9 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
             : await (
                 from s in _db.WordMorphologySegments.AsNoTracking()
                 join w in _db.QuranWords.AsNoTracking() on s.QuranWordId equals w.Id
-                where s.LemmaId == id && !w.IsAyahMarker
+                where s.LemmaId == id
+                    && (typeCode == null || s.Pos == typeCode)
+                    && !w.IsAyahMarker
                 select new LemmaWordOccurrenceRow(
                     w.UniqueTashkeelWordId,
                     w.TextUthmani,

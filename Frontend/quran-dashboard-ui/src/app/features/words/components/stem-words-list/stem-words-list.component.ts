@@ -31,6 +31,7 @@ export class StemWordsListComponent {
   readonly page = input.required<PagedResultDto<StemWordItemDto>>();
   readonly currentPage = input.required<number>();
   readonly wordView = input<'simple' | 'tashkeel'>('simple');
+  readonly typeCode = input<string | null>(null);
   readonly loading = input(false);
 
   readonly pageChange = output<number>();
@@ -43,8 +44,6 @@ export class StemWordsListComponent {
   protected readonly paginationLabel = STEMS_WORDS_PAGINATION_LABEL;
   protected readonly loadingRowPlaceholders = Array.from({ length: 8 });
 
-  // Mirrors the retired unique-words explorer deep link (same mode + ayahs
-  // view); frame defaults are serialized explicitly per the URL contract.
   protected readonly rows = computed((): readonly StemWordRowViewModel[] =>
     this.page().items.map((item) => ({
       item,
@@ -54,7 +53,7 @@ export class StemWordsListComponent {
         id: item.uniqueWordId,
         view: 'ayahs',
         ayahPage: 1,
-        typeCode: null,
+        typeCode: this.typeCode(),
       },
     })),
   );

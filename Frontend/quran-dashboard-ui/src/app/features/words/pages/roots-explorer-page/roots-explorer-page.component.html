@@ -146,7 +146,7 @@
 
   <ng-template #rootsPanelContent>
   @if (!emptySelection()) {
-    @if (activeView() === 'ayahs') {
+    @if (activeView() === 'ayahs' || activeView() === 'words') {
       <qd-ayah-type-filters
         [items]="panelState().summary?.typeDistribution ?? []"
         [selectedTypeCode]="panelState().ayahTypeCode"
@@ -217,6 +217,7 @@
           [page]="emptyWordsPage"
           [currentPage]="panelState().detailPage"
           [wordView]="panelState().wordView"
+          [typeCode]="panelState().ayahTypeCode"
           data-testid="roots-words-view"
         />
       } @else if (activeView() === 'surahs' && panelState().surahView === 'missing') {
@@ -283,6 +284,7 @@
             [page]="wordsPage"
             [currentPage]="panelState().detailPage"
             [wordView]="panelState().wordView"
+            [typeCode]="panelState().ayahTypeCode"
             data-testid="roots-words-view"
             (pageChange)="onDetailPageChange($event)"
           />

@@ -180,13 +180,14 @@ export class LemmaDetailOverlayAdapterComponent {
       return;
     }
 
+    const typeCode = view === 'ayahs' || view === 'words' ? frame.typeCode : null;
     this.overlay.replaceTopFrame({
       ...frame,
       view,
       wordView: view === 'words' ? frame.wordView : DEFAULT_LEMMA_WORD_VIEW,
       surahView: view === 'surahs' ? frame.surahView : DEFAULT_LEMMA_SURAHS_VIEW,
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      typeCode: null,
+      typeCode,
     });
   }
 
@@ -200,7 +201,7 @@ export class LemmaDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_LEMMA_DETAIL_PAGE, typeCode: null });
+    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_LEMMA_DETAIL_PAGE });
   }
 
   protected onSurahViewChange(surahView: LemmaSurahView): void {
@@ -221,13 +222,13 @@ export class LemmaDetailOverlayAdapterComponent {
     this.overlay.replaceTopFrame({
       ...frame,
       detailPage: page,
-      typeCode: frame.view === 'ayahs' ? frame.typeCode : null,
+      typeCode: frame.view === 'ayahs' || frame.view === 'words' ? frame.typeCode : null,
     });
   }
 
   protected onAyahTypeCodeChange(typeCode: string | null): void {
     const frame = this.frame();
-    if (frame.view !== 'ayahs') {
+    if (frame.view !== 'ayahs' && frame.view !== 'words') {
       return;
     }
 

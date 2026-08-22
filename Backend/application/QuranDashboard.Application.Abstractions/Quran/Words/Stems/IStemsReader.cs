@@ -23,6 +23,7 @@ public interface IStemsReader
     Task<PagedResult<StemWordItemDto>?> GetStemWordsAsync(
         int id,
         StemWordKind wordKind,
+        string? typeCode,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

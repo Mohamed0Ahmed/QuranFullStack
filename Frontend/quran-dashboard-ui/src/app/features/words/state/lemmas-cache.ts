@@ -20,8 +20,9 @@ export const LemmasCacheKeys = {
     return `lemmas:${lemmaId}:summary`;
   },
 
-  words(lemmaId: number, wordView: LemmaWordView, page: number): string {
-    return `lemmas:${lemmaId}:words:${wordView}:p${page}`;
+  words(lemmaId: number, wordView: LemmaWordView, page: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `lemmas:${lemmaId}:words:${wordView}:${normalizedTypeCode}:p${page}`;
   },
 
   ayahs(lemmaId: number, page: number, pageSize: number, typeCode: string | null): string {

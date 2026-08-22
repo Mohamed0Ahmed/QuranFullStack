@@ -18,7 +18,7 @@ export class AyahTypeFiltersComponent {
 
   readonly typeCodeChange = output<string | null>();
 
-  protected readonly sectionLabel = 'تصفية الأنواع في الآيات';
+  protected readonly sectionLabel = 'تصفية حسب نوع الكلمة';
   protected readonly loadingLabel = 'جارٍ التحميل…';
   protected readonly allFilterLabel = 'عرض الكل';
   protected readonly isAllSelected = computed(() => this.selectedTypeCode() === null);

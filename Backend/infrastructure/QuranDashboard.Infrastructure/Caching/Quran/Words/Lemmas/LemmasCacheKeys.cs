@@ -10,11 +10,11 @@ public static class LemmasCacheKeys
 
     public static string Summary(int id) => $"lemmas:{id}:summary";
 
-    public static string WordsAll(int id, LemmaWordKind kind) =>
-        $"lemmas:{id}:words:{KindKey(kind)}:all";
+    public static string WordsAll(int id, LemmaWordKind kind, string? typeCode) =>
+        $"lemmas:{id}:words:{KindKey(kind)}:{NormalizeTypeCode(typeCode)}:all";
 
-    public static string Words(int id, LemmaWordKind kind, int page, int pageSize) =>
-        $"lemmas:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";
+    public static string Words(int id, LemmaWordKind kind, string? typeCode, int page, int pageSize) =>
+        $"lemmas:{id}:words:{KindKey(kind)}:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";
 
     public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
         $"lemmas:{id}:ayahs:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";

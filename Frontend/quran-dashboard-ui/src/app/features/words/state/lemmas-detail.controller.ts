@@ -50,9 +50,6 @@ const INITIAL_PANEL: LemmasPanelState = {
   errorMessage: '',
 };
 
-// Complete lemma detail identity: every field participates in equality. Unlike
-// roots, the ayahs view carries a `typeCode` filter, so it is part of the identity
-// (and of LemmasCacheKeys.ayahs).
 export interface LemmasDetailUrlState {
   readonly lemmaId: number;
   readonly view: LemmaView;
@@ -139,7 +136,11 @@ export class LemmasDetailController extends AbstractDetailController<
 
   setAyahTypeCode(typeCode: string | null): void {
     const current = this._panel();
-    if (current.selectedLemmaId === null || current.summary === null || current.view !== 'ayahs') {
+    if (
+      current.selectedLemmaId === null ||
+      current.summary === null ||
+      (current.view !== 'ayahs' && current.view !== 'words')
+    ) {
       return;
     }
 
@@ -151,7 +152,7 @@ export class LemmasDetailController extends AbstractDetailController<
     const token = this.requests.beginTransition();
     const nextState: LemmasDetailUrlState = {
       lemmaId: current.selectedLemmaId,
-      view: 'ayahs',
+      view: current.view,
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
@@ -177,6 +178,7 @@ export class LemmasDetailController extends AbstractDetailController<
     const detailPage = DEFAULT_LEMMA_DETAIL_PAGE;
     const wordView = view === 'words' ? current.wordView : DEFAULT_LEMMA_WORD_VIEW;
     const surahView = view === 'surahs' ? current.surahView : DEFAULT_LEMMA_SURAHS_VIEW;
+    const typeCode = view === 'ayahs' || view === 'words' ? current.ayahTypeCode : null;
 
     const token = this.requests.beginTransition();
     const nextState: LemmasDetailUrlState = {
@@ -185,7 +187,7 @@ export class LemmasDetailController extends AbstractDetailController<
       wordView,
       surahView,
       detailPage,
-      typeCode: null,
+      typeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -193,7 +195,7 @@ export class LemmasDetailController extends AbstractDetailController<
       view,
       wordView,
       surahView,
-      ayahTypeCode: null,
+      ayahTypeCode: typeCode,
       detailPage,
       status: 'loading',
       errorMessage: '',
@@ -219,7 +221,7 @@ export class LemmasDetailController extends AbstractDetailController<
       wordView,
       surahView: current.surahView,
       detailPage: DEFAULT_LEMMA_DETAIL_PAGE,
-      typeCode: null,
+      typeCode: current.ayahTypeCode,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({
@@ -279,7 +281,7 @@ export class LemmasDetailController extends AbstractDetailController<
       wordView: current.wordView,
       surahView: current.surahView,
       detailPage: page,
-      typeCode: current.view === 'ayahs' ? current.ayahTypeCode : null,
+      typeCode: current.view === 'ayahs' || current.view === 'words' ? current.ayahTypeCode : null,
     };
     this.activeUrlState = nextState;
     this._panel.update((s) => ({

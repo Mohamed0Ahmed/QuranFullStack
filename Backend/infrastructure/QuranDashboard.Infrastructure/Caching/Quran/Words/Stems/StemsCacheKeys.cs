@@ -11,11 +11,11 @@ public static class StemsCacheKeys
 
     public static string Summary(int id) => $"stems:{id}:summary";
 
-    public static string WordsAll(int id, StemWordKind kind) =>
-        $"stems:{id}:words:{KindKey(kind)}:all";
+    public static string WordsAll(int id, StemWordKind kind, string? typeCode) =>
+        $"stems:{id}:words:{KindKey(kind)}:{NormalizeTypeCode(typeCode)}:all";
 
-    public static string Words(int id, StemWordKind kind, int page, int pageSize) =>
-        $"stems:{id}:words:{KindKey(kind)}:p{page}:s{pageSize}";
+    public static string Words(int id, StemWordKind kind, string? typeCode, int page, int pageSize) =>
+        $"stems:{id}:words:{KindKey(kind)}:{NormalizeTypeCode(typeCode)}:p{page}:s{pageSize}";
 
     public static string Ayahs(int id, int page, int pageSize, string? typeCode) =>
         $"stems:{id}:ayahs:{StemsAyahTypeCode.CacheKeyPart(typeCode)}:p{page}:s{pageSize}";
@@ -32,4 +32,7 @@ public static class StemsCacheKeys
         StemWordKind.Tashkeel => StemWordKindKeys.Tashkeel,
         _ => kind.ToString(),
     };
+
+    private static string NormalizeTypeCode(string? typeCode) =>
+        string.IsNullOrWhiteSpace(typeCode) ? "all" : typeCode.Trim();
 }

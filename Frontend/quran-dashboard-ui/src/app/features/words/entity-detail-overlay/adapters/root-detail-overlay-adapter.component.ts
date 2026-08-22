@@ -182,13 +182,14 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
+    const typeCode = view === 'ayahs' || view === 'words' ? frame.typeCode : null;
     this.overlay.replaceTopFrame({
       ...frame,
       view,
       wordView: view === 'words' ? frame.wordView : DEFAULT_ROOT_WORD_VIEW,
       surahView: view === 'surahs' ? frame.surahView : DEFAULT_ROOT_SURAHS_VIEW,
       detailPage: DEFAULT_ROOT_DETAIL_PAGE,
-      typeCode: null,
+      typeCode,
     });
   }
 
@@ -202,7 +203,7 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_ROOT_DETAIL_PAGE, typeCode: null });
+    this.overlay.replaceTopFrame({ ...frame, wordView, detailPage: DEFAULT_ROOT_DETAIL_PAGE });
   }
 
   protected onSurahViewChange(surahView: RootSurahView): void {
@@ -220,12 +221,16 @@ export class RootDetailOverlayAdapterComponent {
       return;
     }
 
-    this.overlay.replaceTopFrame({ ...frame, detailPage: page, typeCode: frame.view === 'ayahs' ? frame.typeCode : null });
+    this.overlay.replaceTopFrame({
+      ...frame,
+      detailPage: page,
+      typeCode: frame.view === 'ayahs' || frame.view === 'words' ? frame.typeCode : null,
+    });
   }
 
   protected onAyahTypeCodeChange(typeCode: string | null): void {
     const frame = this.frame();
-    if (frame.view !== 'ayahs') {
+    if (frame.view !== 'ayahs' && frame.view !== 'words') {
       return;
     }
 

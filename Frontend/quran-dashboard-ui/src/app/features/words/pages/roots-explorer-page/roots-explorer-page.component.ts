@@ -154,7 +154,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const state = this.panelState();
-      if (state.selectedRootId === null || state.view !== 'ayahs' || state.ayahTypeCode === null || state.summary === null) return;
+      if (state.selectedRootId === null || (state.view !== 'ayahs' && state.view !== 'words') || state.ayahTypeCode === null || state.summary === null) return;
       if (state.summary.typeDistribution.some((item) => item.code === state.ayahTypeCode)) return;
       this.detailFacade.setAyahTypeCode(null);
       this.updateQueryParams(buildRootsQueryParams({ typeCode: null, detailPage: 1 }));
@@ -216,17 +216,18 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
 
   protected onAyahTypeChange(typeCode: string | null): void {
     const current = this.panelState();
-    if (current.selectedRootId === null || current.view !== 'ayahs') return;
+    if (current.selectedRootId === null || (current.view !== 'ayahs' && current.view !== 'words')) return;
     if (current.ayahTypeCode === typeCode && current.detailPage === 1) return;
     this.tableFocus.cancel();
     this.detailFacade.setAyahTypeCode(typeCode);
-    this.updateQueryParams(buildRootsQueryParams({ view: 'ayahs', column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
+    this.updateQueryParams(buildRootsQueryParams({ view: current.view, column: this.activeColumn() ?? 'occurrences', detailPage: 1, typeCode }));
   }
 
   protected onPanelViewChange(view: RootView): void {
+    const typeCode = view === 'ayahs' || view === 'words' ? this.panelState().ayahTypeCode : null;
     this.syncTableFocusToPanelView(view);
     this.detailFacade.setView(view);
-    this.updateQueryParams(buildRootsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: null, wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode: null }));
+    this.updateQueryParams(buildRootsQueryParams({ view, column: this.defaultColumnForView(view, 'simple'), detailPage: null, wordView: view === 'words' ? 'simple' : null, surahView: view === 'surahs' ? 'mentioned' : null, typeCode }));
   }
 
   protected subViewTabId(option: string): string {
@@ -236,7 +237,7 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected onWordViewChange(wordView: RootWordView): void {
     this.syncTableFocusToPanelView('words', wordView);
     this.detailFacade.setWordView(wordView);
-    this.updateQueryParams(buildRootsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: null, typeCode: null }));
+    this.updateQueryParams(buildRootsQueryParams({ view: 'words', column: wordView === 'tashkeel' ? 'tashkeel' : 'simple', wordView, detailPage: null, typeCode: this.panelState().ayahTypeCode }));
   }
 
   protected onSurahViewChange(surahView: RootSurahView): void {

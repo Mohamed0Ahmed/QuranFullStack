@@ -158,7 +158,7 @@
 
   <ng-template #lemmasPanelContent>
     @if (!emptySelection()) {
-      @if (activeView() === 'ayahs' && (panelState().summary || panelState().status === 'loading')) {
+      @if ((activeView() === 'ayahs' || activeView() === 'words') && (panelState().summary || panelState().status === 'loading')) {
         <qd-lemma-ayah-type-filters
           [items]="panelState().summary?.typeDistribution ?? []"
           [selectedTypeCode]="panelState().ayahTypeCode"
@@ -228,6 +228,7 @@
             [page]="emptyWordsPage"
             [currentPage]="panelState().detailPage"
             [kind]="panelState().wordView"
+            [typeCode]="panelState().ayahTypeCode"
             data-testid="lemmas-words-view"
             (pageChange)="onDetailPageChange($event)"
           />
@@ -285,6 +286,7 @@
               [page]="wordsPage"
               [currentPage]="panelState().detailPage"
               [kind]="panelState().wordView"
+              [typeCode]="panelState().ayahTypeCode"
               data-testid="lemmas-words-view"
               (pageChange)="onDetailPageChange($event)"
             />

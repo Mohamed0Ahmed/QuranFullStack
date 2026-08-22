@@ -72,6 +72,7 @@ public sealed class GetLemmaWordsHandler(
         var page = await reader.GetLemmaWordsAsync(
             query.Id,
             kind,
+            query.TypeCode,
             query.Page,
             query.PageSize,
             cancellationToken);

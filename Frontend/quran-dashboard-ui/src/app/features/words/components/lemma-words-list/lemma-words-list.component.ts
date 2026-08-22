@@ -32,6 +32,7 @@ export class LemmaWordsListComponent {
   readonly page = input.required<PagedResultDto<LemmaWordItemDto>>();
   readonly currentPage = input.required<number>();
   readonly kind = input.required<LemmaWordView>();
+  readonly typeCode = input<string | null>(null);
   readonly loading = input(false);
 
   readonly pageChange = output<number>();
@@ -53,7 +54,7 @@ export class LemmaWordsListComponent {
         id: item.uniqueWordId,
         view: 'ayahs',
         ayahPage: 1,
-        typeCode: null,
+        typeCode: this.typeCode(),
       },
     })),
   );

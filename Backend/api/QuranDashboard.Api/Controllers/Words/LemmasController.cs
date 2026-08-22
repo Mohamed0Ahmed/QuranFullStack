@@ -101,6 +101,7 @@ public sealed class LemmasController(
     public async Task<ActionResult<ApiResponse<PagedResult<LemmaWordItemDto>>>> GetWords(
         int id,
         string wordKind,
+        [FromQuery] string? typeCode,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -109,6 +110,7 @@ public sealed class LemmasController(
             new GetLemmaWordsQuery(
                 id,
                 wordKind,
+                NormalizeTypeCode(typeCode),
                 page ?? DefaultPage,
                 pageSize ?? DefaultDetailPageSize),
             cancellationToken);

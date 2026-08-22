@@ -14,8 +14,9 @@ export const RootsCacheKeys = {
     return `roots:${rootId}:summary`;
   },
 
-  words(rootId: number, wordView: RootWordView, page: number): string {
-    return `roots:${rootId}:words:${wordView}:p${page}`;
+  words(rootId: number, wordView: RootWordView, page: number, typeCode: string | null): string {
+    const normalizedTypeCode = typeCode && typeCode.trim().length > 0 ? typeCode.trim() : 'all';
+    return `roots:${rootId}:words:${wordView}:${normalizedTypeCode}:p${page}`;
   },
 
   ayahs(rootId: number, page: number, typeCode: string | null): string {
