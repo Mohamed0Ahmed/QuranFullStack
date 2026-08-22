@@ -113,8 +113,8 @@ export class AbwabRelationsModalComponent {
   protected readonly typeOptions = TYPE_ORDER;
 
   protected get addTitle(): string { return ABWAB_LABELS.relationAddTitle; }
-  protected get descriptionText(): string { return ABWAB_LABELS.relationsModalDescription; }
-  protected get emptyText(): string { return ABWAB_LABELS.relationsEmpty; }
+  protected get descriptionText(): string { return this.canDeleteRelation() ? ABWAB_LABELS.relationsModalDescription : ABWAB_LABELS.relationsReadOnlyDescription; }
+  protected get emptyText(): string { return this.canCreateRelation() ? ABWAB_LABELS.relationsEmpty : ABWAB_LABELS.relationsReadOnlyEmpty; }
   protected get loadingLabel(): string { return ABWAB_LABELS.relationsLoading; }
   protected get retryLabel(): string { return ABWAB_LABELS.retryButton; }
   protected get directionLabel(): string { return ABWAB_LABELS.relationDirectionLabel; }

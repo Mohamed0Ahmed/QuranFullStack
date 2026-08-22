@@ -7,7 +7,7 @@
   @if (displayStatusLabel(); as status) {
     <span class="qd-badge qd-badge--accent linking-ayah-card__status">{{ status }}</span>
   }
-  @if (!showResultCount()) {
+  @if (showResultPosition() && !showResultCount()) {
     <span class="linking-ayah-card__serial" aria-hidden="true">{{ resultPosition() }}</span>
   }
   <header
@@ -15,7 +15,7 @@
     [class.linking-ayah-card__meta--start]="metaAlignment() === 'start'"
   >
     <ng-content select="[qdLinkingAyahCardMetaStart]" />
-    @if (showResultCount()) {
+    @if (showResultPosition() && showResultCount()) {
       <span>{{ resultPosition() }} {{ labels.of }} {{ resultCount() }}</span>
     }
     <span>{{ ayah().surahNameArabic }}</span>

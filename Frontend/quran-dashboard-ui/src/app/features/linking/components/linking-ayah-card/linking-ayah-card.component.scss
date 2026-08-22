@@ -7,7 +7,7 @@
 .linking-ayah-card {
   position: relative;
   gap: var(--qd-space-1);
-  padding: var(--qd-space-1) var(--qd-space-2);
+  padding: var(--qd-linking-ayah-card-padding-block, var(--qd-space-1)) var(--qd-space-2);
 }
 
 .linking-ayah-card--grouped {
@@ -76,7 +76,7 @@
   display: inline;
   color: inherit;
   font-family: var(--qd-font-quran);
-  font-size: var(--qd-mushaf-word-font-size);
+  font-size: var(--qd-linking-ayah-word-font-size, var(--qd-mushaf-word-font-size));
   font-weight: 400;
   line-height: 1.9;
   white-space: normal;
@@ -123,7 +123,7 @@
   }
 
   .linking-ayah-card__word {
-    font-size: calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2));
+    font-size: var(--qd-linking-ayah-word-font-size, calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2)));
     line-height: 1.55;
   }
 }

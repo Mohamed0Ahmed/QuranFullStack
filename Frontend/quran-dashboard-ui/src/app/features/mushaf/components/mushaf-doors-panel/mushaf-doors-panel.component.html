@@ -1,5 +1,5 @@
 <section class="mushaf-doors-panel" aria-label="أبواب المصحف" data-testid="mushaf-doors-panel">
-  <qd-tabs layout="inline" ariaLabel="أقسام أبواب المصحف" dir="rtl">
+  <qd-tabs layout="tracks" ariaLabel="أقسام أبواب المصحف" dir="rtl">
     <button
       qdTab
       type="button"
@@ -30,6 +30,14 @@
 
   <div class="mushaf-doors-panel__content" role="tabpanel">
     @if (activeTab() === 'doors') {
+      <qd-abwab-toolbar
+        [searchOnly]="true"
+        [searchQuery]="searchQuery()"
+        [searchMatchCount]="matchedIds().size"
+        [searchResults]="searchMatches()"
+        (searchQueryChanged)="searchQuery.set($event)"
+        (searchResultSelected)="revealDoor($event)"
+      />
       @if (tree.isLoading() && !tree.snapshot()) {
         <qd-panel-skeleton
           shape="rows"
@@ -52,13 +60,19 @@
       } @else {
         <div class="mushaf-doors-panel__tree">
           <qd-abwab-tree
-            [roots]="tree.snapshot()?.liveRoots ?? []"
+            [roots]="liveRoots()"
             ariaLabel="اختر أبوابًا لتمييزها في المصحف"
             [bulkMode]="true"
             [bulkSelectedIds]="highlights.draftDoorIds()"
+            [matchedIds]="matchedIds()"
+            [expandSeedIds]="revealExpandedIds()"
+            [searchExpandedIds]="searchExpandedIds()"
+            [revealedId]="revealedId()"
             [selectionMode]="true"
+            [relationsClickableInBulkMode]="true"
             [openLinksDoorId]="doorLinks.openDoorId()"
             (bulkToggled)="toggleDoor($event)"
+            (relationsRequested)="openRelations($event)"
             (linksToggled)="doorLinks.toggleDoor($event)"
           />
         </div>
@@ -160,6 +174,26 @@
     [doorId]="door.id"
     [doorName]="door.name"
     (dismissed)="doorLinks.close()"
+  />
+}
+
+@if (relationsDoor(); as door) {
+  <qd-abwab-relations-modal
+    [open]="true"
+    [anchorDoorId]="door.id"
+    [anchorDoorName]="door.name"
+    [anchorRelationCount]="door.relationCount"
+    [anchorPickMode]="false"
+    [bulkTargets]="[]"
+    [liveRoots]="liveRoots()"
+    [loadRelations]="loadRelations"
+    [refetchRelations]="refetchRelations"
+    [addRelations]="rejectRelationWrite"
+    [deleteRelation]="rejectRelationWrite"
+    [canCreateRelation]="false"
+    [canDeleteRelation]="false"
+    (closed)="closeRelations()"
+    (revealRequested)="revealDoor($event)"
   />
 }
 

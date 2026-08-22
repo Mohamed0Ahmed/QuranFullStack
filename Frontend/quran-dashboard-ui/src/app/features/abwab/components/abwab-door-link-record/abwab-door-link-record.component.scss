@@ -26,7 +26,13 @@
 }
 
 .abwab-door-link-record__ayahs--grouped {
-  padding: var(--qd-space-2);
+  gap: 0;
+  padding: var(--qd-space-1) var(--qd-space-2);
+}
+
+.abwab-door-link-record__ayahs--grouped .abwab-door-link-record__card {
+  --qd-linking-ayah-card-padding-block: 0;
+  --qd-linking-ayah-word-font-size: calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2));
 }
 
 .abwab-door-link-record__card--selectable {

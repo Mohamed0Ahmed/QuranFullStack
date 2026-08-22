@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   OnDestroy,
   OnInit,
   computed,
@@ -9,14 +10,21 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { of } from 'rxjs';
 
 import {
   AbwabDoorLinksPanelComponent,
 } from '../../../abwab/components/abwab-door-links-panel/abwab-door-links-panel.component';
+import { AbwabRelationsModalComponent } from '../../../abwab/components/abwab-relations-modal/abwab-relations-modal.component';
+import { AbwabToolbarComponent } from '../../../abwab/components/abwab-toolbar/abwab-toolbar.component';
 import { AbwabTreeComponent } from '../../../abwab/components/abwab-tree/abwab-tree.component';
+import { AbwabNode } from '../../../abwab/models/abwab.models';
 import { AbwabDoorLinksFacade } from '../../../abwab/state/abwab-door-links.facade';
 import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissions.controller';
+import { AbwabRelationsController } from '../../../abwab/state/abwab-relations.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
+import { searchAbwabNodes } from '../../../abwab/state/abwab-tree.builder';
+import { abwabPermissionDenied } from '../../../abwab/state/abwab-write.controller';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
@@ -34,6 +42,10 @@ import { MushafDoorPaletteComponent } from './mushaf-door-palette.component';
 
 type MushafDoorsPanelTab = 'doors' | 'selected';
 
+const NO_IDS: ReadonlySet<number> = new Set<number>();
+const NO_ROOTS: readonly AbwabNode[] = [];
+const REVEAL_HOLD_MS = 3000;
+
 interface DoorPalettePopover {
   readonly door: MushafAppliedDoorViewModel;
   readonly anchor: HTMLElement;
@@ -45,6 +57,8 @@ interface DoorPalettePopover {
   standalone: true,
   imports: [
     AbwabDoorLinksPanelComponent,
+    AbwabRelationsModalComponent,
+    AbwabToolbarComponent,
     AbwabTreeComponent,
     ExplorerPanelSkeletonComponent,
     QdActionDirective,
@@ -62,16 +76,60 @@ interface DoorPalettePopover {
   providers: [AbwabPermissionsController],
 })
 export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
+  private readonly elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
   protected readonly tree = inject(AbwabSnapshotFacade);
   protected readonly doorLinks = inject(AbwabDoorLinksFacade);
   protected readonly highlights = inject(MushafDoorsHighlightStore);
+  private readonly relations = inject(AbwabRelationsController);
   protected readonly activeTab = signal<MushafDoorsPanelTab>('doors');
   protected readonly palettePopover = signal<DoorPalettePopover | null>(null);
+  protected readonly searchQuery = signal('');
+  protected readonly revealedId = signal<number | null>(null);
+  private readonly revealSeedId = signal<number | null>(null);
+  private readonly relationsDoorId = signal<number | null>(null);
+  private revealTimer: ReturnType<typeof setTimeout> | null = null;
+
+  protected readonly liveRoots = computed<readonly AbwabNode[]>(
+    () => this.tree.snapshot()?.liveRoots ?? NO_ROOTS,
+  );
+  private readonly searchResult = computed(() => searchAbwabNodes(this.liveRoots(), this.searchQuery()));
+  protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
+    const node = this.tree.snapshot()?.byId.get(id);
+    return node ? [node] : [];
+  }));
+  protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
+  protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {
+    const ids = this.searchResult().autoExpandedIds;
+    return ids.size === 0 ? NO_IDS : ids;
+  });
+  protected readonly revealExpandedIds = computed<ReadonlySet<number>>(() => {
+    const doorId = this.revealSeedId();
+    const byId = this.tree.snapshot()?.byId;
+    if (doorId === null || !byId) {
+      return NO_IDS;
+    }
+    const ids = new Set<number>();
+    let parentId = byId.get(doorId)?.parentId ?? null;
+    while (parentId !== null && !ids.has(parentId)) {
+      ids.add(parentId);
+      parentId = byId.get(parentId)?.parentId ?? null;
+    }
+    return ids.size === 0 ? NO_IDS : ids;
+  });
   protected readonly openLinksDoor = computed(() => {
     const doorId = this.doorLinks.openDoorId();
     const door = doorId === null ? null : this.tree.snapshot()?.byId.get(doorId) ?? null;
     return door?.isArchived === false ? door : null;
   });
+  protected readonly relationsDoor = computed(() => {
+    const doorId = this.relationsDoorId();
+    const door = doorId === null ? null : this.tree.snapshot()?.byId.get(doorId) ?? null;
+    return door?.isArchived === false ? door : null;
+  });
+
+  protected readonly loadRelations = (doorId: number) => this.relations.loadFor(doorId);
+  protected readonly refetchRelations = (doorId: number) => this.relations.refetchFor(doorId);
+  protected readonly rejectRelationWrite = () => of(abwabPermissionDenied());
 
   constructor() {
     effect(() => {
@@ -79,6 +137,14 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
       const snapshot = this.tree.snapshot();
       if (doorId !== null && snapshot && this.openLinksDoor() === null) {
         untracked(() => this.doorLinks.close());
+      }
+    });
+
+    effect(() => {
+      const doorId = this.relationsDoorId();
+      const snapshot = this.tree.snapshot();
+      if (doorId !== null && snapshot && this.relationsDoor() === null) {
+        untracked(() => this.closeRelations());
       }
     });
   }
@@ -90,12 +156,15 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.doorLinks.close();
+    this.closeRelations();
+    this.clearReveal();
   }
 
   protected selectTab(tab: MushafDoorsPanelTab): void {
     this.closePalette();
     if (tab !== 'doors') {
       this.doorLinks.close();
+      this.closeRelations();
     }
     this.activeTab.set(tab);
   }
@@ -147,5 +216,48 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
 
   protected retryTree(): void {
     this.tree.load();
+  }
+
+  protected openRelations(doorId: number): void {
+    const door = this.tree.snapshot()?.byId.get(doorId);
+    if (!door || door.isArchived) {
+      return;
+    }
+    this.doorLinks.close();
+    this.relationsDoorId.set(door.id);
+  }
+
+  protected closeRelations(): void {
+    this.relationsDoorId.set(null);
+  }
+
+  protected revealDoor(doorId: number): void {
+    const door = this.tree.snapshot()?.byId.get(doorId);
+    if (!door || door.isArchived) {
+      return;
+    }
+    this.closeRelations();
+    this.revealSeedId.set(door.id);
+    this.revealedId.set(door.id);
+    if (this.revealTimer !== null) {
+      clearTimeout(this.revealTimer);
+    }
+    setTimeout(() => {
+      const row = this.elementRef.nativeElement.querySelector<HTMLElement>(
+        `[data-testid="abwab-tree-row-${door.id}"]`,
+      );
+      row?.scrollIntoView({ block: 'nearest' });
+      row?.focus();
+    });
+    this.revealTimer = setTimeout(() => this.clearReveal(), REVEAL_HOLD_MS);
+  }
+
+  private clearReveal(): void {
+    if (this.revealTimer !== null) {
+      clearTimeout(this.revealTimer);
+      this.revealTimer = null;
+    }
+    this.revealedId.set(null);
+    this.revealSeedId.set(null);
   }
 }
