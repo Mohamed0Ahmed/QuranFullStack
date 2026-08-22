@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -7,12 +8,13 @@ import {
   AbwabModalKind,
   AbwabModalState,
   AbwabNode,
+  ABWAB_QUERY_KEYS,
   isDoorDependentAbwabModalKind,
 } from '../models/abwab.models';
 import { AbwabPermissionsController } from './abwab-permissions.controller';
 import { AbwabInclusionsController } from './abwab-inclusions.controller';
 import { AbwabSelectionStore } from './abwab-selection.store';
-import { buildAbwabQueryParams } from './abwab-url-sync';
+import { buildAbwabQueryParams, currentAbwabSearchQuery } from './abwab-url-sync';
 
 export const DOOR_MODAL_KINDS: readonly AbwabModalKind[] = ['create', 'child', 'edit'];
 
@@ -30,6 +32,7 @@ export class AbwabModalUrlController {
   private readonly selection = inject(AbwabSelectionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly modalSignal = signal<AbwabModalState | null>(null);
   private readonly doorSignal = signal<number | null>(null);
@@ -269,10 +272,13 @@ export class AbwabModalUrlController {
   private updateInclusionsQuery(doorId: number, closed: boolean, updateDoor: boolean): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: buildAbwabQueryParams({
-        ...(updateDoor ? { door: doorId } : {}),
-        modal: { kind: 'inclusions', closed, subjectDoorId: doorId },
-      }),
+      queryParams: {
+        [ABWAB_QUERY_KEYS.q]: currentAbwabSearchQuery(this.router, this.location),
+        ...buildAbwabQueryParams({
+          ...(updateDoor ? { door: doorId } : {}),
+          modal: { kind: 'inclusions', closed, subjectDoorId: doorId },
+        }),
+      },
       queryParamsHandling: 'merge',
       replaceUrl: closed,
     });

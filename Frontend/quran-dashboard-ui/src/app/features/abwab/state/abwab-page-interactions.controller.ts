@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { Injectable, computed, inject } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
@@ -8,7 +9,11 @@ import { AbwabPageOverlaysController } from './abwab-page-overlays.controller';
 import { AbwabModalUrlController, DOOR_MODAL_KINDS } from './abwab-modal-url.controller';
 import { AbwabPermissionsController } from './abwab-permissions.controller';
 import { AbwabRevealController } from './abwab-reveal.controller';
-import { buildAbwabQueryParams } from './abwab-url-sync';
+import {
+  buildAbwabQueryParams,
+  currentAbwabSearchQuery,
+  replaceAbwabQueryParamsInLocation,
+} from './abwab-url-sync';
 import {
   ABWAB_ORDER_SCOPE_TO_WIRE,
   ABWAB_QUERY_KEYS,
@@ -39,6 +44,7 @@ export class AbwabPageInteractionsController {
   private readonly reveal = inject(AbwabRevealController);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
   private doorModalCommitted = false;
@@ -52,7 +58,7 @@ export class AbwabPageInteractionsController {
   }
 
   onSearchQueryChanged(q: string): void {
-    this.updateQueryParams(buildAbwabQueryParams({ q }), true);
+    replaceAbwabQueryParamsInLocation(this.router, this.location, this.route, buildAbwabQueryParams({ q }));
   }
 
   onHideUnrelatedRootsChanged(hideUnrelatedRoots: boolean): void {
@@ -387,7 +393,10 @@ export class AbwabPageInteractionsController {
   private updateQueryParams(changes: Record<string, string | null>, replaceUrl = false): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: changes,
+      queryParams: {
+        [ABWAB_QUERY_KEYS.q]: currentAbwabSearchQuery(this.router, this.location),
+        ...changes,
+      },
       queryParamsHandling: 'merge',
       replaceUrl,
     });

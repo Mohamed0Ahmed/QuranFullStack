@@ -5,16 +5,26 @@ import { AbwabNode } from '../models/abwab.models';
 export interface AbwabSearchOptions {
   readonly hideUnrelatedRoots?: boolean;
   readonly omittedSubtreeIds?: ReadonlySet<number>;
+  readonly autoExpandMatches?: boolean;
+}
+
+export interface AbwabSearchMatch {
+  readonly id: number;
+  readonly displayLabel: string;
 }
 
 export interface AbwabSearchResult {
   readonly isFiltering: boolean;
   readonly matchedIds: ReadonlySet<number>;
-  readonly matches: readonly AbwabNode[];
+  readonly matches: readonly AbwabSearchMatch[];
   readonly matchingRootIds: ReadonlySet<number>;
   readonly autoExpandedIds: ReadonlySet<number>;
   readonly displayRoots: readonly AbwabNode[];
 }
+
+export const ABWAB_SEARCH_MIN_CHARACTERS = 2;
+
+const normalizedCandidatesByNode = new WeakMap<AbwabNode, readonly string[]>();
 
 export function searchAbwabNodes(
   roots: readonly AbwabNode[],
@@ -23,7 +33,7 @@ export function searchAbwabNodes(
 ): AbwabSearchResult {
   const eligibleRoots = omitAbwabSubtrees(roots, options.omittedSubtreeIds ?? new Set());
   const normalizedQuery = normalizeArabicForSearch(query.trim());
-  if (normalizedQuery === '') {
+  if (Array.from(normalizedQuery).length < ABWAB_SEARCH_MIN_CHARACTERS) {
     return {
       isFiltering: false,
       matchedIds: new Set(),
@@ -35,7 +45,7 @@ export function searchAbwabNodes(
   }
 
   const matchedIds = new Set<number>();
-  const matches: AbwabNode[] = [];
+  const matches: AbwabSearchMatch[] = [];
   const matchingRootIds = new Set<number>();
   const pathExpandedIds = new Set<number>();
   const ancestors: AbwabNode[] = [];
@@ -44,8 +54,14 @@ export function searchAbwabNodes(
     const isMatch = nodeMatchesQuery(node, normalizedQuery);
     if (isMatch) {
       matchedIds.add(node.id);
-      matches.push(node);
-      ancestors.forEach((ancestor) => pathExpandedIds.add(ancestor.id));
+      const parent = ancestors.at(-1);
+      matches.push({
+        id: node.id,
+        displayLabel: parent ? `${parent.name} ← ${node.name}` : node.name,
+      });
+      if (options.autoExpandMatches !== false) {
+        ancestors.forEach((ancestor) => pathExpandedIds.add(ancestor.id));
+      }
     }
 
     ancestors.push(node);
@@ -79,8 +95,12 @@ export function searchAbwabNodes(
 }
 
 function nodeMatchesQuery(node: AbwabNode, normalizedQuery: string): boolean {
-  return [node.name, ...node.aliases]
-    .some((candidate) => normalizeArabicForSearch(candidate).includes(normalizedQuery));
+  let normalizedCandidates = normalizedCandidatesByNode.get(node);
+  if (!normalizedCandidates) {
+    normalizedCandidates = [node.name, ...node.aliases].map(normalizeArabicForSearch);
+    normalizedCandidatesByNode.set(node, normalizedCandidates);
+  }
+  return normalizedCandidates.some((candidate) => candidate.includes(normalizedQuery));
 }
 
 function omitAbwabSubtrees(

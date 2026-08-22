@@ -1,4 +1,5 @@
-import { ParamMap } from '@angular/router';
+import { Location } from '@angular/common';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
 
 import {
   ABWAB_QUERY_DEFAULTS,
@@ -13,6 +14,25 @@ import {
 } from '../models/abwab.models';
 
 const MODAL_CLOSED_SUFFIX = '-closed';
+
+export function currentAbwabSearchQuery(router: Router, location: Location): string | null {
+  const value = router.parseUrl(location.path(true)).queryParams[ABWAB_QUERY_KEYS.q];
+  return typeof value === 'string' ? value : null;
+}
+
+export function replaceAbwabQueryParamsInLocation(
+  router: Router,
+  location: Location,
+  route: ActivatedRoute,
+  changes: Record<string, string | null>,
+): void {
+  const url = router.createUrlTree([], {
+    relativeTo: route,
+    queryParams: changes,
+    queryParamsHandling: 'merge',
+  });
+  location.replaceState(router.serializeUrl(url));
+}
 
 function parsePositiveId(raw: string | null): number | null {
   if (raw === null) {
@@ -62,6 +82,7 @@ export function serializeAbwabModal(modal: AbwabModalState): string {
 export function parseAbwabQueryParams(queryParams: ParamMap): AbwabQueryState {
   const viewRaw = queryParams.get(ABWAB_QUERY_KEYS.view);
   const door = parsePositiveId(queryParams.get(ABWAB_QUERY_KEYS.door));
+  const hideUnrelatedRootsRaw = queryParams.get(ABWAB_QUERY_KEYS.hideUnrelatedRoots);
 
   return {
     section: parsePositiveId(queryParams.get(ABWAB_QUERY_KEYS.section)),
@@ -70,7 +91,9 @@ export function parseAbwabQueryParams(queryParams: ParamMap): AbwabQueryState {
     door,
     card: parsePositiveId(queryParams.get(ABWAB_QUERY_KEYS.card)),
     q: queryParams.get(ABWAB_QUERY_KEYS.q) ?? ABWAB_QUERY_DEFAULTS.q,
-    hideUnrelatedRoots: queryParams.get(ABWAB_QUERY_KEYS.hideUnrelatedRoots) === '1',
+    hideUnrelatedRoots: hideUnrelatedRootsRaw === null
+      ? ABWAB_QUERY_DEFAULTS.hideUnrelatedRoots
+      : hideUnrelatedRootsRaw === '1',
     modal: parseModal(queryParams.get(ABWAB_QUERY_KEYS.modal), door),
   };
 }
@@ -102,7 +125,9 @@ export function buildAbwabQueryParams(changes: AbwabQueryChange): Record<string,
     params[ABWAB_QUERY_KEYS.q] = changes.q === '' ? null : changes.q;
   }
   if (changes.hideUnrelatedRoots !== undefined) {
-    params[ABWAB_QUERY_KEYS.hideUnrelatedRoots] = changes.hideUnrelatedRoots ? '1' : null;
+    params[ABWAB_QUERY_KEYS.hideUnrelatedRoots] = changes.hideUnrelatedRoots === ABWAB_QUERY_DEFAULTS.hideUnrelatedRoots
+      ? null
+      : '0';
   }
 
   const invalidatesSelection = changes.section !== undefined || changes.archive === true;

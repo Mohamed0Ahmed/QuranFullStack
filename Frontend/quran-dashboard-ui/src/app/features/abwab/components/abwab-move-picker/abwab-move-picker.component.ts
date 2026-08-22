@@ -54,7 +54,7 @@ export class AbwabMovePickerComponent {
   protected readonly pickedParentId = signal<number | null>(null);
   protected readonly expandedIds = signal<ReadonlySet<number>>(new Set());
   protected readonly searchQuery = signal('');
-  protected readonly hideUnrelatedRoots = signal(false);
+  protected readonly hideUnrelatedRoots = signal(true);
 
   protected get descriptionText(): string { return ABWAB_LABELS.movePickerDescription; }
   protected get sectionStripLabel(): string { return ABWAB_LABELS.movePickerSectionStripLabel; }
@@ -115,7 +115,7 @@ export class AbwabMovePickerComponent {
         this.pickedParentId.set(null);
         this.expandedIds.set(new Set());
         this.searchQuery.set('');
-        this.hideUnrelatedRoots.set(false);
+        this.hideUnrelatedRoots.set(true);
 
         const distinct = new Set(movedSectionIds);
         if (distinct.size === 1) {

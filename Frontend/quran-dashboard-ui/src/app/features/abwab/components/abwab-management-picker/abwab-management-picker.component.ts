@@ -79,7 +79,7 @@ export class AbwabManagementPickerComponent {
   protected readonly overlays = inject(AbwabPageOverlaysController);
   protected readonly permissions = inject(AbwabPermissionsController);
   protected readonly searchQuery = signal('');
-  protected readonly hideUnrelatedRoots = signal(false);
+  protected readonly hideUnrelatedRoots = signal(true);
   protected readonly revealedId = signal<number | null>(null);
 
   private readonly pendingCreatedDoorId = signal<number | null>(null);
