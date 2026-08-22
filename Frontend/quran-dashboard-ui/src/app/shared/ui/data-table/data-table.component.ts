@@ -22,6 +22,7 @@ import {
 } from '@angular/core';
 
 import { QD_BP_COMPACT_QUERY } from '../../layout/breakpoints';
+import { SessionScrollStateDirective } from '../../navigation/session-scroll-state/session-scroll-state.directive';
 import { QdRefreshingIndicatorComponent } from '../refreshing-indicator/refreshing-indicator.component';
 import { MeasuredRowVirtualScrollStrategy } from '../virtual-scroll/measured-row-virtual-scroll.strategy';
 import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, QdDataTableState } from './data-table.models';
@@ -32,7 +33,7 @@ const VIRTUAL_ROW_BUFFER = 640;
 @Component({
   selector: 'qd-data-table',
   standalone: true,
-  imports: [NgTemplateOutlet, QdRefreshingIndicatorComponent, ScrollingModule],
+  imports: [NgTemplateOutlet, QdRefreshingIndicatorComponent, ScrollingModule, SessionScrollStateDirective],
   templateUrl: './data-table.component.html',
   styleUrl: './data-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -81,6 +82,7 @@ export class QdDataTableComponent<T> {
   readonly virtual = input(true);
   readonly rowHeight = input(40);
   readonly compactRowHeight = input(88);
+  readonly scrollStateKey = input('');
 
   readonly rowSelected = output<T>();
 

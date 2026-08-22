@@ -130,7 +130,7 @@ This ledger is authoritative for the reported drift count. A row is counted once
 | D14 | Button motion | Every active `.qd-btn` translates vertically. | Conflicts with calm, state-only motion and floating-layer-only transforms. | Color/border feedback only. |
 | D15 | Mini-card hover | Generic hover uses accent border. | Green is reserved for current/action state, not decoration. | Neutral hover; green only for selected/current. |
 | D16 | Select hover | Nonselected select hover uses accent border. | Same allowed-green conflict. | Neutral border hover, green focus/selection. |
-| D17 | Select chevron | Two CSS gradients draw the select arrow. | `DESIGN.md` says no gradients, zero exceptions. | Token-compatible icon/background asset. |
+| D17 | Select chevron | Two CSS gradients draw the select arrow. | Gradients remain prohibited throughout the control layer; the scoped multi-door Mushaf word and ayah-marker exception does not apply. | Token-compatible icon/background asset. |
 | D18 | Skeleton shimmer | Loading shimmer uses a gradient. | Same locked visual conflict. | Flat pulse/tone change or static structural skeleton. |
 | D19 | Word Types motion | `uw-toolbar-rise` animates the taxonomy toolbar. | Feature identity does not require decorative entrance motion. | State-only calm transition. |
 | D20 | Form geometry | Input and select disagree on height, padding, radius, and line height. | Same control family, no domain reason. | One field geometry scale. |
@@ -850,7 +850,7 @@ Opening confirmations, changing a picker selection locally, using retained-overl
 10. **Do not create a giant universal component.** Canonical families should use focused bases and optional regions/adapters, not dozens of booleans.
 11. **Do not assume fixed-height content everywhere.** Stabilize shells and controls while Quran, commentary, error text, and meaningful lists grow naturally.
 12. **Do not use green decoratively.** Preserve the allowed-green list and the 2px green-thread meaning for current/selected state.
-13. **Do not add gradients, glass, resting shadows, hover lifts, decorative religious imagery, gamification, or generic SaaS styling.** The current flat parchment/ink/green identity remains the context.
+13. **Do not add gradients outside the fixed multi-door Mushaf word and ayah-marker exception, glass, resting shadows, hover lifts, decorative religious imagery, gamification, or generic SaaS styling.** The current flat parchment/ink/green identity remains the context.
 14. **Do not resolve dark theme in this pack.** Its navy/gold state is a known deferred difference; Golden light-system work must not silently change it.
 15. **Do not infer new Approve/Reject modal families.** They are not general current UI contracts. Design only evidence-backed workflows.
 16. **Do not treat screenshots as doctrine.** They document current behavior and problems; the Golden family designs will become the visual decision input only after review.

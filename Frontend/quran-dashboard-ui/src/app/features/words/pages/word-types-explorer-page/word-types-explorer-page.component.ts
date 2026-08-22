@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subject, Subscription, debounceTime } from 'rxjs';
+import { Subscription } from 'rxjs';
 
 import { PaginationComponent } from '../../../../shared/ui/pagination/pagination.component';
 import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../shared/layout/breakpoints';
@@ -40,6 +40,7 @@ import {
 import { sortQueryValue } from '../../models/explorer-sort';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
+import { WordsDebouncedSearchDraftController } from '../../state/words-debounced-search-draft.controller';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPE_SORT,
@@ -120,12 +121,11 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly explorerFacade = inject(WordTypesExplorerFacade);
   private readonly detailFacade = inject(WordTypesDetailFacade);
   private readonly explainerPreference = inject(WordsExplainerPreference);
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('types', (value) => this.updateQueryParams({ search: value || null, page: null }));
 
   private desktopQuery?: MediaQueryList;
   private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
 
-  private readonly searchInput = new Subject<string>();
-  private searchSub?: Subscription;
   private querySyncSub?: Subscription;
 
   protected readonly pageSize = WORD_TYPES_PAGE_SIZE;
@@ -133,7 +133,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly scopeCountsState = this.explorerFacade.scopeCountsState;
   protected readonly panelState = this.detailFacade.panelState;
   protected readonly isDesktop = signal(true);
-  protected readonly searchDraft = signal('');
+  protected readonly searchDraft = this.searchDraftController.draft;
   private readonly filter = viewChild(WordTypeFilterComponent);
   private readonly table = viewChild(WordTypesTableComponent);
 
@@ -209,13 +209,12 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.searchDraftController.start();
     this.explorerFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
 
-    this.searchSub = this.searchInput.pipe(debounceTime(300))
-      .subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.querySyncSub = this.route.queryParamMap
-      .subscribe((params) => this.searchDraft.set(parseWordTypesQueryParams(params).search ?? ''));
+      .subscribe((params) => this.searchDraftController.syncCommitted(parseWordTypesQueryParams(params).search ?? ''));
 
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
@@ -227,14 +226,13 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.explorerFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
-    this.searchSub?.unsubscribe();
+    this.searchDraftController.destroy();
     this.querySyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
   }
 
   protected onSearchInput(value: string): void {
-    this.searchDraft.set(value);
-    this.searchInput.next(value);
+    this.searchDraftController.update(value);
   }
 
   protected selectScope(event: WordTypeScopeSelectedEvent): void {

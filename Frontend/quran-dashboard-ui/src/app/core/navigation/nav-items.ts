@@ -3,6 +3,7 @@ export interface NavItem {
   labelAr: string;
   labelEn: string;
   route: string;
+  resumePath?: string;
   group: 'primary' | 'more' | 'actions';
   children?: NavItem[];
   queryParams?: Record<string, string>;

@@ -170,6 +170,12 @@ export type { LogtoSubjectRelinkPreview } from './models/logto-subject-relink-pr
 export type { LogtoSubjectRelinkPreviewApiResponse } from './models/logto-subject-relink-preview-api-response';
 export type { MissingSurahItemDto } from './models/missing-surah-item-dto';
 export type { MoveDoorBody } from './models/move-door-body';
+export type { MushafAyahDoorsResponse } from './models/mushaf-ayah-doors-response';
+export type { MushafAyahDoorsResponseApiResponse } from './models/mushaf-ayah-doors-response-api-response';
+export type { MushafDoorAyahHighlightDto } from './models/mushaf-door-ayah-highlight-dto';
+export type { MushafDoorHighlightsResponse } from './models/mushaf-door-highlights-response';
+export type { MushafDoorHighlightsResponseApiResponse } from './models/mushaf-door-highlights-response-api-response';
+export type { MushafDoorWordHighlightDto } from './models/mushaf-door-word-highlight-dto';
 export type { MushafLineDto } from './models/mushaf-line-dto';
 export type { MushafPageResponse } from './models/mushaf-page-response';
 export type { MushafPageResponseApiResponse } from './models/mushaf-page-response-api-response';

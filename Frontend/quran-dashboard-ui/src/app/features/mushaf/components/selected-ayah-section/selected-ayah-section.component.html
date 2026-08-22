@@ -31,10 +31,10 @@
     <qd-tabs
       class="selected-ayah-section__tabs"
       layout="tracks"
-      ariaLabel="تبويبات دراسة الآية"
+      [ariaLabel]="tabsAriaLabel()"
       dir="rtl"
     >
-      @for (tab of tabs; track tab.key) {
+      @for (tab of tabs(); track tab.key) {
         <button
           qdTab
           type="button"

@@ -57,8 +57,9 @@ The identity is **flat parchment + ink + one scholarly green**:
   parchment canvas with near-white content cards — structure carried by
   hairline borders, not elevation.
 - **Fully flat in light.** No resting card shadows, no hover lifts, no
-  gradients, no navbar blur. A single shadow exists only on floating layers
-  (dropdowns, popovers, modals, drawers).
+  gradients outside the fixed multi-door Mushaf word and ayah-marker highlight, and no
+  navbar blur. A single shadow exists only on floating layers (dropdowns,
+  popovers, modals, drawers).
 - **One scholarly green.** A single muted green is both the structural/primary
   color (primary buttons, brand mark) and the accent (focus ring, selection,
   active states, links, icon highlights). Gold is retired; the old
@@ -75,9 +76,10 @@ The identity is **flat parchment + ink + one scholarly green**:
 - **Calm, non-distracting motion.** Quick, subtle transitions only; no bounce, no
   showy animation; reduced-motion respected.
 - **Quran text rendering stays sacred and stable.** Quran/Mushaf glyph fonts and
-  rendering are unchanged and are **never animated**. The sole Compact display
-  exception is the linking ayah-selection card rule recorded in
-  `FRONTEND_UI_RULES.md` §3; it changes no font, text, glyph, or word boundary.
+  rendering are unchanged and are **never animated**. The two visual display
+  exceptions are the linking ayah-selection card and door-highlight rules recorded
+  in `FRONTEND_UI_RULES.md` §3; neither changes a font, text, glyph shape, word
+  boundary, or line metric.
 
 The Angular app stays **light + dark** only. The dark theme still runs the
 previous navy + gold values and remains functional; reconciling dark to the

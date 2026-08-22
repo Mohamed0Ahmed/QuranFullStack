@@ -20,7 +20,8 @@
 
   &__body {
     overflow: visible;
-    max-inline-size: var(--qd-measure-prose);
+    inline-size: 100%;
+    max-inline-size: none;
     font-size: 0.9375rem;
     line-height: 1.8;
     color: var(--qd-text);

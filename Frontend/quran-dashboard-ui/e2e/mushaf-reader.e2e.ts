@@ -27,6 +27,54 @@ test('next then previous returns to the starting page', async ({ page }) => {
   await expect(page.getByTestId('mushaf-page-jump-trigger')).toHaveText('1');
 });
 
+test('the first word tap after a touch swipe selects the word on mobile and tablet', async ({ page }) => {
+  for (const viewport of [
+    { width: 390, height: 844 },
+    { width: 768, height: 900 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto('/dashboard/mushaf?page=1');
+    await expect(page.getByTestId('mushaf-page-view')).toBeVisible();
+
+    const pageView = page.getByTestId('mushaf-page-view');
+    await pageView.dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 120,
+      clientY: 240,
+    });
+    await pageView.dispatchEvent('pointerup', {
+      pointerType: 'touch',
+      pointerId: 1,
+      isPrimary: true,
+      clientX: 200,
+      clientY: 240,
+    });
+    await expect(page.getByTestId('mushaf-page-jump-trigger')).toHaveText('2');
+
+    const word = page.locator('[data-word-location][data-is-marker="false"]').first();
+    await word.dispatchEvent('pointerdown', {
+      pointerType: 'touch',
+      pointerId: 2,
+      isPrimary: true,
+      clientX: 120,
+      clientY: 240,
+    });
+    await word.dispatchEvent('pointerup', {
+      pointerType: 'touch',
+      pointerId: 2,
+      isPrimary: true,
+      clientX: 120,
+      clientY: 240,
+    });
+    await word.dispatchEvent('click');
+
+    await expect(page).toHaveURL(/[?&]word=/);
+    await expect(word).toHaveClass(/mushaf-word--selected-word/);
+  }
+});
+
 test('a page deep link hydrates the reader', async ({ page }) => {
   await page.goto('/dashboard/mushaf?page=5');
 

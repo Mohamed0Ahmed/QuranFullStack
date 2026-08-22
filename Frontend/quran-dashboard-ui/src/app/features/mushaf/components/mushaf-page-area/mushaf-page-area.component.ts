@@ -5,6 +5,10 @@ import {
   MushafSurahJuzGroupDto,
   ResourceLoadState,
 } from '../../models/mushaf.models';
+import {
+  MushafDoorDetailsRequest,
+  MushafDoorResolvedHighlight,
+} from '../../models/mushaf-door-highlights.models';
 import { MushafHeaderNavigationComponent } from '../mushaf-header-navigation/mushaf-header-navigation.component';
 import { MushafPageViewComponent } from '../mushaf-page-view/mushaf-page-view.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
@@ -34,12 +38,15 @@ export class MushafPageAreaComponent {
   readonly canSelectAyahs = input(false);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
+  readonly wordDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
+  readonly ayahDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
 
   readonly pageChange = output<number>();
   readonly surahJump = output<number>();
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
   readonly ayahSelectionModeChange = output<void>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
   private readonly headerNavigation = viewChild(MushafHeaderNavigationComponent);
 
   focusAyahSelectionAction(): void {

@@ -2,6 +2,8 @@
   class="qd-page-shell qd-page-shell--protected-mushaf qd-page-split qd-page-split--mushaf mushaf-reader"
   dir="rtl"
   data-testid="mushaf-reader-page"
+  qdSessionScrollState="mushaf.reader.viewport"
+  qdSessionScrollTarget="viewport"
 >
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
     <qd-mushaf-selection-status />
@@ -14,11 +16,14 @@
       [canSelectAyahs]="linkingAccess.canUseLinking()"
       [ayahSelectionMode]="ayahSelection.active()"
       [selectedVerseKeys]="ayahSelection.selectedVerseKeys()"
+      [wordDoorHighlights]="doorHighlights.wordHighlights()"
+      [ayahDoorHighlights]="doorHighlights.ayahHighlights()"
       (pageChange)="onPageChange($event)"
       (surahJump)="onSurahJump($event)"
       (ayahSelect)="onAyahSelect($event)"
       (wordSelect)="onWordSelect($event)"
       (ayahSelectionModeChange)="toggleAyahSelectionMode()"
+      (doorDetailsRequest)="openDoorDetails($event)"
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
@@ -33,11 +38,13 @@
       [similarAyahsLoadState]="facade.similarAyahsLoadState()"
       [mutashabihat]="facade.mutashabihat()"
       [mutashabihatLoadState]="facade.mutashabihatLoadState()"
+      [activePanel]="facade.panel()"
       [activeAyahTab]="facade.ayahTab()"
       [selectedVerseKey]="facade.selectedAyahKey()"
       [tafsirOptions]="facade.tafsirSourceOptions()"
       [translationOptions]="facade.translationSourceOptions()"
       [fullI3rabOptions]="facade.fullI3rabSourceOptions()"
+      (contextTabChange)="onStudyContextTabChange($event)"
       (ayahTabChange)="onAyahTabChange($event)"
       (tafsirSourceChange)="onTafsirSourceChange($event)"
       (translationSourceChange)="onTranslationSourceChange($event)"
@@ -45,4 +52,35 @@
       (ayahNavigate)="onAyahNavigate($event)"
     />
   </section>
+
 </div>
+
+@if (doorDetails(); as details) {
+  <qd-context-menu
+    [variant]="details.presentation === 'tooltip' ? 'tooltip' : 'disclosure-popover'"
+    [position]="details.position"
+    [anchorElement]="details.anchorElement"
+    [controlElement]="details.anchorElement"
+    [blockingBackdrop]="details.presentation !== 'tooltip'"
+    menuAriaLabel="الأبواب"
+    [menuTestId]="
+      details.presentation === 'tooltip'
+        ? 'mushaf-door-preview-tooltip'
+        : 'mushaf-door-details-popover'
+    "
+    [backdropTestId]="
+      details.presentation === 'tooltip'
+        ? 'mushaf-door-preview-backdrop'
+        : 'mushaf-door-details-backdrop'
+    "
+    (dismissed)="closeDoorDetails()"
+  >
+    <div class="mushaf-reader__door-details">
+      <ul>
+        @for (door of details.highlight.doors; track door.id) {
+          <li>{{ door.name }}</li>
+        }
+      </ul>
+    </div>
+  </qd-context-menu>
+}

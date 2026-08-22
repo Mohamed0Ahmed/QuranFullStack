@@ -5530,6 +5530,85 @@
         }
       }
     },
+    "/api/mushaf/ayahs/{verseKey}/doors": {
+      "get": {
+        "tags": [
+          "MushafAyahDoors"
+        ],
+        "parameters": [
+          {
+            "name": "verseKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafAyahDoorsResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/mushaf/ayahs/{verseKey}/mutashabihat": {
       "get": {
         "tags": [
@@ -5700,6 +5779,76 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MushafPageResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/mushaf/pages/{pageNumber}/door-highlights": {
+      "get": {
+        "tags": [
+          "MushafPages"
+        ],
+        "parameters": [
+          {
+            "name": "pageNumber",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "doorIds",
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "format": "int32"
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MushafDoorHighlightsResponseApiResponse"
                 }
               }
             }
@@ -13896,6 +14045,169 @@
           "version": {
             "type": "integer",
             "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafAyahDoorsResponse": {
+        "required": [
+          "doorIds",
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "verseKey": {
+            "type": "string"
+          },
+          "doorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafAyahDoorsResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MushafAyahDoorsResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafDoorAyahHighlightDto": {
+        "required": [
+          "doorIds",
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "verseKey": {
+            "type": "string"
+          },
+          "doorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafDoorHighlightsResponse": {
+        "required": [
+          "ayahs",
+          "pageNumber",
+          "unavailableDoorIds",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MushafDoorAyahHighlightDto"
+            }
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MushafDoorWordHighlightDto"
+            }
+          },
+          "unavailableDoorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafDoorHighlightsResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MushafDoorHighlightsResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "MushafDoorWordHighlightDto": {
+        "required": [
+          "doorIds",
+          "wordLocation"
+        ],
+        "type": "object",
+        "properties": {
+          "wordLocation": {
+            "type": "string"
+          },
+          "doorIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         },
         "additionalProperties": false

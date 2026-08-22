@@ -1,0 +1,75 @@
+.mushaf-door-palette {
+  display: grid;
+  gap: var(--qd-space-2);
+  inline-size: min(15rem, calc(100vw - 2 * var(--qd-s-16)));
+  padding: var(--qd-space-2);
+
+  &__title {
+    color: var(--qd-text);
+    font-size: var(--qd-type-body);
+  }
+
+  &__path {
+    color: var(--qd-text-muted);
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-type-caption-lh);
+    overflow-wrap: anywhere;
+  }
+
+  &__fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  &__swatches {
+    display: grid;
+    grid-template-columns: repeat(5, var(--qd-hit-target-min));
+    justify-content: center;
+    gap: var(--qd-space-1);
+  }
+
+  &__option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: var(--qd-hit-target-min);
+    block-size: var(--qd-hit-target-min);
+    border: 0;
+    border-radius: var(--qd-radius-sm);
+    cursor: pointer;
+  }
+
+  &__option:hover {
+    background: var(--qd-section-bg);
+  }
+
+  &__option--selected {
+    outline: var(--qd-focus-ring-width) solid var(--qd-accent);
+    outline-offset: calc(-1 * var(--qd-focus-ring-width));
+  }
+
+  &__option--reserved {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+
+  &__option:focus-within {
+    outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+    outline-offset: var(--qd-focus-ring-offset);
+  }
+
+  &__swatch {
+    inline-size: var(--qd-s-32);
+    block-size: var(--qd-s-16);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-xs);
+    background: var(--qd-door-highlight-swatch);
+  }
+}
+
+@for $slot from 1 through 15 {
+  [data-color-slot='#{$slot}'] {
+    --qd-door-highlight-swatch: var(--qd-door-highlight-#{$slot});
+  }
+}

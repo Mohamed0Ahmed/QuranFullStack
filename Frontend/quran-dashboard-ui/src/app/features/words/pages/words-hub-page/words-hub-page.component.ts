@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 
+import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 import { WordSectionCardComponent } from '../../components/word-section-card/word-section-card.component';
 import { WORDS_HUB_SECTIONS_LABEL } from '../../models/unique-words.labels';
 import {
@@ -26,7 +27,6 @@ interface WordsHubCardViewModel {
   route: string;
 }
 
-// Unique Words opens on its tashkeel mode (the default explorer entry); the others are single routes.
 const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
   unique: uniqueWordsRoutePath('tashkeel'),
   roots: rootsRoutePath(),
@@ -38,7 +38,7 @@ const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
 @Component({
   selector: 'qd-words-hub-page',
   standalone: true,
-  imports: [WordSectionCardComponent],
+  imports: [SessionScrollStateDirective, WordSectionCardComponent],
   templateUrl: './words-hub-page.component.html',
   styleUrls: ['./words-hub-page.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -46,7 +46,6 @@ const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
 export class WordsHubPageComponent {
   private cardsCache?: readonly WordsHubCardViewModel[];
 
-  // Content is read through TDZ-safe getters, never readonly field initialisers.
   protected get title(): string {
     return WORDS_HUB_INTRO.title;
   }
@@ -60,8 +59,6 @@ export class WordsHubPageComponent {
     return WORDS_HUB_CHAIN;
   }
 
-  // One content source feeds both the hub card and the page hero — a card's description IS its
-  // page's tagline, so the two can never drift.
   protected get cards(): readonly WordsHubCardViewModel[] {
     return (this.cardsCache ??= WORDS_EXPLAINER_ORDER.map((key) => {
       const content = WORDS_EXPLAINER_CONTENT[key];

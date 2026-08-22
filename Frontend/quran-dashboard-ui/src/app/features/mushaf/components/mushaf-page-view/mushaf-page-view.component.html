@@ -2,6 +2,7 @@
   qdMushafPageSwipe
   class="mushaf-page-view qd-scroll-stable"
   data-testid="mushaf-page-view"
+  qdSessionScrollState="mushaf.reader.page-view"
   (mushafPageSwipe)="onPageSwipe($event)"
 >
   <div class="mushaf-page-view__text-column">
@@ -51,8 +52,11 @@
         [selectedWordLocation]="selectedWordLocation()"
         [ayahSelectionMode]="ayahSelectionMode()"
         [selectedVerseKeys]="selectedVerseKeys()"
+        [wordDoorHighlights]="wordDoorHighlights()"
+        [ayahDoorHighlights]="ayahDoorHighlights()"
         (ayahSelect)="ayahSelect.emit($event)"
         (wordSelect)="wordSelect.emit($event)"
+        (doorDetailsRequest)="doorDetailsRequest.emit($event)"
       />
     }
 

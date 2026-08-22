@@ -1,7 +1,22 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  computed,
+  input,
+  output,
+} from '@angular/core';
 
 import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-display-text';
 import { MushafWordDto } from '../../models/mushaf.models';
+import {
+  MushafDoorDetailsRequest,
+  MushafDoorResolvedHighlight,
+} from '../../models/mushaf-door-highlights.models';
+
+const DOOR_DETAILS_LONG_PRESS_MS = 520;
+const DOOR_DETAILS_MOVE_TOLERANCE_PX = 12;
+const DOOR_DETAILS_HOVER_DELAY_MS = 200;
 
 @Component({
   selector: 'qd-mushaf-word',
@@ -10,15 +25,25 @@ import { MushafWordDto } from '../../models/mushaf.models';
   templateUrl: './mushaf-word.component.html',
   styleUrls: ['./mushaf-word.component.scss'],
 })
-export class MushafWordComponent {
+export class MushafWordComponent implements OnDestroy {
   readonly word = input.required<MushafWordDto>();
   readonly highlightedVerseKey = input<string | null>(null);
   readonly selectedWordLocation = input<string | null>(null);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
+  readonly doorHighlight = input<MushafDoorResolvedHighlight | null>(null);
 
   readonly ayahSelect = output<string>();
   readonly wordSelect = output<string>();
+  readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
+
+  private pressTimer: ReturnType<typeof setTimeout> | null = null;
+  private activePointerId: number | null = null;
+  private pressStartX = 0;
+  private pressStartY = 0;
+  private suppressNextClick = false;
+  private previewTimer: ReturnType<typeof setTimeout> | null = null;
+  private previewOpen = false;
 
   protected readonly displayText = computed(() => toQuranWordDisplayText(this.word().textUthmani));
 
@@ -35,6 +60,21 @@ export class MushafWordComponent {
     return `${this.isSelectedAyah() ? 'إلغاء تحديد' : 'تحديد'} الآية ${word.verseKey}`;
   });
 
+  protected readonly interactionLabel = computed(() => {
+    const selectionLabel = this.selectionLabel();
+    const highlight = this.doorHighlight();
+    if (!highlight) {
+      return selectionLabel;
+    }
+
+    if (this.word().isAyahMarker) {
+      return `رقم الآية ${this.word().verseKey}، مميز ضمن الأبواب: ${this.doorNames(highlight)}، اضغط مطولًا لعرضها`;
+    }
+
+    const target = selectionLabel ?? `الكلمة ${this.displayText()}`;
+    return `${target}، مميز ضمن الأبواب: ${this.doorNames(highlight)}، اضغط مطولًا لعرضها`;
+  });
+
   protected readonly isHighlightedAyahWord = computed(() => {
     const word = this.word();
     const highlightedVerseKey = this.highlightedVerseKey();
@@ -49,10 +89,132 @@ export class MushafWordComponent {
     return word.verseKey === highlightedVerseKey;
   });
 
-  protected onWordClick(): void {
+  ngOnDestroy(): void {
+    this.clearPress();
+    this.clearDoorPreview(false);
+  }
+
+  protected onPointerDown(event: PointerEvent): void {
+    this.suppressNextClick = false;
+    this.clearPress();
+    if (!this.doorHighlight() || !event.isPrimary || event.button !== 0) {
+      return;
+    }
+    if (event.pointerType !== 'touch' && event.pointerType !== 'pen') {
+      return;
+    }
+
+    this.activePointerId = event.pointerId;
+    this.pressStartX = event.clientX;
+    this.pressStartY = event.clientY;
+    this.pressTimer = setTimeout(() => this.openDoorDetails(), DOOR_DETAILS_LONG_PRESS_MS);
+  }
+
+  protected onPointerMove(event: PointerEvent): void {
+    if (event.pointerId !== this.activePointerId) {
+      return;
+    }
+
+    const movedX = Math.abs(event.clientX - this.pressStartX);
+    const movedY = Math.abs(event.clientY - this.pressStartY);
+    if (movedX > DOOR_DETAILS_MOVE_TOLERANCE_PX || movedY > DOOR_DETAILS_MOVE_TOLERANCE_PX) {
+      this.clearPress();
+    }
+  }
+
+  protected onPointerEnd(event: PointerEvent): void {
+    if (event.pointerId === this.activePointerId) {
+      this.clearPress();
+    }
+  }
+
+  protected onPointerEnter(event: PointerEvent): void {
+    const highlight = this.doorHighlight();
+    const anchorElement = event.currentTarget;
+    if (
+      event.pointerType !== 'mouse' ||
+      !highlight ||
+      !(anchorElement instanceof HTMLElement)
+    ) {
+      return;
+    }
+
+    this.clearDoorPreview(false);
+    this.previewTimer = setTimeout(() => {
+      const rect = anchorElement.getBoundingClientRect();
+      this.previewTimer = null;
+      this.previewOpen = true;
+      this.doorDetailsRequest.emit({
+        position: { x: rect.right, y: rect.bottom },
+        anchorElement,
+        presentation: 'tooltip',
+        highlight,
+      });
+    }, DOOR_DETAILS_HOVER_DELAY_MS);
+  }
+
+  protected onPointerLeave(event: PointerEvent): void {
+    if (event.pointerType === 'mouse') {
+      this.clearDoorPreview();
+    }
+  }
+
+  protected onContextMenu(event: MouseEvent): void {
+    if (this.activePointerId !== null || this.suppressNextClick) {
+      event.preventDefault();
+    }
+  }
+
+  protected onWordClick(event: MouseEvent): void {
+    if (this.suppressNextClick) {
+      this.suppressNextClick = false;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (!this.word().isAyahMarker) {
       this.ayahSelect.emit(this.word().verseKey);
       this.wordSelect.emit(this.word().wordLocation);
     }
+  }
+
+  private openDoorDetails(): void {
+    const highlight = this.doorHighlight();
+    if (!highlight || this.activePointerId === null) {
+      return;
+    }
+
+    this.pressTimer = null;
+    this.suppressNextClick = true;
+    this.doorDetailsRequest.emit({
+      position: { x: this.pressStartX, y: this.pressStartY },
+      anchorElement: null,
+      presentation: 'popover',
+      highlight,
+    });
+  }
+
+  private doorNames(highlight: MushafDoorResolvedHighlight): string {
+    return highlight.doors.map((door) => door.name).join('، ');
+  }
+
+  private clearDoorPreview(emitDismiss = true): void {
+    if (this.previewTimer !== null) {
+      clearTimeout(this.previewTimer);
+      this.previewTimer = null;
+    }
+    if (this.previewOpen && emitDismiss) {
+      this.doorDetailsRequest.emit(null);
+    }
+    this.previewOpen = false;
+  }
+
+  private clearPress(): void {
+    if (this.pressTimer !== null) {
+      clearTimeout(this.pressTimer);
+      this.pressTimer = null;
+    }
+    this.activePointerId = null;
   }
 }

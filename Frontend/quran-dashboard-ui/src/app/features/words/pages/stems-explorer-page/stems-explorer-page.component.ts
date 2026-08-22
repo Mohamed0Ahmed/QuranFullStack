@@ -40,6 +40,7 @@ import { ExplorerTableFocusController } from '../../utils/explorer-table-focus-c
 import { mapStemAyahMatchToShared } from '../../utils/stem-ayah-match.mapper';
 import { EMPTY_RANGE_FILTERS, RangeFilters, buildRangeQueryParams } from '../../state/words-range-filters';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
+import { WordsDebouncedSearchDraftController } from '../../state/words-debounced-search-draft.controller';
 
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 type StemPanelState = ReturnType<StemsDetailFacade['panelState']>;
@@ -62,11 +63,10 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly explainerPreference = inject(WordsExplainerPreference);
   private readonly associationOptions = inject(WordsAssociationOptionsService);
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('stems', (value) => this.updateQueryParams({ search: value || null, page: null }));
   private readonly restoredColumn = signal<StemTableColumnKey | null>(null);
-  private readonly searchInput = new Subject<string>();
   private readonly rootSearchInput = new Subject<string>();
   private readonly lemmaSearchInput = new Subject<string>();
-  private searchSub?: Subscription;
   private searchSyncSub?: Subscription;
   private rootSearchSub?: Subscription;
   private lemmaSearchSub?: Subscription;
@@ -135,7 +135,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
       typeCode: state.view === 'ayahs' ? state.ayahTypeCode : null,
     };
   });
-  protected readonly searchDraft = signal('');
+  protected readonly searchDraft = this.searchDraftController.draft;
   protected readonly ranges = signal<RangeFilters>(EMPTY_RANGE_FILTERS);
   protected get rangeMetrics() { return STEMS_RANGE_METRICS; }
   protected readonly association = this.listFacade.association;
@@ -184,15 +184,15 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.searchDraftController.start();
     this.listFacade.bindToRoute(this.route);
     this.detailFacade.bindToRoute(this.route);
     this.searchSyncSub = this.route.queryParamMap.subscribe((params) => {
       const parsed = parseStemsQueryParams(params);
-      this.searchDraft.set(parsed.search);
+      this.searchDraftController.syncCommitted(parsed.search);
       this.ranges.set(parsed.ranges);
       this.restoredColumn.set(parseMorphologyColumnKey(parsed.column) as StemTableColumnKey | null);
     });
-    this.searchSub = this.searchInput.pipe(debounceTime(300)).subscribe((value) => this.updateQueryParams({ search: value || null, page: null }));
     this.rootSearchSub = this.rootSearchInput
       .pipe(
         debounceTime(300),
@@ -223,7 +223,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.listFacade.unbindFromRoute();
     this.detailFacade.unbindFromRoute();
-    this.searchSub?.unsubscribe();
+    this.searchDraftController.destroy();
     this.searchSyncSub?.unsubscribe();
     this.rootSearchSub?.unsubscribe();
     this.lemmaSearchSub?.unsubscribe();
@@ -231,7 +231,7 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     this.tableFocus.destroy();
   }
 
-  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraft.set(value); this.searchInput.next(value); }
+  protected onSearchInput(value: string): void { this.clearTableFocus(); this.searchDraftController.update(value); }
   protected onRangesChange(ranges: RangeFilters): void {
     this.clearTableFocus();
     this.updateQueryParams({ ...buildRangeQueryParams(ranges, STEMS_RANGE_METRICS), page: null });
