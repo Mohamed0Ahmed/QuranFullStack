@@ -1,9 +1,10 @@
+import { Location } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { ABWAB_LABELS } from '../models/abwab.labels';
-import { AbwabNode, AbwabView } from '../models/abwab.models';
-import { buildAbwabQueryParams } from './abwab-url-sync';
+import { ABWAB_QUERY_KEYS, AbwabNode, AbwabView } from '../models/abwab.models';
+import { buildAbwabQueryParams, currentAbwabSearchQuery } from './abwab-url-sync';
 import { AbwabModalUrlController } from './abwab-modal-url.controller';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 
@@ -16,6 +17,7 @@ export class AbwabRevealController {
   private readonly modalUrl = inject(AbwabModalUrlController);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
 
   private readonly revealTargetId = signal<number | null>(null);
   private readonly revealSequence = signal(0);
@@ -108,7 +110,10 @@ export class AbwabRevealController {
   private updateQueryParams(changes: Record<string, string | null>, replaceUrl = false): void {
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: changes,
+      queryParams: {
+        [ABWAB_QUERY_KEYS.q]: currentAbwabSearchQuery(this.router, this.location),
+        ...changes,
+      },
       queryParamsHandling: 'merge',
       replaceUrl,
     });

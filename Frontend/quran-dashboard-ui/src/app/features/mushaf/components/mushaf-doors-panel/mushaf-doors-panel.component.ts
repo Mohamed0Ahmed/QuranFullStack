@@ -85,7 +85,7 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
   protected readonly activeTab = signal<MushafDoorsPanelTab>('doors');
   protected readonly palettePopover = signal<DoorPalettePopover | null>(null);
   protected readonly searchQuery = signal('');
-  protected readonly hideUnrelatedRoots = signal(false);
+  protected readonly hideUnrelatedRoots = signal(true);
   protected readonly revealedId = signal<number | null>(null);
   private readonly revealSeedId = signal<number | null>(null);
   private readonly relationsDoorId = signal<number | null>(null);
@@ -100,10 +100,7 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
     { hideUnrelatedRoots: this.hideUnrelatedRoots() },
   ));
   protected readonly displayRoots = computed(() => this.searchResult().displayRoots);
-  protected readonly searchMatches = computed(() => Array.from(this.searchResult().matchedIds).flatMap((id) => {
-    const node = this.tree.snapshot()?.byId.get(id);
-    return node ? [node] : [];
-  }));
+  protected readonly searchMatches = computed(() => this.searchResult().matches);
   protected readonly matchedIds = computed(() => this.searchResult().matchedIds);
   protected readonly searchEmptyMessage = computed(() =>
     this.searchResult().isFiltering && this.hideUnrelatedRoots() && this.liveRoots().length > 0

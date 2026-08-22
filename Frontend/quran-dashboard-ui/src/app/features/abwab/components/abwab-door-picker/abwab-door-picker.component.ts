@@ -47,7 +47,7 @@ export class AbwabDoorPickerComponent {
   private readonly searchControls = viewChild(AbwabSearchControlsComponent);
 
   protected readonly searchQuery = signal('');
-  protected readonly hideUnrelatedRoots = signal(false);
+  protected readonly hideUnrelatedRoots = signal(true);
   private readonly expandedIds = signal<ReadonlySet<number>>(NO_IDS);
   protected readonly labels = ABWAB_LABELS;
 
@@ -116,7 +116,7 @@ export class AbwabDoorPickerComponent {
 
   reset(): void {
     this.searchQuery.set('');
-    this.hideUnrelatedRoots.set(false);
+    this.hideUnrelatedRoots.set(true);
     this.expandedIds.set(NO_IDS);
   }
 }

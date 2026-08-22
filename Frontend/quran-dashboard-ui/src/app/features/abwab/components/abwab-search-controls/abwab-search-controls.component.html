@@ -31,7 +31,7 @@
         <span>{{ hideUnrelatedLabel }}</span>
       </label>
 
-      @if (query().trim() !== '') {
+      @if (searchReady()) {
         <span
           class="abwab-search-controls__count"
           aria-hidden="true"
@@ -51,19 +51,19 @@
       [attr.aria-label]="searchResultsAriaLabel"
       [attr.data-testid]="testIdPrefix() + '-search-results'"
     >
-      @for (door of results(); track door.id) {
+      @for (result of results(); track result.id) {
         <li class="abwab-search-controls__result-item">
           <button
             type="button"
             qdAction="secondary"
             size="sm"
             class="abwab-search-controls__result"
-            [title]="door.name"
-            [attr.aria-label]="resultAriaLabel(door.name)"
-            [attr.data-testid]="testIdPrefix() + '-search-result-' + door.id"
-            (click)="resultSelected.emit(door.id)"
+            [title]="result.displayLabel"
+            [attr.aria-label]="resultAriaLabel(result.displayLabel)"
+            [attr.data-testid]="testIdPrefix() + '-search-result-' + result.id"
+            (click)="resultSelected.emit(result.id)"
           >
-            <span class="abwab-search-controls__result-name">{{ door.name }}</span>
+            <span class="abwab-search-controls__result-name">{{ result.displayLabel }}</span>
           </button>
         </li>
       }

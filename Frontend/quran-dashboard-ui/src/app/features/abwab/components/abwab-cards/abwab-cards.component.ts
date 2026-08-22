@@ -29,7 +29,7 @@ export class AbwabCardsComponent {
   readonly bulkSelectedIds = input<ReadonlySet<number>>(new Set());
   readonly matchedIds = input<ReadonlySet<number>>(new Set());
   readonly isFiltering = input(false);
-  readonly hideUnrelatedRoots = input(false);
+  readonly hideUnrelatedRoots = input(true);
 
   readonly selected = output<number>();
   readonly bulkToggled = output<number>();

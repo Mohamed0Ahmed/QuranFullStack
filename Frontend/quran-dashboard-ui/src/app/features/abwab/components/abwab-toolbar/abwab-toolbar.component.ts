@@ -4,8 +4,9 @@ import { QdActionDirective } from '../../../../shared/ui/action/action.directive
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { AbwabTreeSectionDto } from '../../../../core/api/generated/models/abwab-tree-section-dto';
-import { AbwabNode, AbwabView } from '../../models/abwab.models';
+import { AbwabView } from '../../models/abwab.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
+import { AbwabSearchMatch } from '../../state/abwab-tree-search';
 import { AbwabSearchControlsComponent } from '../abwab-search-controls/abwab-search-controls.component';
 
 @Component({
@@ -22,8 +23,8 @@ export class AbwabToolbarComponent {
   readonly view = input<AbwabView>('tree');
   readonly searchQuery = input('');
   readonly searchMatchCount = input(0);
-  readonly searchResults = input<readonly AbwabNode[]>([]);
-  readonly hideUnrelatedRoots = input(false);
+  readonly searchResults = input<readonly AbwabSearchMatch[]>([]);
+  readonly hideUnrelatedRoots = input(true);
   readonly rootCountBySectionId = input<ReadonlyMap<number, number>>(new Map());
   readonly totalRootCount = input(0);
   readonly hideSectionControls = input(false);

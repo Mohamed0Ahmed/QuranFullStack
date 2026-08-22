@@ -190,6 +190,6 @@ export const ABWAB_QUERY_DEFAULTS: AbwabQueryState = {
   door: null,
   card: null,
   q: '',
-  hideUnrelatedRoots: false,
+  hideUnrelatedRoots: true,
   modal: null,
 };

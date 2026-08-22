@@ -55,7 +55,6 @@ import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-s
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 
-const NO_IDS: ReadonlySet<number> = new Set<number>();
 const NO_ROOTS: readonly AbwabNode[] = [];
 
 @Component({
@@ -114,7 +113,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly archiveParam = signal(false);
   protected readonly cardParam = signal<number | null>(null);
   protected readonly searchQueryParam = signal('');
-  protected readonly hideUnrelatedRootsParam = signal(false);
+  protected readonly hideUnrelatedRootsParam = signal(true);
 
   private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
   private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
@@ -142,7 +141,7 @@ export class AbwabPageComponent implements OnInit {
   private readonly searchResult = computed(() => searchAbwabNodes(
     this.visibleRoots(),
     this.searchQueryParam(),
-    { hideUnrelatedRoots: this.hideUnrelatedRootsParam() },
+    { hideUnrelatedRoots: this.hideUnrelatedRootsParam(), autoExpandMatches: false },
   ));
 
   protected readonly searchIsFiltering = computed(() => this.searchResult().isFiltering);
@@ -163,11 +162,6 @@ export class AbwabPageComponent implements OnInit {
     const remembered = this.treeSession.expandedDoorIds();
     const revealed = this.revealExpandSeedIds();
     return revealed.size === 0 ? remembered : new Set([...remembered, ...revealed]);
-  });
-
-  protected readonly searchExpandedIds = computed<ReadonlySet<number>>(() => {
-    const search = this.searchResult().autoExpandedIds;
-    return search.size === 0 ? NO_IDS : search;
   });
 
   protected readonly pickerLiveRoots = computed<readonly AbwabNode[]>(() => this.facade.snapshot()?.liveRoots ?? NO_ROOTS);
@@ -322,6 +316,11 @@ export class AbwabPageComponent implements OnInit {
       this.reveal.destroy();
       this.doorLinks.close();
     });
+  }
+
+  protected onSearchQueryChanged(query: string): void {
+    this.searchQueryParam.set(query);
+    this.interactions.onSearchQueryChanged(query);
   }
 
   protected confirmArchiveAndClearUrl(): void {
