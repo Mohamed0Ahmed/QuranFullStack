@@ -77,7 +77,7 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
             .FirstAsync();
         var firstTashkeelOccurrence = await dbContext.QuranWords
             .AsNoTracking()
-            .Where(word => !word.IsAyahMarker && word.TextUthmani == anchorTashkeel.TextUthmani)
+            .Where(word => !word.IsAyahMarker && word.UniqueTashkeelWordId == anchorTashkeel.Id)
             .OrderBy(word => word.Id)
             .FirstAsync();
         anchorTashkeel.Id.Should().Be(firstTashkeelOccurrence.Id);
@@ -169,7 +169,8 @@ public sealed class DisplayWordsDeterministicIdTests : IDisposable
             word.UniqueSimpleWordId.Should().NotBeNull();
 
             var tashkeelId = word.UniqueTashkeelWordId!.Value;
-            tashkeelById[tashkeelId].Should().Be(word.TextUthmani,
+            DisplayWordsLinkTestHelpers.TashkeelIdentityOf(tashkeelById[tashkeelId])
+                .Should().Be(DisplayWordsLinkTestHelpers.TashkeelIdentityOf(word.TextUthmani),
                 $"tashkeel link {tashkeelId} on quran word {word.Id} must resolve to the matching unique row");
 
             var simpleId = word.UniqueSimpleWordId!.Value;
