@@ -5,17 +5,22 @@ namespace QuranDashboard.Tests.Quran.WordsDisplay;
 
 internal static class DisplayWordsSyntheticSeed
 {
-    public const int ReadableWordCount = 8;
-    public const int UniqueTashkeelCount = 5;
+    public const int ReadableWordCount = 10;
+    public const int ExactTashkeelCount = 7;
+    public const int UniqueTashkeelCount = 6;
     public const int UniqueSimpleCount = 3;
 
     public const string TokenAlphaTashkeel = "ت-١";
     public const string TokenBetaTashkeel = "ت-٢";
-    public const string TokenGammaTashkeel = "ت-٣";
-    public const string TokenDeltaTashkeelA = "ت-٤َ";
-    public const string TokenDeltaTashkeelB = "ت-٤ً";
+    public const string TokenGammaTashkeel = "ت\u0640\u0653-٢ \u06D6\u06D7\u06D8\u06D9\u06DA\u06DB\u06DC\u06DE\u06E9\u200F";
+    public const string TokenDeltaTashkeelA = "ت-٤";
+    public const string TokenDeltaTashkeelB = "ت-٤\u06EA";
+    public const string TokenDeltaTashkeelC = "ت-٤\u06EB";
+    public const string TokenDeltaTashkeelD = "ت-٤\u06EC";
     public const string TokenDeltaSimpleA = "س-٤أ";
     public const string TokenDeltaSimpleB = "س-٤ب";
+    public const string TokenDeltaSimpleC = "س-٤ج";
+    public const string TokenDeltaSimpleD = "س-٤د";
 
     public const string TokenAlphaSimple = "س-أ";
     public const string TokenBetaSimple = "س-ب";
@@ -34,8 +39,8 @@ internal static class DisplayWordsSyntheticSeed
             AyahNumber = 1,
             VerseKey = "1:1",
             TextUthmani = "اختبار-١:١",
-            WordsCountSource = 3,
-            WordsCountReal = 3,
+            WordsCountSource = 5,
+            WordsCountReal = 5,
             PageFrom = 1,
             PageTo = 1
         },
@@ -76,7 +81,9 @@ internal static class DisplayWordsSyntheticSeed
         CreateWord(5, 2, 1, 2, 2, 1, 1, TokenGammaTashkeel, TokenGammaSimple),
         CreateWord(6, 3, 2, 1, 1, 2, 2, TokenAlphaTashkeel, TokenAlphaSimple),
         CreateWord(7, 3, 2, 1, 2, 2, 2, TokenDeltaTashkeelA, TokenDeltaSimpleA),
-        CreateWord(8, 3, 2, 1, 3, 2, 2, TokenDeltaTashkeelB, TokenDeltaSimpleB)
+        CreateWord(8, 3, 2, 1, 3, 2, 2, TokenDeltaTashkeelB, TokenDeltaSimpleB),
+        CreateWord(9, 3, 2, 1, 4, 2, 2, TokenDeltaTashkeelC, TokenDeltaSimpleC),
+        CreateWord(10, 3, 2, 1, 5, 2, 2, TokenDeltaTashkeelD, TokenDeltaSimpleD)
     ];
 
     public static QuranWord AyahMarkerWord { get; } = CreateWord(
@@ -92,7 +99,7 @@ internal static class DisplayWordsSyntheticSeed
         isAyahMarker: true);
 
     public static TokenStats AlphaTashkeelStats { get; } = new(4, 3, 2);
-    public static TokenStats AlphaSimpleStats { get; } = new(6, 3, 2);
+    public static TokenStats AlphaSimpleStats { get; } = new(8, 3, 2);
 
     private static QuranWord CreateWord(
         int id,
@@ -132,6 +139,8 @@ internal static class DisplayWordsSyntheticSeed
             TokenAlphaSimple => KeyAlphaImlaei,
             TokenDeltaSimpleA => KeyAlphaImlaei,
             TokenDeltaSimpleB => KeyAlphaImlaei,
+            TokenDeltaSimpleC => KeyAlphaImlaei,
+            TokenDeltaSimpleD => KeyAlphaImlaei,
             TokenBetaSimple => KeyBetaImlaei,
             TokenGammaSimple => KeyGammaImlaei,
             _ => $"ك-{textUthmaniSimple}"

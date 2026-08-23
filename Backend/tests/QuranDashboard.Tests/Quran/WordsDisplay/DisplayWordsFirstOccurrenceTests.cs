@@ -37,7 +37,8 @@ public sealed class DisplayWordsFirstOccurrenceTests
         foreach (var uniqueRow in await dbContext.QuranWordsUniqueTashkeel.ToListAsync())
         {
             var groupRows = orderedTashkeelRows
-                .Where(row => row.TextUthmani == uniqueRow.TextUthmani)
+                .Where(row => DisplayWordsLinkTestHelpers.TashkeelIdentityOf(row.TextUthmani)
+                    == DisplayWordsLinkTestHelpers.TashkeelIdentityOf(uniqueRow.TextUthmani))
                 .ToList();
 
             var earliest = groupRows.MinBy(row => row.WordOrderInMushaf)!;

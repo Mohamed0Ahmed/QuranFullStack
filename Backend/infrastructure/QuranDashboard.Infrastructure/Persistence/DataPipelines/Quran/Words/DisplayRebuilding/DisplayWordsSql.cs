@@ -2,15 +2,25 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.Di
 
 internal static class DisplayWordsSql
 {
-    private const string ReadableBase = """
-        WITH readable AS (
+    internal const string TashkeelIdentityCte = """
+        WITH display_word_identity AS (
+          SELECT U&'\0640\0653\06D6\06D7\06D8\06D9\06DA\06DB\06DC\06DE\06E9\200F'
+                 AS ignored_tashkeel_marks
+        )
+        """;
+
+    private const string ReadableBase = TashkeelIdentityCte + """
+        , readable AS (
           SELECT w.id, w.location, w.ayah_id, w.surah_number, w.ayah_number,
                  w.word_number, w.page_number, w.line_number,
                  w.text_uthmani, w.text_uthmani_simple, w.text_imlaei_simple,
                  w.word_key_imlaei_simple, w.qpc_glyph,
+                 btrim(translate(w.text_uthmani, identity.ignored_tashkeel_marks, ''))
+                   AS tashkeel_identity,
                  a.verse_key
           FROM quran_words w
           JOIN quran_ayahs a ON a.id = w.ayah_id
+          CROSS JOIN display_word_identity identity
           WHERE w.is_ayah_marker = false
         ),
         ranked AS (
@@ -24,12 +34,12 @@ internal static class DisplayWordsSql
 
     internal const string InsertOrderedTashkeel = ReadableBase + """
         , stats_tashkeel AS (
-          SELECT text_uthmani,
+          SELECT tashkeel_identity,
                  COUNT(*) AS occurrences_count,
                  COUNT(DISTINCT ayah_id) AS ayahs_count,
                  COUNT(DISTINCT surah_number) AS surahs_count
           FROM ranked
-          GROUP BY text_uthmani
+          GROUP BY tashkeel_identity
         )
         INSERT INTO quran_words_ordered_tashkeel (
           word_order_in_mushaf, quran_word_id, location, verse_key,
@@ -56,7 +66,7 @@ internal static class DisplayWordsSql
           s.ayahs_count,
           s.surahs_count
         FROM ranked r
-        JOIN stats_tashkeel s ON s.text_uthmani = r.text_uthmani
+        JOIN stats_tashkeel s ON s.tashkeel_identity = r.tashkeel_identity
         """;
 
     internal const string InsertOrderedSimple = ReadableBase + """
@@ -98,15 +108,16 @@ internal static class DisplayWordsSql
 
     internal const string InsertUniqueTashkeel = ReadableBase + """
         , stats_tashkeel AS (
-          SELECT text_uthmani,
+          SELECT tashkeel_identity,
                  COUNT(*) AS occurrences_count,
                  COUNT(DISTINCT ayah_id) AS ayahs_count,
                  COUNT(DISTINCT surah_number) AS surahs_count
           FROM ranked
-          GROUP BY text_uthmani
+          GROUP BY tashkeel_identity
         ),
         first_occ AS (
-          SELECT DISTINCT ON (r.text_uthmani)
+          SELECT DISTINCT ON (r.tashkeel_identity)
+            r.tashkeel_identity,
             r.text_uthmani,
             r.text_uthmani_simple,
             r.text_imlaei_simple,
@@ -118,7 +129,7 @@ internal static class DisplayWordsSql
             r.page_number AS first_page_number,
             r.line_number AS first_line_number
           FROM ranked r
-          ORDER BY r.text_uthmani, r.word_order_in_mushaf
+          ORDER BY r.tashkeel_identity, r.word_order_in_mushaf
         )
         INSERT INTO quran_words_unique_tashkeel (
           id, text_uthmani, text_uthmani_simple, text_imlaei_simple,
@@ -142,7 +153,7 @@ internal static class DisplayWordsSql
           f.first_page_number,
           f.first_line_number
         FROM first_occ f
-        JOIN stats_tashkeel s ON s.text_uthmani = f.text_uthmani
+        JOIN stats_tashkeel s ON s.tashkeel_identity = f.tashkeel_identity
         ORDER BY f.first_word_order_in_mushaf, f.text_uthmani
         """;
 
@@ -215,12 +226,14 @@ internal static class DisplayWordsSql
             unique_simple_word_id = NULL
         """;
 
-    internal const string UpdateUniqueTashkeelLinks = """
+    internal const string UpdateUniqueTashkeelLinks = TashkeelIdentityCte + """
         UPDATE quran_words AS w
         SET unique_tashkeel_word_id = u.id
         FROM quran_words_unique_tashkeel AS u
+        CROSS JOIN display_word_identity identity
         WHERE w.is_ayah_marker = false
-          AND u.text_uthmani = w.text_uthmani
+          AND btrim(translate(u.text_uthmani, identity.ignored_tashkeel_marks, ''))
+              = btrim(translate(w.text_uthmani, identity.ignored_tashkeel_marks, ''))
         """;
 
     internal const string UpdateUniqueSimpleLinks = """
@@ -353,8 +366,11 @@ internal static class DisplayWordsSql
         SELECT COUNT(*)::int FROM quran_words_unique_tashkeel
         """;
 
-    internal const string CheckUnqCountDistinctTashkeelText = """
-        SELECT COUNT(DISTINCT text_uthmani)::int FROM quran_words WHERE is_ayah_marker = false
+    internal const string CheckUnqCountDistinctTashkeelText = TashkeelIdentityCte + """
+        SELECT COUNT(DISTINCT btrim(translate(text_uthmani, identity.ignored_tashkeel_marks, '')))::int
+        FROM quran_words
+        CROSS JOIN display_word_identity identity
+        WHERE is_ayah_marker = false
         """;
 
     internal const string CheckUnqCountUniqueSimple = """
@@ -387,7 +403,17 @@ internal static class DisplayWordsSql
         )
         """;
 
-    internal const string CheckStatMatchViolations = """
+    internal const string CheckStatMatchViolations = TashkeelIdentityCte + """
+        , source_tashkeel_stats AS (
+          SELECT btrim(translate(text_uthmani, identity.ignored_tashkeel_marks, '')) AS tashkeel_identity,
+                 COUNT(*)::int AS occurrences_count,
+                 COUNT(DISTINCT ayah_id)::int AS ayahs_count,
+                 COUNT(DISTINCT surah_number)::int AS surahs_count
+          FROM quran_words
+          CROSS JOIN display_word_identity identity
+          WHERE is_ayah_marker = false
+          GROUP BY btrim(translate(text_uthmani, identity.ignored_tashkeel_marks, ''))
+        )
         SELECT (
           SELECT CASE WHEN COALESCE(SUM(occurrences_count), 0) = @expected THEN 0 ELSE 1 END
           FROM quran_words_unique_tashkeel
@@ -397,16 +423,11 @@ internal static class DisplayWordsSql
         ) + (
           SELECT COUNT(*)::int
           FROM quran_words_ordered_tashkeel o
-          LEFT JOIN (
-            SELECT text_uthmani,
-                   COUNT(*)::int AS occurrences_count,
-                   COUNT(DISTINCT ayah_id)::int AS ayahs_count,
-                   COUNT(DISTINCT surah_number)::int AS surahs_count
-            FROM quran_words
-            WHERE is_ayah_marker = false
-            GROUP BY text_uthmani
-          ) g ON g.text_uthmani = o.text_uthmani
-          WHERE g.text_uthmani IS NULL
+          CROSS JOIN display_word_identity identity
+          LEFT JOIN source_tashkeel_stats g
+            ON g.tashkeel_identity
+              = btrim(translate(o.text_uthmani, identity.ignored_tashkeel_marks, ''))
+          WHERE g.tashkeel_identity IS NULL
              OR g.occurrences_count <> o.occurrences_count
              OR g.ayahs_count <> o.ayahs_count
              OR g.surahs_count <> o.surahs_count
@@ -429,16 +450,11 @@ internal static class DisplayWordsSql
         ) + (
           SELECT COUNT(*)::int
           FROM quran_words_unique_tashkeel u
-          LEFT JOIN (
-            SELECT text_uthmani,
-                   COUNT(*)::int AS occurrences_count,
-                   COUNT(DISTINCT ayah_id)::int AS ayahs_count,
-                   COUNT(DISTINCT surah_number)::int AS surahs_count
-            FROM quran_words
-            WHERE is_ayah_marker = false
-            GROUP BY text_uthmani
-          ) g ON g.text_uthmani = u.text_uthmani
-          WHERE g.text_uthmani IS NULL
+          CROSS JOIN display_word_identity identity
+          LEFT JOIN source_tashkeel_stats g
+            ON g.tashkeel_identity
+              = btrim(translate(u.text_uthmani, identity.ignored_tashkeel_marks, ''))
+          WHERE g.tashkeel_identity IS NULL
              OR g.occurrences_count <> u.occurrences_count
              OR g.ayahs_count <> u.ayahs_count
              OR g.surahs_count <> u.surahs_count
@@ -503,63 +519,21 @@ internal static class DisplayWordsSql
         )
         """;
 
-    internal const string CheckLinkConsistentViolations = """
+    internal const string CheckLinkConsistentViolations = TashkeelIdentityCte + """
         SELECT (
           SELECT COUNT(*)::int
           FROM quran_words w
           JOIN quran_words_unique_tashkeel u ON u.id = w.unique_tashkeel_word_id
+          CROSS JOIN display_word_identity identity
           WHERE w.is_ayah_marker = false
-            AND u.text_uthmani <> w.text_uthmani
+            AND btrim(translate(u.text_uthmani, identity.ignored_tashkeel_marks, ''))
+                <> btrim(translate(w.text_uthmani, identity.ignored_tashkeel_marks, ''))
         ) + (
           SELECT COUNT(*)::int
           FROM quran_words w
           JOIN quran_words_unique_simple u ON u.id = w.unique_simple_word_id
           WHERE w.is_ayah_marker = false
             AND u.word_key_imlaei_simple <> w.word_key_imlaei_simple
-        )
-        """;
-
-    internal const string CheckFirstOccViolations = """
-        SELECT (
-          SELECT COUNT(*)::int
-          FROM quran_words_unique_tashkeel u
-          WHERE u.first_word_order_in_mushaf <> (
-            SELECT MIN(o.word_order_in_mushaf)
-            FROM quran_words_ordered_tashkeel o
-            WHERE o.text_uthmani = u.text_uthmani
-          )
-          OR NOT EXISTS (
-            SELECT 1
-            FROM quran_words_ordered_tashkeel o
-            WHERE o.text_uthmani = u.text_uthmani
-              AND o.word_order_in_mushaf = u.first_word_order_in_mushaf
-              AND o.quran_word_id = u.first_quran_word_id
-              AND o.location = u.first_location
-              AND o.surah_number = u.first_surah_number
-              AND o.ayah_number = u.first_ayah_number
-              AND o.page_number = u.first_page_number
-              AND o.line_number = u.first_line_number
-          )
-        ) + (
-          SELECT COUNT(*)::int
-          FROM quran_words_unique_simple u
-          WHERE u.first_word_order_in_mushaf <> (
-            SELECT MIN(o.word_order_in_mushaf)
-            FROM quran_words_ordered_simple o
-            WHERE o.word_key_imlaei_simple = u.word_key_imlaei_simple
-          )
-          OR NOT EXISTS (
-            SELECT 1
-            FROM quran_words_ordered_simple o
-            WHERE o.word_key_imlaei_simple = u.word_key_imlaei_simple
-              AND o.word_order_in_mushaf = u.first_word_order_in_mushaf
-              AND o.quran_word_id = u.first_quran_word_id
-              AND o.location = u.first_location
-              AND o.surah_number = u.first_surah_number
-              AND o.ayah_number = u.first_ayah_number
-              AND o.page_number = u.first_page_number
-              AND o.line_number = u.first_line_number
-          )
         )
         """;
 

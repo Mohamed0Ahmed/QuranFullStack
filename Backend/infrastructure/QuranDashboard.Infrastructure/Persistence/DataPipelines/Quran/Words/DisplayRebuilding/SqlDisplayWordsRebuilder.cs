@@ -59,15 +59,24 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         WHERE quran_words_unique_simple.word_key_imlaei_simple = EXCLUDED.word_key_imlaei_simple
         """;
 
-    private const string RemoveObsoleteUniqueRowsSql =
+    private const string RemoveObsoleteUniqueRowsSql = DisplayWordsSql.TashkeelIdentityCte +
         """
+        , current_tashkeel AS (
+          SELECT DISTINCT ON (
+                   btrim(translate(word.text_uthmani, identity.ignored_tashkeel_marks, '')))
+                 word.id,
+                 word.text_uthmani
+          FROM quran_words AS word
+          CROSS JOIN display_word_identity identity
+          WHERE word.is_ayah_marker = false
+          ORDER BY btrim(translate(word.text_uthmani, identity.ignored_tashkeel_marks, '')), word.id
+        )
         DELETE FROM quran_words_unique_tashkeel AS unique_word
         WHERE NOT EXISTS (
           SELECT 1
-          FROM quran_words AS word
-          WHERE word.is_ayah_marker = false
-            AND word.id = unique_word.id
-            AND word.text_uthmani = unique_word.text_uthmani
+          FROM current_tashkeel AS current_word
+          WHERE current_word.id = unique_word.id
+            AND current_word.text_uthmani = unique_word.text_uthmani
         )
           AND NOT EXISTS (
             SELECT 1
@@ -372,7 +381,7 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
             statViolations == 0));
 
         var firstOccViolations = await ExecuteScalarIntAsync(
-            connection, transaction, DisplayWordsSql.CheckFirstOccViolations, ct);
+            connection, transaction, DisplayWordsFirstOccurrenceValidationSql.CheckViolations, ct);
         checks.Add(new DisplayWordsCheckResult(
             "FIRST-OCC",
             HardSeverity,

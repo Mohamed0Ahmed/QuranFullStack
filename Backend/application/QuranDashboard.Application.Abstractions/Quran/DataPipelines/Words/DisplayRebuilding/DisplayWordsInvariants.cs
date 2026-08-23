@@ -8,7 +8,7 @@ public static class DisplayWordsInvariants
     public const int CanonicalAyahMarkers = 6_236;
     public const int CanonicalOrderedTashkeel = 77_432;
     public const int CanonicalOrderedSimple = 77_432;
-    public const int CanonicalUniqueTashkeel = 21_294;
+    public const int CanonicalUniqueTashkeel = 19_016;
     public const int CanonicalUniqueSimple = 14_783;
     public const int InformationalUniqueTashkeel = CanonicalUniqueTashkeel;
     public const int InformationalUniqueSimple = CanonicalUniqueSimple;

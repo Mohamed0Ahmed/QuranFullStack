@@ -13,7 +13,7 @@ public sealed class DisplayWordsIdentityLinksTests
     }
 
     [Fact]
-    public async Task Rebuild_PopulatesIdentityLinksAndGroupsSimpleByImlaeiKey()
+    public async Task Rebuild_GroupsTashkeelByIgnoredMarksAndKeepsRetainedMarksDistinct()
     {
         await fixture.SeedDefaultSyntheticDataAsync();
         var handler = fixture.CreateHandler();
@@ -56,7 +56,29 @@ public sealed class DisplayWordsIdentityLinksTests
             .Select(word => word.TextUthmani)
             .Distinct()
             .CountAsync();
-        distinctTashkeelForms.Should().Be(DisplayWordsSyntheticSeed.UniqueTashkeelCount);
+        distinctTashkeelForms.Should().Be(DisplayWordsSyntheticSeed.ExactTashkeelCount);
+
+        var ignoredMarksWord = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Id == 2);
+        var decoratedIgnoredMarksWord = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Id == 5);
+
+        ignoredMarksWord.TextUthmani.Should().NotBe(decoratedIgnoredMarksWord.TextUthmani);
+        ignoredMarksWord.UniqueTashkeelWordId.Should().Be(decoratedIgnoredMarksWord.UniqueTashkeelWordId);
+        ignoredMarksWord.UniqueTashkeelWordId.Should().NotBeNull();
+
+        var ignoredMarksIdentity = await dbContext.QuranWordsUniqueTashkeel
+            .AsNoTracking()
+            .SingleAsync(row => row.Id == ignoredMarksWord.UniqueTashkeelWordId);
+        ignoredMarksIdentity.TextUthmani.Should().Be(ignoredMarksWord.TextUthmani);
+        ignoredMarksIdentity.FirstQuranWordId.Should().Be(ignoredMarksWord.Id);
+
+        var retainedMarkIdentityIds = await dbContext.QuranWords
+            .AsNoTracking()
+            .Where(word => word.Id >= 7 && word.Id <= 10)
+            .Select(word => word.UniqueTashkeelWordId)
+            .Distinct()
+            .ToListAsync();
+        retainedMarkIdentityIds.Should().HaveCount(4);
+        retainedMarkIdentityIds.Should().NotContainNulls();
 
         var divergenceWordA = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Id == 7);
         var divergenceWordB = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Id == 8);
