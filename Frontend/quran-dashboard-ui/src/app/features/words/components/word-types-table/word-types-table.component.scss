@@ -1,17 +1,27 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   block-size: 100%;
   min-block-size: 0;
+  min-inline-size: 0;
+  overflow: visible;
 }
 
 .word-types-table {
   --word-types-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--word-types-table-scrollbar-gutter);
 
-  block-size: 100%;
+  flex: 1 1 auto;
+  block-size: auto;
+  min-block-size: 0;
   min-inline-size: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
 }
 
 .word-types-table__header-cell {
@@ -55,8 +65,8 @@
   justify-content: flex-start;
   overflow: hidden;
   font-family: var(--qd-font-quran, inherit);
-  font-size: var(--qd-type-body-lg);
-  line-height: var(--qd-type-body-lg-lh);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;

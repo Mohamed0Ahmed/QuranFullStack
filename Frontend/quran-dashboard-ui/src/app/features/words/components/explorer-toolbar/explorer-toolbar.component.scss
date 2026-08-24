@@ -3,8 +3,12 @@
 :host {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2) var(--qd-space-3);
   align-items: center;
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
 }
 
 .explorer-toolbar__primary,
@@ -13,6 +17,8 @@
 }
 
 .explorer-toolbar__result {
+  display: flex;
+  align-items: center;
   justify-self: end;
 }
 
@@ -22,7 +28,11 @@
 }
 
 .explorer-toolbar__applied {
-  min-block-size: var(--qd-space-5);
+  min-block-size: 0;
+}
+
+.explorer-toolbar__applied:empty {
+  display: none;
 }
 
 @media (max-width: bp.$qd-bp-tablet-max) {

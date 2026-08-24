@@ -70,6 +70,7 @@ let nextSubViewInstance = 0;
   ],
   providers: [LemmasDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './lemma-detail-overlay-adapter.component.html',
+  styleUrl: './lemma-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LemmaDetailOverlayAdapterComponent {

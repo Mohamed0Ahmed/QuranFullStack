@@ -1,4 +1,27 @@
 :host {
-  display: block;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.root-words-list {
+  gap: 0;
+  min-block-size: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+}
+
+.root-words-list__viewport {
+  gap: 0;
+}
+
+.root-words-list__row {
+  min-block-size: var(--qd-hit-target-min);
+  border: 0;
+  border-block-end: var(--qd-hairline);
+  border-radius: 0;
+  background: transparent;
 }

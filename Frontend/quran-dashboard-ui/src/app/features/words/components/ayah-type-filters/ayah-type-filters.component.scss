@@ -5,51 +5,51 @@
 .ayah-type-filters {
   display: flex;
   flex-direction: column;
-  gap: var(--qd-space-2);
-  margin-block-end: var(--qd-space-3);
+  gap: var(--qd-space-1);
+  margin-block-end: var(--qd-space-2);
 }
 
 .ayah-type-filters__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: var(--qd-space-2);
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: var(--qd-space-1);
 }
 
 .ayah-type-filters__grid--loading {
-  min-block-size: 3.5rem;
+  min-block-size: var(--qd-control-md);
 }
 
 .ayah-type-filters__chip {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-1);
   min-inline-size: 0;
-  padding-block: var(--qd-space-2);
-  padding-inline: var(--qd-space-3);
+  min-block-size: var(--qd-control-md);
+  padding: var(--qd-space-1) var(--qd-space-2);
   text-align: start;
 }
 
 .ayah-type-filters__label {
   font-family: var(--qd-font-quran, inherit);
-  font-size: 0.9375rem;
+  font-size: var(--qd-type-meta);
   font-weight: 700;
   line-height: 1.35;
 }
 
 .ayah-type-filters__count {
   color: var(--qd-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--qd-type-caption);
   line-height: 1.35;
 }
 
 .ayah-type-filters__chip--loading {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.1rem;
-  padding-block: var(--qd-space-2);
-  padding-inline: var(--qd-space-3);
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-1);
+  min-block-size: var(--qd-control-md);
+  padding: var(--qd-space-1) var(--qd-space-2);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
   pointer-events: none;
@@ -57,10 +57,10 @@
 
 .ayah-type-filters__loading-label {
   inline-size: 55%;
-  block-size: 0.9375rem;
+  block-size: var(--qd-type-meta);
 }
 
 .ayah-type-filters__loading-count {
   inline-size: 35%;
-  block-size: 0.8rem;
+  block-size: var(--qd-type-caption);
 }

@@ -26,6 +26,7 @@ import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.
   imports: [WordDrilldownModalComponent],
   providers: [UniqueWordsDrilldownController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './unique-detail-overlay-adapter.component.html',
+  styleUrl: './unique-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class UniqueDetailOverlayAdapterComponent {

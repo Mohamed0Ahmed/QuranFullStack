@@ -1,13 +1,23 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
-  display: block;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
 }
 
 .word-type-grouped-words-list {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--qd-space-2);
+  gap: 0;
+  min-block-size: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
 }
 
 .word-type-grouped-words-list__header,
@@ -20,13 +30,14 @@
 }
 
 .word-type-grouped-words-list__header {
-  padding-block-end: var(--qd-space-2);
-  border-bottom: 1px solid var(--qd-border);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border-block-end: var(--qd-hairline);
+  background: var(--qd-section-bg);
 }
 
 .word-type-grouped-words-list__header-cell {
   color: var(--qd-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--qd-type-caption);
   text-align: start;
   white-space: nowrap;
 }
@@ -38,9 +49,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+.word-type-grouped-words-list__viewport {
+  min-block-size: 0;
+  overflow: auto;
+}
+
 .word-type-grouped-words-list__row {
-  padding-block: var(--qd-space-2);
-  border-bottom: 1px solid var(--qd-border-subtle, var(--qd-border));
+  min-block-size: var(--qd-control-md);
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border-block-end: var(--qd-hairline);
 }
 
 .word-type-grouped-words-list__cell {
@@ -55,8 +72,8 @@
 
 .word-type-grouped-words-list__word {
   font-family: var(--qd-font-quran, inherit);
-  font-size: 1.05rem;
-  line-height: 1.9;
+  font-size: 0.9375rem;
+  line-height: 1.6;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -64,7 +81,7 @@
 
 .word-type-grouped-words-list__type {
   color: var(--qd-text-muted);
-  font-size: 0.875rem;
+  font-size: var(--qd-type-meta);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

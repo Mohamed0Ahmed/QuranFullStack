@@ -72,6 +72,7 @@ let nextSubViewInstance = 0;
   ],
   providers: [RootsDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './root-detail-overlay-adapter.component.html',
+  styleUrl: './root-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RootDetailOverlayAdapterComponent {

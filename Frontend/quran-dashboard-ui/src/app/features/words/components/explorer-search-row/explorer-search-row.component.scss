@@ -1,3 +1,30 @@
 :host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-2);
   min-inline-size: 0;
+}
+
+.qd-explorer-search-row__main {
+  position: relative;
+  flex: 2 1 20rem;
+  min-inline-size: 12rem;
+}
+
+.qd-explorer-search-row__icon {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: var(--qd-space-3);
+  z-index: 1;
+  inline-size: 1rem;
+  block-size: 1rem;
+  color: var(--qd-ink-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.qd-explorer-search-row__main .qd-input {
+  inline-size: 100%;
+  padding-inline-start: var(--qd-space-6);
 }

@@ -26,14 +26,19 @@
     @if (!frameless() && hasSelection()) {
       <button
         qdDetailsActions
-        qdAction="tertiary"
+        qdAction="icon-only"
         size="sm"
         type="button"
         class="qd-details-panel__close"
+        [attr.aria-label]="closeLabel()"
+        [title]="closeLabel()"
         [attr.data-testid]="testIdPrefix() + '-panel-close'"
         (click)="closed.emit()"
       >
-        {{ closeLabel() }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span class="qd-sr-only">{{ closeLabel() }}</span>
       </button>
     }
 

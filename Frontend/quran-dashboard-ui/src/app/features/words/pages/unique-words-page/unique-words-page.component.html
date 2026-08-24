@@ -1,5 +1,7 @@
 <div class="qd-page">
   <div class="qd-page-shell qd-page-shell--split-workspace unique-words-page-frame">
+    <qd-words-local-nav activeSection="unique" />
+
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="unique-words-page-title">{{ pageTitle }}</h1>
@@ -104,17 +106,6 @@
       </div>
     </qd-explorer-toolbar>
 
-    <!-- Feature 030, N3 row 5: the list error/no-results states moved into the table shell. The two
-         drilldown banners below CANNOT follow them: a restored-not-found word sets `isOpen: false`
-         (utils/unique-words-drilldown.state.ts), so the ≤1023px drilldown modal does not render at
-         all and the desktop inline panel shows its select-a-word prompt — hosting them there would
-         drop the message below desktop; and the table shell is out of the question because the list
-         is fine and populated, so they would hide it. Page level is their only home.
-
-         The slot is therefore rendered in EVERY drilldown state and reserves one banner row from
-         first paint, so a banner appearing or clearing no longer pushes the table+panel grid below
-         it (Feature 030, N3 zero-outer-layout-shift). The two states are mutually exclusive — one
-         `status` value — so one row is the whole reservation. -->
     <div class="unique-words-restored-slot">
       @if (drilldownState().status === 'notFound') {
         <div

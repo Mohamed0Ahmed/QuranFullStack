@@ -1,16 +1,27 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   block-size: 100%;
   min-block-size: 0;
+  min-inline-size: 0;
+  overflow: visible;
 }
 
 .unique-words-table {
   --unique-words-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--unique-words-table-scrollbar-gutter);
 
-  block-size: 100%;
+  flex: 1 1 auto;
+  block-size: auto;
+  min-block-size: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
 }
 
 .unique-words-table__loading-number {
@@ -42,14 +53,14 @@
   overflow: hidden;
   color: var(--qd-ink-muted);
   font-family: var(--qd-font-ui);
-  font-size: var(--qd-type-body);
+  font-size: var(--qd-type-meta);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .unique-words-table__root-link {
   font-family: var(--qd-font-ui);
-  font-size: var(--qd-type-body);
+  font-size: var(--qd-type-meta);
 }
 
 .unique-words-table__word-cell {
@@ -73,13 +84,14 @@
   justify-content: flex-start;
   overflow: hidden;
   text-align: start;
+  border-radius: var(--qd-radius-xs);
 }
 
 .unique-words-table__display {
   overflow: hidden;
   font-family: var(--qd-font-quran, inherit);
-  font-size: var(--qd-type-body-lg);
-  line-height: var(--qd-type-body-lg-lh);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

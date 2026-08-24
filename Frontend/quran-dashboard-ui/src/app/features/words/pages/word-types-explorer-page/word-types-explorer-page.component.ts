@@ -15,6 +15,7 @@ import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-c
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
 import { ExplorerToolbarComponent } from '../../components/explorer-toolbar/explorer-toolbar.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import {
   WordTypePresenceFlagChange,
   WordTypesPresenceFilterComponent,
@@ -113,6 +114,7 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
     WordTypesPresenceFilterComponent,
     WordTypesTableComponent,
     WordsExplainerComponent,
+    WordsLocalNavComponent,
   ],
   templateUrl: './word-types-explorer-page.component.html',
   styleUrl: './word-types-explorer-page.component.scss',

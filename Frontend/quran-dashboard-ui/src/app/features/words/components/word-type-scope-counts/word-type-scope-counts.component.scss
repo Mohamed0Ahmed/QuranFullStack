@@ -1,22 +1,18 @@
-// The loaded item's height is the sum of two REAL text line boxes (font-size × the inherited
-// preflight line-height) plus the item's padding/border/gap — it is deliberately never expressed as
-// a hardcoded height. These mixins are the single source of the two line-box font metrics, shared by
-// the loaded `dt`/`dd` and by the metric/skeleton lines that mirror them.
+@use '../../../../../styles/breakpoints' as bp;
+
 @mixin scope-count-label-type {
-  font-size: 0.8125rem;
+  font-size: var(--qd-type-caption);
   font-weight: 700;
 }
 
 @mixin scope-count-value-type {
-  font-size: 1.125rem;
+  font-size: var(--qd-type-body-lg);
   font-weight: 700;
 }
 
-// Every state (metric mirror, loading, error, success) occupies the same single grid cell, so the
-// strip's height is max(mirror, content) and never collapses on error or on the numberless
-// `tableFailed`/idle branches.
 :host {
   display: grid;
+  min-inline-size: 0;
 }
 
 :host > * {
@@ -24,46 +20,50 @@
 }
 
 .word-type-scope-counts {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--qd-space-2, 0.5rem);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   margin: 0;
-  padding: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-border);
 }
 
 .word-type-scope-counts__item {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--qd-space-1, 0.25rem);
-  flex: 1 1 0;
-  min-inline-size: 5rem;
-  padding-block: var(--qd-space-2, 0.5rem);
-  padding-inline: var(--qd-space-3, 0.75rem);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md, 0.5rem);
-  background: var(--qd-surface-subtle, var(--qd-surface));
+  gap: var(--qd-s-2);
+  min-inline-size: 0;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  background: var(--qd-surface);
+}
+
+.word-type-scope-counts__item + .word-type-scope-counts__item {
+  border-inline-start: var(--qd-hairline);
 }
 
 .word-type-scope-counts__label {
-  margin: 0;
   @include scope-count-label-type;
-  color: var(--qd-text-muted);
+
+  margin: 0;
+  overflow: hidden;
+  color: var(--qd-ink-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .word-type-scope-counts__value {
-  margin: 0;
   @include scope-count-value-type;
-  color: var(--qd-primary);
+
+  margin: 0;
+  color: var(--qd-ink);
   font-variant-numeric: tabular-nums;
 }
 
-// Mirror lines: an `&nbsp;` establishes the same line box as the loaded text, so the item box
-// resolves to the loaded height with no measurement and no hardcoded value. `--qd-skeleton-h: auto`
-// hands sizing back to that line box when `.qd-skeleton` is also applied (loading state).
 .word-type-scope-counts__line {
   --qd-skeleton-h: auto;
+
   margin: 0;
   color: transparent;
 }
@@ -78,7 +78,6 @@
   --qd-skeleton-w: 45%;
 }
 
-// Reserves geometry only — never painted, never announced, never hit-tested.
 .word-type-scope-counts--metric {
   visibility: hidden;
   pointer-events: none;
@@ -89,15 +88,12 @@
 }
 
 .word-type-scope-counts--error {
+  display: flex;
   align-items: center;
-  gap: var(--qd-space-3, 0.75rem);
-  padding-block: var(--qd-space-2, 0.5rem);
-  padding-inline: var(--qd-space-3, 0.75rem);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md, 0.5rem);
-  background: var(--qd-surface-subtle, var(--qd-surface));
-  color: var(--qd-text-muted);
-  font-size: 0.875rem;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
 }
 
 .word-type-scope-counts__error-text {
@@ -105,5 +101,19 @@
 }
 
 .word-type-scope-counts__retry {
-  flex: 0 0 auto;
+  flex: none;
+}
+
+@media (max-width: bp.$qd-bp-phone-max) {
+  .word-type-scope-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .word-type-scope-counts__item:nth-child(odd) {
+    border-inline-start: 0;
+  }
+
+  .word-type-scope-counts__item:nth-child(n + 3) {
+    border-block-start: var(--qd-hairline);
+  }
 }

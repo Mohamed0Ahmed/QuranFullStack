@@ -46,6 +46,7 @@ import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.
   ],
   providers: [WordTypesDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './word-type-detail-overlay-adapter.component.html',
+  styleUrl: './word-type-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeDetailOverlayAdapterComponent {

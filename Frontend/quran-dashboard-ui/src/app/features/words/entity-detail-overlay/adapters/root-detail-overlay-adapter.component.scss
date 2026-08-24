@@ -1,13 +1,12 @@
 :host {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  block-size: 100%;
-  min-block-size: 0;
   min-inline-size: 0;
+  min-block-size: 0;
 }
 
-qd-details-panel-shell {
+qd-root-details-panel {
   flex: 1 1 auto;
   min-block-size: 0;
-  min-inline-size: 0;
 }

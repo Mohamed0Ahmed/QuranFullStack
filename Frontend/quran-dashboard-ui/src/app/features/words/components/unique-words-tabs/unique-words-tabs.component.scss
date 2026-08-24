@@ -1,3 +1,10 @@
 :host {
   display: block;
+  --qd-tabs-grid-columns: 2;
+  --qd-tabs-track-floor: 9rem;
+
+  padding: var(--qd-s-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-section-bg);
 }

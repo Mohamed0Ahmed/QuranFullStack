@@ -26,6 +26,7 @@ import { LemmaCountOpenedEvent, LemmasTableComponent } from '../../components/le
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import { sortQueryValue } from '../../models/explorer-sort';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
@@ -51,7 +52,7 @@ let nextSubViewInstance = 0;
 @Component({
   selector: 'qd-lemmas-explorer-page',
   standalone: true,
-  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, QdTabDirective, QdTabsComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [NgTemplateOutlet, AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, LemmaAyahTypeFiltersComponent, LemmaDetailsPanelComponent, LemmaStemsListComponent, LemmaWordsListComponent, LemmasTableComponent, MissingSurahsListComponent, PaginationComponent, QdTabDirective, QdTabsComponent, SurahOccurrencesListComponent, WordsExplainerComponent, WordsLocalNavComponent],
   templateUrl: './lemmas-explorer-page.component.html',
   styleUrl: './lemmas-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

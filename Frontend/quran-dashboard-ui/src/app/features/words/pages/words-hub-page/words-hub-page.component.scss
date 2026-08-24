@@ -1,37 +1,56 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
+  min-inline-size: 0;
+}
+
+.words-hub-frame {
+  max-inline-size: 72rem;
 }
 
 .words-hub-header {
-  text-align: center;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.7fr);
+  align-items: end;
+  gap: var(--qd-space-1) var(--qd-space-5);
+  padding: var(--qd-space-3) 0;
+  border-block-end: var(--qd-hairline);
+  text-align: start;
+}
+
+.words-hub-header .qd-page-title,
+.words-hub-subtitle {
+  grid-column: 1;
 }
 
 .words-hub-subtitle {
   max-inline-size: var(--qd-measure-prose);
-  margin-inline: auto;
+  margin: 0;
 }
 
-// Orientation chain (Feature 031): الجذر ← الصيغة المعجمية ← الأصل الصرفي ← الكلمة + أنواع الكلمات.
-// Every node is neutral — the grammatical/morphological split is carried textually by the "(نحوي)"
-// marker, never by color (Green Thread / green budget).
 .words-hub-chain {
+  grid-column: 2;
+  grid-row: 1 / span 2;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
-  gap: var(--qd-space-2);
-  margin-block: var(--qd-space-4) 0;
-  font-size: var(--qd-type-body);
-  line-height: var(--qd-type-body-lh);
+  justify-content: flex-end;
+  gap: var(--qd-space-1);
+  margin: 0;
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-section-bg);
+  font-size: var(--qd-type-caption);
 }
 
 .words-hub-chain__node {
+  padding: var(--qd-s-2) var(--qd-space-2);
+  border-radius: var(--qd-radius-xs);
   background: var(--qd-surface);
-  border: var(--qd-hairline);
-  border-radius: var(--qd-radius-pill);
-  padding: var(--qd-space-1) var(--qd-space-3);
-  font-weight: 400;
   color: var(--qd-ink);
+  font-weight: 700;
 }
 
 .words-hub-chain__sep {
@@ -39,5 +58,40 @@
 }
 
 .words-hub-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
   margin-inline: auto;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .words-hub-header {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .words-hub-chain {
+    grid-column: 1;
+    grid-row: auto;
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .words-hub-frame {
+    padding-inline: var(--qd-space-2);
+  }
+
+  .words-hub-chain {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+
+  .words-hub-chain__node,
+  .words-hub-chain__sep {
+    flex: none;
+  }
 }

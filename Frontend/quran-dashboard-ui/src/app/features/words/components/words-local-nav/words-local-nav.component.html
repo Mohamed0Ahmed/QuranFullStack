@@ -1,0 +1,12 @@
+<nav class="words-local-nav" aria-label="مستكشفات الكلمات">
+  @for (item of items; track item.key) {
+    <a
+      class="words-local-nav__item"
+      [class.words-local-nav__item--active]="activeSection() === item.key"
+      [routerLink]="item.route"
+      [attr.aria-current]="activeSection() === item.key ? 'page' : null"
+    >
+      {{ item.label }}
+    </a>
+  }
+</nav>

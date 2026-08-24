@@ -70,6 +70,7 @@ let nextSubViewInstance = 0;
   ],
   providers: [StemsDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './stem-detail-overlay-adapter.component.html',
+  styleUrl: './stem-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StemDetailOverlayAdapterComponent {

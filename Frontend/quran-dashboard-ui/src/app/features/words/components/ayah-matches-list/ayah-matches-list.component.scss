@@ -9,7 +9,7 @@
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2);
   min-block-size: 0;
 }
 
@@ -18,6 +18,9 @@
   min-block-size: 0;
   block-size: auto;
   overflow: auto;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
   scrollbar-gutter: stable;
 }
 
@@ -41,17 +44,26 @@
 }
 
 .ayah-matches-list__card {
-  margin-block-end: var(--qd-space-2);
+  margin: 0;
+  padding: var(--qd-space-2);
+  border: 0;
+  border-block-end: var(--qd-hairline);
+  border-radius: 0;
+  background: transparent;
   --highlighted-ayah-font-size: 1rem;
   --highlighted-ayah-line-height: 1.7;
   --highlighted-ayah-matched-border-width: 1px;
+}
+
+.ayah-matches-list__card:last-child {
+  border-block-end: 0;
 }
 
 .ayah-matches-list__ayah-link {
   display: block;
   text-decoration: none;
   color: inherit;
-  padding: 0;
+  padding: var(--qd-space-1) var(--qd-space-2);
   border: 1px solid transparent;
   border-radius: var(--qd-radius-sm);
   background: transparent;
@@ -70,7 +82,8 @@
 
 .ayah-matches-list__analysis-action {
   justify-self: start;
-  padding: var(--qd-space-1) var(--qd-space-2);
+  min-block-size: var(--qd-control-sm);
+  padding: var(--qd-s-2) var(--qd-space-2);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-sm);
   background: var(--qd-surface);
@@ -100,10 +113,10 @@
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: center;
-  gap: var(--qd-space-2);
+  justify-content: flex-start;
+  gap: var(--qd-space-1) var(--qd-space-2);
   font-size: 0.75rem;
-  text-align: center;
+  text-align: start;
 }
 
 .ayah-matches-list__surah-name {

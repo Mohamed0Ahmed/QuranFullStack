@@ -6,11 +6,12 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
 }
 
 .presence-filter__label {
-  font-size: 0.875rem;
+  font-size: var(--qd-type-caption);
   font-weight: 700;
   color: var(--qd-text-muted);
 }
@@ -18,26 +19,35 @@
 .presence-filter__row {
   display: inline-flex;
   align-items: center;
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
 }
 
 .presence-filter__dim {
-  font-size: 0.875rem;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
   font-weight: 700;
 }
 
 .presence-filter__options {
   display: inline-flex;
-  gap: var(--qd-space-1);
+  gap: var(--qd-s-2);
 }
 
 .presence-filter__chip {
+  min-block-size: var(--qd-control-sm);
+  padding-inline: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-xs);
+  background: var(--qd-surface);
+  font-size: var(--qd-type-caption);
   cursor: pointer;
 
-  /* Selected visual comes from the shared .qd-is-selected class (§16 color
-     doctrine: tint bg + accent border + accent-text label). This override
-     used to reinstate a higher-specificity solid-gold fill + --qd-primary
-     ink here, which is gold-on-gold and illegible in dark mode — removed. */
+  &.qd-is-selected:not(:disabled) {
+    border-color: var(--qd-border-accent);
+    background: var(--qd-selected-bg);
+    color: var(--qd-accent-text);
+  }
 
   &:disabled {
     cursor: default;

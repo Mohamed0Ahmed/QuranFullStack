@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 import { WordSectionCardComponent } from '../../components/word-section-card/word-section-card.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import { WORDS_HUB_SECTIONS_LABEL } from '../../models/unique-words.labels';
 import {
   WORDS_EXPLAINER_CONTENT,
@@ -38,7 +39,7 @@ const HUB_CARD_ROUTES: Record<WordsExplainerKey, string> = {
 @Component({
   selector: 'qd-words-hub-page',
   standalone: true,
-  imports: [SessionScrollStateDirective, WordSectionCardComponent],
+  imports: [SessionScrollStateDirective, WordSectionCardComponent, WordsLocalNavComponent],
   templateUrl: './words-hub-page.component.html',
   styleUrls: ['./words-hub-page.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush,

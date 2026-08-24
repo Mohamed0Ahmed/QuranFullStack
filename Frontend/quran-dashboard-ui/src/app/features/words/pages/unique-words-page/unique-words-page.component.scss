@@ -1,26 +1,78 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   min-inline-size: 0;
 }
 
-.unique-words-mode-tabs {
-  display: block;
+.unique-words-page-frame {
+  max-inline-size: 100rem;
 }
 
-// Reserved slot for the restored-drilldown banners (Feature 030, N3 zero-outer-layout-shift; see the
-// template comment for why page level is their only home). Rendered in every state, so the grid below
-// keeps its position whether or not a banner is showing. Sized from the same shared control geometry
-// the pagination slots use, so one banner row always fits inside the reservation.
+.unique-words-page-frame > qd-words-local-nav,
+.unique-words-mode-tabs,
+.unique-words-page-frame > qd-explorer-toolbar {
+  display: block;
+  margin-block-end: var(--qd-space-2);
+}
+
+.uw-intro-band {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.4fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--qd-space-3);
+  margin-block-end: var(--qd-space-2);
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+.uw-intro-band .qd-page-header {
+  margin: 0;
+  padding: var(--qd-space-2);
+  border: 0;
+}
+
 .unique-words-restored-slot {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-block-size: var(--qd-control-block-size);
+  min-block-size: var(--qd-control-md);
 }
 
-// The shared state blocks are sized to stand in for a panel body; at page level their --qd-space-6
-// padding would make the reservation above several rem of permanent dead space. Compact one-line form
-// instead, comfortably shorter than the slot that centres it, so it drops in without moving anything.
 .unique-words-restored-banner {
-  padding: var(--qd-space-1) var(--qd-space-4);
+  margin-block-end: var(--qd-space-2);
+  padding: var(--qd-space-1) var(--qd-space-3);
+}
+
+.unique-words-layout.qd-explorer-layout {
+  --qd-explorer-chrome-block-size: 12.5rem;
+}
+
+.unique-words-layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(22rem, 0.75fr);
+  gap: var(--qd-space-2);
+}
+
+.unique-words-layout__table,
+.unique-words-layout__panel {
+  min-inline-size: 0;
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .uw-intro-band,
+  .unique-words-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .uw-intro-band {
+    padding: var(--qd-space-1);
+  }
+
+  .uw-intro-band .qd-page-header {
+    padding: var(--qd-space-1);
+  }
 }

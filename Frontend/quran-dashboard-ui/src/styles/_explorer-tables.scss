@@ -70,6 +70,8 @@
 
 .qd-explorer-table-column-settings-anchor {
   display: flex;
+  flex: 0 0 auto;
+  align-items: center;
   justify-content: flex-start;
   margin-block-end: var(--qd-space-2);
 }
@@ -304,6 +306,7 @@ qd-sortable-header.qd-sortable-header {
     position: absolute;
     inset-block-start: 0;
     inset-inline-start: calc(-1 * var(--qd-control-sm) - var(--qd-space-2));
+    z-index: 1;
     margin-block-end: 0;
   }
 
