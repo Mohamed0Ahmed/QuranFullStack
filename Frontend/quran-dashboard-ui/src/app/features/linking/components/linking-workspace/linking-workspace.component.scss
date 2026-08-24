@@ -70,15 +70,7 @@
   block-size: 1rem;
 }
 
-.linking-workspace__action-separator {
-  align-self: stretch;
-  inline-size: 1px;
-  margin-block: var(--qd-space-1);
-  background: var(--qd-border);
-}
-
-.linking-workspace__remove-selected,
-.linking-workspace__clear-all {
+.linking-workspace__remove-selected {
   color: var(--qd-danger);
 }
 

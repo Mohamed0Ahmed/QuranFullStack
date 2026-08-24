@@ -469,76 +469,10 @@ qd-sortable-header.qd-sortable-header {
   }
 }
 
-.qd-explorer-mobile-stat--occurrences {
-  appearance: none;
-  margin: 0;
-  cursor: pointer;
-  background: var(--qd-section-bg);
-  border-color: color-mix(in oklch, var(--qd-border) 85%, transparent);
-  color: var(--qd-text-muted);
-  transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast), color var(--qd-t-fast);
-
-  &:hover:not(:disabled) {
-    background: var(--qd-surface-hover);
-    border-color: var(--qd-border-accent);
-    color: var(--qd-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--qd-focus-ring);
-    outline-offset: 2px;
-  }
-}
-
-.qd-explorer-mobile-stat--occurrences-static {
-  background: var(--qd-section-bg);
-  border-color: color-mix(in oklch, var(--qd-border) 85%, transparent);
-  color: var(--qd-text-muted);
-  cursor: default;
-}
-
-.qd-explorer-mobile-stat--action {
-  appearance: none;
-  margin: 0;
-  cursor: pointer;
-  background: color-mix(in oklch, var(--qd-accent-tint) 72%, var(--qd-surface));
-  border-color: color-mix(in oklch, var(--qd-accent) 16%, var(--qd-border));
-  color: var(--qd-text);
-  transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
-    color var(--qd-t-fast), box-shadow var(--qd-t-fast);
-
-  &:hover:not(:disabled) {
-    background: var(--qd-surface-hover);
-    border-color: var(--qd-border-accent);
-    color: var(--qd-accent-text);
-  }
-
-  &.qd-is-selected:not(:disabled):hover {
-    background: var(--qd-selected-bg);
-    border-color: var(--qd-border-accent);
-    color: var(--qd-accent-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--qd-focus-ring);
-    outline-offset: 2px;
-  }
-
-  &:disabled {
-    cursor: default;
-    background: var(--qd-section-bg);
-    border-color: color-mix(in oklch, var(--qd-border) 85%, transparent);
-    color: var(--qd-text-muted);
-    opacity: 0.65;
-    box-shadow: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .qd-explorer-mobile-stat--occurrences,
-  .qd-explorer-mobile-stat--action {
-    transition: none;
-  }
+.qd-explorer-mobile-stat--static {
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-xs);
+  background: transparent;
 }
 
 @media (max-width: bp.$qd-bp-phone-max) {

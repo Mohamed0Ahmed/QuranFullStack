@@ -34,7 +34,6 @@ export class LinkingWorkspaceComponent {
   protected readonly labels = LINKING_LABELS;
   protected readonly removeSelectedRequested = signal(false);
   protected readonly bulkRemoval = signal(false);
-  protected readonly clearAllRequested = this.workspace.clearAllRequested;
   protected readonly rows = computed<readonly LinkingWorkspaceSourceRowView[]>(() => {
     const checked = new Set(this.workspace.checkedSourceKeys());
     return this.workspace.items().map((item) => ({
@@ -45,6 +44,9 @@ export class LinkingWorkspaceComponent {
   });
   protected readonly selectedCount = computed(() => this.workspace.checkedSourceKeys().length);
   protected readonly hasRows = computed(() => this.rows().length > 0);
+  protected readonly allSourcesSelected = computed(
+    () => this.hasRows() && this.selectedCount() === this.rows().length,
+  );
   protected readonly removedItem = this.workspace.removedItem;
 
   protected toggleMembership(sourceKey: string, checked: boolean): void {
@@ -69,6 +71,10 @@ export class LinkingWorkspaceComponent {
     this.workspace.clearCheckedSources();
   }
 
+  protected selectAllSources(): void {
+    this.rows().forEach((row) => this.workspace.checkSource(row.item.sourceKey));
+  }
+
   protected linkSelected(): void {
     this.workflow.startWorkspaceOperation();
   }
@@ -90,18 +96,6 @@ export class LinkingWorkspaceComponent {
 
   protected cancelRemoveSelected(): void {
     this.removeSelectedRequested.set(false);
-  }
-
-  protected requestClearAll(): void {
-    this.workspace.requestClearAll();
-  }
-
-  protected confirmClearAll(): void {
-    this.workspace.confirmClearAll();
-  }
-
-  protected cancelClearAll(): void {
-    this.workspace.cancelClearAll();
   }
 
   protected undo(): void {

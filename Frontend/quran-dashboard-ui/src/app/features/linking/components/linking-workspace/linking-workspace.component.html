@@ -51,21 +51,6 @@
         <path d="M7 8h10M9 8V6h6v2m-7 0 .7 11h6.6L16 8M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </button>
-    <span class="linking-workspace__action-separator" aria-hidden="true"></span>
-    <button
-      qdAction="icon-only"
-      size="sm"
-      type="button"
-      class="linking-workspace__clear-all"
-      [disabled]="!hasRows()"
-      [attr.aria-label]="labels.clearWorkspace"
-      [title]="labels.clearWorkspace"
-      (click)="requestClearAll()"
-    >
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <path d="m5 14 7-8 7 6-6 7H8l-3-5Zm4 5-4-5m7-8 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
-      </svg>
-    </button>
   </div>
 
   @if (!bulkRemoval() && removedItem()) {
@@ -98,6 +83,19 @@
       {{ labels.selectedSourcesCount }}: <strong>{{ selectedCount() }}</strong>
     </span>
     <button
+      qdAction="secondary"
+      size="sm"
+      type="button"
+      [disabled]="!hasRows() || allSourcesSelected()"
+      (click)="selectAllSources()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7" />
+        <path d="m8 12 2.6 2.6L16 9.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      {{ labels.selectAllSources }}
+    </button>
+    <button
       qdAction="primary"
       size="sm"
       type="button"
@@ -123,17 +121,4 @@
   (cancelled)="cancelRemoveSelected()"
 >
   <p>{{ selectedCount() }} {{ labels.preparedSources }}</p>
-</qd-confirm-dialog>
-
-<qd-confirm-dialog
-  [open]="clearAllRequested()"
-  [titleText]="labels.clearWorkspaceTitle"
-  [confirmLabel]="labels.clearWorkspaceConfirm"
-  [cancelLabel]="labels.clearWorkspaceCancel"
-  tone="danger"
-  testIdPrefix="linking-clear-workspace"
-  (confirmed)="confirmClearAll()"
-  (cancelled)="cancelClearAll()"
->
-  <p>{{ rows().length }} {{ labels.preparedSources }}</p>
 </qd-confirm-dialog>

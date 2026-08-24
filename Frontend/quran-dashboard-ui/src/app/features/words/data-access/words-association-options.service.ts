@@ -10,12 +10,11 @@ import { RootsCache } from '../state/roots-cache';
 import { LemmasCache } from '../state/lemmas-cache';
 import { WordTypesCache, WordTypesCacheKeys } from '../state/word-types-cache';
 
-// Association-filter picker options (Feature 026, US7) reuse existing reads — no new endpoint. Root/
-// lemma pickers hit the roots/lemmas list apis under a distinct picker cache namespace; the type select
-// flattens the noun and particle POS-leaf children (verb and muqatta'at are non-granular in the tree, so
-// they aren't offered as granular options). The tree read shares WordTypesCache / WordTypesCacheKeys.tree
-// with the Word Types explorer, so GET word-types/tree runs at most once per browser session whichever
-// feature is visited first (perf finding F2).
+const PRIMARY_POS_CODES = {
+  verb: 'V',
+  inl: 'INL',
+} as const;
+
 @Injectable({ providedIn: 'root' })
 export class WordsAssociationOptionsService {
   private readonly rootsApi = inject(RootsApi);
@@ -73,11 +72,13 @@ export class WordsAssociationOptionsService {
           if (!response.isSuccess || !response.data) {
             return { status: 'error' };
           }
-          const options = response.data.mainTypes
-            .filter((node) => node.code === 'noun' || node.code === 'particle')
-            .flatMap((node) =>
-              node.children.map((child) => ({ id: child.code, label: child.label.ar })),
-            );
+          const options = response.data.mainTypes.flatMap((node) => {
+            if (node.code === 'verb' || node.code === 'inl') {
+              return [{ id: PRIMARY_POS_CODES[node.code], label: node.label.ar }];
+            }
+
+            return node.children.map((child) => ({ id: child.code, label: child.label.ar }));
+          });
           return { status: 'success', options };
         }),
         catchError(() => of<AssociationOptionsResult>({ status: 'error' })),
