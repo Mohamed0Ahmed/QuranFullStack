@@ -16,10 +16,12 @@
           aria-haspopup="true"
           [attr.aria-controls]="openMenuKey() === item.key ? item.key + '-menu' : null"
           [attr.aria-expanded]="openMenuKey() === item.key"
+          [attr.title]="item.labelAr"
           [attr.data-testid]="'nav-' + item.key + '-trigger'"
           (click)="menuToggled.emit(item.key)"
         >
-          {{ item.labelAr }}
+          <qd-nav-icon [name]="item.icon" />
+          <span class="qd-nav__label">{{ item.labelAr }}</span>
           <svg
             class="qd-nav__chevron"
             width="12"
@@ -51,7 +53,10 @@
           </ul>
         }
       } @else if (rendersAsLabel(item)) {
-        <span class="qd-nav__group-label">{{ item.labelAr }}</span>
+        <span class="qd-nav__group-label">
+          <qd-nav-icon [name]="item.icon" />
+          <span>{{ item.labelAr }}</span>
+        </span>
       } @else {
         <a
           class="qd-nav__link"
@@ -60,10 +65,12 @@
           routerLinkActive="qd-nav__link--current"
           ariaCurrentWhenActive="page"
           [routerLinkActiveOptions]="{ exact: exactFor(item.route) }"
+          [attr.title]="item.labelAr"
           [attr.data-testid]="'nav-link--' + item.key"
           (click)="navigated.emit()"
         >
-          {{ item.labelAr }}
+          <qd-nav-icon [name]="item.icon" />
+          <span class="qd-nav__label">{{ item.labelAr }}</span>
         </a>
       }
 
@@ -90,9 +97,11 @@
     routerLinkActive="qd-nav__link--current"
     ariaCurrentWhenActive="page"
     [routerLinkActiveOptions]="{ exact: child.route === parent.route }"
+    [attr.title]="child.labelAr"
     [attr.data-testid]="'nav-menu-link--' + child.key"
     (click)="onChildActivated(parent)"
   >
-    {{ child.labelAr }}
+    <qd-nav-icon [name]="child.icon" />
+    <span class="qd-nav__label">{{ child.labelAr }}</span>
   </a>
 </ng-template>

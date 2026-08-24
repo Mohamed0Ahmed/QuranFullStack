@@ -3,18 +3,21 @@
 .qd-shell {
   display: flex;
   flex-direction: column;
+  min-block-size: 100vh;
   background: var(--qd-bg-page);
 }
 
 .qd-shell-viewport {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
-  min-height: 100vh;
+  min-block-size: 0;
 }
 
 .qd-shell-viewport main {
   flex: 1;
   min-height: 0;
+  background: var(--qd-bg-page);
 }
 
 .qd-shell-viewport main.qd-shell-main--page-scroll {
@@ -33,7 +36,7 @@
   height: var(--qd-navbar-block-size);
   min-height: var(--qd-navbar-block-size);
   max-height: var(--qd-navbar-block-size);
-  padding: var(--qd-space-3) var(--qd-page-gutter);
+  padding: calc(var(--qd-space-2) - var(--qd-s-2)) var(--qd-page-gutter);
   background: var(--qd-bg-chrome);
   border-block-end: var(--qd-hairline);
   position: sticky;
@@ -102,7 +105,7 @@
 
 .qd-footer__inner {
   inline-size: 100%;
-  max-inline-size: var(--qd-page-measure-capped-reading);
+  max-inline-size: var(--qd-page-measure-full-data);
   margin-inline: auto;
   box-sizing: border-box;
 }

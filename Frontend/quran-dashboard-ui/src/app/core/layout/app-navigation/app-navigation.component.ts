@@ -18,6 +18,7 @@ import { NavItem } from '../../navigation/nav-items';
 import { NavigationResumeService } from '../../navigation/navigation-resume.service';
 import { DASHBOARD_ROUTE_PATH } from '../../navigation/route-paths';
 import { QdActionDirective } from '../../../shared/ui/action/action.directive';
+import { NavIconComponent } from '../nav-icon/nav-icon.component';
 import {
   placeFloatingLayer,
   resolveFloatingDirection,
@@ -33,7 +34,7 @@ const NAV_MENU_ANCHOR_GAP = 0;
 @Component({
   selector: 'qd-app-navigation',
   standalone: true,
-  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive, QdActionDirective],
+  imports: [NgTemplateOutlet, RouterLink, RouterLinkActive, QdActionDirective, NavIconComponent],
   templateUrl: './app-navigation.component.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -10,6 +10,7 @@ import {
   computed,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -28,12 +29,15 @@ import { CurrentUserStore } from '../../auth/current-user.store';
 import { LinkingAccessService } from '../../../features/linking/state/linking-access.service';
 import { LinkingFocusCoordinator } from '../../../features/linking/state/linking-focus.coordinator';
 import { LinkingWorkspaceStore } from '../../../features/linking/state/linking-workspace.store';
+import { CommandLauncherComponent } from '../command-launcher/command-launcher.component';
+import { NavIconComponent } from '../nav-icon/nav-icon.component';
 
 const MORE_MENU_ITEM: NavItem = {
   key: 'more',
   labelAr: 'المزيد',
   labelEn: 'More',
   route: NAV_GROUP_ONLY_ROUTE,
+  icon: 'more',
   group: 'primary',
   children: NAV_MENU.filter((item) => item.group === 'more'),
 };
@@ -47,6 +51,8 @@ const MORE_MENU_ITEM: NavItem = {
     AppNavigationComponent,
     QdActionDirective,
     QdModalShellComponent,
+    CommandLauncherComponent,
+    NavIconComponent,
   ],
   templateUrl: './top-navbar.component.html',
   styleUrls: ['./top-navbar.component.scss'],
@@ -62,8 +68,11 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly linkingFocus = inject(LinkingFocusCoordinator);
   private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
+  private readonly commandLauncher = viewChild(CommandLauncherComponent);
+  private readonly commandLauncherOpen = signal(false);
 
   readonly sheetOpen = signal(false);
+  readonly shellOverlayOpen = computed(() => this.sheetOpen() || this.commandLauncherOpen());
 
   protected readonly locked = this.scrollLock.isLocked;
   protected readonly toggleInert = computed(() => this.locked() && !this.sheetOpen());
@@ -189,6 +198,21 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
 
   closeSheet(): void {
     this.sheetOpen.set(false);
+  }
+
+  openCommandLauncher(): void {
+    this.openMenuKey.set(null);
+    if (!this.sheetOpen()) {
+      this.commandLauncher()?.show();
+      return;
+    }
+
+    this.closeSheet();
+    afterNextRender(() => this.commandLauncher()?.show(), { injector: this.injector });
+  }
+
+  setCommandLauncherOpen(open: boolean): void {
+    this.commandLauncherOpen.set(open);
   }
 
   openLinkingWorkspace(): void {

@@ -91,9 +91,9 @@ not memory:
   `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` (indexed by
   `docs/contracts/frontend-shell.md`).
 - **Design tokens / styling changed** → planned: the feature's design-token contract under
-  `specs/<feature>/contracts/`; implemented: the implicated style code plus
-  `Frontend/quran-dashboard-ui/.architecture/UI_STYLE_SYSTEM.md` (indexed by
-  `docs/contracts/frontend-shell.md`); no raw `#fff`/`#000` where that authority forbids it.
+  `specs/<feature>/contracts/`; implemented: the implicated Angular style and layout code
+  indexed by `docs/contracts/frontend-shell.md`. During the UI rebuild, compare against the
+  owner's explicit phase direction rather than a permanent visual contract.
 - **API response shape changed** → compare against `Contracts/ApiResponse.cs` + `API_GUIDELINES.md` §5
   (the `{ IsSuccess, Message, Data, Errors }` envelope and its `Ok`/`Fail` helpers; indexed by `docs/contracts/response-envelope.md`).
 

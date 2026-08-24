@@ -24,8 +24,8 @@ For related rules, also read:
 
 - `.architecture/FRONTEND_STRUCTURE.md` — feature folders, data-access/state
   separation, file size thresholds, tabs and URL state
-- `.architecture/UI_STYLE_SYSTEM.md` — shared state primitives (`qd-loading-state`,
-  `qd-empty-state`, `qd-error-state`) and visual rules
+- `src/app/shared/ui/` — shared state implementations (`qd-loading-state`,
+  `qd-empty-state`, `qd-error-state`)
 - `Backend/.architecture/API_GUIDELINES.md` — backend API boundary, the
   `ApiResponse` shape, and localization rules
 
@@ -237,7 +237,7 @@ Rules:
 - Empty state should be explicit and not confused with loading.
 - Error state should preserve a useful backend message when safe.
 - Error states should be calm and clear, not aggressive.
-- Use shared UI style primitives from `UI_STYLE_SYSTEM.md`:
+- Use the shared UI primitives implemented under `src/app/shared/ui/`:
 
   ```text
   qd-loading-state

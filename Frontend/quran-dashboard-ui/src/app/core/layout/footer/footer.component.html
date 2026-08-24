@@ -1,58 +1,72 @@
 <footer class="qd-footer">
   <div class="qd-footer__inner qd-footer-inner">
-    <p class="qd-text-muted">المنهج القرآني © 2026</p>
-    <p class="qd-text-meta">لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني</p>
+    <div class="qd-footer-brand">
+      <span class="qd-footer-brand__mark" aria-hidden="true">م</span>
+      <div>
+        <strong>المنهج القرآني</strong>
+        <p>تنظيم ومراجعة بيانات البحث القرآني</p>
+      </div>
+    </div>
 
-    @switch (viewState) {
-      @case ('loading') {
-        <span
-          class="health-indicator health-loading"
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          data-testid="footer-health-loading"
-        >
-          جارٍ التحقق من الحالة...
-        </span>
-      }
-      @case ('success') {
-        <span
-          class="health-indicator"
-          [class]="healthClass"
-          role="status"
-          aria-live="polite"
-          data-testid="footer-health"
-        >
-          <span class="health-dot" [class]="healthDotClass"></span>
-          {{ healthLabel }}
-          @if (databaseCheck) {
-            <span class="health-check">
-              <span class="health-dot" [class]="databaseDotClass"></span>
-              {{ databaseLabel }}
-            </span>
-          }
-        </span>
-      }
-      @case ('error') {
-        <span
-          class="health-indicator health-error"
-          role="status"
-          aria-live="polite"
-          data-testid="footer-health-error"
-        >
-          <span>{{ errorMessage }}</span>
-          <button
-            type="button"
-            qdAction="tertiary"
-            size="sm"
-            class="health-retry-btn"
-            data-testid="footer-health-retry"
-            (click)="retry()"
+    <nav class="qd-footer-nav" aria-label="روابط سريعة">
+      <a routerLink="/dashboard">الرئيسية</a>
+      <a routerLink="/abwab">الأبواب</a>
+      <a routerLink="/dashboard/mushaf">المصحف</a>
+    </nav>
+
+    <div class="qd-footer-status">
+      @switch (viewState) {
+        @case ('loading') {
+          <span
+            class="health-indicator health-loading"
+            role="status"
+            aria-live="polite"
+            aria-busy="true"
+            data-testid="footer-health-loading"
           >
-            إعادة المحاولة
-          </button>
-        </span>
+            جارٍ التحقق من الحالة...
+          </span>
+        }
+        @case ('success') {
+          <span
+            class="health-indicator"
+            [class]="healthClass"
+            role="status"
+            aria-live="polite"
+            data-testid="footer-health"
+          >
+            <span class="health-dot" [class]="healthDotClass"></span>
+            {{ healthLabel }}
+            @if (databaseCheck) {
+              <span class="health-check">
+                <span class="health-dot" [class]="databaseDotClass"></span>
+                {{ databaseLabel }}
+              </span>
+            }
+          </span>
+        }
+        @case ('error') {
+          <span
+            class="health-indicator health-error"
+            role="status"
+            aria-live="polite"
+            data-testid="footer-health-error"
+          >
+            <span>{{ errorMessage }}</span>
+            <button
+              type="button"
+              qdAction="tertiary"
+              size="sm"
+              class="health-retry-btn"
+              data-testid="footer-health-retry"
+              (click)="retry()"
+            >
+              إعادة المحاولة
+            </button>
+          </span>
+        }
       }
-    }
+      <p class="qd-footer-copyright">المنهج القرآني © 2026</p>
+    </div>
   </div>
 </footer>

@@ -1338,7 +1338,9 @@ qd-app-navigation {
   --qd-action-padding-inline: var(--qd-s-8);
 
   justify-content: flex-start;
-  font-weight: 400;
+  gap: calc(var(--qd-space-1) + var(--qd-s-2));
+  font-size: var(--qd-type-meta);
+  font-weight: 700;
   white-space: nowrap;
 }
 
@@ -1351,6 +1353,16 @@ qd-app-navigation {
   background: var(--qd-green-tint);
   border-color: transparent;
   color: var(--qd-green-text);
+}
+
+.qd-nav:not(.qd-nav--sheet) > .qd-nav__item > .qd-nav__link--current::after {
+  content: '';
+  position: absolute;
+  inset-inline: var(--qd-space-2);
+  inset-block-end: calc(-1 * var(--qd-space-2));
+  block-size: var(--qd-green-thread-size);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-green-thread);
 }
 
 .qd-nav__chevron {
@@ -1368,7 +1380,7 @@ qd-app-navigation {
   display: flex;
   flex-direction: column;
   gap: var(--qd-s-2);
-  min-inline-size: 12rem;
+  min-inline-size: 13rem;
   max-inline-size: 20rem;
   overflow: auto;
   margin: 0;
@@ -1401,18 +1413,18 @@ qd-app-navigation {
   inline-size: 100%;
 }
 
-.qd-nav--sheet .qd-nav__link--current::before {
-  content: '';
-  position: absolute;
-  inset-block: var(--qd-s-4);
-  inset-inline-start: 0;
-  inline-size: var(--qd-green-thread-size);
-  border-radius: var(--qd-radius-pill);
-  background: var(--qd-green-thread);
+.qd-nav--sheet .qd-nav__link {
+  min-block-size: var(--qd-control-lg);
+}
+
+.qd-navbar__actions .qd-nav__label {
+  display: none;
 }
 
 .qd-nav__group-label {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-2);
   padding-block: var(--qd-s-8);
   padding-inline: var(--qd-s-12);
   font-family: var(--qd-font-ui);
