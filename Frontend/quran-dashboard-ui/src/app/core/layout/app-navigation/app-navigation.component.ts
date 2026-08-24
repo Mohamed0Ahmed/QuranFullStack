@@ -7,9 +7,12 @@ import {
   PLATFORM_ID,
   afterRenderEffect,
   computed,
+  effect,
   inject,
   input,
   output,
+  signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, UrlTree } from '@angular/router';
@@ -30,6 +33,15 @@ export type QdAppNavigationMode = 'desktop' | 'sheet';
 export const NAV_GROUP_ONLY_ROUTE = '';
 
 const NAV_MENU_ANCHOR_GAP = 0;
+const SHEET_MORE_ITEM: NavItem = {
+  key: 'sheet-more',
+  labelAr: 'المزيد',
+  labelEn: 'More',
+  route: NAV_GROUP_ONLY_ROUTE,
+  icon: 'more',
+  group: 'primary',
+  children: [],
+};
 
 @Component({
   selector: 'qd-app-navigation',
@@ -47,6 +59,7 @@ export class AppNavigationComponent {
   readonly mode = input.required<QdAppNavigationMode>();
   readonly items = input.required<readonly NavItem[]>();
   readonly openMenuKey = input<string | null>(null);
+  readonly sheetVisible = input(false);
 
   readonly menuToggled = output<string>();
   readonly menuPointerEntered = output<string>();
@@ -55,11 +68,24 @@ export class AppNavigationComponent {
   readonly navigated = output<void>();
 
   protected readonly sheet = computed(() => this.mode() === 'sheet');
+  protected readonly renderedItems = computed(() =>
+    this.sheet() ? this.groupSheetItems(this.items()) : this.items(),
+  );
+  private readonly sheetOpenMenuKey = signal<string | null>(null);
 
   private readonly menuSurface = viewChild<ElementRef<HTMLElement>>('menuSurface');
 
   constructor() {
     afterRenderEffect(() => this.placeMenuSurface());
+    effect(() => {
+      if (!this.sheet() || !this.sheetVisible()) {
+        return;
+      }
+      const activeGroup = this.renderedItems().find(
+        (item) => this.hasMenu(item) && this.isMenuActive(item),
+      );
+      untracked(() => this.sheetOpenMenuKey.set(activeGroup?.key ?? null));
+    });
 
     if (isPlatformBrowser(this.platformId)) {
       const onViewportResize = (): void => this.placeMenuSurface();
@@ -69,7 +95,24 @@ export class AppNavigationComponent {
   }
 
   protected hasMenu(item: NavItem): boolean {
-    return !this.sheet() && item.children !== undefined;
+    return (item.children?.length ?? 0) > 0;
+  }
+
+  protected isMenuOpen(item: NavItem): boolean {
+    const openKey = this.sheet() ? this.sheetOpenMenuKey() : this.openMenuKey();
+    return openKey === item.key;
+  }
+
+  protected toggleItemMenu(item: NavItem): void {
+    if (!this.sheet()) {
+      this.menuToggled.emit(item.key);
+      return;
+    }
+    this.sheetOpenMenuKey.update((openKey) => openKey === item.key ? null : item.key);
+  }
+
+  protected menuId(item: NavItem): string {
+    return `${item.key}-${this.mode()}-menu`;
   }
 
   protected rendersAsLabel(item: NavItem): boolean {
@@ -99,13 +142,13 @@ export class AppNavigationComponent {
   }
 
   protected onPointerEnter(item: NavItem): void {
-    if (this.hasMenu(item)) {
+    if (!this.sheet() && this.hasMenu(item)) {
       this.menuPointerEntered.emit(item.key);
     }
   }
 
   protected onPointerLeave(item: NavItem): void {
-    if (this.hasMenu(item)) {
+    if (!this.sheet() && this.hasMenu(item)) {
       this.menuPointerLeft.emit(item.key);
     }
   }
@@ -119,6 +162,9 @@ export class AppNavigationComponent {
   }
 
   private placeMenuSurface(): void {
+    if (this.sheet()) {
+      return;
+    }
     const menu = this.menuSurface()?.nativeElement;
     const anchor = menu?.parentElement;
     const view = menu?.ownerDocument.defaultView;
@@ -144,5 +190,16 @@ export class AppNavigationComponent {
     return item.route === NAV_GROUP_ONLY_ROUTE
       ? (item.children ?? []).map((child) => child.route)
       : [item.route];
+  }
+
+  private groupSheetItems(items: readonly NavItem[]): readonly NavItem[] {
+    const primaryItems = items.filter((item) => item.group === 'primary');
+    const moreItems = items
+      .filter((item) => item.group !== 'primary')
+      .flatMap((item) => item.children === undefined ? [item] : [item, ...item.children]);
+
+    return moreItems.length === 0
+      ? primaryItems
+      : [...primaryItems, { ...SHEET_MORE_ITEM, children: moreItems }];
   }
 }

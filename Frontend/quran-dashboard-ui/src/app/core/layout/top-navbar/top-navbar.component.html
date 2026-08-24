@@ -82,7 +82,12 @@
       <ng-container *ngTemplateOutlet="chromeActions" />
     </div>
 
-    <qd-app-navigation mode="sheet" [items]="allItems()" (navigated)="closeSheet()" />
+    <qd-app-navigation
+      mode="sheet"
+      [items]="allItems()"
+      [sheetVisible]="sheetOpen()"
+      (navigated)="closeSheet()"
+    />
   </qd-modal-shell>
 }
 

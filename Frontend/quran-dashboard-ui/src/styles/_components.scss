@@ -1417,6 +1417,22 @@ qd-app-navigation {
   min-block-size: var(--qd-control-lg);
 }
 
+.qd-nav--sheet > .qd-nav__item--open > .qd-nav__trigger {
+  background: var(--qd-section-bg);
+  color: var(--qd-green-text);
+}
+
+.qd-nav--sheet .qd-nav__sublist {
+  margin-block: var(--qd-s-2) var(--qd-s-4);
+  padding-block: var(--qd-s-2);
+  border-block: var(--qd-hairline);
+}
+
+.qd-nav--sheet .qd-nav__link--child {
+  min-block-size: var(--qd-control-md);
+  font-weight: 600;
+}
+
 .qd-navbar__actions .qd-nav__label {
   display: none;
 }
