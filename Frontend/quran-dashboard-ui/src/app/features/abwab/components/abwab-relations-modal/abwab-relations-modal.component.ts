@@ -3,23 +3,19 @@ import { Observable } from 'rxjs';
 
 import { AbwabDoorPickerComponent } from '../abwab-door-picker/abwab-door-picker.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdTabDirective } from '../../../../shared/ui/tabs/tab.directive';
 import { QdTabsComponent } from '../../../../shared/ui/tabs/tabs.component';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
 import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
-import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
-import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { AbwabWriteOutcome } from '../../state/abwab-write.controller';
 import { AbwabRelationsLoadResult } from '../../state/abwab-relations.controller';
 import {
   AbwabNode,
   AbwabRelationDirectionKind,
-  AbwabRelationGroupVm,
+  AbwabRelationGroupKey,
   AbwabRelationKind,
   AbwabRelationVm,
-  groupAbwabRelations,
 } from '../../models/abwab.models';
 import { AbwabDoorRelationDto } from '../../../../core/api/generated/models/abwab-door-relation-dto';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -27,7 +23,9 @@ import { buildAbwabNodePaths } from '../../state/abwab-tree-paths';
 import {
   ABWAB_RELATIONS_MODAL_PRESENTATION,
   AbwabRelationsView,
+  abwabRelationAddDraftForGroup,
 } from './abwab-relations-modal.presentation';
+import { AbwabRelationsOverviewComponent } from './abwab-relations-overview.component';
 
 export interface AbwabRelationTarget {
   readonly id: number;
@@ -42,12 +40,10 @@ export interface AbwabRelationTarget {
     ConfirmDialogComponent,
     QdActionDirective,
     QdModalShellComponent,
-    QdChipComponent,
-    QdSkeletonRowsComponent,
-    QdEmptyStateComponent,
     QdErrorStateComponent,
     QdTabDirective,
     QdTabsComponent,
+    AbwabRelationsOverviewComponent,
   ],
   templateUrl: './abwab-relations-modal.component.html',
   styleUrl: './abwab-relations-modal.component.scss',
@@ -83,6 +79,7 @@ export class AbwabRelationsModalComponent {
   protected readonly status = signal<'loading' | 'ready' | 'error'>('ready');
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly view = signal<AbwabRelationsView>('overview');
+  protected readonly activeGroupKey = signal<AbwabRelationGroupKey>('similarity');
   protected readonly type = signal<AbwabRelationKind>('similarity');
   protected readonly direction = signal<AbwabRelationDirectionKind>('anchor-more');
   protected readonly pickedIds = signal<ReadonlySet<number>>(new Set());
@@ -94,10 +91,6 @@ export class AbwabRelationsModalComponent {
 
   protected readonly presentation = ABWAB_RELATIONS_MODAL_PRESENTATION;
   protected readonly typeOptions = this.presentation.typeOptions;
-
-  protected requestReveal(otherDoorId: number): void {
-    this.revealRequested.emit(otherDoorId);
-  }
 
   protected readonly searchPlaceholder = computed(() =>
     this.anchorPickMode() ? ABWAB_LABELS.relationsBulkAnchorPlaceholder : ABWAB_LABELS.relationPickerPlaceholder,
@@ -120,8 +113,6 @@ export class AbwabRelationsModalComponent {
       ? ABWAB_LABELS.relationsBulkTitle(this.bulkTargets().length)
       : ABWAB_LABELS.relationsModalTitle(this.anchorDoorName()),
   );
-
-  protected readonly groups = computed<readonly AbwabRelationGroupVm[]>(() => groupAbwabRelations(this.relations()));
 
   private readonly nodesById = computed(() => {
     const byId = new Map<number, AbwabNode>();
@@ -196,6 +187,7 @@ export class AbwabRelationsModalComponent {
           return;
         }
         this.resetDraft();
+        this.activeGroupKey.set('similarity');
         this.view.set(this.anchorPickMode() ? 'add' : 'overview');
         this.relations.set([]);
         this.errorMessage.set(null);
@@ -232,11 +224,16 @@ export class AbwabRelationsModalComponent {
     this.pickedIds.set(new Set());
   }
 
-  protected openAdd(): void {
+  protected openAdd(groupKey: AbwabRelationGroupKey): void {
     if (!this.canCreateRelation()) {
       return;
     }
     this.resetDraft();
+    const draft = abwabRelationAddDraftForGroup(groupKey);
+    this.type.set(draft.kind);
+    if (draft.direction !== null) {
+      this.direction.set(draft.direction);
+    }
     this.overviewReloadRequired.set(this.status() === 'error');
     this.status.set('ready');
     this.errorMessage.set(null);
@@ -258,14 +255,6 @@ export class AbwabRelationsModalComponent {
         this.loadWithSkeleton(anchorId);
       }
     }
-  }
-
-  protected primaryAction(): void {
-    if (this.view() === 'add') {
-      this.add();
-      return;
-    }
-    this.openAdd();
   }
 
   protected pickDirection(value: AbwabRelationDirectionKind): void {

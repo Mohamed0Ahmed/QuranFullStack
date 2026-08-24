@@ -1,7 +1,7 @@
 <qd-modal-shell
   variant="wide"
-  [wideInlineSize]="'min(38rem, 100vw)'"
-  [wideBlockSize]="'100dvh'"
+  [wideInlineSize]="'var(--qd-linking-workspace-modal-inline-size)'"
+  [wideBlockSize]="'var(--qd-linking-workspace-modal-block-size)'"
   [titleText]="modalTitle()"
   [open]="true"
   [hasFooter]="false"
@@ -12,72 +12,89 @@
 >
   <section
     class="abwab-door-links-panel"
-    [class.abwab-door-links-panel--copy]="state().copy.open"
     role="region"
     [id]="'abwab-door-links-panel-' + doorId()"
     [attr.aria-label]="modalTitle()"
     [attr.aria-busy]="initialLoading() || refreshing()"
     data-testid="abwab-door-links-panel"
   >
-    <header class="abwab-door-links-panel__header">
-      <div class="abwab-door-links-panel__identity">
-        <span class="abwab-door-links-panel__metric" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
-        @if (permissions.isOwner()) {
-          <span class="abwab-door-links-panel__metric" data-testid="abwab-door-links-selected">{{ selectedCountLabel() }}</span>
-        }
+    @if (!state().copy.open) {
+      <div class="abwab-door-links-panel__command-bar">
+        <header class="abwab-door-links-panel__header">
+          <div class="abwab-door-links-panel__identity">
+            <span class="abwab-door-links-panel__metric" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
+            @if (permissions.isOwner()) {
+              <span
+                class="abwab-door-links-panel__metric abwab-door-links-panel__metric--selected"
+                data-testid="abwab-door-links-selected"
+              >
+                {{ selectedCountLabel() }}
+              </span>
+            }
+          </div>
+          @if (permissions.isOwner()) {
+            <div class="abwab-door-links-panel__actions">
+              <button
+                type="button"
+                qdAction="icon-only"
+                [disabled]="state().records.totalCount === 0 || facade.selectedCount() >= state().records.totalCount || facade.interactionLocked()"
+                [attr.aria-label]="selectAllLabel"
+                [title]="selectAllLabel"
+                data-testid="abwab-door-links-select-all"
+                (click)="facade.selectAll()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m4 12 3 3 5-6M12 14l2 2 6-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="qd-sr-only">{{ selectAllLabel }}</span>
+              </button>
+              <button
+                type="button"
+                qdAction="icon-only"
+                [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
+                [attr.aria-label]="clearSelectionLabel"
+                [title]="clearSelectionLabel"
+                data-testid="abwab-door-links-clear-selection"
+                (click)="facade.clearSelection()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m7 7 10 10M17 7 7 17" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg>
+                <span class="qd-sr-only">{{ clearSelectionLabel }}</span>
+              </button>
+              <qd-abwab-door-link-operations
+                [doorOpen]="true"
+                [selectedCount]="facade.selectedCount()"
+              />
+            </div>
+          }
+        </header>
       </div>
-      @if (permissions.isOwner()) {
-        <div class="abwab-door-links-panel__actions">
-          <button
-            type="button"
-            qdAction="tertiary"
-            size="sm"
-            [disabled]="state().records.totalCount === 0 || facade.interactionLocked()"
-            data-testid="abwab-door-links-select-all"
-            (click)="facade.selectAll()"
-          >
-            {{ selectAllLabel }}
-          </button>
-          <button
-            type="button"
-            qdAction="tertiary"
-            size="sm"
-            [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
-            data-testid="abwab-door-links-clear-selection"
-            (click)="facade.clearSelection()"
-          >
-            {{ clearSelectionLabel }}
-          </button>
-        </div>
-      }
-    </header>
-
-    @if (state().staleMessage; as message) {
-      <qd-notice
-        tone="info"
-        [message]="message"
-        [dismissLabel]="dismissLabel"
-        testId="abwab-door-links-stale-notice"
-        (dismiss)="facade.clearNotice()"
-      />
-    }
-    @if (state().noticeMessage; as message) {
-      <qd-notice
-        [message]="message"
-        [dismissLabel]="dismissLabel"
-        testId="abwab-door-links-notice"
-        (dismiss)="facade.clearNotice()"
-      />
-    }
-
-    @if (permissions.isOwner()) {
-      <qd-abwab-door-link-operations
-        [doorOpen]="true"
-        [selectedCount]="facade.selectedCount()"
-      />
+    } @else if (permissions.isOwner()) {
+      <div class="abwab-door-links-panel__copy-row">
+        <qd-abwab-door-link-copy />
+      </div>
     }
 
     @if (!state().copy.open) {
+      @if (state().staleMessage; as message) {
+        <qd-notice
+          tone="info"
+          [message]="message"
+          [dismissLabel]="dismissLabel"
+          testId="abwab-door-links-stale-notice"
+          (dismiss)="facade.clearNotice()"
+        />
+      }
+      @if (state().noticeMessage; as message) {
+        <qd-notice
+          [message]="message"
+          [dismissLabel]="dismissLabel"
+          testId="abwab-door-links-notice"
+          (dismiss)="facade.clearNotice()"
+        />
+      }
+
       @if (initialLoading()) {
         <qd-skeleton-rows [count]="3" rowTemplate="auto 1fr auto auto" [loadingLabel]="loadingLabel" />
       } @else if (state().records.status === 'empty') {

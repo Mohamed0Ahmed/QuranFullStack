@@ -6,13 +6,12 @@ import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-s
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import { AbwabDoorLinkCopyController } from '../../state/abwab-door-link-copy.controller';
-import { AbwabDoorLinkCopyComponent } from '../abwab-door-link-copy/abwab-door-link-copy.component';
 import { ABWAB_DOOR_LINK_OPERATIONS_LABELS } from './abwab-door-link-operations.labels';
 
 @Component({
   selector: 'qd-abwab-door-link-operations',
   standalone: true,
-  imports: [AbwabDoorLinkCopyComponent, ConfirmDialogComponent, QdActionDirective, QdErrorStateComponent],
+  imports: [ConfirmDialogComponent, QdActionDirective, QdErrorStateComponent],
   templateUrl: './abwab-door-link-operations.component.html',
   styleUrl: './abwab-door-link-operations.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -51,12 +50,9 @@ export class AbwabDoorLinkOperationsComponent {
   protected get heading(): string { return ABWAB_LABELS.doorLinksOperationsHeading; }
   protected get deleteLabel(): string { return ABWAB_LABELS.doorLinksDelete; }
   protected get copyLabel(): string { return ABWAB_LABELS.doorLinksCopy; }
-  protected get noDoorHint(): string { return ABWAB_LABELS.doorLinksNoDoorHint; }
   protected get deleteTitle(): string { return ABWAB_DOOR_LINK_OPERATIONS_LABELS.deleteTitle; }
   protected get deleteConfirmLabel(): string { return ABWAB_DOOR_LINK_OPERATIONS_LABELS.deleteConfirm; }
   protected get cancelLabel(): string { return ABWAB_LABELS.cancelButton; }
-  protected readonly selectedLabel = computed(() => ABWAB_LABELS.doorLinksSelectedCount(this.selectedCount()));
-
   protected requestDelete(): void {
     this.facade.requestDelete();
   }

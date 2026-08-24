@@ -2,13 +2,15 @@
   <header class="abwab-door-link-copy__header">
     <h5>{{ labels.doorLinksCopyHeading }}</h5>
     <button
-      qdAction="tertiary"
-      size="sm"
+      qdAction="icon-only"
       type="button"
       [disabled]="state().copy.status === 'running'"
+      [attr.aria-label]="labels.doorLinksCopyClose"
+      [title]="labels.doorLinksCopyClose"
       (click)="controller.close()"
     >
-      {{ labels.doorLinksCopyClose }}
+      <span aria-hidden="true">×</span>
+      <span class="qd-sr-only">{{ labels.doorLinksCopyClose }}</span>
     </button>
   </header>
 
@@ -21,11 +23,11 @@
       />
     </div>
 
-    @if (state().copy.targetDoorId !== null) {
+    <div class="abwab-door-link-copy__actions">
       <button qdAction="primary" type="button" [disabled]="!canStart()" (click)="controller.start()">
         {{ labels.doorLinksCopyStart }}
       </button>
-    }
+    </div>
   } @else if (state().copy.status === 'enumerating') {
     <qd-skeleton-rows [count]="2" rowTemplate="1fr auto" [loadingLabel]="labels.doorLinksCopyEnumerating" />
   } @else if (state().copy.status === 'preparing') {

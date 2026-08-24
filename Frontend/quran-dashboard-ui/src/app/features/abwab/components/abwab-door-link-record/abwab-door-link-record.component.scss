@@ -5,12 +5,10 @@
 
 .abwab-door-link-record {
   min-inline-size: 0;
-  border-radius: var(--qd-radius-sm);
 }
 
 .abwab-door-link-record--grouped {
-  border: 1px solid var(--qd-border);
-  background: var(--qd-section-bg);
+  background: transparent;
 }
 
 .abwab-door-link-record--selected {
@@ -41,4 +39,9 @@
 .abwab-door-link-record__edit {
   order: 1;
   margin-inline-start: auto;
+}
+
+.abwab-door-link-record__edit svg {
+  inline-size: 1rem;
+  block-size: 1rem;
 }

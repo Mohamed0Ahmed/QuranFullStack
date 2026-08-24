@@ -11,6 +11,7 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import { AbwabPermissionsController } from '../../state/abwab-permissions.controller';
 import { AbwabDoorLinkOperationsComponent } from '../abwab-door-link-operations/abwab-door-link-operations.component';
+import { AbwabDoorLinkCopyComponent } from '../abwab-door-link-copy/abwab-door-link-copy.component';
 import { AbwabDoorLinksListComponent } from '../abwab-door-links-list/abwab-door-links-list.component';
 
 @Component({
@@ -18,6 +19,7 @@ import { AbwabDoorLinksListComponent } from '../abwab-door-links-list/abwab-door
   standalone: true,
   imports: [
     AbwabDoorLinkOperationsComponent,
+    AbwabDoorLinkCopyComponent,
     AbwabDoorLinksListComponent,
     QdActionDirective,
     QdEmptyStateComponent,

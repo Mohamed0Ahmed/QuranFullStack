@@ -1,0 +1,111 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: grid;
+  gap: var(--qd-space-3);
+}
+
+.abwab-relations-overview__tabs {
+  --qd-tabs-grid-columns: 4;
+}
+
+.abwab-relations-overview__panel {
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+}
+
+.abwab-relations-overview__loading {
+  display: block;
+  padding: var(--qd-space-3);
+  --qd-skeleton-h: 1.25rem;
+}
+
+.abwab-relations-overview__empty {
+  display: grid;
+  place-items: center;
+  gap: var(--qd-space-3);
+  min-block-size: 9rem;
+  padding: var(--qd-space-5);
+  background: var(--qd-section-bg);
+  color: var(--qd-text-muted);
+  text-align: center;
+}
+
+.abwab-relations-overview__empty p {
+  margin: 0;
+}
+
+.abwab-relations-overview__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.abwab-relations-overview__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--qd-space-3);
+  min-inline-size: 0;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: var(--qd-hairline);
+  transition: background-color var(--qd-t-fast);
+}
+
+.abwab-relations-overview__row:hover,
+.abwab-relations-overview__row:focus-within {
+  background: var(--qd-surface-hover);
+}
+
+.abwab-relations-overview__identity {
+  display: grid;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+}
+
+.abwab-relations-overview__name,
+.abwab-relations-overview__identity small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abwab-relations-overview__name {
+  color: var(--qd-ink);
+  font-size: var(--qd-type-body-sm);
+  font-weight: 500;
+}
+
+.abwab-relations-overview__identity small {
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.abwab-relations-overview__row-actions {
+  display: flex;
+  gap: var(--qd-space-1);
+}
+
+.abwab-relations-overview__row-actions svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.abwab-relations-overview__delete {
+  border-color: var(--qd-danger-hairline);
+  color: var(--qd-danger);
+}
+
+.abwab-relations-overview__actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--qd-space-3);
+  background: var(--qd-section-bg);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-relations-overview__tabs {
+    --qd-tabs-grid-columns: 2;
+  }
+}

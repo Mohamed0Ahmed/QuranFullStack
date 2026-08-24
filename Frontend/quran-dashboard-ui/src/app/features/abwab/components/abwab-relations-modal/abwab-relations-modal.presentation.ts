@@ -1,5 +1,6 @@
 import {
   AbwabRelationGroupKey,
+  AbwabRelationDirectionKind,
   AbwabRelationKind,
   AbwabRelationVm,
   abwabRelationGroupKey,
@@ -8,28 +9,59 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 
 export type AbwabRelationsView = 'overview' | 'add';
 
-const GROUP_LABELS: Readonly<Record<AbwabRelationGroupKey, string>> = {
-  similarity: ABWAB_LABELS.relationGroupSimilarity,
-  opposition: ABWAB_LABELS.relationGroupOpposition,
-  'more-comprehensive': ABWAB_LABELS.relationGroupMoreComprehensive,
-  'less-comprehensive': ABWAB_LABELS.relationGroupLessComprehensive,
-};
-
 const TYPE_LABELS: Readonly<Record<AbwabRelationKind, string>> = {
   similarity: ABWAB_LABELS.relationTypeSimilarity,
   opposition: ABWAB_LABELS.relationTypeOpposition,
   comprehensiveness: ABWAB_LABELS.relationTypeComprehensiveness,
 };
 
-const GROUP_DOT_KIND: Readonly<Record<AbwabRelationGroupKey, AbwabRelationKind>> = {
-  similarity: 'similarity',
-  opposition: 'opposition',
-  'more-comprehensive': 'comprehensiveness',
-  'less-comprehensive': 'comprehensiveness',
+export interface AbwabRelationsOverviewTab {
+  readonly key: AbwabRelationGroupKey;
+  readonly label: string;
+  readonly emptyMessage: string;
+}
+
+export interface AbwabRelationAddDraft {
+  readonly kind: AbwabRelationKind;
+  readonly direction: AbwabRelationDirectionKind | null;
+}
+
+const ADD_DRAFT_BY_GROUP: Readonly<Record<AbwabRelationGroupKey, AbwabRelationAddDraft>> = {
+  similarity: { kind: 'similarity', direction: null },
+  opposition: { kind: 'opposition', direction: null },
+  'more-comprehensive': { kind: 'comprehensiveness', direction: 'anchor-less' },
+  'less-comprehensive': { kind: 'comprehensiveness', direction: 'anchor-more' },
 };
+
+export function abwabRelationAddDraftForGroup(groupKey: AbwabRelationGroupKey): AbwabRelationAddDraft {
+  return ADD_DRAFT_BY_GROUP[groupKey];
+}
 
 export const ABWAB_RELATIONS_MODAL_PRESENTATION = {
   typeOptions: ['similarity', 'opposition', 'comprehensiveness'] as const,
+  overviewTabs: [
+    {
+      key: 'similarity',
+      label: 'أبواب متشابهة',
+      emptyMessage: 'لا توجد أبواب متشابهة مرتبطة بهذا الباب بعد',
+    },
+    {
+      key: 'opposition',
+      label: 'أبواب متضادة',
+      emptyMessage: 'لا توجد أبواب متضادة مرتبطة بهذا الباب بعد',
+    },
+    {
+      key: 'more-comprehensive',
+      label: 'أبواب أكثر شمولية',
+      emptyMessage: 'لا توجد أبواب أكثر شمولية مرتبطة بهذا الباب بعد',
+    },
+    {
+      key: 'less-comprehensive',
+      label: 'أبواب أقل شمولية',
+      emptyMessage: 'لا توجد أبواب أقل شمولية مرتبطة بهذا الباب بعد',
+    },
+  ] as const satisfies readonly AbwabRelationsOverviewTab[],
+  overviewTabsAriaLabel: 'أنواع علاقات الباب',
   addTitle: ABWAB_LABELS.relationAddTitle,
   loadingLabel: ABWAB_LABELS.relationsLoading,
   retryLabel: ABWAB_LABELS.retryButton,
@@ -40,7 +72,7 @@ export const ABWAB_RELATIONS_MODAL_PRESENTATION = {
   noneSelectedLabel: ABWAB_LABELS.relationNoneSelected,
   bulkAnchorHint: ABWAB_LABELS.relationsBulkAnchorHint,
   closeLabel: ABWAB_LABELS.relationsCloseButton,
-  startAddLabel: ABWAB_LABELS.relationStartAddButton,
+  startAddLabel: 'إضافة علاقة',
   backLabel: ABWAB_LABELS.relationBackButton,
   deleteConfirmTitle: ABWAB_LABELS.relationDeleteConfirmTitle,
   deleteConfirmLabel: ABWAB_LABELS.deleteConfirmButton,
@@ -52,17 +84,8 @@ export const ABWAB_RELATIONS_MODAL_PRESENTATION = {
     }
     return canDelete ? ABWAB_LABELS.relationsModalDescription : ABWAB_LABELS.relationsReadOnlyDescription;
   },
-  empty(canCreate: boolean): string {
-    return canCreate ? ABWAB_LABELS.relationsEmpty : ABWAB_LABELS.relationsReadOnlyEmpty;
-  },
   typeLabel(kind: AbwabRelationKind): string {
     return TYPE_LABELS[kind];
-  },
-  groupLabel(key: AbwabRelationGroupKey): string {
-    return GROUP_LABELS[key];
-  },
-  groupDotKind(key: AbwabRelationGroupKey): AbwabRelationKind {
-    return GROUP_DOT_KIND[key];
   },
   deleteConfirmBody(anchorDoorName: string, relation: AbwabRelationVm): string {
     return ABWAB_LABELS.relationDeleteConfirmBody(
