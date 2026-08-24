@@ -80,27 +80,30 @@
             (linksToggled)="doorLinks.toggleDoor($event)"
           />
         </div>
-        <div class="mushaf-doors-panel__confirm">
-          <span class="mushaf-doors-panel__selection-summary" aria-live="polite">
-            تم اختيار {{ highlights.draftDoorIds().size }} من {{ highlights.maxSelectedDoors }} بابًا
-          </span>
-          <button
-            type="button"
-            qdAction="primary"
-            [disabled]="!highlights.hasDraftChanges()"
-            data-testid="mushaf-doors-confirm"
-            (click)="confirmDoors()"
-          >
-            تأكيد
-          </button>
+        <div class="mushaf-doors-panel__footer">
+          <div class="mushaf-doors-panel__confirm">
+            <span class="mushaf-doors-panel__selection-summary" aria-live="polite">
+              تم اختيار {{ highlights.draftDoorIds().size }} من {{ highlights.maxSelectedDoors }} بابًا
+            </span>
+            <button
+              type="button"
+              qdAction="primary"
+              size="sm"
+              [disabled]="!highlights.hasDraftChanges()"
+              data-testid="mushaf-doors-confirm"
+              (click)="confirmDoors()"
+            >
+              تأكيد
+            </button>
+          </div>
+          @if (highlights.selectionLimitReached()) {
+            <qd-notice
+              tone="info"
+              message="وصلت إلى الحد الأقصى: 15 بابًا. ألغِ تحديد باب لإضافة باب آخر."
+              testId="mushaf-doors-selection-limit"
+            />
+          }
         </div>
-        @if (highlights.selectionLimitReached()) {
-          <qd-notice
-            tone="info"
-            message="وصلت إلى الحد الأقصى: 15 بابًا. ألغِ تحديد باب لإضافة باب آخر."
-            testId="mushaf-doors-selection-limit"
-          />
-        }
       }
     } @else {
       @if (highlights.appliedDoors().length === 0) {

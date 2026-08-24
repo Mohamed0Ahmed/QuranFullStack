@@ -25,6 +25,11 @@
   &__study {
     background: transparent;
     min-height: 0;
+    gap: var(--qd-space-2);
+  }
+
+  &__selection {
+    flex: 0 0 auto;
   }
 
   &__study-context {

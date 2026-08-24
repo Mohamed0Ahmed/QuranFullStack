@@ -6,7 +6,6 @@
   qdSessionScrollTarget="viewport"
 >
   <section class="mushaf-reader__page" aria-label="منطقة المصحف">
-    <qd-mushaf-selection-status />
     <qd-mushaf-page-area
       [page]="facade.page()"
       [loadState]="facade.pageLoadState()"
@@ -27,6 +26,7 @@
     />
   </section>
   <section class="mushaf-reader__study" aria-label="منطقة الدراسة">
+    <qd-mushaf-selection-status class="mushaf-reader__selection" />
     <qd-study-context-section
       class="mushaf-reader__study-context"
       [wordAnalysis]="facade.wordAnalysis()"
