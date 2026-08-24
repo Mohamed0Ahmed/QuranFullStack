@@ -7,6 +7,7 @@
     [open]="true"
     [titleText]="labels.inclusionsModalTitle"
     [showClose]="true"
+    [compactHeader]="true"
     [hasFooter]="canCreateSources()"
     [submitOnEnter]="view() === 'add' && canCreateSources()"
     (dismissed)="close()"
@@ -68,10 +69,16 @@
         @if (controller.topology(); as topology) {
           @if (view() === 'overview') {
             <div class="abwab-inclusions-modal__topology" data-testid="abwab-inclusions-modal-overview">
-              <section class="abwab-inclusions-modal__section" aria-labelledby="abwab-inclusions-sources-heading">
+              <section
+                class="abwab-inclusions-modal__section abwab-inclusions-modal__section--sources"
+                aria-labelledby="abwab-inclusions-sources-heading"
+              >
                 <h3 id="abwab-inclusions-sources-heading">
                   <span>{{ labels.inclusionsSourcesHeading }}</span>
-                  <span class="abwab-inclusions-modal__count" [attr.aria-label]="topology.sources.length">
+                  <span
+                    class="abwab-inclusions-modal__count"
+                    [attr.aria-label]="labels.inclusionsSourcesHeading + ': ' + topology.sources.length"
+                  >
                     {{ topology.sources.length }}
                   </span>
                 </h3>
@@ -118,6 +125,7 @@
                             size="sm"
                             class="abwab-inclusions-modal__detach"
                             [attr.aria-label]="detachAriaLabel(source.doorName)"
+                            [title]="detachAriaLabel(source.doorName)"
                             [attr.data-testid]="'abwab-inclusions-modal-detach-' + source.inclusionId"
                             (click)="controller.requestDetach(source)"
                           >
@@ -130,10 +138,16 @@
                 }
               </section>
 
-              <section class="abwab-inclusions-modal__section" aria-labelledby="abwab-inclusions-consumers-heading">
+              <section
+                class="abwab-inclusions-modal__section abwab-inclusions-modal__section--consumers"
+                aria-labelledby="abwab-inclusions-consumers-heading"
+              >
                 <h3 id="abwab-inclusions-consumers-heading">
                   <span>{{ labels.inclusionsConsumersHeading }}</span>
-                  <span class="abwab-inclusions-modal__count" [attr.aria-label]="topology.consumers.length">
+                  <span
+                    class="abwab-inclusions-modal__count"
+                    [attr.aria-label]="labels.inclusionsConsumersHeading + ': ' + topology.consumers.length"
+                  >
                     {{ topology.consumers.length }}
                   </span>
                 </h3>

@@ -1,8 +1,15 @@
 @if (errorMessage(); as error) {
-  <qd-error-state severity="write" [reserve]="true" [message]="error" testId="qd-state-error" [attr.data-testid]="testIdPrefix() + '-error'" />
+  <p class="abwab-door-fields-form__general-error" role="alert" [attr.data-testid]="testIdPrefix() + '-error'">
+    {{ error }}
+  </p>
 }
 
-<qd-form-field class="abwab-door-fields-form__field abwab-door-fields-form__field--name" [label]="nameLabel" [required]="true">
+<qd-form-field
+  class="abwab-door-fields-form__field abwab-door-fields-form__field--name"
+  [label]="nameLabel"
+  [required]="true"
+  [error]="nameMissing() ? nameRequiredError : null"
+>
   <input
     #nameInput
     cdkFocusInitial
@@ -47,6 +54,8 @@
     [attr.data-testid]="testIdPrefix() + '-alias-input'"
   />
 </qd-form-field>
+
+<ng-content select="[abwabDoorFieldsAuxiliary]" />
 
 <div class="abwab-door-fields-form__chips">
   @for (alias of aliases(); track alias; let i = $index) {

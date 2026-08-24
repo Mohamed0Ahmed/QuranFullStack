@@ -1,11 +1,12 @@
 <qd-modal-shell
   variant="wide"
-  [wideInlineSize]="'var(--qd-linking-workspace-modal-inline-size)'"
-  [wideBlockSize]="'var(--qd-linking-workspace-modal-block-size)'"
+  [wideInlineSize]="'min(38rem, 100vw)'"
+  [wideBlockSize]="'100dvh'"
   [titleText]="modalTitle()"
   [open]="true"
   [hasFooter]="false"
   [flushBody]="true"
+  [compactHeader]="true"
   testIdPrefix="abwab-door-links-modal"
   (dismissed)="dismissed.emit()"
 >
@@ -20,9 +21,9 @@
   >
     <header class="abwab-door-links-panel__header">
       <div class="abwab-door-links-panel__identity">
-        <span class="qd-text-muted" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
+        <span class="abwab-door-links-panel__metric" data-testid="abwab-door-links-total">{{ totalCountLabel() }}</span>
         @if (permissions.isOwner()) {
-          <span class="qd-text-muted" data-testid="abwab-door-links-selected">{{ selectedCountLabel() }}</span>
+          <span class="abwab-door-links-panel__metric" data-testid="abwab-door-links-selected">{{ selectedCountLabel() }}</span>
         }
       </div>
       @if (permissions.isOwner()) {

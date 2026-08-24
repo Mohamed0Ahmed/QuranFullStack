@@ -148,11 +148,11 @@ export class AbwabDoorModalComponent {
     if (!this.canSave() || !fields || this.saveBusy()) {
       return;
     }
-    const name = fields.name.trim();
-    if (!name) {
-      this.errorMessage.set(ABWAB_LABELS.nameRequiredError);
+    if (!this.fieldsForm()?.validateName()) {
+      this.errorMessage.set(null);
       return;
     }
+    const name = fields.name.trim();
 
     const description = fields.description.trim() || null;
     const representativeAyahText = fields.representativeAyahText.trim() || null;

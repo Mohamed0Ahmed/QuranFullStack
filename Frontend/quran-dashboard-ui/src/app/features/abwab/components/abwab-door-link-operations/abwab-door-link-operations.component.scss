@@ -7,8 +7,9 @@
   align-items: center;
   flex-wrap: wrap;
   gap: var(--qd-space-2) var(--qd-space-4);
-  padding: var(--qd-space-1) var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
   border-block-end: 1px solid var(--qd-border);
+  background: var(--qd-section-bg);
 }
 
 .abwab-door-link-operations__header {

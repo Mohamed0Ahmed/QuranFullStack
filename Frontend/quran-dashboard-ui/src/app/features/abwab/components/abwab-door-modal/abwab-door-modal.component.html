@@ -5,6 +5,7 @@
     [open]="true"
     [titleText]="modalTitle"
     [showClose]="false"
+    [compactHeader]="true"
     [submitOnEnter]="true"
     (dismissed)="onDismissed($event)"
     (primaryActionRequested)="submit()"
@@ -13,37 +14,45 @@
       {{ contextText }}
     </p>
 
-    <qd-abwab-door-fields-form [value]="initialFields()" [errorMessage]="errorMessage()" />
-
-    @if (needsSection()) {
-      <div class="abwab-door-modal__section" data-testid="abwab-door-modal-section-field">
-        @if (noSectionsAvailable()) {
-          <p class="abwab-door-modal__section-hint" data-testid="abwab-door-modal-no-sections">
-            {{ noSectionsHint }}
-          </p>
-        } @else {
-          <label [attr.for]="sectionId">{{ sectionLabel }}</label>
-          <select
-            class="qd-input"
-            [id]="sectionId"
-            [attr.aria-invalid]="sectionMissing() ? 'true' : null"
-            [attr.aria-describedby]="sectionMissing() ? sectionId + '-error' : null"
-            data-testid="abwab-door-modal-section-select"
-            (change)="onSectionChange($any($event.target).value)"
-          >
-            <option value=""></option>
-            @for (section of sections(); track section.id) {
-              <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
-            }
-          </select>
-          @if (sectionMissing()) {
-            <p class="abwab-door-modal__section-error" [id]="sectionId + '-error'" data-testid="abwab-door-modal-section-error">
-              {{ sectionRequiredError }}
+    <qd-abwab-door-fields-form
+      [value]="initialFields()"
+      [errorMessage]="errorMessage()"
+      [balancedAuxiliary]="needsSection()"
+    >
+      @if (needsSection()) {
+        <div
+          abwabDoorFieldsAuxiliary
+          class="abwab-door-modal__section"
+          data-testid="abwab-door-modal-section-field"
+        >
+          @if (noSectionsAvailable()) {
+            <p class="abwab-door-modal__section-hint" data-testid="abwab-door-modal-no-sections">
+              {{ noSectionsHint }}
             </p>
+          } @else {
+            <label [attr.for]="sectionId">{{ sectionLabel }}</label>
+            <select
+              class="qd-input"
+              [id]="sectionId"
+              [attr.aria-invalid]="sectionMissing() ? 'true' : null"
+              [attr.aria-describedby]="sectionMissing() ? sectionId + '-error' : null"
+              data-testid="abwab-door-modal-section-select"
+              (change)="onSectionChange($any($event.target).value)"
+            >
+              <option value=""></option>
+              @for (section of sections(); track section.id) {
+                <option [value]="section.id" [selected]="section.id === chosenSectionId()">{{ section.name }}</option>
+              }
+            </select>
+            @if (sectionMissing()) {
+              <p class="abwab-door-modal__section-error" [id]="sectionId + '-error'" data-testid="abwab-door-modal-section-error">
+                {{ sectionRequiredError }}
+              </p>
+            }
           }
-        }
-      </div>
-    }
+        </div>
+      }
+    </qd-abwab-door-fields-form>
 
     <div qdModalShellFooter class="abwab-door-modal__foot-slot">
       @if (confirmingDiscard()) {

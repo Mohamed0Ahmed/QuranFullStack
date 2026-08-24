@@ -7,6 +7,7 @@
     [open]="true"
     [titleText]="titleText()"
     [showClose]="true"
+    [compactHeader]="true"
     [submitOnEnter]="view() === 'add' && canCreateRelation()"
     (dismissed)="close()"
     (primaryActionRequested)="primaryAction()"
@@ -60,7 +61,10 @@
                     [class]="'abwab-relations-modal__dot--' + presentation.groupDotKind(group.key)"
                   ></span>
                   {{ presentation.groupLabel(group.key) }}
-                  <span class="abwab-relations-modal__group-count">{{ group.relations.length }}</span>
+                  <span
+                    class="abwab-relations-modal__group-count"
+                    [attr.aria-label]="presentation.groupLabel(group.key) + ': ' + group.relations.length"
+                  >{{ group.relations.length }}</span>
                 </h3>
                 <div class="abwab-relations-modal__chips">
                   @for (relation of group.relations; track relation.id) {

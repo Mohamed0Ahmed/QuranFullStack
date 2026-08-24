@@ -4,6 +4,18 @@
   color: var(--qd-text);
 }
 
+:host ::ng-deep .qd-modal-shell__backdrop {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+:host ::ng-deep .qd-modal-shell--wide {
+  max-block-size: 100dvh;
+  border-block: 0;
+  border-inline-start: 0;
+  border-radius: 0;
+}
+
 .abwab-door-links-panel {
   display: flex;
   flex: 1 1 auto;
@@ -32,14 +44,22 @@
   justify-content: space-between;
   gap: var(--qd-space-2) var(--qd-space-4);
   min-block-size: var(--qd-control-lg);
-  padding: var(--qd-space-1) var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
   border-block-end: 1px solid var(--qd-border);
-  background: var(--qd-section-bg);
 }
 
 .abwab-door-links-panel__identity,
 .abwab-door-links-panel__actions {
   gap: var(--qd-space-2);
+}
+
+.abwab-door-links-panel__metric {
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-pill);
+  color: var(--qd-text-muted);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
 }
 
 .abwab-door-links-panel__records {
