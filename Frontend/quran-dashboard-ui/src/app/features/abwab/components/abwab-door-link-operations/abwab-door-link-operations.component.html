@@ -3,6 +3,7 @@
     <button
       type="button"
       qdAction="icon-only"
+      size="sm"
       class="abwab-door-link-operations__delete"
       [disabled]="!canDelete()"
       [attr.aria-label]="deleteLabel"
@@ -18,6 +19,7 @@
     <button
       type="button"
       qdAction="icon-only"
+      size="sm"
       [disabled]="!canCopy() || state().copy.open"
       [attr.aria-label]="copyLabel"
       [title]="copyLabel"

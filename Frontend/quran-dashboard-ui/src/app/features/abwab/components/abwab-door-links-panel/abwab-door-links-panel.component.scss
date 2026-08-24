@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: contents;
   min-inline-size: 0;
@@ -99,5 +101,33 @@
 
   .abwab-door-links-panel__actions {
     justify-content: flex-start;
+  }
+}
+
+@media (min-width: bp.$qd-bp-wide-min) {
+  .abwab-door-links-panel {
+    gap: var(--qd-space-1);
+    padding: var(--qd-space-2);
+  }
+
+  .abwab-door-links-panel__header {
+    gap: var(--qd-space-2);
+    min-block-size: var(--qd-control-sm);
+    padding: var(--qd-s-2) var(--qd-space-2);
+  }
+
+  .abwab-door-links-panel__identity,
+  .abwab-door-links-panel__actions {
+    gap: var(--qd-space-1);
+  }
+
+  .abwab-door-links-panel__metric {
+    padding: var(--qd-s-2) var(--qd-space-2);
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+
+  .abwab-door-links-panel__actions {
+    padding: var(--qd-s-2);
   }
 }

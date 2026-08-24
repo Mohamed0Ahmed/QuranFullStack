@@ -37,6 +37,7 @@
               <button
                 type="button"
                 qdAction="icon-only"
+                size="sm"
                 [disabled]="state().records.totalCount === 0 || facade.selectedCount() >= state().records.totalCount || facade.interactionLocked()"
                 [attr.aria-label]="selectAllLabel"
                 [title]="selectAllLabel"
@@ -51,6 +52,7 @@
               <button
                 type="button"
                 qdAction="icon-only"
+                size="sm"
                 [disabled]="facade.selectedCount() === 0 || facade.interactionLocked()"
                 [attr.aria-label]="clearSelectionLabel"
                 [title]="clearSelectionLabel"

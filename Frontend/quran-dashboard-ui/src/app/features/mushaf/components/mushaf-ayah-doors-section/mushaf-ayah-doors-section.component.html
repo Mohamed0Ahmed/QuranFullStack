@@ -46,7 +46,12 @@
 
         @for (door of rows(); track door.id) {
           <div class="mushaf-ayah-doors__row" role="row" [attr.data-testid]="'mushaf-ayah-door-' + door.id">
-            <span class="mushaf-ayah-doors__name" role="cell" [title]="door.name">
+            <span
+              class="mushaf-ayah-doors__name"
+              role="cell"
+              [attr.aria-description]="labels.doorPathAriaDescription(doorPath(door))"
+              [title]="doorPath(door)"
+            >
               {{ door.name }}
             </span>
             <span

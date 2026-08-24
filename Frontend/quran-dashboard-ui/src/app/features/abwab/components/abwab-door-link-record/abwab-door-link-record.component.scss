@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   min-inline-size: 0;
@@ -44,4 +46,20 @@
 .abwab-door-link-record__edit svg {
   inline-size: 1rem;
   block-size: 1rem;
+}
+
+@media (min-width: bp.$qd-bp-wide-min) {
+  .abwab-door-link-record__ayahs {
+    gap: 0;
+  }
+
+  .abwab-door-link-record__card {
+    --qd-linking-ayah-card-gap: 0;
+    --qd-linking-ayah-card-padding-block: 0;
+    --qd-linking-ayah-meta-font-size: 0.6875rem;
+    --qd-linking-ayah-meta-gap: var(--qd-space-1);
+    --qd-linking-ayah-text-margin-inline: var(--qd-space-4);
+    --qd-linking-ayah-word-font-size: 1.0625rem;
+    --qd-linking-ayah-word-line-height: 1.55;
+  }
 }

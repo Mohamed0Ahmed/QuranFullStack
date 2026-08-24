@@ -10,7 +10,7 @@ import { AbwabDoorLinksFacade } from '../../state/abwab-door-links.facade';
 import { MeasuredRowVirtualScrollStrategy } from '../../../../shared/ui/virtual-scroll/measured-row-virtual-scroll.strategy';
 import { AbwabDoorLinkRecordComponent } from '../abwab-door-link-record/abwab-door-link-record.component';
 
-const ESTIMATED_RECORD_SIZE = 248;
+const ESTIMATED_RECORD_SIZE = 112;
 const RECORD_BUFFER = 960;
 
 @Component({
