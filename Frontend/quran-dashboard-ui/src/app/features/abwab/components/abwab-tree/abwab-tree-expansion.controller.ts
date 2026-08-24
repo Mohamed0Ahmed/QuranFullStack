@@ -55,10 +55,6 @@ export class AbwabTreeExpansionController {
     return next;
   }
 
-  expandAll(roots: readonly AbwabNode[]): ReadonlySet<number> {
-    return this.addIds(collectIds(roots, true));
-  }
-
   collapseAll(roots: readonly AbwabNode[]): ReadonlySet<number> {
     return this.removeIds(collectIds(roots, false));
   }
@@ -69,11 +65,6 @@ export class AbwabTreeExpansionController {
 
   collapseBranch(node: AbwabNode): ReadonlySet<number> {
     return this.removeIds(collectIds([node], false));
-  }
-
-  canExpandAll(roots: readonly AbwabNode[]): boolean {
-    const expandedIds = this.effectiveIds();
-    return collectIds(roots, true).some((id) => !expandedIds.has(id));
   }
 
   canCollapseAll(roots: readonly AbwabNode[]): boolean {
@@ -143,7 +134,6 @@ export class AbwabTreeExpansionCommands {
     private readonly commit: (expandedIds: ReadonlySet<number>) => void,
   ) {}
 
-  canExpandAll(): boolean { return this.expansion.canExpandAll(this.roots()); }
   canCollapseAll(): boolean { return this.expansion.canCollapseAll(this.roots()); }
   canExpandBranch(id: number): boolean {
     const node = this.nodeById(id);
@@ -153,7 +143,6 @@ export class AbwabTreeExpansionCommands {
     const node = this.nodeById(id);
     return node ? this.expansion.canCollapseBranch(node) : false;
   }
-  expandAll(): void { this.commit(this.expansion.expandAll(this.roots())); }
   collapseAll(): void { this.commit(this.expansion.collapseAll(this.roots())); }
   expandBranch(id: number): void { this.commitBranch(id, (node) => this.expansion.expandBranch(node)); }
   collapseBranch(id: number): void { this.commitBranch(id, (node) => this.expansion.collapseBranch(node)); }

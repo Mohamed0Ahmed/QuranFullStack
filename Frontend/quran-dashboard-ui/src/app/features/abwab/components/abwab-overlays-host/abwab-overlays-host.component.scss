@@ -4,10 +4,81 @@
   display: contents;
 }
 
-.abwab-overlays-host__menu-counts {
-  margin-inline-start: auto;
+.abwab-overlays-host__menu-card {
+  min-inline-size: 18rem;
+}
+
+.abwab-overlays-host__menu-header {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  padding: var(--qd-s-2) var(--qd-space-2);
+  border-block-end: var(--qd-hairline);
+  background: var(--qd-section-bg);
+}
+
+.abwab-overlays-host__menu-header > svg,
+.abwab-overlays-host__menu-item > svg {
+  flex: none;
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.abwab-overlays-host__menu-header > span {
+  display: grid;
+  min-inline-size: 0;
+}
+
+.abwab-overlays-host__menu-header strong {
+  overflow: hidden;
+  color: var(--qd-ink);
+  font-size: var(--qd-type-meta);
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.abwab-overlays-host__menu-header small,
+.abwab-overlays-host__menu-copy small {
   color: var(--qd-text-muted);
   font-size: var(--qd-type-caption);
+  line-height: 1.25;
+}
+
+.abwab-overlays-host__menu-group {
+  padding-block: 0;
+}
+
+.abwab-overlays-host__menu-group + .abwab-overlays-host__menu-group {
+  border-block-start: var(--qd-hairline);
+}
+
+.abwab-overlays-host__menu-item {
+  min-block-size: var(--qd-control-md);
+  gap: var(--qd-space-1);
+  padding-inline: var(--qd-space-2);
+  font-size: var(--qd-type-meta);
+}
+
+.abwab-overlays-host__menu-item:disabled {
+  opacity: 0.5;
+}
+
+.abwab-overlays-host__menu-copy {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  white-space: nowrap;
+}
+
+.abwab-overlays-host__menu-copy small {
+  margin-inline-start: auto;
+}
+
+.abwab-overlays-host__menu-group--danger {
+  padding-block-end: 0;
 }
 
 .abwab-overlays-host__compact-menu-stats {
@@ -15,6 +86,10 @@
 }
 
 @media (max-width: bp.$qd-bp-compact-max) {
+  .abwab-overlays-host__menu-item {
+    min-block-size: var(--qd-hit-target-min);
+  }
+
   .abwab-overlays-host__compact-menu-stats--visible {
     display: grid;
     gap: var(--qd-space-1);

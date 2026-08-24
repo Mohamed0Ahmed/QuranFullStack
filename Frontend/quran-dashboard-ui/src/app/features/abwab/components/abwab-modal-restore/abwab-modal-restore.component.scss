@@ -41,3 +41,10 @@
     inset-block-end: calc(var(--qd-space-4) + env(safe-area-inset-bottom, 0px));
   }
 }
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host {
+    inset-block-start: calc(env(safe-area-inset-top, 0px) + var(--qd-navbar-block-size) + var(--qd-space-2));
+    inset-block-end: auto;
+  }
+}

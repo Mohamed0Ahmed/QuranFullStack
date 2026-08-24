@@ -6,6 +6,7 @@
         qdAction="tertiary"
         class="abwab-side-panel__compact-count"
         [attr.aria-label]="linksAriaLabel(door.name)"
+        [title]="linksAriaLabel(door.name)"
         data-testid="abwab-side-panel-compact-links"
         (click)="compactLinksRequested.emit(door.id)"
       >
@@ -19,6 +20,7 @@
         qdAction="tertiary"
         class="abwab-side-panel__compact-count"
         [attr.aria-label]="relationsAriaLabel(door.name)"
+        [title]="relationsAriaLabel(door.name)"
         data-testid="abwab-side-panel-compact-relations"
         (click)="compactRelationsRequested.emit(door.id)"
       >
@@ -30,6 +32,16 @@
         </svg>
         <span aria-hidden="true">{{ relationCount() }}</span>
       </button>
+      <div
+        class="abwab-side-panel__compact-count abwab-side-panel__compact-count--static"
+        role="img"
+        [attr.aria-label]="'إجمالي الأبناء: ' + descendantCount()"
+        title="إجمالي الأبناء"
+        data-testid="abwab-side-panel-compact-descendants"
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v5M6 20v-4h12v4M6 16V9h12v7M3 4h6v5H3zM15 4h6v5h-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
+        <span aria-hidden="true">{{ descendantCount() }}</span>
+      </div>
       <button
         type="button"
         qdAction="primary"
@@ -64,7 +76,7 @@
       <dl class="abwab-side-panel__stats" aria-label="بيانات الباب المحدد">
         <div><dt>الترتيب</dt><dd>{{ door.orderValue }}</dd></div>
         <div><dt>الفروع</dt><dd>{{ directChildCount() }}</dd></div>
-        <div><dt>النسل</dt><dd>{{ descendantCount() }}</dd></div>
+        <div><dt><span aria-hidden="true">الكل</span><span class="qd-sr-only">إجمالي الأبناء</span></dt><dd>{{ descendantCount() }}</dd></div>
         <div><dt>العمق</dt><dd>{{ maxDepth() }}</dd></div>
         <div><dt>المواضع</dt><dd>{{ selectedWordCount() }}</dd></div>
         <div><dt>المصادر</dt><dd>{{ inclusionSourceCount() }}</dd></div>

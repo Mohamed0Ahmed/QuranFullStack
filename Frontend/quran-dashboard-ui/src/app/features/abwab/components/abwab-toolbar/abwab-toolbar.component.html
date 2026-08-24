@@ -19,20 +19,6 @@
               <button
                 type="button"
                 qdAction="toolbar"
-                [disabled]="!canExpandTree()"
-                [title]="treeExpandAllLabel"
-                [attr.aria-label]="treeExpandAllLabel"
-                data-testid="abwab-toolbar-tree-expand-all"
-                (click)="expandAllRequested.emit()"
-              >
-                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                  <path d="m8 3-5 5m0-5v5h5M16 3l5 5m0-5v5h-5M8 21l-5-5m0 5v-5h5M16 21l5-5m0 5v-5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-                <span class="qd-sr-only">{{ treeExpandAllLabel }}</span>
-              </button>
-              <button
-                type="button"
-                qdAction="toolbar"
                 [disabled]="!canCollapseTree()"
                 [title]="treeCollapseAllLabel"
                 [attr.aria-label]="treeCollapseAllLabel"

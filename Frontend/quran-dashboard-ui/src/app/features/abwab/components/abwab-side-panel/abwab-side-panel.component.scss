@@ -8,7 +8,7 @@
 
 .abwab-side-panel__compact-bar {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
   gap: var(--qd-space-1);
   padding: var(--qd-space-2);
   border: var(--qd-hairline);
@@ -17,9 +17,15 @@
 }
 
 .abwab-side-panel__compact-count {
-  justify-content: flex-start;
-  gap: var(--qd-space-2);
+  flex-direction: row-reverse;
+  justify-content: center;
+  gap: var(--qd-space-1);
   min-inline-size: 0;
+}
+
+.abwab-side-panel__compact-count--static {
+  display: flex;
+  align-items: center;
 }
 
 .abwab-side-panel__compact-count svg,
@@ -29,7 +35,7 @@
 }
 
 .abwab-side-panel__compact-count span {
-  margin-inline-start: auto;
+  margin-inline-start: 0;
   color: var(--qd-ink);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -217,7 +223,7 @@
     white-space: nowrap;
   }
 
-  .abwab-side-panel__compact-count:hover:not(:disabled) {
+  button.abwab-side-panel__compact-count:hover:not(:disabled) {
     border-color: transparent;
     background: var(--qd-surface-quiet);
   }

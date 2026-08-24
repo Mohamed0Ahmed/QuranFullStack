@@ -29,7 +29,6 @@ export class AbwabToolbarComponent {
   readonly totalRootCount = input(0);
   readonly hideSectionControls = input(false);
   readonly searchOnly = input(false);
-  readonly canExpandTree = input(false);
   readonly canCollapseTree = input(false);
 
   readonly sectionChanged = output<number | null>();
@@ -37,7 +36,6 @@ export class AbwabToolbarComponent {
   readonly searchQueryChanged = output<string>();
   readonly hideUnrelatedRootsChanged = output<boolean>();
   readonly searchResultSelected = output<number>();
-  readonly expandAllRequested = output<void>();
   readonly collapseAllRequested = output<void>();
 
   protected get sectionTabsAriaLabel(): string { return ABWAB_LABELS.sectionTabsAriaLabel; }
@@ -46,7 +44,6 @@ export class AbwabToolbarComponent {
   protected get treeViewLabel(): string { return ABWAB_LABELS.viewToggleTree; }
   protected get cardsViewLabel(): string { return ABWAB_LABELS.viewToggleCards; }
   protected get treeExpansionGroupAriaLabel(): string { return ABWAB_LABELS.treeExpansionGroupAriaLabel; }
-  protected get treeExpandAllLabel(): string { return ABWAB_LABELS.treeExpandAll; }
   protected get treeCollapseAllLabel(): string { return ABWAB_LABELS.treeCollapseAll; }
 
   protected readonly searchScopeHint = computed(() => {

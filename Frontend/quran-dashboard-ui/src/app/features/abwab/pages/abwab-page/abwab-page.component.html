@@ -50,14 +50,12 @@
       [hideSectionControls]="archiveParam()"
       [rootCountBySectionId]="rootCountBySectionId()"
       [totalRootCount]="totalRootCount()"
-      [canExpandTree]="tree()?.expansionCommands?.canExpandAll() ?? false"
       [canCollapseTree]="tree()?.expansionCommands?.canCollapseAll() ?? false"
       (sectionChanged)="interactions.onSectionChanged($event)"
       (viewChanged)="interactions.onViewChanged($event)"
       (searchQueryChanged)="onSearchQueryChanged($event)"
       (hideUnrelatedRootsChanged)="interactions.onHideUnrelatedRootsChanged($event)"
       (searchResultSelected)="onRevealRequested($event)"
-      (expandAllRequested)="tree()?.expansionCommands?.expandAll()"
       (collapseAllRequested)="tree()?.expansionCommands?.collapseAll()"
     />
 
