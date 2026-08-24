@@ -69,6 +69,24 @@
   overscroll-behavior-inline: contain;
 }
 
+.direct-link-workflow__step-check {
+  inline-size: 0.875rem;
+  block-size: 0.875rem;
+}
+
+.direct-link-workflow__step-marker {
+  border: var(--qd-hairline-strong);
+  background: var(--qd-surface);
+  color: var(--qd-ink-muted);
+}
+
+.direct-link-workflow__step--current .direct-link-workflow__step-marker,
+.direct-link-workflow__step--completed .direct-link-workflow__step-marker {
+  border-color: var(--qd-green-solid);
+  background: var(--qd-green-solid);
+  color: var(--qd-accent-fg);
+}
+
 .direct-link-workflow__body {
   min-block-size: 0;
   overflow: auto;

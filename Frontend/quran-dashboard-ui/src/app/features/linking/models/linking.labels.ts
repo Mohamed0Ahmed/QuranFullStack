@@ -4,6 +4,7 @@ export const LINKING_LABELS = {
   directLink: 'ربط مباشر',
   operation: 'عملية الربط',
   cancel: 'إلغاء العملية',
+  completed: 'مكتملة',
   resolve: 'تحضير الربط',
   submitting: 'يجري تنفيذ الربط',
   configureSourceHint: 'راجع آيات المصدر والكلمات المحددة قبل اختيار الباب.',

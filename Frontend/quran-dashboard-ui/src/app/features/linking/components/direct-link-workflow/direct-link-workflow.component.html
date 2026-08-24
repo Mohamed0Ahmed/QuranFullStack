@@ -26,8 +26,8 @@
           class="min-w-0 flex-1 text-qd-ink-muted compact:min-w-[8.25rem] compact:flex-none"
           [class.direct-link-workflow__step--current]="currentStep() === step"
           [class.direct-link-workflow__step--available]="canNavigateTo(step)"
-          [class.direct-link-workflow__step--completed]="currentStep() !== step && canNavigateTo(step)"
-          [class.text-qd-ink]="canNavigateTo(step)"
+          [class.direct-link-workflow__step--completed]="isStepCompleted(step)"
+          [class.text-qd-ink]="canNavigateTo(step) || isStepCompleted(step)"
           [class.text-qd-green-text]="currentStep() === step"
         >
           <button
@@ -39,14 +39,22 @@
             (click)="navigateTo(step)"
           >
             <span
-              class="inline-grid h-qd-24 w-qd-24 flex-none place-items-center rounded-qd-pill border border-qd-hairline-strong bg-qd-surface text-qd-caption tabular-nums"
-              [class.border-qd-green-solid]="currentStep() === step || (currentStep() !== step && canNavigateTo(step))"
-              [class.bg-qd-green-solid]="currentStep() === step || (currentStep() !== step && canNavigateTo(step))"
-              [class.text-qd-surface]="currentStep() === step || (currentStep() !== step && canNavigateTo(step))"
+              class="direct-link-workflow__step-marker inline-grid h-qd-24 w-qd-24 flex-none place-items-center rounded-qd-pill text-qd-caption tabular-nums"
               aria-hidden="true"
-            >{{ index + 1 }}</span>
+            >
+              @if (isStepCompleted(step)) {
+                <svg class="direct-link-workflow__step-check" viewBox="0 0 16 16" fill="none">
+                  <path d="m3.5 8.2 2.7 2.7 6.3-6.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              } @else {
+                {{ index + 1 }}
+              }
+            </span>
             <span class="grid min-w-0">
               <strong class="qd-truncate font-semibold">{{ stepLabel(step) }}</strong>
+              @if (isStepCompleted(step)) {
+                <span class="qd-sr-only">{{ labels.completed }}</span>
+              }
               @if (step === 'configure-source') {
                 @if (directDraft(); as draft) {
                   <small class="qd-truncate text-qd-caption text-qd-ink-muted" [title]="draft.label">{{ draft.label }}</small>
