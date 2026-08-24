@@ -1,15 +1,20 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   min-inline-size: 0;
 }
 
 .linking-preflight-filter-bar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--qd-z-sticky);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--qd-space-2) var(--qd-space-4);
-  padding: var(--qd-space-2) var(--qd-space-3);
+  padding: var(--qd-space-1) var(--qd-space-2);
   border-block-end: var(--qd-hairline);
   background: var(--qd-section-bg);
 }
@@ -22,8 +27,16 @@
 }
 
 .linking-preflight-filter-bar__filters {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--qd-space-1);
+  min-inline-size: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  overscroll-behavior-inline: contain;
+}
+
+.linking-preflight-filter-bar__filters qd-chip {
+  flex: 0 0 auto;
 }
 
 .linking-preflight-filter-bar__legend {
@@ -57,4 +70,29 @@
 .linking-preflight-filter-bar__swatch--removed {
   background: var(--qd-danger-tint);
   box-shadow: inset 0 0 0 1px var(--qd-danger-hairline);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-preflight-filter-bar {
+    display: grid;
+    gap: var(--qd-space-1);
+    padding: var(--qd-space-1);
+  }
+
+  .linking-preflight-filter-bar__filters {
+    inline-size: 100%;
+  }
+
+  .linking-preflight-filter-bar__legend {
+    flex-wrap: nowrap;
+    gap: var(--qd-space-2);
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .linking-preflight-filter-bar__swatch {
+    inline-size: var(--qd-s-8);
+    block-size: var(--qd-s-8);
+  }
 }

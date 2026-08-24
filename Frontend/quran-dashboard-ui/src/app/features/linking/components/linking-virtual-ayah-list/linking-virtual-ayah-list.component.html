@@ -1,7 +1,9 @@
 <section class="linking-virtual-ayah-list" [attr.aria-label]="listLabel()">
   @if (status() === 'error') {
-    <p class="linking-virtual-ayah-list__error" role="alert">{{ errorMessage() }}</p>
-    <button type="button" (click)="retry()">{{ labels.retry }}</button>
+    <div class="linking-virtual-ayah-list__error" role="alert">
+      <p>{{ errorMessage() }}</p>
+      <button qdAction="secondary" size="sm" type="button" (click)="retry()">{{ labels.retry }}</button>
+    </div>
   }
   <cdk-virtual-scroll-viewport
     class="linking-virtual-ayah-list__viewport"

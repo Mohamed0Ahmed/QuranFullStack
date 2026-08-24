@@ -3,7 +3,6 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
-import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingManualLinkShape } from '../../models/linking-manual-mushaf.models';
 import { LinkingSourceTypeOption } from '../../models/linking-source.models';
@@ -27,7 +26,6 @@ import {
     QdActionDirective,
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
-    QdNoticeComponent,
     LinkingAyahSelectionToolbarComponent,
     LinkingDoorStepComponent,
     LinkingManualShapeSelectorComponent,
@@ -65,6 +63,9 @@ export class DirectLinkWorkflowComponent {
   protected readonly execution = this.workflow.executionState;
   protected readonly showExecutionProgress = computed(() =>
     ['queued', 'running', 'finalizing'].includes(this.currentStep()),
+  );
+  protected readonly showWorkflowNavigation = computed(() =>
+    !['succeeded', 'failed', 'cancelled'].includes(this.currentStep()),
   );
   protected readonly executionProgress = computed(() => calculateExecutionProgress(
     this.execution().job?.status ?? null,

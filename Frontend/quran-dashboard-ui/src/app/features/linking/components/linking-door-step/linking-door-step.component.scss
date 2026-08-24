@@ -1,4 +1,32 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host {
-  display: block;
+  display: flex;
+  block-size: 100%;
   min-block-size: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.linking-door-step,
+qd-abwab-management-picker {
+  display: block;
+  flex: 1 1 auto;
+  inline-size: 100%;
+  block-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+}
+
+.linking-door-step {
+  box-sizing: border-box;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-door-step {
+    padding-inline: var(--qd-space-2);
+  }
 }

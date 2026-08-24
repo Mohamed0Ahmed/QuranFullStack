@@ -8,6 +8,9 @@
   position: relative;
   gap: var(--qd-space-1);
   padding: var(--qd-linking-ayah-card-padding-block, var(--qd-space-1)) var(--qd-space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .linking-ayah-card--grouped {
@@ -125,5 +128,9 @@
   .linking-ayah-card__word {
     font-size: var(--qd-linking-ayah-word-font-size, calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2)));
     line-height: 1.55;
+  }
+
+  .linking-ayah-card__text {
+    margin-inline: var(--qd-space-2);
   }
 }

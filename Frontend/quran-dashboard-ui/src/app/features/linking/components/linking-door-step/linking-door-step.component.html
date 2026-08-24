@@ -1,5 +1,7 @@
-<qd-abwab-management-picker
-  [selectedDoorId]="workflow.selectedDoorId()"
-  [selectionMode]="true"
-  (selectionChanged)="changeDoor($event)"
-/>
+<section class="linking-door-step">
+  <qd-abwab-management-picker
+    [selectedDoorId]="workflow.selectedDoorId()"
+    [selectionMode]="true"
+    (selectionChanged)="changeDoor($event)"
+  />
+</section>

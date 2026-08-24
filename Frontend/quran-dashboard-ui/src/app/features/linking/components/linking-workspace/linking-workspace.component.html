@@ -17,28 +17,54 @@
   </div>
 
   <div qdDetailsActions class="linking-workspace__actions">
+    <span
+      class="linking-workspace__selection-count"
+      [attr.aria-label]="labels.selectedSourcesCount + ': ' + selectedCount()"
+    >
+      {{ selectedCount() }}
+    </span>
     @if (selectedCount() > 0) {
-      <button qdAction="tertiary" size="sm" type="button" (click)="clearSelection()">
-        {{ labels.clearSelection }}
+      <button
+        qdAction="icon-only"
+        size="sm"
+        type="button"
+        [attr.aria-label]="labels.clearSelection"
+        [title]="labels.clearSelection"
+        (click)="clearSelection()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M5 7h10M5 12h7M5 17h5m7-4 4 4m0-4-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+        </svg>
       </button>
     }
     <button
-      qdAction="danger"
+      qdAction="icon-only"
       size="sm"
       type="button"
+      class="linking-workspace__remove-selected"
       [disabled]="selectedCount() === 0"
+      [attr.aria-label]="labels.removeSelected"
+      [title]="labels.removeSelected"
       (click)="requestRemoveSelected()"
     >
-      {{ labels.removeSelected }}
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 8h10M9 8V6h6v2m-7 0 .7 11h6.6L16 8M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
+    <span class="linking-workspace__action-separator" aria-hidden="true"></span>
     <button
-      qdAction="danger"
+      qdAction="icon-only"
       size="sm"
       type="button"
+      class="linking-workspace__clear-all"
       [disabled]="!hasRows()"
+      [attr.aria-label]="labels.clearWorkspace"
+      [title]="labels.clearWorkspace"
       (click)="requestClearAll()"
     >
-      {{ labels.clearWorkspace }}
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m5 14 7-8 7 6-6 7H8l-3-5Zm4 5-4-5m7-8 7 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
   </div>
 
@@ -78,6 +104,9 @@
       [disabled]="selectedCount() === 0"
       (click)="linkSelected()"
     >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9.5 14.5 14.5 9.5M8 8l2-2a3 3 0 0 1 4.2 0l.8.8M16 16l-2 2a3 3 0 0 1-4.2 0L9 17.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
       {{ labels.linkSelected }}
     </button>
   </div>

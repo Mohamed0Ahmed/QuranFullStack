@@ -21,6 +21,7 @@ import {
 import { Observable, Subscription } from 'rxjs';
 
 import { LinkingPreparedAyahOverlayDto } from '../../../../core/api/generated/models/linking-prepared-ayah-overlay-dto';
+import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { LinkingAyah } from '../../models/linking-ayah.models';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingSourceTypeOption } from '../../models/linking-source.models';
@@ -60,7 +61,7 @@ const ROW_BUFFER = 720;
 @Component({
   selector: 'qd-linking-virtual-ayah-list',
   standalone: true,
-  imports: [ScrollingModule, LinkingAyahCardComponent],
+  imports: [ScrollingModule, QdActionDirective, LinkingAyahCardComponent],
   providers: [
     {
       provide: VIRTUAL_SCROLL_STRATEGY,

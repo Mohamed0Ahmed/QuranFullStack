@@ -12,3 +12,9 @@ qd-linking-virtual-ayah-list {
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
 }
+
+qd-linking-preflight-filter-bar {
+  position: relative;
+  z-index: var(--qd-z-sticky);
+  min-inline-size: 0;
+}

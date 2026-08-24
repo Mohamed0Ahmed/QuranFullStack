@@ -4,37 +4,37 @@
       @if (state().sourceLabel; as sourceLabel) {
         <p class="linking-source-ayah-editor__source">{{ sourceLabel }}</p>
       }
-      <p class="linking-source-ayah-editor__ready-count">
-        <span class="linking-source-ayah-editor__wide-count">
-          {{ labels.totalAyahs }}:
+      <p class="linking-source-ayah-editor__ready-count" role="status">
+        <span class="linking-source-ayah-editor__metric">
+          <small>{{ labels.totalAyahs }}</small>
           <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
-          <span aria-hidden="true">·</span>
-          {{ labels.selectedCount }}:
+        </span>
+        <span class="linking-source-ayah-editor__metric linking-source-ayah-editor__metric--selected">
+          <small>{{ labels.selectedCount }}</small>
           <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
-          @if (facade.viewTypeCode() !== null) {
-            <span aria-hidden="true">·</span>
-            {{ labels.displayedAyahs }}:
+        </span>
+        @if (facade.viewTypeCode() !== null) {
+          <span class="linking-source-ayah-editor__metric">
+            <small>{{ labels.displayedAyahs }}</small>
             <strong class="qd-ltr-isolate tabular-nums">{{ facade.displayedAyahCount() || '—' }}</strong>
-          }
-        </span>
-        <span class="linking-source-ayah-editor__compact-count">
-          <strong class="qd-ltr-isolate tabular-nums">{{ selectedCount() }}</strong>
-          <span aria-hidden="true">/</span>
-          <strong class="qd-ltr-isolate tabular-nums">{{ state().totalAyahCount || '—' }}</strong>
-          آية
-        </span>
+          </span>
+        }
       </p>
     </div>
     <button
-      qdAction="secondary"
+      qdAction="icon-only"
       size="sm"
       type="button"
       class="linking-source-ayah-editor__back"
       [busy]="dismissPending()"
       [disabled]="dismissPending()"
+      [attr.aria-label]="labels.sourceEditorBack"
+      [title]="labels.sourceEditorBack"
       (click)="dismiss()"
     >
-      {{ labels.sourceEditorBack }}
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
   </header>
 
