@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
@@ -7,10 +8,13 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
     private readonly EnrichedMorphologyManifestReader manifestReader;
     private readonly EnrichedMorphologyReader sourceReader;
     private readonly EnrichedDimensionBuilder dimensionBuilder;
+    private readonly ApprovedRootFallbackReader? rootFallbackReader;
+    private readonly ApprovedRootFallbackApplier? rootFallbackApplier;
 
     private EnrichedMorphologyFileDigest? capturedDigest;
+    private string? capturedRootFallbackDigest;
 
-    public EnrichedMorphologyImportSource(
+    internal EnrichedMorphologyImportSource(
         EnrichedMorphologyManifestReader manifestReader,
         EnrichedMorphologyReader sourceReader,
         EnrichedDimensionBuilder dimensionBuilder)
@@ -18,6 +22,20 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
         this.manifestReader = manifestReader;
         this.sourceReader = sourceReader;
         this.dimensionBuilder = dimensionBuilder;
+    }
+
+    public EnrichedMorphologyImportSource(
+        EnrichedMorphologyManifestReader manifestReader,
+        EnrichedMorphologyReader sourceReader,
+        EnrichedDimensionBuilder dimensionBuilder,
+        ApprovedRootFallbackReader rootFallbackReader,
+        ApprovedRootFallbackApplier rootFallbackApplier)
+    {
+        this.manifestReader = manifestReader;
+        this.sourceReader = sourceReader;
+        this.dimensionBuilder = dimensionBuilder;
+        this.rootFallbackReader = rootFallbackReader;
+        this.rootFallbackApplier = rootFallbackApplier;
     }
 
     public async Task<MorphologySourceData> LoadAsync(string sourcePath, CancellationToken ct)
@@ -33,9 +51,23 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
             manifest.FullPath, manifest.RecordCount, manifest.SegmentCount, ct);
 
         capturedDigest = await manifestReader.CaptureDigestAsync(manifest.FullPath, ct);
+        var records = sourceReader.ReadAsync(manifest.FullPath, ct);
+        ApprovedRootFallbackApplication? fallbackApplication = null;
+        if (manifest.RecordCount == MorphologyInvariants.ExpectedReadableWords
+            && rootFallbackReader is not null
+            && rootFallbackApplier is not null)
+        {
+            var fallback = rootFallbackReader.Load();
+            capturedRootFallbackDigest = fallback.ArtifactSha256;
+            fallbackApplication = rootFallbackApplier.Create(fallback);
+            records = fallbackApplication.ApplyAsync(records, ct);
+        }
 
         var build = await dimensionBuilder.BuildAsync(
-            sourceReader.ReadAsync(manifest.FullPath, ct), manifest.RecordCount, ct);
+            records,
+            manifest.RecordCount,
+            ct);
+        var fallbackSummary = fallbackApplication?.Complete();
 
         if (build.Words.Count != manifest.RecordCount)
         {
@@ -78,7 +110,8 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
             // WordLemmaNormalization. The report writer only renders that section when non-null.
             CorrectionSummary: null,
             SourceKind: MorphologyImportSourceKind.Enriched,
-            LemmaAnalyses: build.ResolvedLemmaAnalyses);
+            LemmaAnalyses: build.ResolvedLemmaAnalyses,
+            RootFallbackSummary: fallbackSummary);
     }
 
     public async Task<bool> SourceUnchangedAsync(string sourcePath, CancellationToken ct)
@@ -91,6 +124,16 @@ public sealed class EnrichedMorphologyImportSource : IMorphologyImportSource
 
         // Re-resolve the manifest so the source-path semantics match LoadAsync (sourcePath is a folder).
         var manifest = await manifestReader.ReadAsync(sourcePath, ct);
-        return await manifestReader.VerifyDigestUnchangedAsync(manifest.FullPath, capturedDigest, ct);
+        var sourceUnchanged = await manifestReader.VerifyDigestUnchangedAsync(manifest.FullPath, capturedDigest, ct);
+        if (rootFallbackReader is null || capturedRootFallbackDigest is null)
+        {
+            return sourceUnchanged;
+        }
+
+        var fallbackUnchanged = string.Equals(
+            rootFallbackReader.Load().ArtifactSha256,
+            capturedRootFallbackDigest,
+            StringComparison.Ordinal);
+        return sourceUnchanged && fallbackUnchanged;
     }
 }

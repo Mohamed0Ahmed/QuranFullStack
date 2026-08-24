@@ -34,6 +34,8 @@ internal static class MorphologyImportDependencyInjection
 
         services.AddSingleton<EnrichedMorphologyManifestReader>();
         services.AddSingleton<EnrichedMorphologyReader>();
+        services.AddSingleton<ApprovedRootFallbackReader>();
+        services.AddSingleton<ApprovedRootFallbackApplier>();
         services.AddSingleton<EnrichedDimensionBuilder>();
 
         services.AddScoped<MorphologyImportSource>();

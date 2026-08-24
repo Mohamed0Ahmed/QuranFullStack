@@ -33,6 +33,12 @@ internal static class MorphologyValidationRunner
     {
         var checks = new List<MorphologyCheckResult>();
 
+        if (source.SourceKind == MorphologyImportSourceKind.Enriched
+            && source.RootFallbackSummary is not null)
+        {
+            checks.Add(BuildApprovedRootFallbackCheck(source));
+        }
+
         await AddUs1ChecksAsync(checks, connection, transaction, expectedReadableWords, ct);
         await AddUs3ChecksAsync(checks, connection, transaction, source, renderer, ct);
         await AddSegmentDimensionChecksAsync(checks, connection, transaction, source, ct);
@@ -43,6 +49,27 @@ internal static class MorphologyValidationRunner
         }
 
         return checks;
+    }
+
+    private static MorphologyCheckResult BuildApprovedRootFallbackCheck(MorphologySourceData source)
+    {
+        var summary = source.RootFallbackSummary;
+        var passed = summary is not null
+            && summary.ExpectedEntries == MorphologyInvariants.ExpectedApprovedRootFallbacks
+            && summary.AppliedEntries == MorphologyInvariants.ExpectedApprovedRootFallbacks
+            && summary.StrongEntries == 5
+            && summary.LinguisticEntries == 39
+            && summary.LexicalEntries == 1;
+
+        return new MorphologyCheckResult(
+            MorphologyInvariants.CheckApprovedRootFallback,
+            HardSeverity,
+            "applied=45, strong=5, linguistic=39, lexical=1",
+            summary is null
+                ? "missing"
+                : $"applied={summary.AppliedEntries}, strong={summary.StrongEntries}, "
+                  + $"linguistic={summary.LinguisticEntries}, lexical={summary.LexicalEntries}",
+            passed);
     }
 
     private static async Task AddUs1ChecksAsync(

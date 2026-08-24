@@ -23,6 +23,7 @@
     <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\word-lemma-normalization.json" />
     <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\word-lemma-mapping-evidence.json" />
     <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\segment-stem-corrected-arabic.json" />
+    <EmbeddedResource Include="Files\Quran\DataPipelines\Words\MorphologyImporting\Corrections\approved-root-fallbacks.json" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,7 +10,8 @@ public sealed record MorphologyImportResult(
     IReadOnlyList<string> Warnings,
     IReadOnlyList<string> Errors,
     IReadOnlyList<string> InfoNotes,
-    WordLemmaCorrectionSummary? CorrectionSummary = null);
+    WordLemmaCorrectionSummary? CorrectionSummary = null,
+    ApprovedRootFallbackSummary? RootFallbackSummary = null);
 
 public sealed record MorphologyImportTotals(
     int MorphologyRows,

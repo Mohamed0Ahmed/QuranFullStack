@@ -1,4 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphologyEnriched;
@@ -43,7 +44,12 @@ internal static bool IsArtifactPresent => File.Exists(ArtifactPath);
         var manifestReader = new EnrichedMorphologyManifestReader();
         var sourceReader = new EnrichedMorphologyReader();
         var dimensionBuilder = new EnrichedDimensionBuilder();
-        var source = new EnrichedMorphologyImportSource(manifestReader, sourceReader, dimensionBuilder);
+        var source = new EnrichedMorphologyImportSource(
+            manifestReader,
+            sourceReader,
+            dimensionBuilder,
+            new ApprovedRootFallbackReader(),
+            new ApprovedRootFallbackApplier());
         return await source.LoadAsync(SourceRoot, CancellationToken.None);
     }
 }
