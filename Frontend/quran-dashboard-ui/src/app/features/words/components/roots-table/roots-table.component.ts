@@ -60,7 +60,7 @@ import {
   ExplorerTableColumnsController,
 } from '../../state/explorer-table-columns.controller';
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 214;
+const ROW_HEIGHT_COMPACT = 127;
 let nextDisabledReasonId = 0;
 type RootTableColumnKey = MorphologyColumnKey;
 
@@ -161,7 +161,7 @@ export class RootsTableComponent {
   protected readonly columnCount = this.columnSettings.visibleColumnCount;
   protected readonly visibleColumns = this.columnSettings.visibleColumns;
   protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
-    column.key !== 'rowNumber' && column.key !== 'root',
+    column.key === 'occurrences' || column.key === 'ayahs' || column.key === 'surahs',
   ));
   protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
     .map((column) => column.key)

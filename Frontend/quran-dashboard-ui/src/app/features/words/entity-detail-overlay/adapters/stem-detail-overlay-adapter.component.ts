@@ -97,6 +97,10 @@ export class StemDetailOverlayAdapterComponent {
   }
 
   protected readonly panelState = this.controller.panelState;
+  protected readonly lemmasCount = computed(() => {
+    const lemmas = this.panelState().lemmas;
+    return lemmas === null ? null : lemmas.lemmas.length;
+  });
 
   readonly entityTitle = computed(() => this.panelState().summary?.stemText ?? '');
 

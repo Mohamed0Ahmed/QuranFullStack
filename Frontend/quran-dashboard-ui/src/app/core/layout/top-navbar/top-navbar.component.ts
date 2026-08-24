@@ -10,7 +10,6 @@ import {
   computed,
   inject,
   signal,
-  viewChild,
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
@@ -68,14 +67,14 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly linkingFocus = inject(LinkingFocusCoordinator);
   private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
-  private readonly commandLauncher = viewChild(CommandLauncherComponent);
-  private readonly commandLauncherOpen = signal(false);
+  protected readonly commandLauncherOpen = signal(false);
 
   readonly sheetOpen = signal(false);
   readonly shellOverlayOpen = computed(() => this.sheetOpen() || this.commandLauncherOpen());
 
   protected readonly locked = this.scrollLock.isLocked;
-  protected readonly toggleInert = computed(() => this.locked() && !this.sheetOpen());
+  protected readonly navbarInert = computed(() => this.locked() || this.shellOverlayOpen());
+  protected readonly toggleInert = computed(() => this.navbarInert() && !this.sheetOpen());
   protected readonly openMenuKey = signal<string | null>(null);
   protected readonly wide = signal(true);
   protected readonly canUseLinking = this.linkingAccess.canUseLinking;
@@ -130,6 +129,15 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
     if (open !== null) {
       this.closeMenu(open);
     }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent): void {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') {
+      return;
+    }
+    event.preventDefault();
+    this.openCommandLauncher();
   }
 
   @HostListener('document:click', ['$event'])
@@ -203,12 +211,12 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   openCommandLauncher(): void {
     this.openMenuKey.set(null);
     if (!this.sheetOpen()) {
-      this.commandLauncher()?.show();
+      this.commandLauncherOpen.set(true);
       return;
     }
 
     this.closeSheet();
-    afterNextRender(() => this.commandLauncher()?.show(), { injector: this.injector });
+    afterNextRender(() => this.commandLauncherOpen.set(true), { injector: this.injector });
   }
 
   setCommandLauncherOpen(open: boolean): void {

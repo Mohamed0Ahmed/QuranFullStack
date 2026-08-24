@@ -109,6 +109,10 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
   });
+  protected readonly lemmasCount = computed(() => {
+    const lemmas = this.panelState().lemmas;
+    return lemmas === null ? null : lemmas.lemmas.length;
+  });
   protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
     const state = this.panelState();
     if (state.selectedStemId === null || state.summary === null || state.summary.id !== state.selectedStemId) {

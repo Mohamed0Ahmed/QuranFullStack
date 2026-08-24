@@ -660,6 +660,40 @@ qd-sortable-header.qd-sortable-header {
     text-align: center;
   }
 
+  .unique-words-table .qd-explorer-mobile-relations,
+  .lemmas-table .qd-explorer-mobile-relations,
+  .stems-table .qd-explorer-mobile-relations {
+    inline-size: 100%;
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .unique-words-table .unique-words-table__mobile-meta-item {
+    flex: 1 1 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .unique-words-table .unique-words-table__mobile-meta-item > :last-child,
+  .lemmas-table .lemmas-table__root-link,
+  .lemmas-table .lemmas-table__root-missing,
+  .stems-table .stems-table__lemma-link,
+  .stems-table .stems-table__root-link,
+  .stems-table .stems-table__relation-missing {
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .lemmas-table .lemmas-table__root-link,
+  .lemmas-table .lemmas-table__root-missing,
+  .stems-table .stems-table__lemma-link,
+  .stems-table .stems-table__root-link,
+  .stems-table .stems-table__relation-missing {
+    flex: 1 1 0;
+  }
+
   .qd-explorer-mobile-relations > a,
   .qd-explorer-mobile-relations > span {
     min-inline-size: 0;
@@ -713,19 +747,14 @@ qd-sortable-header.qd-sortable-header {
 
   .qd-explorer-table-mobile-stats--primary qd-word-count-chip.qd-explorer-mobile-stat {
     display: block;
-    min-block-size: var(--qd-hit-target-min);
+    min-block-size: var(--qd-control-sm);
     padding: 0;
     --word-count-chip-width: 100%;
   }
 
   .qd-explorer-table-mobile-stats--primary qd-word-count-chip.qd-explorer-mobile-stat .word-count-chip {
-    min-block-size: var(--qd-hit-target-min);
-    justify-content: center;
-  }
-
-  .word-types-table .qd-explorer-table-mobile-stats--primary qd-word-count-chip.qd-explorer-mobile-stat,
-  .word-types-table .qd-explorer-table-mobile-stats--primary qd-word-count-chip.qd-explorer-mobile-stat .word-count-chip {
     min-block-size: var(--qd-control-sm);
+    justify-content: center;
   }
 
   .qd-explorer-mobile-stat__count {

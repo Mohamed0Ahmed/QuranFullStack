@@ -3,10 +3,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
-  HostListener,
   Injector,
   afterNextRender,
   computed,
+  effect,
   inject,
   input,
   output,
@@ -47,10 +47,9 @@ export class CommandLauncherComponent {
   private readonly destinationOptions = viewChildren<ElementRef<HTMLElement>>('destinationOption');
 
   readonly items = input.required<readonly NavItem[]>();
-  readonly requested = output<void>();
+  readonly open = input(false);
   readonly overlayStateChanged = output<boolean>();
 
-  protected readonly launcherOpen = signal(false);
   protected readonly query = signal('');
   protected readonly selectedIndex = signal(0);
   protected readonly destinations = computed<readonly CommandDestination[]>(() =>
@@ -73,27 +72,21 @@ export class CommandLauncherComponent {
     return destination ? this.destinationId(destination.item) : null;
   });
 
-  @HostListener('document:keydown', ['$event'])
-  protected onDocumentKeydown(event: KeyboardEvent): void {
-    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') {
-      return;
-    }
-    event.preventDefault();
-    this.requested.emit();
-  }
-
-  show(): void {
-    this.query.set('');
-    this.selectedIndex.set(0);
-    this.launcherOpen.set(true);
-    this.overlayStateChanged.emit(true);
+  constructor() {
+    effect(() => {
+      if (!this.open()) {
+        return;
+      }
+      this.query.set('');
+      this.selectedIndex.set(0);
+      this.overlayStateChanged.emit(true);
+    });
   }
 
   protected closeLauncher(): void {
-    if (!this.launcherOpen()) {
+    if (!this.open()) {
       return;
     }
-    this.launcherOpen.set(false);
     this.overlayStateChanged.emit(false);
   }
 

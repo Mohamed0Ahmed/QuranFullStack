@@ -25,7 +25,7 @@ import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-s
 import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 207;
+const ROW_HEIGHT_COMPACT = 127;
 let nextDisabledReasonId = 0;
 type StemTableColumnKey = Exclude<MorphologyColumnKey, 'stems'>;
 
@@ -121,7 +121,7 @@ export class StemsTableComponent {
     column.key === 'lemma' || column.key === 'root',
   ));
   protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
-    !['rowNumber', 'stem', 'lemma', 'root'].includes(column.key),
+    column.key === 'occurrences' || column.key === 'ayahs' || column.key === 'surahs',
   ));
   protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
     .map((column) => column.key)

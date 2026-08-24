@@ -63,7 +63,7 @@ import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-s
 import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 188;
+const ROW_HEIGHT_COMPACT = 127;
 let nextDisabledReasonId = 0;
 
 const UNIQUE_WORDS_COLUMN_ORDER = [
@@ -138,7 +138,7 @@ export class UniqueWordsTableComponent {
     column.key === 'type' || column.key === 'root',
   ));
   protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
-    !['rowNumber', 'word', 'type', 'root'].includes(column.key),
+    column.key === 'occurrences' || column.key === 'ayahs' || column.key === 'surahs',
   ));
   protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
     .map((column) => column.key)

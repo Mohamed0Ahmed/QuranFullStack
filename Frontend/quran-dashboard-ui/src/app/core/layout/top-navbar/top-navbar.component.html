@@ -1,8 +1,8 @@
 <nav class="qd-navbar" role="navigation" aria-label="التنقل الرئيسي">
   <div
     class="qd-navbar__background"
-    [attr.inert]="locked() ? '' : null"
-    [attr.aria-hidden]="locked() ? true : null"
+    [attr.inert]="navbarInert() ? '' : null"
+    [attr.aria-hidden]="navbarInert() ? true : null"
   >
     <a class="qd-navbar__brand" routerLink="/" aria-label="المنهج القرآني، لوحة التحكم">
       <span class="qd-navbar__brand-mark" aria-hidden="true">م</span>
@@ -59,28 +59,32 @@
   }
 </nav>
 
-<qd-command-launcher
-  [items]="allItems()"
-  (requested)="openCommandLauncher()"
-  (overlayStateChanged)="setCommandLauncherOpen($event)"
-/>
+@defer (when commandLauncherOpen()) {
+  <qd-command-launcher
+    [items]="allItems()"
+    [open]="commandLauncherOpen()"
+    (overlayStateChanged)="setCommandLauncherOpen($event)"
+  />
+}
 
-<qd-modal-shell
-  variant="form"
-  titleText="القائمة"
-  closeLabel="إغلاق"
-  testIdPrefix="app-navigation-sheet"
-  dialogTestId="app-navigation-sheet"
-  [open]="sheetOpen()"
-  [hasFooter]="false"
-  (dismissed)="closeSheet()"
->
-  <div class="qd-navbar__sheet-actions">
-    <ng-container *ngTemplateOutlet="chromeActions" />
-  </div>
+@defer (when sheetOpen()) {
+  <qd-modal-shell
+    variant="form"
+    titleText="القائمة"
+    closeLabel="إغلاق"
+    testIdPrefix="app-navigation-sheet"
+    dialogTestId="app-navigation-sheet"
+    [open]="sheetOpen()"
+    [hasFooter]="false"
+    (dismissed)="closeSheet()"
+  >
+    <div class="qd-navbar__sheet-actions">
+      <ng-container *ngTemplateOutlet="chromeActions" />
+    </div>
 
-  <qd-app-navigation mode="sheet" [items]="allItems()" (navigated)="closeSheet()" />
-</qd-modal-shell>
+    <qd-app-navigation mode="sheet" [items]="allItems()" (navigated)="closeSheet()" />
+  </qd-modal-shell>
+}
 
 <ng-template #chromeActions>
   <button

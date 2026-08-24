@@ -6,6 +6,8 @@
   [class.mushaf-word--selected-word]="selectedWordLocation() === word().wordLocation"
   [class.mushaf-word--ayah-selection]="isSelectedAyah()"
   [class.mushaf-word--door-highlight]="doorHighlight() !== null"
+  [style.--qd-mushaf-door-fill]="doorFill()"
+  [style.--qd-mushaf-door-marker-fill]="doorMarkerFill()"
   [attr.data-door-color-slot]="doorHighlight()?.colorSlot ?? null"
   [attr.aria-disabled]="word().isAyahMarker ? true : null"
   [attr.tabindex]="word().isAyahMarker ? -1 : null"
