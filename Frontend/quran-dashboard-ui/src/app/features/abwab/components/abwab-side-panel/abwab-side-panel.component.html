@@ -9,7 +9,10 @@
         data-testid="abwab-side-panel-compact-links"
         (click)="compactLinksRequested.emit(door.id)"
       >
-        {{ linksLabel }}: {{ linkCount() }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.5.5l2-2a5 5 0 0 0-7-7l-1.1 1.1M14 11a5 5 0 0 0-7.5-.5l-2 2a5 5 0 0 0 7 7l1.1-1.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span aria-hidden="true">{{ linkCount() }}</span>
       </button>
       <button
         type="button"
@@ -19,17 +22,26 @@
         data-testid="abwab-side-panel-compact-relations"
         (click)="compactRelationsRequested.emit(door.id)"
       >
-        {{ relationsLabel }}: {{ relationCount() }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.5" />
+          <circle cx="18" cy="6" r="3" stroke="currentColor" stroke-width="1.5" />
+          <circle cx="18" cy="18" r="3" stroke="currentColor" stroke-width="1.5" />
+          <path d="m9 11 6-4M9 13l6 4" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+        <span aria-hidden="true">{{ relationCount() }}</span>
       </button>
       <button
         type="button"
         qdAction="primary"
         size="sm"
         class="abwab-side-panel__compact-operations"
+        [attr.aria-label]="operationsHeading"
+        [title]="operationsHeading"
         data-testid="abwab-side-panel-compact-operations"
         (click)="requestOperations($event)"
       >
-        {{ operationsHeading }}
+        <span aria-hidden="true">⋯</span>
+        <span class="qd-sr-only">{{ operationsHeading }}</span>
       </button>
     </div>
   }
@@ -49,6 +61,14 @@
           {{ clearLabel }}
         </button>
       </div>
+      <dl class="abwab-side-panel__stats" aria-label="بيانات الباب المحدد">
+        <div><dt>الترتيب</dt><dd>{{ door.orderValue }}</dd></div>
+        <div><dt>الفروع</dt><dd>{{ directChildCount() }}</dd></div>
+        <div><dt>النسل</dt><dd>{{ descendantCount() }}</dd></div>
+        <div><dt>العمق</dt><dd>{{ maxDepth() }}</dd></div>
+        <div><dt>المواضع</dt><dd>{{ selectedWordCount() }}</dd></div>
+        <div><dt>المصادر</dt><dd>{{ inclusionSourceCount() }}</dd></div>
+      </dl>
     } @else {
       <p class="abwab-side-panel__empty" data-testid="abwab-side-panel-empty">{{ noSelectionHint }}</p>
     }
@@ -63,6 +83,7 @@
           qdAction="secondary"
           class="abwab-side-panel__op abwab-side-panel__op--toggle"
           [class.abwab-side-panel__op--on]="bulkMode()"
+          [attr.aria-pressed]="bulkMode()"
           data-testid="abwab-side-panel-bulk-toggle"
           [disabled]="archiveViewActive()"
           (click)="toggleBulkMode()"
@@ -76,69 +97,87 @@
       @if (canCreateDoor()) {
         <button
           type="button"
-          qdAction="tertiary"
+          qdAction="icon-only"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-add-child"
           [disabled]="selectedDoor() === null || bulkMode()"
+          [attr.aria-label]="addChildLabel"
+          [title]="addChildLabel"
           (click)="addChildRequested.emit()"
         >
-          {{ addChildLabel }}
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+          <span class="qd-sr-only">{{ addChildLabel }}</span>
         </button>
       }
       @if (canEditDoor()) {
         <button
           type="button"
-          qdAction="tertiary"
+          qdAction="icon-only"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-edit"
           [disabled]="selectedDoor() === null || bulkMode()"
+          [attr.aria-label]="editLabel"
+          [title]="editLabel"
           (click)="editRequested.emit()"
         >
-          {{ editLabel }}
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10zM13.5 7l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+          <span class="qd-sr-only">{{ editLabel }}</span>
         </button>
       }
       @if (canMoveDoor()) {
         <button
           type="button"
-          qdAction="tertiary"
+          qdAction="icon-only"
           class="abwab-side-panel__op"
           data-testid="abwab-side-panel-op-move"
           [disabled]="selectedDoor() === null || bulkMode()"
+          [attr.aria-label]="moveLabel"
+          [title]="moveLabel"
           (click)="moveRequested.emit()"
         >
-          {{ moveLabel }}
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4M3 12h18M7 8l-4 4 4 4M17 8l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <span class="qd-sr-only">{{ moveLabel }}</span>
         </button>
       }
       <button
         type="button"
-        qdAction="tertiary"
+        qdAction="icon-only"
         class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-inclusions"
         [disabled]="selectedDoor() === null || bulkMode()"
+        [attr.aria-label]="inclusionsLabel"
+        [title]="inclusionsLabel"
         (click)="requestInclusions()"
       >
-        {{ inclusionsLabel }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4 7l8 4 8-4zM4 12l8 4 8-4M4 17l8 4 8-4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+        <span class="qd-sr-only">{{ inclusionsLabel }}</span>
       </button>
       <button
         type="button"
-        qdAction="tertiary"
+        qdAction="icon-only"
         class="abwab-side-panel__op"
         data-testid="abwab-side-panel-op-relations"
         [disabled]="selectedDoor() === null || bulkMode()"
+        [attr.aria-label]="relationsLabel"
+        [title]="relationsLabel"
         (click)="relationsRequested.emit()"
       >
-        {{ relationsLabel }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.5" /><circle cx="18" cy="6" r="3" stroke="currentColor" stroke-width="1.5" /><circle cx="18" cy="18" r="3" stroke="currentColor" stroke-width="1.5" /><path d="m9 11 6-4M9 13l6 4" stroke="currentColor" stroke-width="1.5" /></svg>
+        <span class="qd-sr-only">{{ relationsLabel }}</span>
       </button>
       @if (canArchiveDoor()) {
         <button
           type="button"
-          qdAction="danger"
-          class="abwab-side-panel__op"
+          qdAction="icon-only"
+          class="abwab-side-panel__op abwab-side-panel__op--danger"
           data-testid="abwab-side-panel-op-archive"
           [disabled]="selectedDoor() === null || bulkMode()"
+          [attr.aria-label]="archiveLabel"
+          [title]="archiveLabel"
           (click)="archiveRequested.emit()"
         >
-          {{ archiveLabel }}
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M5 6l1 14h12l1-14M9 10h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+          <span class="qd-sr-only">{{ archiveLabel }}</span>
         </button>
       }
     </div>

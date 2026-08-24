@@ -1,13 +1,17 @@
 .abwab-door-modal__context {
+  margin: 0;
+  padding: var(--qd-space-1) var(--qd-space-2);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-section-bg);
   color: var(--qd-text-muted);
-  font-size: 0.8125rem;
+  font-size: var(--qd-type-caption);
 }
 
 .abwab-door-modal__discard-confirm {
   border: 1px solid var(--qd-border-accent);
   background: var(--qd-selected-bg);
   border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-3);
+  padding: var(--qd-space-2) var(--qd-space-3);
 }
 
 .abwab-door-modal__foot-slot {
@@ -18,6 +22,7 @@
 .abwab-door-modal__discard-actions,
 .abwab-door-modal__foot {
   display: flex;
+  justify-content: flex-end;
   gap: var(--qd-space-2);
 }
 

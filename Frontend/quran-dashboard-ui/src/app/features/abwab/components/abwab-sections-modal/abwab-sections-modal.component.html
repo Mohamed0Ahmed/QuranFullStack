@@ -59,43 +59,53 @@
             />
             <button
               type="button"
-              qdAction="primary"
+              qdAction="icon-only"
               class="abwab-sections-modal__row-action abwab-sections-modal__row-action--save"
+              [attr.aria-label]="saveLabel"
+              [title]="saveLabel"
               [attr.data-testid]="'abwab-sections-modal-rename-save-' + section.id"
               (click)="saveRename(section.id)"
             >
-              {{ saveLabel }}
+              <span aria-hidden="true">✓</span><span class="qd-sr-only">{{ saveLabel }}</span>
             </button>
             <button
               type="button"
-              qdAction="tertiary"
+              qdAction="icon-only"
               class="abwab-sections-modal__row-action abwab-sections-modal__row-action--cancel"
+              [attr.aria-label]="cancelLabel"
+              [title]="cancelLabel"
               (click)="cancelRename()"
             >
-              {{ cancelLabel }}
+              <span aria-hidden="true">×</span><span class="qd-sr-only">{{ cancelLabel }}</span>
             </button>
           } @else {
             <span class="abwab-sections-modal__name">{{ section.name }}</span>
             @if (canEditSection()) {
               <button
                 type="button"
-                qdAction="tertiary"
+                qdAction="icon-only"
                 class="abwab-sections-modal__row-action abwab-sections-modal__row-action--rename"
+                [attr.aria-label]="renameLabel"
+                [title]="renameLabel"
                 [attr.data-testid]="'abwab-sections-modal-rename-' + section.id"
                 (click)="startRename(section)"
               >
-                {{ renameLabel }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10zM13.5 7l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+                <span class="qd-sr-only">{{ renameLabel }}</span>
               </button>
             }
             @if (canDeleteSection()) {
               <button
                 type="button"
-                qdAction="tertiary"
+                qdAction="icon-only"
                 class="abwab-sections-modal__row-action abwab-sections-modal__row-action--delete"
+                [attr.aria-label]="deleteLabel"
+                [title]="deleteLabel"
                 [attr.data-testid]="'abwab-sections-modal-delete-' + section.id"
                 (click)="requestRemove(section.id)"
               >
-                {{ deleteLabel }}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" /></svg>
+                <span class="qd-sr-only">{{ deleteLabel }}</span>
               </button>
             }
           }

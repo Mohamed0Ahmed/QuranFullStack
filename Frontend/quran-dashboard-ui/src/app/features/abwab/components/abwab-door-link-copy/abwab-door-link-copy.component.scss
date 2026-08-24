@@ -10,8 +10,9 @@
 }
 
 .abwab-door-link-copy {
-  padding-block-start: var(--qd-space-3);
+  padding: var(--qd-space-2);
   border-block-start: 1px solid var(--qd-border);
+  background: var(--qd-section-bg);
 }
 
 .abwab-door-link-copy__header {

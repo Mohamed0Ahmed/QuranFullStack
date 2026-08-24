@@ -16,6 +16,11 @@ export class AbwabSidePanelComponent {
   readonly selectedDoor = input<AbwabDoorDto | null>(null);
   readonly linkCount = input(0);
   readonly relationCount = input(0);
+  readonly directChildCount = input(0);
+  readonly descendantCount = input(0);
+  readonly maxDepth = input(0);
+  readonly selectedWordCount = input(0);
+  readonly inclusionSourceCount = input(0);
   readonly bulkMode = input(false);
   readonly bulkCount = input(0);
   readonly bulkNames = input<readonly string[]>([]);

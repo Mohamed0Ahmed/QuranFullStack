@@ -4,7 +4,9 @@
 
 .abwab-door-picker__surface {
   margin-block-start: var(--qd-space-2);
-  padding: var(--qd-space-2);
+  max-block-size: min(26rem, 52dvh);
+  overflow: auto;
+  padding: var(--qd-space-1);
   border: 1px solid var(--qd-border);
   border-radius: var(--qd-radius-md);
   background: var(--qd-surface);

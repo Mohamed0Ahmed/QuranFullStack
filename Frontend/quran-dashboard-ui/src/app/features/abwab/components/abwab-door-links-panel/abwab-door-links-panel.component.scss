@@ -13,8 +13,6 @@
   min-inline-size: 0;
   min-block-size: 0;
   padding: var(--qd-space-3);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md);
   background: var(--qd-surface);
 }
 
@@ -33,8 +31,10 @@
 .abwab-door-links-panel__header {
   justify-content: space-between;
   gap: var(--qd-space-2) var(--qd-space-4);
-  padding-block-end: var(--qd-space-2);
+  min-block-size: var(--qd-control-lg);
+  padding: var(--qd-space-1) var(--qd-space-2);
   border-block-end: 1px solid var(--qd-border);
+  background: var(--qd-section-bg);
 }
 
 .abwab-door-links-panel__identity,

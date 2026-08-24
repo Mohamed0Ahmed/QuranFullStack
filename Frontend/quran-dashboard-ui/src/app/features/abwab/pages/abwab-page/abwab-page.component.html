@@ -13,68 +13,31 @@
     />
   }
   <div class="qd-page-shell qd-page-shell--full-data abwab-page__frame">
-    <header class="qd-page-header abwab-page__header">
-      <div>
-        <h1 class="qd-page-title">{{ pageTitle }}</h1>
-        <p class="qd-text-muted">{{ pageSubtitle }}</p>
-      </div>
-      <div class="abwab-page__header-actions">
-        <button
-          #headerFallbackFocus
-          type="button"
-          qdAction="secondary"
-          [class.abwab-page__header-btn--active]="archiveParam()"
-          data-testid="abwab-page-archive-toggle"
-          (click)="interactions.onArchiveToggle(archiveParam())"
-        >
-          {{ archiveButtonLabel }}
-        </button>
-        @if (permissions.canManageSections()) {
-          <button
-            type="button"
-            qdAction="secondary"
-            data-testid="abwab-page-manage-sections"
-            (click)="interactions.onSectionsRequested()"
-          >
-            {{ manageSectionsLabel }}
-          </button>
-        }
-        @if (!archiveParam()) {
-          <a qdAction="secondary" [routerLink]="templatesRoutePath" data-testid="abwab-page-templates">
-            {{ templatesLabel }}
-          </a>
-          @if (permissions.canCreateDoor()) {
-            <button
-              type="button"
-              qdAction="primary"
-              data-testid="abwab-page-add-root"
-              (click)="interactions.onCreateRootRequested()"
-            >
-              {{ addRootLabel }}
-            </button>
-          }
-        }
-      </div>
-    </header>
+    <qd-abwab-page-context
+      [pageTitle]="pageTitle"
+      [pageSubtitle]="pageSubtitle"
+      [archiveActive]="archiveParam()"
+      [archiveButtonLabel]="archiveButtonLabel"
+      [manageSectionsLabel]="manageSectionsLabel"
+      [templatesLabel]="templatesLabel"
+      [templatesRoutePath]="templatesRoutePath"
+      [addRootLabel]="addRootLabel"
+      [statAllDoorsLabel]="statAllDoorsLabel"
+      [statOpenScopeLabel]="statOpenScopeLabel"
+      [totalLiveDoorsCount]="totalLiveDoorsCount()"
+      [openScopeDoorsCount]="openScopeDoorsCount()"
+      [totalRootCount]="totalRootCount()"
+      [sectionCount]="sections().length"
+      [loading]="facade.isLoading() && !facade.snapshot()"
+      [hasError]="!!facade.errorMessage() && !facade.snapshot()"
+      [canManageSections]="permissions.canManageSections()"
+      [canCreateDoor]="permissions.canCreateDoor()"
+      (archiveToggleRequested)="interactions.onArchiveToggle(archiveParam())"
+      (sectionsRequested)="interactions.onSectionsRequested()"
+      (createRootRequested)="interactions.onCreateRootRequested()"
+    />
 
     <qd-abwab-announcer [message]="revealAnnouncement() ?? writeController.announcement()" />
-
-    <div class="abwab-page__stats">
-      <qd-result-count
-        data-testid="abwab-page-stat-total"
-        [count]="totalLiveDoorsCount()"
-        [labelPrefix]="statAllDoorsLabel"
-        [loading]="facade.isLoading() && !facade.snapshot()"
-        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
-      />
-      <qd-result-count
-        data-testid="abwab-page-stat-open-scope"
-        [count]="openScopeDoorsCount()"
-        [labelPrefix]="statOpenScopeLabel"
-        [loading]="facade.isLoading() && !facade.snapshot()"
-        [hasError]="!!facade.errorMessage() && !facade.snapshot()"
-      />
-    </div>
 
     <qd-abwab-toolbar
       [sections]="sections()"
@@ -130,6 +93,15 @@
     } @else {
       <div class="abwab-page__layout">
         <div class="abwab-page__main">
+          <div class="abwab-page__workspace-heading">
+            <div>
+              <strong>{{ archiveParam() ? 'أرشيف الأبواب' : viewParam() === 'cards' ? 'استعراض البطاقات' : 'شجرة الأبواب' }}</strong>
+              <span>{{ archiveParam() ? displayArchivedRoots().length : displayLiveRoots().length }} جذور ظاهرة</span>
+            </div>
+            @if (searchIsFiltering()) {
+              <span class="abwab-page__filter-state">بحث نشط · {{ searchMatchCount() }}</span>
+            }
+          </div>
           @if (archiveParam()) {
             <div class="qd-card abwab-page__tree-card">
               @if (displayArchivedRoots().length === 0) {
@@ -219,6 +191,11 @@
             [selectedDoor]="selectedDoor()"
             [linkCount]="selectedDoorNode()?.linkCount ?? 0"
             [relationCount]="selectedDoorNode()?.relationCount ?? 0"
+            [directChildCount]="selectedDoorNode()?.liveChildCount ?? 0"
+            [descendantCount]="selectedDoorNode()?.liveDescendantCount ?? 0"
+            [maxDepth]="selectedDoorNode()?.maxRelativeDepth ?? 0"
+            [selectedWordCount]="selectedDoorNode()?.selectedWordCount ?? 0"
+            [inclusionSourceCount]="selectedDoorNode()?.inclusionSourceCount ?? 0"
             [bulkMode]="selection.bulkMode()"
             [bulkCount]="selection.bulkCount()"
             [bulkNames]="bulkNames()"

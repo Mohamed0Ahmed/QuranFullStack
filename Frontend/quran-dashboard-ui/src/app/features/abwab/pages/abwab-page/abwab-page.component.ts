@@ -11,7 +11,7 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { AbwabSnapshotFacade } from '../../state/abwab-snapshot.facade';
@@ -47,8 +47,8 @@ import { AbwabSidePanelComponent } from '../../components/abwab-side-panel/abwab
 import { AbwabAnnouncerComponent } from '../../components/abwab-announcer/abwab-announcer.component';
 import { AbwabModalRestoreComponent } from '../../components/abwab-modal-restore/abwab-modal-restore.component';
 import { AbwabOverlaysHostComponent } from '../../components/abwab-overlays-host/abwab-overlays-host.component';
+import { AbwabPageContextComponent } from '../../components/abwab-page-context/abwab-page-context.component';
 import { ABWAB_ROUTE_PATH } from '../../../../core/navigation/route-paths';
-import { ExplorerResultCountComponent } from '../../../../shared/ui/result-count/explorer-result-count.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
@@ -61,7 +61,7 @@ const NO_ROOTS: readonly AbwabNode[] = [];
   selector: 'qd-abwab-page',
   standalone: true,
   imports: [
-    RouterLink,
+    AbwabPageContextComponent,
     AbwabToolbarComponent,
     AbwabTreeComponent,
     AbwabDoorLinksPanelComponent,
@@ -71,7 +71,6 @@ const NO_ROOTS: readonly AbwabNode[] = [];
     AbwabAnnouncerComponent,
     AbwabOverlaysHostComponent,
     AbwabModalRestoreComponent,
-    ExplorerResultCountComponent,
     QdSkeletonRowsComponent,
     QdActionDirective,
     QdEmptyStateComponent,
@@ -116,7 +115,7 @@ export class AbwabPageComponent implements OnInit {
   protected readonly hideUnrelatedRootsParam = signal(true);
 
   private readonly modalRestoreControl = viewChild(AbwabModalRestoreComponent);
-  private readonly headerFallbackFocus = viewChild<ElementRef<HTMLButtonElement>>('headerFallbackFocus');
+  private readonly pageContext = viewChild(AbwabPageContextComponent);
   protected readonly tree = viewChild(AbwabTreeComponent);
   protected readonly sections = computed(() => this.facade.snapshot()?.sections ?? []);
   protected readonly byId = computed(() => this.facade.snapshot()?.byId ?? new Map<number, AbwabNode>());
@@ -351,7 +350,7 @@ export class AbwabPageComponent implements OnInit {
         roving.focus();
         return;
       }
-      this.headerFallbackFocus()?.nativeElement.focus();
+      this.pageContext()?.focusFallback();
     });
   }
 
@@ -389,7 +388,7 @@ export class AbwabPageComponent implements OnInit {
   }
 
   protected onModalDiscardRequested(): void {
-    this.interactions.onModalDiscardRequested(() => this.headerFallbackFocus()?.nativeElement.focus());
+    this.interactions.onModalDiscardRequested(() => this.pageContext()?.focusFallback());
   }
 
   private focusQueued(focus: () => void): void {

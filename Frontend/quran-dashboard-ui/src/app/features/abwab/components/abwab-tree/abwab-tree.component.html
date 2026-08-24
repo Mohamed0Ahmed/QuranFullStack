@@ -4,7 +4,7 @@
   [class.a-f--selection]="selectionMode()"
 >
   <div class="a-header" aria-hidden="true" data-testid="abwab-tree-header">
-    <span></span>
+    <span class="a-header-cell a-header-name">الباب</span>
     <span class="a-header-cell a-positions relative end-qd-8">
       {{ headerPositionsLabel }}
     </span>
@@ -64,6 +64,7 @@
           [attr.tabindex]="-1"
           [attr.aria-hidden]="row.hasChildren ? null : true"
           [attr.aria-label]="row.hasChildren ? expandAriaLabel(row, node) : null"
+          [attr.title]="row.hasChildren ? expandAriaLabel(row, node) : null"
           (click)="onChevronClick($event, row)"
         >
           @if (row.hasChildren) {
@@ -202,6 +203,7 @@
               class="a-flag qd-chip qd-chip--pill"
               [class.a-flag--empty]="node.relationCount === 0"
               [attr.aria-label]="relationsAriaLabel(node.name, node.relationCount)"
+              [attr.title]="relationsAriaLabel(node.name, node.relationCount)"
               aria-haspopup="dialog"
               [attr.data-testid]="'abwab-tree-flag-rel-' + node.id"
               [attr.tabindex]="-1"
@@ -240,9 +242,10 @@
                 qdAction="row-action"
                 class="a-act a-act--add-child"
                 [attr.aria-label]="addChildAriaLabel(node.name)"
-                  [attr.data-testid]="'abwab-tree-add-child-' + node.id"
-                  [attr.tabindex]="-1"
-                  (click)="onAddChildClick($event, node.id)"
+                [attr.title]="addChildAriaLabel(node.name)"
+                [attr.data-testid]="'abwab-tree-add-child-' + node.id"
+                [attr.tabindex]="-1"
+                (click)="onAddChildClick($event, node.id)"
                 >
                   <span aria-hidden="true">＋</span>
                 </button>
@@ -252,6 +255,7 @@
                 qdAction="row-action"
                 class="a-act a-act--more-wide"
                 [attr.aria-label]="menuAriaLabel(node.name)"
+                [attr.title]="menuAriaLabel(node.name)"
                 [attr.data-testid]="'abwab-tree-more-' + node.id"
                 [attr.tabindex]="-1"
                 (click)="onMoreClick($event, node.id)"
@@ -263,6 +267,7 @@
                 qdAction="row-action"
                 class="a-act a-act--more-compact"
                 [attr.aria-label]="labels.rowDetailsAriaLabel(node.name)"
+                [attr.title]="labels.rowDetailsAriaLabel(node.name)"
                 [attr.data-testid]="'abwab-tree-details-' + node.id"
                 [attr.tabindex]="-1"
                 (click)="onDetailsClick($event, node.id)"
