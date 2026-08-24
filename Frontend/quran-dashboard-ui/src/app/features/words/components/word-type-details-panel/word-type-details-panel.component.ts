@@ -11,6 +11,7 @@ import {
   WordTypeDetailView,
 } from '../../models/word-types.models';
 import { WordTypeDetailSelectionKind } from '../../models/word-types-detail.models';
+import { wordTypeDetailTabCounts } from '../../utils/words-detail-tab-counts';
 
 @Component({
   selector: 'qd-word-type-details-panel',
@@ -27,6 +28,9 @@ export class WordTypeDetailsPanelComponent {
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
+  readonly wordsCount = input<number | null>(null);
+  readonly ayahsCount = input<number | null>(null);
+  readonly surahsCount = input<number | null>(null);
   readonly loading = input(false);
   readonly notFound = input(false);
   readonly linkingSource = input<LinkingSourceDescriptor | null>(null);
@@ -50,5 +54,8 @@ export class WordTypeDetailsPanelComponent {
       key,
       ...this.presentation.tabs[key],
     })),
+  );
+  protected readonly tabCounts = computed(() =>
+    wordTypeDetailTabCounts(this.wordsCount(), this.ayahsCount(), this.surahsCount()),
   );
 }

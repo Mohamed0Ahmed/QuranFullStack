@@ -1,0 +1,25 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.linking-quick-add__button {
+  border-color: transparent;
+  background: transparent;
+  color: var(--qd-ink-muted);
+}
+
+.linking-quick-add__button svg {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .linking-quick-add__button {
+    --qd-action-size: var(--qd-hit-target-min);
+
+    min-inline-size: var(--qd-hit-target-min);
+  }
+}

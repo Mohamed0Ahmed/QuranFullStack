@@ -5,14 +5,11 @@
     role="group"
     aria-label="خيارات الربط"
   >
-    <button qdAction="secondary" size="sm" type="button" [attr.aria-label]="addActionLabel()" [attr.data-linking-source-action]="sourceKey()" (click)="addToWorkspace()">
+    <button qdAction="primary" size="sm" type="button" [attr.aria-label]="addActionLabel()" [attr.data-linking-source-action]="sourceKey()" (click)="addToWorkspace()">
       {{ labels.addToWorkspace }}
     </button>
-    <button qdAction="tertiary" size="sm" type="button" [attr.aria-label]="directActionLabel()" [attr.data-linking-source-action]="sourceKey()" (click)="startDirectLink()">
+    <button qdAction="warning" size="sm" type="button" [attr.aria-label]="directActionLabel()" [attr.data-linking-source-action]="sourceKey()" (click)="startDirectLink()">
       {{ labels.directLink }}
     </button>
-    @if (feedback(); as message) {
-      <span class="qd-sr-only" aria-live="polite">{{ message }}</span>
-    }
   </div>
 }

@@ -260,7 +260,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     this.explorerFacade.selectTableView(view);
   }
 
-  private currentScope(): WordTypeDetailScope {
+  protected readonly currentScope = computed<WordTypeDetailScope>(() => {
     const query = this.listState().query;
     return {
       type: query.type,
@@ -269,7 +269,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
       tense: query.tense,
       voice: query.voice,
     };
-  }
+  });
 
   private matchesWordIdentity(row: WordTableRowDto, selection: Extract<WordTypeDetailSelection, { kind: 'word' }>): boolean {
     const identity = normalizeWordTableRow(row);

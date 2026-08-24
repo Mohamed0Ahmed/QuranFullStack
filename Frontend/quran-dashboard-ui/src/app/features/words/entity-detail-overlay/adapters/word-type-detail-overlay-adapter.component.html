@@ -27,6 +27,8 @@
   [kind]="'word'"
   [view]="effectiveView()"
   [selectionTitle]="panelState().summary?.displayText ?? ''"
+  [ayahsCount]="panelState().summary?.ayahsCount ?? null"
+  [surahsCount]="panelState().summary?.surahsCount ?? null"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
 import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
@@ -12,7 +12,8 @@ import {
   ROOTS_PANEL_TAB_LABELS,
 } from '../../models/roots.labels';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
-import { ROOT_VIEW_KEYS, RootView } from '../../models/roots.models';
+import { ROOT_VIEW_KEYS, RootSummaryDto, RootView, RootWordView } from '../../models/roots.models';
+import { rootDetailTabCounts } from '../../utils/words-detail-tab-counts';
 
 @Component({
   selector: 'qd-root-details-panel',
@@ -28,6 +29,8 @@ export class RootDetailsPanelComponent {
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
+  readonly summary = input<RootSummaryDto | null>(null);
+  readonly wordView = input<RootWordView>('simple');
   readonly loading = input(false);
   readonly notFound = input(false);
   readonly notFoundMessage = input('');
@@ -57,4 +60,5 @@ export class RootDetailsPanelComponent {
     label: ROOTS_PANEL_TAB_LABELS[key],
     aria: ROOTS_PANEL_TAB_ARIA[key],
   }));
+  protected readonly tabCounts = computed(() => rootDetailTabCounts(this.summary(), this.wordView()));
 }

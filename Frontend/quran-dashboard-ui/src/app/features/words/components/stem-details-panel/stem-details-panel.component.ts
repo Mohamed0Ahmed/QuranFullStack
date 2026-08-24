@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
 import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
@@ -12,7 +12,8 @@ import {
   STEMS_PANEL_TAB_LABELS,
 } from '../../models/stems.labels';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
-import { STEM_VIEW_KEYS, StemView } from '../../models/stems.models';
+import { STEM_VIEW_KEYS, StemSummaryDto, StemView, StemWordView } from '../../models/stems.models';
+import { stemDetailTabCounts } from '../../utils/words-detail-tab-counts';
 
 @Component({
   selector: 'qd-stem-details-panel',
@@ -28,6 +29,9 @@ export class StemDetailsPanelComponent {
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
+  readonly summary = input<StemSummaryDto | null>(null);
+  readonly wordView = input<StemWordView>('simple');
+  readonly lemmasCount = input<number | null>(null);
   readonly loading = input(false);
   readonly notFound = input(false);
   readonly notFoundMessage = input('');
@@ -57,4 +61,7 @@ export class StemDetailsPanelComponent {
     label: STEMS_PANEL_TAB_LABELS[key],
     aria: STEMS_PANEL_TAB_ARIA[key],
   }));
+  protected readonly tabCounts = computed(() =>
+    stemDetailTabCounts(this.summary(), this.wordView(), this.lemmasCount()),
+  );
 }

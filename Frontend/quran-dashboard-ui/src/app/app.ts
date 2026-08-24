@@ -2,13 +2,14 @@ import { Component, computed, inject } from '@angular/core';
 import { AppShellComponent } from './core/layout/app-shell/app-shell.component';
 import { DetailOverlayHistoryService } from './core/navigation/detail-overlay/detail-overlay-history.service';
 import { LinkingWorkspaceHostComponent } from './features/linking/components/linking-workspace-host/linking-workspace-host.component';
+import { LinkingAddFeedbackToastComponent } from './features/linking/components/linking-add-feedback-toast/linking-add-feedback-toast.component';
 import { LinkingWorkspaceStore } from './features/linking/state/linking-workspace.store';
 import { EntityDetailOverlayHostComponent } from './features/words/entity-detail-overlay/entity-detail-overlay-host.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [AppShellComponent, EntityDetailOverlayHostComponent, LinkingWorkspaceHostComponent],
+  imports: [AppShellComponent, EntityDetailOverlayHostComponent, LinkingAddFeedbackToastComponent, LinkingWorkspaceHostComponent],
   template: `
     <qd-app-shell
       [attr.inert]="hasForegroundDialog() ? '' : null"
@@ -23,6 +24,7 @@ import { EntityDetailOverlayHostComponent } from './features/words/entity-detail
     @defer (when linkingOpen(); prefetch on idle) {
       <qd-linking-workspace-host />
     }
+    <qd-linking-add-feedback-toast />
   `,
 })
 export class App {

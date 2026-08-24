@@ -12,6 +12,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { LinkingQuickAddComponent } from '../../../linking/components/linking-quick-add/linking-quick-add.component';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
 import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
 import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
@@ -49,6 +50,10 @@ import {
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+import {
+  linkingSourcesByRow,
+  rootLinkingSource,
+} from '../../utils/words-linking-source-descriptor';
 import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
 import {
   ExplorerTableColumnDefinition,
@@ -95,6 +100,7 @@ export interface RootCountOpenedEvent {
   imports: [
     NgTemplateOutlet,
     ExplorerTableColumnSettingsComponent,
+    LinkingQuickAddComponent,
     QdActionDirective,
     QdDataTableComponent,
     QdSortableHeaderComponent,
@@ -167,6 +173,9 @@ export class RootsTableComponent {
     return 'ready';
   });
   protected readonly selectedRow = computed(() => this.rows().find((row) => row.id === this.selectedRootId()) ?? null);
+  protected readonly linkingSources = computed(() =>
+    linkingSourcesByRow(this.rows(), rootLinkingSource),
+  );
   protected readonly rowIdentity = (row: RootListItemViewModel): number => row.id;
   protected readonly sameRow = (row: RootListItemViewModel, selected: RootListItemViewModel | null): boolean => row.id === selected?.id;
   protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
@@ -195,6 +204,10 @@ export class RootsTableComponent {
       return;
     }
     this.rowSelected.emit(root);
+  }
+
+  protected linkingSource(row: RootListItemViewModel) {
+    return this.linkingSources().get(row) ?? rootLinkingSource(row);
   }
 
   protected openCount(

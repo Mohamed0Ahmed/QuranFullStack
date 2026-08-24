@@ -5,7 +5,6 @@ import { LinkingManualMushafAyahReference } from '../models/linking-manual-musha
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingManualAyahMetadataReader } from '../data-access/linking-manual-ayah-metadata.reader';
-import { linkingSourceKey } from '../utils/linking-source-key';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkflowFacade } from './linking-workflow.facade';
@@ -158,14 +157,13 @@ export class ManualMushafSelectionStore {
     if (source === null) {
       return;
     }
-    const existing = this.workspace.items().some((item) => item.sourceKey === linkingSourceKey(source));
-    const sourceKey = this.workspace.addSource(source);
-    if (sourceKey === null) {
+    const result = this.workspace.addSource(source);
+    if (result === null) {
       this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionHandoffError);
       return;
     }
 
-    this.reset(existing ? LINKING_LABELS.alreadyInWorkspace : LINKING_LABELS.addedToWorkspace);
+    this.reset();
   }
 
   startDirectLink(): void {

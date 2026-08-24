@@ -1,0 +1,51 @@
+@use 'breakpoints' as bp;
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .qd-explorer-layout {
+    --qd-pagination-margin-block-start: var(--qd-space-1);
+    --qd-pagination-slot-block-size: calc(var(--qd-control-sm) + var(--qd-space-1));
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination {
+    gap: var(--qd-s-2);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__controls {
+    gap: var(--qd-space-1);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__pages {
+    gap: var(--qd-s-2);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__nav,
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__page,
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__jump-input,
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__jump-submit {
+    block-size: var(--qd-control-sm);
+    min-block-size: var(--qd-control-sm);
+    padding-block: 0;
+    font-size: var(--qd-type-meta);
+    line-height: var(--qd-type-meta-lh);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__nav {
+    min-inline-size: 4.5rem;
+    padding-inline: var(--qd-space-2);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__page {
+    min-inline-size: var(--qd-control-sm);
+    padding-inline: var(--qd-space-1);
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__jump-input {
+    inline-size: 4.25rem;
+    min-inline-size: 4.25rem;
+    max-inline-size: 4.25rem;
+  }
+
+  .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__jump-submit {
+    padding-inline: var(--qd-space-2);
+  }
+}

@@ -44,7 +44,10 @@
         @case ('rowNumber') { <div class="stems-table__cell qd-explorer-table__cell stems-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div> }
         @case ('stem') {
           <div class="stems-table__cell qd-explorer-table__cell stems-table__stem-cell" role="cell">
-            <button qdAction="row-action" size="sm" type="button" class="stems-table__stem qd-interactive-surface" data-testid="stems-table-stem-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="stems-table__display">{{ row.displayText }}</span></button>
+            <div class="qd-words-linking-identity">
+              <button qdAction="row-action" size="sm" type="button" class="stems-table__stem qd-interactive-surface" data-testid="stems-table-stem-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="stems-table__display">{{ row.displayText }}</span></button>
+              <qd-linking-quick-add [source]="linkingSource(row)" testId="stems-table-quick-add" />
+            </div>
           </div>
         }
         @case ('lemma') { <div class="stems-table__cell qd-explorer-table__cell stems-table__lemma-cell stems-table__lemma-cell--wide" role="cell"><ng-container *ngTemplateOutlet="lemmaCell; context: { row: row }" /></div> }
@@ -59,19 +62,22 @@
       <div class="stems-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
     }
     <div class="stems-table__compact-identity qd-explorer-mobile-identity">
-      <button
-        qdAction="row-action"
-        size="sm"
-        type="button"
-        class="stems-table__stem stems-table__stem--compact qd-interactive-surface"
-        data-testid="stems-table-stem-button"
-        [disabled]="row.simpleWordsCount === 0"
-        [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
-        [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
-        (click)="selectRow(row)"
-      >
-        <span class="stems-table__display">{{ row.displayText }}</span>
-      </button>
+      <div class="qd-words-linking-identity">
+        <button
+          qdAction="row-action"
+          size="sm"
+          type="button"
+          class="stems-table__stem stems-table__stem--compact qd-interactive-surface"
+          data-testid="stems-table-stem-button"
+          [disabled]="row.simpleWordsCount === 0"
+          [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
+          [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
+          (click)="selectRow(row)"
+        >
+          <span class="stems-table__display">{{ row.displayText }}</span>
+        </button>
+        <qd-linking-quick-add [source]="linkingSource(row)" testId="stems-table-mobile-quick-add" />
+      </div>
       @if (mobileRelationColumns().length > 0) {
         <div class="qd-explorer-mobile-relations">
           @for (column of mobileRelationColumns(); track column.key) {

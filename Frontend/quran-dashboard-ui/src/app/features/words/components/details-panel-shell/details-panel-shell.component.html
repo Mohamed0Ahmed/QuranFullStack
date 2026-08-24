@@ -1,6 +1,7 @@
 <ng-template #panelBody>
   <qd-details-workspace
     #workspace
+    class="qd-words-details-workspace"
     [identity]="frameless() ? '' : selectionTitle()"
     variant="entity"
     [hasHeader]="!frameless()"
@@ -44,6 +45,7 @@
 
     <qd-tabs
       qdDetailsTabs
+      class="qd-words-detail-tabs"
       layout="tracks"
       [ariaLabel]="panelLabel()"
       dir="rtl"
@@ -60,11 +62,18 @@
           [disabled]="tabDisabled(tab.key)"
           [attr.disabled]="tabDisabled(tab.key) ? '' : null"
           [attr.data-testid]="testIdPrefix() + '-tab-' + tab.key"
-          [attr.aria-label]="tab.aria"
+          [attr.aria-label]="tabAriaLabel(tab)"
           (focus)="selectView(tab.key)"
           (click)="selectView(tab.key)"
         >
-          {{ tab.label }}
+          <span>{{ tab.label }}</span>
+          @if (hasTabCount(tab.key)) {
+            <span
+              class="qd-tabs__count"
+              [class.qd-tabs__count--unknown]="tabCount(tab.key) === null"
+              aria-hidden="true"
+            >{{ tabCountLabel(tab.key) }}</span>
+          }
         </button>
       }
     </qd-tabs>

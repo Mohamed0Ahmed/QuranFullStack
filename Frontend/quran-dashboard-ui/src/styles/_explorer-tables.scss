@@ -68,6 +68,20 @@
   text-align: center;
 }
 
+.qd-words-linking-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-s-2);
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.qd-words-linking-identity > .qd-action.qd-action--row-action {
+  flex: 1 1 auto;
+  inline-size: auto;
+  min-inline-size: 0;
+}
+
 .qd-explorer-table-column-settings-anchor {
   display: flex;
   flex: 0 0 auto;
@@ -616,6 +630,12 @@ qd-sortable-header.qd-sortable-header {
     min-block-size: var(--qd-control-sm);
     padding-inline: 0;
     text-align: center;
+  }
+
+  .qd-explorer-mobile-identity .qd-words-linking-identity > .qd-action.qd-action--row-action {
+    flex: 1 1 auto;
+    inline-size: auto;
+    min-inline-size: 0;
   }
 
   .roots-table .qd-explorer-mobile-identity .roots-table__display,

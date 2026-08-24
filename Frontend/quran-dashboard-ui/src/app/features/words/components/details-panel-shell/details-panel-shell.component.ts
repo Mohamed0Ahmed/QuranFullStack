@@ -43,6 +43,7 @@ export class QdDetailsPanelShellComponent<TKey extends string> {
   readonly emptySelectionLabel = input.required<string>();
   readonly notFoundLabel = input.required<string>();
   readonly tabs = input.required<readonly QdDetailsPanelTab<TKey>[]>();
+  readonly tabCounts = input<Partial<Record<TKey, number | null>>>({});
   readonly view = input.required<TKey>();
   readonly tabsTrackFloor = input('');
   readonly inline = input(true);
@@ -87,6 +88,24 @@ export class QdDetailsPanelShellComponent<TKey extends string> {
 
   protected isActive(key: TKey): boolean {
     return this.view() === key;
+  }
+
+  protected hasTabCount(key: TKey): boolean {
+    return Object.prototype.hasOwnProperty.call(this.tabCounts(), key);
+  }
+
+  protected tabCount(key: TKey): number | null {
+    return this.tabCounts()[key] ?? null;
+  }
+
+  protected tabCountLabel(key: TKey): string {
+    const count = this.tabCount(key);
+    return count === null ? '' : `${count}`;
+  }
+
+  protected tabAriaLabel(tab: QdDetailsPanelTab<TKey>): string {
+    const count = this.tabCount(tab.key);
+    return count === null ? tab.aria : `${tab.aria}، ${count}`;
   }
 
   protected selectView(key: TKey): void {

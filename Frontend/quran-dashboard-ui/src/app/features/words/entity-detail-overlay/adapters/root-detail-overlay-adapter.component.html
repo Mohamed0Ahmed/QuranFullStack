@@ -52,6 +52,8 @@
   [frameless]="true"
   [view]="frame().view"
   [selectionTitle]="panelState().summary?.rootText ?? ''"
+  [summary]="panelState().summary"
+  [wordView]="frame().wordView"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

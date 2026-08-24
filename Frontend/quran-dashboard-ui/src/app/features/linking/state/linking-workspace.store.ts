@@ -12,7 +12,6 @@ import {
   LinkingWorkspaceSnapshot,
   LinkingWorkspaceSurface,
 } from '../models/linking-workspace.models';
-import { linkingSourceKey } from '../utils/linking-source-key';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingOperationDraftStore } from './linking-operation-draft.store';
 import { LinkingRecoveryStore } from './linking-recovery.store';
@@ -25,6 +24,8 @@ import {
   LinkingWorkspaceSyncRunner,
 } from './linking-workspace-sync.runner';
 import { LinkingWorkspaceSourceTypesUpdater } from './linking-workspace-source-types.updater';
+import { LinkingWorkspaceSourceAdder } from './linking-workspace-source-adder';
+import { LinkingWorkspaceAddResult } from '../models/linking-workspace-add.models';
 
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkspaceStore {
@@ -36,6 +37,7 @@ export class LinkingWorkspaceStore {
   private readonly recovery = inject(LinkingRecoveryStore);
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly sourceTypes = inject(LinkingWorkspaceSourceTypesUpdater);
+  private readonly sourceAdder = inject(LinkingWorkspaceSourceAdder);
   private readonly repository: LinkingWorkspaceRepository = inject(HttpLinkingWorkspaceRepository);
   private readonly itemsSignal = signal<readonly LinkingWorkspaceItem[]>([]);
   private readonly workspaceVersionSignal = signal<number | null>(null);
@@ -73,6 +75,11 @@ export class LinkingWorkspaceStore {
   });
 
   constructor() {
+    this.sourceAdder.connect(
+      () => this.canMutate(),
+      (sourceKey) => this.findItem(sourceKey) !== null,
+      (source) => this.enqueue((version) => this.repository.addSource(source, version)),
+    );
     this.sync.connect({
       isCurrentActor: (actorSub, actorGeneration) => this.isCurrentActor(actorSub, actorGeneration),
       workspaceVersion: () => this.workspaceVersionSignal(),
@@ -156,14 +163,7 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  addSource(source: LinkingSourceDescriptor): string | null {
-    if (!this.canMutate()) {
-      return null;
-    }
-    const sourceKey = linkingSourceKey(source);
-    this.enqueue((version) => this.repository.addSource(source, version));
-    return sourceKey;
-  }
+  addSource(source: LinkingSourceDescriptor): LinkingWorkspaceAddResult | null { return this.sourceAdder.add(source); }
 
   checkSource(sourceKey: string): void {
     if (!this.canMutate() || this.findItem(sourceKey) === null) {
@@ -536,11 +536,11 @@ export class LinkingWorkspaceStore {
     }
   }
 
-  private enqueue(operation: LinkingWorkspaceOperation): void {
+  private enqueue(operation: LinkingWorkspaceOperation): Promise<void> {
     const actorSub = this.currentActorSub();
-    if (actorSub !== null) {
-      this.sync.run(actorSub, this.actorGeneration, operation);
-    }
+    return actorSub === null
+      ? Promise.resolve()
+      : this.sync.run(actorSub, this.actorGeneration, operation);
   }
 
   private applySnapshot(snapshot: LinkingWorkspaceSnapshot): void {

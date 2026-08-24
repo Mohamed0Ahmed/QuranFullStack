@@ -43,7 +43,10 @@
         @case ('rowNumber') { <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div> }
         @case ('word') {
           <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__word-cell" role="cell">
-            <button qdAction="row-action" size="sm" type="button" class="unique-words-table__word qd-interactive-surface" data-testid="unique-words-table-word-button" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="unique-words-table__display">{{ row.displayText }}</span></button>
+            <div class="qd-words-linking-identity">
+              <button qdAction="row-action" size="sm" type="button" class="unique-words-table__word qd-interactive-surface" data-testid="unique-words-table-word-button" [disabled]="row.surahsCount === 0" [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="unique-words-table__display">{{ row.displayText }}</span></button>
+              <qd-linking-quick-add [source]="linkingSource(row)" testId="unique-words-table-quick-add" />
+            </div>
           </div>
         }
         @case ('type') { <div class="unique-words-table__cell qd-explorer-table__cell unique-words-table__text-cell unique-words-table__text-cell--wide" role="cell"><span class="unique-words-table__text" [attr.data-word-type-code]="row.primaryWordTypeCode">{{ wordTypeLabel(row) }}</span></div> }
@@ -58,19 +61,22 @@
       <div class="unique-words-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
     }
     <div class="qd-explorer-mobile-identity">
-      <button
-        qdAction="row-action"
-        size="sm"
-        type="button"
-        class="unique-words-table__word unique-words-table__word--compact qd-interactive-surface"
-        data-testid="unique-words-table-word-button"
-        [disabled]="row.surahsCount === 0"
-        [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
-        [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
-        (click)="selectRow(row)"
-      >
-        <span class="unique-words-table__display">{{ row.displayText }}</span>
-      </button>
+      <div class="qd-words-linking-identity">
+        <button
+          qdAction="row-action"
+          size="sm"
+          type="button"
+          class="unique-words-table__word unique-words-table__word--compact qd-interactive-surface"
+          data-testid="unique-words-table-word-button"
+          [disabled]="row.surahsCount === 0"
+          [attr.aria-disabled]="row.surahsCount === 0 ? 'true' : null"
+          [attr.aria-describedby]="row.surahsCount === 0 ? disabledReasonId : null"
+          (click)="selectRow(row)"
+        >
+          <span class="unique-words-table__display">{{ row.displayText }}</span>
+        </button>
+        <qd-linking-quick-add [source]="linkingSource(row)" testId="unique-words-table-mobile-quick-add" />
+      </div>
       @if (mobileRelationColumns().length > 0) {
         <div class="qd-explorer-mobile-relations">
           @for (column of mobileRelationColumns(); track column.key) {

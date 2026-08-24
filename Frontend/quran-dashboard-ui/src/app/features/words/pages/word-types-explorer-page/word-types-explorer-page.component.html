@@ -126,6 +126,7 @@
     >
       <qd-word-types-table
         [rows]="listState().rows"
+        [scope]="currentScope()"
         [tableView]="listState().query.tableView"
         [loading]="listState().status === 'loading'"
         [status]="listState().status"
@@ -183,6 +184,9 @@
         [kind]="detailKind()"
         [emptySelection]="emptySelection()"
         [selectionTitle]="selectionTitle()"
+        [wordsCount]="activeSummary()?.occurrences ?? null"
+        [ayahsCount]="activeSummary()?.ayahs ?? null"
+        [surahsCount]="activeSummary()?.surahs ?? null"
         [linkingSource]="linkingSource()"
         [loading]="panelState().status === 'loading'"
         [notFound]="panelState().status === 'notFound'"

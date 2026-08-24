@@ -48,9 +48,12 @@
         }
         @case ('root') {
           <div class="roots-table__cell qd-explorer-table__cell roots-table__word-cell" role="cell">
-            <button qdAction="row-action" size="sm" type="button" class="roots-table__word qd-interactive-surface" data-testid="roots-table-root-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)">
-              <span class="roots-table__display">{{ row.displayText }}</span>
-            </button>
+            <div class="qd-words-linking-identity">
+              <button qdAction="row-action" size="sm" type="button" class="roots-table__word qd-interactive-surface" data-testid="roots-table-root-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)">
+                <span class="roots-table__display">{{ row.displayText }}</span>
+              </button>
+              <qd-linking-quick-add [source]="linkingSource(row)" testId="roots-table-quick-add" />
+            </div>
           </div>
         }
         @default { <ng-container *ngTemplateOutlet="metricCell; context: { row: row, column: column.key }" /> }
@@ -63,19 +66,22 @@
       <div class="roots-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
     }
     <div class="qd-explorer-mobile-identity">
-      <button
-        qdAction="row-action"
-        size="sm"
-        type="button"
-        class="roots-table__word roots-table__word--compact qd-interactive-surface"
-        data-testid="roots-table-root-button"
-        [disabled]="row.simpleWordsCount === 0"
-        [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
-        [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
-        (click)="selectRow(row)"
-      >
-        <span class="roots-table__display">{{ row.displayText }}</span>
-      </button>
+      <div class="qd-words-linking-identity">
+        <button
+          qdAction="row-action"
+          size="sm"
+          type="button"
+          class="roots-table__word roots-table__word--compact qd-interactive-surface"
+          data-testid="roots-table-root-button"
+          [disabled]="row.simpleWordsCount === 0"
+          [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
+          [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
+          (click)="selectRow(row)"
+        >
+          <span class="roots-table__display">{{ row.displayText }}</span>
+        </button>
+        <qd-linking-quick-add [source]="linkingSource(row)" testId="roots-table-mobile-quick-add" />
+      </div>
     </div>
     <div class="qd-explorer-table-mobile-stats qd-explorer-table-mobile-stats--primary">
       @for (column of mobileColumns(); track column.key) {

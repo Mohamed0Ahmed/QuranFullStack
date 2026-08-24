@@ -48,16 +48,19 @@
       <span class="word-types-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</span>
     }
     <div class="qd-explorer-mobile-identity">
-      <button
-        qdAction="row-action"
-        size="sm"
-        type="button"
-        class="word-types-table__word qd-interactive-surface"
-        data-testid="word-types-table-identity-button"
-        (click)="selectRow(row)"
-      >
-        {{ row.displayText }}
-      </button>
+      <div class="qd-words-linking-identity">
+        <button
+          qdAction="row-action"
+          size="sm"
+          type="button"
+          class="word-types-table__word qd-interactive-surface"
+          data-testid="word-types-table-identity-button"
+          (click)="selectRow(row)"
+        >
+          {{ row.displayText }}
+        </button>
+        <qd-linking-quick-add [source]="linkingSource(row)" testId="word-types-table-mobile-quick-add" />
+      </div>
       @if (row.kind === 'word' && mobileMetaColumns().length > 0) {
         <div class="qd-explorer-mobile-relations">
           @for (column of mobileMetaColumns(); track column.key) {
@@ -140,7 +143,10 @@
       @case ('rowNumber') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</span> }
       @case ('identity') {
         <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--word" role="cell" [attr.data-label]="dimensionHeader()">
-          <button qdAction="row-action" size="sm" type="button" class="word-types-table__word qd-interactive-surface" data-testid="word-types-table-identity-button" (click)="selectRow(row)">{{ row.displayText }}</button>
+          <span class="qd-words-linking-identity">
+            <button qdAction="row-action" size="sm" type="button" class="word-types-table__word qd-interactive-surface" data-testid="word-types-table-identity-button" (click)="selectRow(row)">{{ row.displayText }}</button>
+            <qd-linking-quick-add [source]="linkingSource(row)" testId="word-types-table-quick-add" />
+          </span>
         </span>
       }
       @case ('type') { @if (row.kind === 'word') { <span class="word-types-table__cell qd-explorer-table__cell word-types-table__cell--meta" role="cell" [attr.data-label]="headers.type"><span class="word-types-table__meta-text">{{ row.typeLabel.ar }}</span></span> } }

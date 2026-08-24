@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { LINKING_LABELS } from '../../models/linking.labels';
@@ -29,7 +29,6 @@ export class QuranSourceLinkingActionsComponent {
 
   protected readonly labels = LINKING_LABELS;
   protected readonly canUseLinking = this.access.canUseLinking;
-  protected readonly feedback = signal<string | null>(null);
   protected readonly sourceKey = computed(() => linkingSourceKey(this.source()));
   protected readonly sourcePresentation = computed(() => linkingSourcePresentation(this.source()));
   protected readonly sourceDescription = computed(
@@ -48,15 +47,7 @@ export class QuranSourceLinkingActionsComponent {
     }
 
     this.focus.capture('inline-source-action');
-    const existing = this.workspace.itemCount();
-    const sourceKey = this.workspace.addSource(this.source());
-    if (sourceKey === null) {
-      return;
-    }
-    const result = this.workspace.itemCount() === existing
-      ? this.labels.alreadyInWorkspace
-      : this.labels.addedToWorkspace;
-    this.feedback.set(`${result} ${this.sourceDescription()}.`);
+    this.workspace.addSource(this.source());
   }
 
   protected startDirectLink(): void {
@@ -65,7 +56,6 @@ export class QuranSourceLinkingActionsComponent {
     }
 
     this.focus.capture('inline-source-action');
-    this.feedback.set(null);
     this.workflow.startFromSource(this.source());
   }
 }
