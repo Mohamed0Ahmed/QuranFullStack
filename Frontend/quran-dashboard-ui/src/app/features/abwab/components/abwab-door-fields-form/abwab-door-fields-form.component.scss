@@ -1,5 +1,36 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qd-space-3);
+}
+
 .abwab-door-fields-form__field {
-  margin-block-end: var(--qd-space-3);
+  min-inline-size: 0;
+}
+
+.abwab-door-fields-form__field--description,
+.abwab-door-fields-form__field--ayah,
+.abwab-door-fields-form__field--name,
+.abwab-door-fields-form__general-error,
+.abwab-door-fields-form__chips {
+  grid-column: 1 / -1;
+}
+
+.abwab-door-fields-form__general-error {
+  margin: 0;
+  color: var(--qd-danger);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
+}
+
+.abwab-door-fields-form__field--alias {
+  grid-column: 1 / -1;
+}
+
+:host(.abwab-door-fields-form--with-auxiliary) .abwab-door-fields-form__field--alias {
+  grid-column: auto;
 }
 
 .abwab-door-fields-form__chips {
@@ -7,4 +38,19 @@
   flex-wrap: wrap;
   gap: var(--qd-space-1);
   margin-block-start: var(--qd-space-2);
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .abwab-door-fields-form__field--description,
+  .abwab-door-fields-form__field--ayah,
+  .abwab-door-fields-form__field--name,
+  .abwab-door-fields-form__field--alias,
+  .abwab-door-fields-form__general-error,
+  .abwab-door-fields-form__chips {
+    grid-column: auto;
+  }
 }

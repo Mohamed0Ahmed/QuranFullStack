@@ -2,7 +2,7 @@
 @use './abwab-tree-mobile' as mobile;
 
 .a-f {
-  --at-c: 1.75rem;
+  --at-c: 2.25rem;
   --at-m: 6;
   --at-i: var(--qd-space-4);
   --at-s: 1.25rem;
@@ -10,12 +10,12 @@
   --at-e: var(--qd-space-2);
 
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(5, var(--at-c)) auto auto;
-  column-gap: var(--qd-space-2);
+  grid-template-columns: minmax(14rem, 1fr) repeat(5, var(--at-c)) minmax(4rem, auto) auto;
+  column-gap: var(--qd-space-1);
 }
 
 .a-f--bulk {
-  grid-template-columns: minmax(0, 1fr) repeat(5, var(--at-c)) auto;
+  grid-template-columns: minmax(14rem, 1fr) repeat(5, var(--at-c)) minmax(4rem, auto);
 }
 
 .a-tree,
@@ -29,8 +29,7 @@
 .a-row {
   align-items: center;
   min-block-size: var(--qd-hit-target-min);
-  border-radius: var(--qd-radius-sm);
-  border-inline-start: var(--qd-green-thread-size) solid transparent;
+  border-block-end: var(--qd-hairline);
   cursor: pointer;
   color: var(--qd-text);
 }
@@ -68,8 +67,10 @@
 }
 
 .a-header {
+  align-items: center;
   padding-block: var(--qd-space-1);
-  border-inline-start: var(--qd-green-thread-size) solid transparent;
+  border-block-end: var(--qd-hairline-strong);
+  background: var(--qd-surface-recessed);
 }
 
 .a-header-cell {
@@ -79,14 +80,18 @@
   white-space: nowrap;
 }
 
+.a-header-name {
+  text-align: start;
+}
+
 .a-row:hover {
   background: var(--qd-surface-hover);
 }
 
 .a-row[aria-selected='true'] {
   background: var(--qd-selected-bg);
-  border-inline-start-color: var(--qd-green-thread);
   color: var(--qd-accent-text);
+  box-shadow: inset 0 0 0 1px var(--qd-border-accent);
 }
 
 @keyframes a-r {
@@ -145,7 +150,7 @@
 
 .a-order {
   min-inline-size: 1.75rem;
-  block-size: 1.75rem;
+  block-size: var(--qd-control-sm);
   justify-content: center;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
@@ -199,16 +204,16 @@
 }
 
 .a-flag {
-  background: var(--qd-accent-tint);
+  background: var(--qd-section-bg);
   color: var(--qd-accent-text);
-  border-color: var(--qd-border-accent);
+  border-color: var(--qd-border);
 }
 
 .a-flag--empty {
   background: transparent;
   color: var(--qd-text-muted);
   border-color: var(--qd-border);
-  border-style: dashed;
+  opacity: 0.68;
 }
 
 .a-flag-count {

@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRe
 
 import { DetailOverlayLinkDirective } from '../../../../core/navigation/detail-overlay/detail-overlay-link.directive';
 import { RootDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
+import { LinkingQuickAddComponent } from '../../../linking/components/linking-quick-add/linking-quick-add.component';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
 import { QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
@@ -16,11 +17,15 @@ import { ExplorerInteractionSource, handleExplorerTableKeydown } from '../../uti
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { ExplorerRowNavDirection } from '../../utils/explorer-table-scroll';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+import {
+  lemmaLinkingSource,
+  linkingSourcesByRow,
+} from '../../utils/words-linking-source-descriptor';
 import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
 import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
 const ROW_HEIGHT_DESKTOP = 40;
-const ROW_HEIGHT_COMPACT = 207;
+const ROW_HEIGHT_COMPACT = 127;
 let nextDisabledReasonId = 0;
 type LemmaTableColumnKey = Exclude<MorphologyColumnKey, 'lemmas'>;
 
@@ -57,7 +62,7 @@ export interface LemmaCountOpenedEvent {
 @Component({
   selector: 'qd-lemmas-table',
   standalone: true,
-  imports: [DetailOverlayLinkDirective, ExplorerTableColumnSettingsComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [DetailOverlayLinkDirective, ExplorerTableColumnSettingsComponent, LinkingQuickAddComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './lemmas-table.component.html',
   styleUrl: './lemmas-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -109,7 +114,7 @@ export class LemmasTableComponent {
   protected readonly columnCount = this.columnSettings.visibleColumnCount;
   protected readonly visibleColumns = this.columnSettings.visibleColumns;
   protected readonly mobileColumns = computed(() => this.visibleColumns().filter((column) =>
-    !['rowNumber', 'lemma', 'root'].includes(column.key),
+    column.key === 'occurrences' || column.key === 'ayahs' || column.key === 'surahs',
   ));
   protected readonly keyboardColumnOrder = computed(() => this.visibleColumns()
     .map((column) => column.key)
@@ -121,6 +126,9 @@ export class LemmasTableComponent {
     return 'ready';
   });
   protected readonly selectedRow = computed(() => this.rows().find((row) => row.id === this.selectedLemmaId()) ?? null);
+  protected readonly linkingSources = computed(() =>
+    linkingSourcesByRow(this.rows(), lemmaLinkingSource),
+  );
   protected readonly rowIdentity = (row: LemmaListItemViewModel): number => row.id;
   protected readonly sameRow = (row: LemmaListItemViewModel, selected: LemmaListItemViewModel | null): boolean => row.id === selected?.id;
   protected get disabledReason(): string { return WORD_COUNT_DISABLED_REASON; }
@@ -149,6 +157,10 @@ export class LemmasTableComponent {
       return;
     }
     this.rowSelected.emit(lemma);
+  }
+
+  protected linkingSource(row: LemmaListItemViewModel) {
+    return this.linkingSources().get(row) ?? lemmaLinkingSource(row);
   }
 
   protected openCount(

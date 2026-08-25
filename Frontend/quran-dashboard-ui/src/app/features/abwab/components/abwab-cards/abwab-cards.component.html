@@ -41,6 +41,7 @@
             [class.abwab-cards__card--leaf]="node.children.length === 0"
             [class.abwab-cards__card--selected]="selectedId() === node.id"
             [class.abwab-cards__card--checked]="bulkSelectedIds().has(node.id)"
+            [attr.aria-pressed]="selectedId() === node.id || bulkSelectedIds().has(node.id)"
             [attr.aria-label]="node.name"
             [attr.aria-description]="pathAriaDescription(node.id, node.name)"
             [attr.title]="nodePath(node.id, node.name)"
@@ -54,12 +55,31 @@
                 [class.bg-qd-warning-tint]="matchedIds().has(node.id)"
                 [title]="nodePath(node.id, node.name)"
               >{{ node.name }}</span>
+              @if (selectedId() === node.id || bulkSelectedIds().has(node.id)) {
+                <span class="abwab-cards__state" aria-hidden="true">✓</span>
+              } @else if (node.children.length > 0) {
+                <span class="abwab-cards__drill" aria-hidden="true">‹</span>
+              }
             </span>
-            <span
-              class="abwab-cards__meta"
-              [attr.aria-label]="node.liveChildCount > 0 ? childCountAriaLabel(node.liveChildCount) : null"
-            >
-              {{ node.liveChildCount > 0 ? node.liveChildCount : '' }}
+            <span class="abwab-cards__meta">
+              <span [attr.aria-label]="'الفروع المباشرة: ' + node.liveChildCount">
+                <small aria-hidden="true">فروع</small><strong>{{ node.liveChildCount }}</strong>
+              </span>
+              <span [attr.aria-label]="'إجمالي الأبناء: ' + node.liveDescendantCount">
+                <small aria-hidden="true">الكل</small><strong>{{ node.liveDescendantCount }}</strong>
+              </span>
+              <span [attr.aria-label]="'العمق: ' + node.maxRelativeDepth">
+                <small aria-hidden="true">العمق</small><strong>{{ node.maxRelativeDepth }}</strong>
+              </span>
+              <span [attr.aria-label]="'الروابط: ' + node.linkCount">
+                <small aria-hidden="true">روابط</small><strong>{{ node.linkCount }}</strong>
+              </span>
+              <span [attr.aria-label]="'المواضع: ' + node.selectedWordCount">
+                <small aria-hidden="true">مواضع</small><strong>{{ node.selectedWordCount }}</strong>
+              </span>
+              <span [attr.aria-label]="'العلاقات: ' + node.relationCount">
+                <small aria-hidden="true">علاقات</small><strong>{{ node.relationCount }}</strong>
+              </span>
             </span>
           </button>
         </div>

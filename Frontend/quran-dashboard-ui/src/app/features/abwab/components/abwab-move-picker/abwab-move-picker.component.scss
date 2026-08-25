@@ -3,6 +3,13 @@
   font-size: 0.8125rem;
 }
 
+.abwab-move-picker__strip {
+  padding: var(--qd-space-1);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface-recessed);
+}
+
 .abwab-move-picker__section {
   min-inline-size: 0;
 }
@@ -24,12 +31,12 @@
 .abwab-move-picker__as-main {
   inline-size: 100%;
   justify-content: flex-start;
-  border-inline-start: var(--qd-green-thread-size) solid transparent;
+  border: var(--qd-hairline);
 }
 
 .abwab-move-picker__as-main.qd-is-selected {
   background: var(--qd-selected-bg);
-  border-inline-start-color: var(--qd-green-thread);
+  border-color: var(--qd-border-accent);
   color: var(--qd-accent-text);
   font-weight: 700;
 }

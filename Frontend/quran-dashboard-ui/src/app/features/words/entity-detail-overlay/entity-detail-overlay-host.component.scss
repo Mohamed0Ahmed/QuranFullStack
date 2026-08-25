@@ -1,0 +1,7 @@
+:host {
+  display: contents;
+}
+
+.words-entity-detail-overlay {
+  --qd-modal-overlay: min(68rem, calc(100vw - var(--qd-space-4) - var(--qd-space-4)));
+}

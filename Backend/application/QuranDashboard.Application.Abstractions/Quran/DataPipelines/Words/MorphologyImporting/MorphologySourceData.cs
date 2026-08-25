@@ -18,7 +18,8 @@ public sealed record MorphologySourceData(
     // pathway populates it; the legacy pathway leaves it null and the writer treats null as empty.
     // Preserves the Corpus lemma_buckwalter/root/POS variants that share one Arabic lemma_text after
     // quran_lemmas is collapsed to one row per display text.
-    IReadOnlyList<ResolvedLemmaAnalysisDto>? LemmaAnalyses = null);
+    IReadOnlyList<ResolvedLemmaAnalysisDto>? LemmaAnalyses = null,
+    ApprovedRootFallbackSummary? RootFallbackSummary = null);
 
 public enum MorphologyImportSourceKind
 {

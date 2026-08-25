@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 :host,
 .abwab-door-links-list {
   display: block;
@@ -8,5 +10,12 @@
 
 .abwab-door-links-list__record {
   display: block;
-  padding: 0 var(--qd-space-2) var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border-block-end: var(--qd-hairline);
+}
+
+@media (min-width: bp.$qd-bp-wide-min) {
+  .abwab-door-links-list__record {
+    padding: var(--qd-s-2) var(--qd-space-2);
+  }
 }

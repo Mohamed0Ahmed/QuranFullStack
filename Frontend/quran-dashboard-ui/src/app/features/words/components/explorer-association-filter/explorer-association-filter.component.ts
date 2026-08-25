@@ -108,7 +108,7 @@ export class ExplorerAssociationFilterComponent {
     if (this.reopenSuppressed) {
       return;
     }
-    if (!this.hasSelection() && this.query().trim().length === 0) {
+    if (!this.clientFilter() && !this.hasSelection() && this.query().trim().length === 0) {
       return;
     }
     this.openPanel();

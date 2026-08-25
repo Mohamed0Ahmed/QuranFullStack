@@ -12,6 +12,80 @@
   min-block-size: 0;
 }
 
+.linking-preflight-step__message,
+.linking-preflight-step__outcome {
+  flex: 0 0 auto;
+}
+
+.linking-preflight-step__outcome {
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-section-bg);
+}
+
+.linking-preflight-step__outcome--noop {
+  border-color: var(--qd-warning-hairline);
+  background: var(--qd-warning-tint);
+}
+
+.linking-preflight-step__terminal {
+  box-sizing: border-box;
+  display: grid;
+  block-size: 100%;
+  min-block-size: 12rem;
+  place-items: center;
+  padding: var(--qd-space-4);
+}
+
+.linking-preflight-step__terminal > * {
+  inline-size: min(36rem, 100%);
+}
+
+.linking-preflight-step__progress {
+  display: grid;
+  gap: var(--qd-space-3);
+  inline-size: min(42rem, 100%);
+  margin: auto;
+  padding: var(--qd-space-4);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
+}
+
+.linking-preflight-step__progress header,
+.linking-preflight-step__progress-details > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+}
+
+.linking-preflight-step__progress p,
+.linking-preflight-step__progress dl,
+.linking-preflight-step__progress dd {
+  margin: 0;
+}
+
+.linking-preflight-step__progress p {
+  color: var(--qd-ink);
+  font-size: var(--qd-type-body-lg);
+  font-weight: 600;
+}
+
+.linking-preflight-step__progress header > strong {
+  color: var(--qd-accent-text);
+}
+
+.linking-preflight-step__progress dt {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.linking-preflight-step__progress dd {
+  color: var(--qd-ink);
+  font-weight: 600;
+}
+
 .linking-preflight-step__collection-header h4,
 .linking-preflight-step__collection-header p {
   margin: 0;
@@ -24,6 +98,15 @@
 }
 
 .linking-preflight-step__progress-bar {
+  display: block;
+  inline-size: 100%;
+  block-size: var(--qd-s-8);
+  overflow: hidden;
+  appearance: none;
+  border: 0;
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-surface-sunken);
+
   &::-webkit-progress-bar {
     border-radius: var(--qd-radius-pill);
     background: var(--qd-surface-recessed);
@@ -37,6 +120,8 @@
 }
 
 .linking-preflight-step__progress-details {
+  margin: 0;
+  padding-block-start: var(--qd-space-3);
   border-block-start: var(--qd-hairline);
 }
 
@@ -56,7 +141,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--qd-space-3);
-  padding: var(--qd-space-2) var(--qd-space-3);
+  padding: var(--qd-space-1) var(--qd-space-3);
   border-block-end: var(--qd-hairline);
 }
 

@@ -3,11 +3,29 @@
     <ng-content select="[qdLinkingAyahSelectionConfiguration]" />
   </div>
   <div class="linking-ayah-selection-toolbar__selection-tools">
-    <button qdAction="secondary" size="sm" type="button" (click)="selectAllRequested.emit()">
-      {{ selectAllLabel() }}
+    <button
+      qdAction="icon-only"
+      size="sm"
+      type="button"
+      [attr.aria-label]="selectAllLabel()"
+      [title]="selectAllLabel()"
+      (click)="selectAllRequested.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M9 6h10M9 12h10M9 18h10M4.5 6l1 1 2-2M4.5 12l1 1 2-2M4.5 18l1 1 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
     </button>
-    <button qdAction="tertiary" size="sm" type="button" (click)="clearAllRequested.emit()">
-      {{ clearAllLabel() }}
+    <button
+      qdAction="icon-only"
+      size="sm"
+      type="button"
+      [attr.aria-label]="clearAllLabel()"
+      [title]="clearAllLabel()"
+      (click)="clearAllRequested.emit()"
+    >
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+      </svg>
     </button>
   </div>
 </section>

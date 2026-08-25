@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input
 
 import { QdChipComponent } from '../../../../shared/ui/chip/chip.component';
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
-import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
 import { AbwabAuthoringFields, EMPTY_AUTHORING_FIELDS } from '../../models/abwab-templates.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
@@ -10,10 +9,13 @@ import { ABWAB_LABELS } from '../../models/abwab.labels';
 @Component({
   selector: 'qd-abwab-door-fields-form',
   standalone: true,
-  imports: [QdChipComponent, QdControlDirective, QdErrorStateComponent, QdFormFieldComponent],
+  imports: [QdChipComponent, QdControlDirective, QdFormFieldComponent],
   templateUrl: './abwab-door-fields-form.component.html',
   styleUrl: './abwab-door-fields-form.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: {
+    '[class.abwab-door-fields-form--with-auxiliary]': 'balancedAuxiliary()',
+  },
 })
 export class AbwabDoorFieldsFormComponent {
   private readonly nameInput = viewChild<ElementRef<HTMLInputElement>>('nameInput');
@@ -21,12 +23,14 @@ export class AbwabDoorFieldsFormComponent {
   readonly value = input<AbwabAuthoringFields>(EMPTY_AUTHORING_FIELDS);
   readonly errorMessage = input<string | null>(null);
   readonly testIdPrefix = input('abwab-door-modal');
+  readonly balancedAuxiliary = input(false);
 
   protected readonly name = signal('');
   protected readonly description = signal('');
   protected readonly ayah = signal('');
   protected readonly aliases = signal<readonly string[]>([]);
   protected readonly aliasDraft = signal('');
+  protected readonly nameMissing = signal(false);
 
   private readonly initialSnapshot = signal('');
 
@@ -40,6 +44,7 @@ export class AbwabDoorFieldsFormComponent {
   readonly isDirty = computed(() => snapshotKey(this.current()) !== this.initialSnapshot());
 
   protected get nameLabel(): string { return ABWAB_LABELS.nameFieldLabel; }
+  protected get nameRequiredError(): string { return ABWAB_LABELS.nameRequiredError; }
   protected get descriptionLabel(): string { return ABWAB_LABELS.descriptionFieldLabel; }
   protected get descriptionPlaceholder(): string { return ABWAB_LABELS.descriptionPlaceholder; }
   protected get ayahLabel(): string { return ABWAB_LABELS.ayahFieldLabel; }
@@ -56,6 +61,15 @@ export class AbwabDoorFieldsFormComponent {
     this.nameInput()?.nativeElement.focus();
   }
 
+  validateName(): boolean {
+    const missing = this.name().trim() === '';
+    this.nameMissing.set(missing);
+    if (missing) {
+      this.focusFirstField();
+    }
+    return !missing;
+  }
+
   constructor() {
     effect(() => {
       this.resetFrom(this.value());
@@ -68,11 +82,16 @@ export class AbwabDoorFieldsFormComponent {
     this.ayah.set(fields.representativeAyahText);
     this.aliases.set([...fields.aliases]);
     this.aliasDraft.set('');
+    this.nameMissing.set(false);
     this.initialSnapshot.set(snapshotKey(fields));
   }
 
   protected onNameInput(event: Event): void {
-    this.name.set((event.target as HTMLInputElement).value);
+    const value = (event.target as HTMLInputElement).value;
+    this.name.set(value);
+    if (value.trim() !== '') {
+      this.nameMissing.set(false);
+    }
   }
   protected onDescriptionInput(event: Event): void {
     this.description.set((event.target as HTMLTextAreaElement).value);

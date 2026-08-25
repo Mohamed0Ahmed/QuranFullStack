@@ -44,7 +44,7 @@ public sealed class EnrichedMorphologyReader
     }
 }
 
-public sealed class EnrichedMorphologyRecord
+public sealed record EnrichedMorphologyRecord
 {
     public string? Location { get; init; }
     public int? Surah { get; init; }
@@ -63,7 +63,7 @@ public sealed class EnrichedMorphologyRecord
     public IReadOnlyList<EnrichedMorphologySegment> Segments { get; init; } = [];
 }
 
-public sealed class EnrichedMorphologySegment
+public sealed record EnrichedMorphologySegment
 {
     public short SegmentNumber { get; init; }
     public string? Kind { get; init; }

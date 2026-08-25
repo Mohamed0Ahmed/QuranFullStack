@@ -1,3 +1,9 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
 .mushaf-doors-panel {
   display: flex;
   flex: 1;
@@ -15,6 +21,7 @@
     flex: 1;
     flex-direction: column;
     gap: var(--qd-space-3);
+    overflow: hidden;
   }
 
   &__tree {
@@ -29,11 +36,17 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--qd-space-3);
+    flex-wrap: wrap;
   }
 
-  &__confirm {
-    flex-wrap: wrap;
+  &__footer {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: var(--qd-space-2);
     padding-block-start: var(--qd-space-2);
+    border-block-start: var(--qd-hairline-strong);
+    background: var(--qd-surface);
   }
 
   &__selection-summary {
@@ -43,6 +56,9 @@
 
   &__selected-list {
     display: grid;
+    flex: 1 1 auto;
+    min-block-size: 0;
+    overflow-y: auto;
     grid-template-columns: repeat(auto-fill, var(--qd-mushaf-door-tile-inline-size));
     align-content: start;
     justify-content: start;

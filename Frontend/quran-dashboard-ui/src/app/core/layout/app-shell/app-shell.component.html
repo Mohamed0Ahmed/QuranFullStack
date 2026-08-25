@@ -9,17 +9,18 @@
 
     <main
       [id]="mainContentId"
+      class="qd-shell__main"
       tabindex="-1"
       [class.qd-shell-main--page-scroll]="pageScrollLayout()"
-      [attr.inert]="navigationSheetOpen() ? '' : null"
-      [attr.aria-hidden]="navigationSheetOpen() ? true : null"
+      [attr.inert]="shellOverlayOpen() ? '' : null"
+      [attr.aria-hidden]="shellOverlayOpen() ? true : null"
     >
       <router-outlet />
     </main>
   </div>
 
   <qd-footer
-    [attr.inert]="navigationSheetOpen() ? '' : null"
-    [attr.aria-hidden]="navigationSheetOpen() ? true : null"
+    [attr.inert]="shellOverlayOpen() ? '' : null"
+    [attr.aria-hidden]="shellOverlayOpen() ? true : null"
   />
 </div>

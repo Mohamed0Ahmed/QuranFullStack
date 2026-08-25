@@ -1,11 +1,3 @@
-<!--
-  The strip reserves its natural height in EVERY state via an always-rendered, invisible metric
-  mirror (Feature 030, N3 row 1). The mirror reproduces the loaded item box out of the same real
-  elements — same padding/border/gap, and label/value line boxes built from the same font-size
-  mixins — so the reservation tracks the real (preflight line-height derived) geometry instead of a
-  hardcoded height. The mirror and the state content share one grid cell, so the strip never moves
-  when the state swaps: loading → error → success, and the numberless `tableFailed`/idle branches.
--->
 <div class="word-type-scope-counts word-type-scope-counts--metric" aria-hidden="true">
   @for (item of items(); track item.key) {
     <div class="word-type-scope-counts__item">
@@ -15,14 +7,9 @@
   }
 </div>
 
-<!-- Numberless (host stays mounted) when the table failed (scope unconfirmed) or before a leaf scope
-     is confirmed ('idle'). -->
 @if (!tableFailed()) {
   @switch (state().status) {
     @case ('loading') {
-      <!-- The visual skeleton stays aria-hidden; the sr-only text inside the role="status" container is
-           what assistive technology announces (same pattern as the association filter's loading hint).
-           Each skeleton item mirrors the loaded item box, two real line boxes included. -->
       <div
         class="word-type-scope-counts word-type-scope-counts--loading"
         role="status"

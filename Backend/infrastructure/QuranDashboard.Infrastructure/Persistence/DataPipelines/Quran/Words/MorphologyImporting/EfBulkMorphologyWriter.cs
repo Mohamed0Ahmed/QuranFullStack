@@ -130,7 +130,7 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
             checks.Add(new MorphologyCheckResult(
                 MorphologyInvariants.CheckSourceUnchanged,
                 HardSeverity,
-                "local source files match manifest.json size/sha256 before and after run",
+                "local source and correction artifacts match their captured SHA-256 values before and after run",
                 sourceUnchanged ? "unchanged" : "changed",
                 sourceUnchanged));
 
@@ -154,7 +154,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                     warnings,
                     Errors: [],
                     InfoNotes: ["Morphology import committed; all hard checks passed."],
-                    source.CorrectionSummary);
+                    source.CorrectionSummary,
+                    source.RootFallbackSummary);
             }
 
             await transaction.RollbackAsync(ct);
@@ -174,7 +175,8 @@ public sealed class EfBulkMorphologyWriter : IMorphologyImportWriter
                 warnings,
                 errors,
                 InfoNotes: ["Totals reflect the attempted import before rollback; no morphology rows were persisted."],
-                source.CorrectionSummary);
+                source.CorrectionSummary,
+                source.RootFallbackSummary);
         }
         catch
         {

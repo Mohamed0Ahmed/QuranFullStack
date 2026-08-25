@@ -1,0 +1,12 @@
+:host {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-inline-size: 0;
+  min-block-size: 0;
+}
+
+qd-lemma-details-panel {
+  flex: 1 1 auto;
+  min-block-size: 0;
+}

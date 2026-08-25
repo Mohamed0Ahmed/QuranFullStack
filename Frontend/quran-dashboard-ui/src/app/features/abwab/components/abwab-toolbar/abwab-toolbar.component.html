@@ -19,22 +19,16 @@
               <button
                 type="button"
                 qdAction="toolbar"
-                [disabled]="!canExpandTree()"
-                [title]="treeExpandAllLabel"
-                data-testid="abwab-toolbar-tree-expand-all"
-                (click)="expandAllRequested.emit()"
-              >
-                {{ treeExpandAllLabel }}
-              </button>
-              <button
-                type="button"
-                qdAction="toolbar"
                 [disabled]="!canCollapseTree()"
                 [title]="treeCollapseAllLabel"
+                [attr.aria-label]="treeCollapseAllLabel"
                 data-testid="abwab-toolbar-tree-collapse-all"
                 (click)="collapseAllRequested.emit()"
               >
-                {{ treeCollapseAllLabel }}
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m8 8-5-5m5 0v5H3M16 8l5-5m-5 0v5h5M8 16l-5 5m5 0v-5H3M16 16l5 5m-5 0v-5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="qd-sr-only">{{ treeCollapseAllLabel }}</span>
               </button>
             </div>
           }
@@ -46,10 +40,15 @@
               class="abwab-toolbar__view-btn"
               [class.abwab-toolbar__view-btn--active]="view() === 'tree'"
               [attr.aria-pressed]="view() === 'tree'"
+              [attr.aria-label]="treeViewLabel"
+              [title]="treeViewLabel"
               data-testid="abwab-toolbar-view-tree"
               (click)="selectView('tree')"
             >
-              {{ treeViewLabel }}
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M12 4v5M6 20v-4h12v4M6 16V9h12v7M3 4h6v5H3zM15 4h6v5h-6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+              <span class="qd-sr-only">{{ treeViewLabel }}</span>
             </button>
             <button
               type="button"
@@ -57,10 +56,15 @@
               class="abwab-toolbar__view-btn"
               [class.abwab-toolbar__view-btn--active]="view() === 'cards'"
               [attr.aria-pressed]="view() === 'cards'"
+              [attr.aria-label]="cardsViewLabel"
+              [title]="cardsViewLabel"
               data-testid="abwab-toolbar-view-cards"
               (click)="selectView('cards')"
             >
-              {{ cardsViewLabel }}
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+              <span class="qd-sr-only">{{ cardsViewLabel }}</span>
             </button>
           </div>
         </div>

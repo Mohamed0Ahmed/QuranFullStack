@@ -26,6 +26,7 @@ import { StemCountOpenedEvent, StemsTableComponent } from '../../components/stem
 import { StemWordsListComponent } from '../../components/stem-words-list/stem-words-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import { sortQueryValue } from '../../models/explorer-sort';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
@@ -51,7 +52,7 @@ let nextSubViewInstance = 0;
 @Component({
   selector: 'qd-stems-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, ExplorerCountRangeFilterComponent, ExplorerAssociationFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, StemAyahTypeFiltersComponent, StemDetailsPanelComponent, StemLemmasListComponent, StemsTableComponent, StemWordsListComponent, SurahOccurrencesListComponent, WordsExplainerComponent, WordsLocalNavComponent],
   templateUrl: './stems-explorer-page.component.html',
   styleUrl: './stems-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -107,6 +108,10 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
     return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
+  });
+  protected readonly lemmasCount = computed(() => {
+    const lemmas = this.panelState().lemmas;
+    return lemmas === null ? null : lemmas.lemmas.length;
   });
   protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
     const state = this.panelState();

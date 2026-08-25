@@ -22,6 +22,7 @@ import { RootWordsListComponent } from '../../components/root-words-list/root-wo
 import { RootCountOpenedEvent, RootsTableComponent } from '../../components/roots-table/roots-table.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import { sortQueryValue } from '../../models/explorer-sort';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
@@ -47,7 +48,7 @@ let nextSubViewInstance = 0;
 @Component({
   selector: 'qd-roots-explorer-page',
   standalone: true,
-  imports: [AyahMatchesListComponent, AyahTypeFiltersComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent],
+  imports: [AyahMatchesListComponent, AyahTypeFiltersComponent, ExplorerCountRangeFilterComponent, ExplorerResultCountComponent, ExplorerSearchRowComponent, ExplorerToolbarComponent, MissingSurahsListComponent, NgTemplateOutlet, PaginationComponent, QdTabDirective, QdTabsComponent, RootDetailsPanelComponent, RootLemmasListComponent, RootStemsListComponent, RootWordsListComponent, RootsTableComponent, SurahOccurrencesListComponent, WordsExplainerComponent, WordsLocalNavComponent],
   templateUrl: './roots-explorer-page.component.html',
   styleUrl: './roots-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,

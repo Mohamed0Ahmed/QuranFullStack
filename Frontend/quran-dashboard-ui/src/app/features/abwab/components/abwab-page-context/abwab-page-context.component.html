@@ -1,0 +1,63 @@
+<section class="abwab-page-context" aria-labelledby="abwab-page-title">
+  <header class="abwab-page-context__header">
+    <div>
+      <span class="abwab-page-context__eyebrow">هيكلة المنهج</span>
+      <h1 id="abwab-page-title" class="qd-page-title">{{ pageTitle() }}</h1>
+      <p class="qd-text-muted">{{ pageSubtitle() }}</p>
+    </div>
+    <div class="abwab-page-context__actions" aria-label="إجراءات الأبواب">
+      <button
+        #fallbackFocus
+        type="button"
+        qdAction="icon-only"
+        [class.abwab-page-context__action--active]="archiveActive()"
+        [attr.aria-pressed]="archiveActive()"
+        [attr.aria-label]="archiveButtonLabel()"
+        [title]="archiveButtonLabel()"
+        data-testid="abwab-page-archive-toggle"
+        (click)="archiveToggleRequested.emit()"
+      >
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M5 6l1 14h12l1-14M9 10h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <span class="qd-sr-only">{{ archiveButtonLabel() }}</span>
+      </button>
+      @if (canManageSections()) {
+        <button
+          type="button"
+          qdAction="icon-only"
+          [attr.aria-label]="manageSectionsLabel()"
+          [title]="manageSectionsLabel()"
+          data-testid="abwab-page-manage-sections"
+          (click)="sectionsRequested.emit()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v4H4zM4 12h7v7H4zM14 12h6v7h-6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+          <span class="qd-sr-only">{{ manageSectionsLabel() }}</span>
+        </button>
+      }
+      @if (!archiveActive()) {
+        <a
+          qdAction="icon-only"
+          [routerLink]="templatesRoutePath()"
+          [attr.aria-label]="templatesLabel()"
+          [title]="templatesLabel()"
+          data-testid="abwab-page-templates"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 3h14v18H5zM9 3v18M9 8h10" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+          <span class="qd-sr-only">{{ templatesLabel() }}</span>
+        </a>
+        @if (canCreateDoor()) {
+          <button type="button" qdAction="primary" data-testid="abwab-page-add-root" (click)="createRootRequested.emit()">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+            <span>{{ addRootLabel() }}</span>
+          </button>
+        }
+      }
+    </div>
+  </header>
+
+  <div class="abwab-page-context__stats" aria-label="ملخص شجرة الأبواب">
+    <qd-result-count [count]="totalLiveDoorsCount()" [labelPrefix]="statAllDoorsLabel()" [loading]="loading()" [hasError]="hasError()" data-testid="abwab-page-stat-total" />
+    <qd-result-count [count]="openScopeDoorsCount()" [labelPrefix]="statOpenScopeLabel()" [loading]="loading()" [hasError]="hasError()" data-testid="abwab-page-stat-open-scope" />
+    <qd-result-count [count]="totalRootCount()" labelPrefix="الأبواب الرئيسية" [loading]="loading()" [hasError]="hasError()" />
+    <qd-result-count [count]="sectionCount()" labelPrefix="الأقسام" [loading]="loading()" [hasError]="hasError()" />
+  </div>
+</section>

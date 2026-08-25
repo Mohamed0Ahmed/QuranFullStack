@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 
 import { QdDetailsPanelShellComponent } from '../details-panel-shell/details-panel-shell.component';
 import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
@@ -12,7 +12,8 @@ import {
   LEMMAS_PANEL_TAB_LABELS,
 } from '../../models/lemmas.labels';
 import { CLOSE_LABEL } from '../../models/unique-words.labels';
-import { LEMMA_VIEW_KEYS, LemmaView } from '../../models/lemmas.models';
+import { LEMMA_VIEW_KEYS, LemmaSummaryDto, LemmaView, LemmaWordView } from '../../models/lemmas.models';
+import { lemmaDetailTabCounts } from '../../utils/words-detail-tab-counts';
 
 @Component({
   selector: 'qd-lemma-details-panel',
@@ -28,6 +29,8 @@ export class LemmaDetailsPanelComponent {
   readonly frameless = input(false);
   readonly emptySelection = input(false);
   readonly selectionTitle = input('');
+  readonly summary = input<LemmaSummaryDto | null>(null);
+  readonly wordView = input<LemmaWordView>('simple');
   readonly loading = input(false);
   readonly notFound = input(false);
   readonly notFoundMessage = input('');
@@ -57,4 +60,5 @@ export class LemmaDetailsPanelComponent {
     label: LEMMAS_PANEL_TAB_LABELS[key],
     aria: LEMMAS_PANEL_TAB_ARIA[key],
   }));
+  protected readonly tabCounts = computed(() => lemmaDetailTabCounts(this.summary(), this.wordView()));
 }

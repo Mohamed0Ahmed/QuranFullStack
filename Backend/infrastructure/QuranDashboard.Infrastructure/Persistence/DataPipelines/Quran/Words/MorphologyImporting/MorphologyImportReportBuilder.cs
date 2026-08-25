@@ -65,7 +65,8 @@ internal static class MorphologyImportReportBuilder
             Warnings: [],
             Errors: [$"MORPH-POS-RESOLVES: source contains POS codes absent from the controlled vocabulary: {unknownList}."],
             InfoNotes: ["Import refused before any write: unknown POS codes would violate the quran_pos_tags foreign keys; no morphology rows were written."],
-            source.CorrectionSummary);
+            source.CorrectionSummary,
+            source.RootFallbackSummary);
     }
 
     public static List<string> BuildWarnings(MorphologyImportTotals totals, MorphologySourceData source)

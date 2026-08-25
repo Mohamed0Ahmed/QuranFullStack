@@ -47,8 +47,8 @@ These live at the workspace root and apply across Backend + Frontend.
 |------|----------------|-------------------|-----------------|
 | `CODING_PRINCIPLES.md` | General coding principles for the whole workspace: Clean Code, SOLID, DRY/KISS/YAGNI, separation of concerns, strong typing, focused changes, error handling, testing/verification, **Quranic Data Safety**, UI/product consistency, Definition of Done. Also points to the retained `clean-code-guard` references and the `test-guard` skill. | Every agent/human before implementation; the review skills load only its implicated headings. | All implementation and review work. |
 | `TESTING_CONSTITUTION.md` | The sole testing-policy authority, including the Test Freeze; Backend lane mechanics live in the Backend test README and browser-journey mechanics live in the E2E README. | Every agent/human before selecting, writing, running, or judging verification. | Whenever tests or verification evidence are in scope. |
-| `PRODUCT.md` | Product strategy & context: register, users (Arabic-speaking admins/supervisors/teachers), product purpose (manage Quran research data, review ayah links, organize gates أبواب, publish), principles, anti-references. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
-| `DESIGN.md` | Visual/design direction — the design system of record alongside `UI_STYLE_SYSTEM.md`'s token contract: Arabic-first RTL, restrained parchment/ink palette, calm typography; explicitly rejects generic SaaS, kitschy religious decor, gamified UI, enterprise greige. | Anyone doing UI/visual work. | Frontend visual/design tasks. For concrete tokens/classes use `UI_STYLE_SYSTEM.md`. |
+| `PRODUCT.md` | Product context: register, users, purpose, product voice, functional invariants, and Quran safety during the UI rebuild. | Anyone doing user-facing/product or UI work. | Frontend/UX/product decisions and any backend change that affects user-facing behavior. |
+| `DESIGN.md` | Transitional UI-rebuild status. It records that no permanent design rules are active and that final rules will be extracted after owner approval of the complete interface. | Anyone doing UI/visual work. | Frontend visual work during the rebuild. The owner's explicit phase direction controls. |
 | `AGENTS.md` | Sol/Codex-native workspace router with the universal safety kernel, native area routes, and trigger-scoped pointers. It does not route through Claude entrypoints. | Sol/Codex coding agents. | Loaded at session start for those agents. |
 | `CLAUDE.md` | Claude-native workspace router with the equivalent universal safety kernel, Claude area routes, and trigger-scoped pointers. It does not route through Sol/Codex entrypoints. | Claude Code. | Loaded at session start. |
 
@@ -110,7 +110,7 @@ terminology such as "God service". This heading is the canonical home of that ru
 |----------|----------|
 | `.claude/skills/engineering-review/SPEC_KIT_IMPLEMENTATION_REVIEW.md` | Conditional add-on rules applied only when the reviewed change came from Spec Kit. |
 | `.claude/skills/engineering-review/references/clean-code-guard/` | `ai-failure-modes.md` (AI-specific review failure modes) and `review-checklist.md` (optional deep-review traversal aid). Canonical clean-code principles stay in `CODING_PRINCIPLES.md` §§2–4 and §7. |
-| `.claude/skills/engineering-review/references/quran-data-safety.md` | Small conditional cross-area Quran safety reference; canonical owners are `CODING_PRINCIPLES.md` §10 and `UI_STYLE_SYSTEM.md` §13. |
+| `.claude/skills/engineering-review/references/quran-data-safety.md` | Small conditional cross-area Quran safety reference; the canonical authority is `CODING_PRINCIPLES.md` §10 plus the implicated source and renderer code. |
 | `.claude/skills/test-guard/references/` | `dotnet.md` (.NET/xUnit applications of the nine rules). Playwright mechanics live in `Frontend/quran-dashboard-ui/e2e/README.md`. |
 
 ---
@@ -134,17 +134,18 @@ headings. The docs are the source of truth; the skills apply them.
 
 ## 4. Frontend architecture docs
 
-Location: `Frontend/quran-dashboard-ui/.architecture/`. Canonical frontend rules.
+Structural and API authorities live under `Frontend/quran-dashboard-ui/.architecture/`.
+Current UI behavior and styling are owned by the Angular implementation while the visual rebuild is
+in progress.
 
 | File | Governs | Read it when | Example tasks |
 |------|---------|--------------|---------------|
 | `FRONTEND_STRUCTURE.md` | Feature folder structure, **routeable smart/page components**, child/presentational components, file-size thresholds, URL state for important tabs, avoiding oversized page components. | Adding/moving Angular features, pages, or components; routing/URL-state decisions. | "Review this feature folder layout"; "Should this tab be in the URL?" |
-| `UI_STYLE_SYSTEM.md` | Centralized design tokens, **`qd-*` classes & CSS variables**, RTL rules, themes (light/dark), typography, accessibility, **Quranic data display safety** (§13); avoiding one-off component styling. | Any styling/theme/layout/RTL work; adding shared visual classes. | "Review this component's SCSS"; "Is this RTL/contrast-correct?" |
 | `API_INTEGRATION_GUIDELINES.md` | **Page → Facade/Store → API Service → Backend** flow, DTO/ViewModel/State separation, `Observable<ApiResponse<T>>`, loading/empty/error states, backend messages, pagination/search/filter URL state, **Quranic data safety in API integration**. | Frontend data-access/state/API work; wiring services/facades; handling `ApiResponse<T>`. | "Review this facade's API handling"; "Are loading/empty/error states explicit?" |
+| `src/app/core/layout/`, `src/app/core/navigation/`, `src/styles/` | Current shell, navigation, tokens, and shared styling implementation. These paths are implementation truth, not a permanent visual authority during the rebuild. | UI implementation or review in the directly implicated area. | "How does the current shell behave?"; "Where is this shared token implemented?" |
 
-**Note on `DESIGN.md` vs `UI_STYLE_SYSTEM.md`:** `DESIGN.md` (root) is the **direction/system of
-record**; `UI_STYLE_SYSTEM.md` is the **canonical implementation system** (tokens, `qd-*`
-classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
+`DESIGN.md` is a transition note during the rebuild. Visual decisions follow the owner's active
+phase direction, and current behavior is verified against the implicated Angular implementation.
 
 ---
 
@@ -247,7 +248,7 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 | "Where should `WordSortBy` enum live?" | `backend-structure-review` + `BACKEND_STRUCTURE.md` | Placement/foldering question. |
 | "Review API endpoint response shape" | `focused-review` + `API_GUIDELINES.md` | Scoped API-boundary checkpoint & `ApiResponse` envelope. |
 | "Review Angular feature folder layout" | `focused-review` + `FRONTEND_STRUCTURE.md` | Scoped frontend structure/routeable-pages checkpoint. |
-| "Review component styling / RTL / theme" | `focused-review` + `UI_STYLE_SYSTEM.md` | Scoped checkpoint: tokens, `qd-*` classes, RTL, a11y. |
+| "Review component styling / RTL / theme" | `focused-review` + the implicated Angular templates/styles | Scoped checkpoint against the owner's active direction, current behavior, RTL, and accessibility. |
 | "Review facade/API data flow & states" | `focused-review` + `API_INTEGRATION_GUIDELINES.md` | Scoped checkpoint: Page→Facade→Service flow, `ApiResponse<T>`, states. |
 | "Commit Backend + Frontend changes safely" | `commit-workflow` | Monorepo-aware grouping and safe explicit staging. |
 | "Does this change still build / migrate / run?" | `deploy-smoke` (explicit request) | Local preflight + runtime smoke; report-only. |
@@ -285,6 +286,6 @@ classes). For concrete styling, follow `UI_STYLE_SYSTEM.md`.
 - Root docs: `CODING_PRINCIPLES.md`, `TESTING_CONSTITUTION.md`, `PRODUCT.md`, `DESIGN.md`, `AGENTS.md`, `CLAUDE.md` ✅
 - Skills: `engineering-review/` (+ `SPEC_KIT_IMPLEMENTATION_REVIEW.md`, `references/clean-code-guard/` with `ai-failure-modes.md` + `review-checklist.md`, `references/quran-data-safety.md`), `focused-review/` (self-contained, no reference pack), `test-guard/` (+ `dotnet.md`), `backend-structure-review/`, `commit-workflow/`, `deploy-smoke/`, `pr-context-prep/`, `dependency-audit/`, `performance-backend-review/`, `performance-angular-review/`, `backend-global-usings-cleanup/` ✅; plus the `speckit-*` family ✅
 - Backend `.architecture/`: `BACKEND_STRUCTURE.md`, `CLEAN_ARCHITECTURE.md`, `API_GUIDELINES.md` ✅
-- Frontend `.architecture/`: `FRONTEND_STRUCTURE.md`, `UI_STYLE_SYSTEM.md`, `API_INTEGRATION_GUIDELINES.md` ✅
+- Frontend authorities: `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/API_INTEGRATION_GUIDELINES.md`; current UI implementation under `src/app/core/layout/`, `src/app/core/navigation/`, and `src/styles/` ✅
 
 **Recommended next action:** keep this guide as the onboarding map; review/update it whenever a skill or `.architecture/` doc is added or materially changed.

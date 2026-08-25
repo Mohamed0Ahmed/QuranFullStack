@@ -70,6 +70,7 @@ let nextSubViewInstance = 0;
   ],
   providers: [StemsDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './stem-detail-overlay-adapter.component.html',
+  styleUrl: './stem-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class StemDetailOverlayAdapterComponent {
@@ -96,6 +97,10 @@ export class StemDetailOverlayAdapterComponent {
   }
 
   protected readonly panelState = this.controller.panelState;
+  protected readonly lemmasCount = computed(() => {
+    const lemmas = this.panelState().lemmas;
+    return lemmas === null ? null : lemmas.lemmas.length;
+  });
 
   readonly entityTitle = computed(() => this.panelState().summary?.stemText ?? '');
 

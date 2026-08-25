@@ -1,5 +1,7 @@
 <div class="qd-page">
   <div class="qd-page-shell qd-page-shell--split-workspace word-types-page">
+    <qd-words-local-nav activeSection="types" />
+
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title">{{ pageTitle }}</h1>
@@ -124,6 +126,7 @@
     >
       <qd-word-types-table
         [rows]="listState().rows"
+        [scope]="currentScope()"
         [tableView]="listState().query.tableView"
         [loading]="listState().status === 'loading'"
         [status]="listState().status"
@@ -181,6 +184,9 @@
         [kind]="detailKind()"
         [emptySelection]="emptySelection()"
         [selectionTitle]="selectionTitle()"
+        [wordsCount]="activeSummary()?.occurrences ?? null"
+        [ayahsCount]="activeSummary()?.ayahs ?? null"
+        [surahsCount]="activeSummary()?.surahs ?? null"
         [linkingSource]="linkingSource()"
         [loading]="panelState().status === 'loading'"
         [notFound]="panelState().status === 'notFound'"

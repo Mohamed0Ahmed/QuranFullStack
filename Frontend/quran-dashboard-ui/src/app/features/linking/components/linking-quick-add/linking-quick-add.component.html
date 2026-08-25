@@ -1,0 +1,17 @@
+@if (canUseLinking()) {
+  <button
+    qdAction="icon-only"
+    size="sm"
+    type="button"
+    class="linking-quick-add__button"
+    [attr.aria-label]="actionLabel()"
+    [title]="actionLabel()"
+    [attr.data-testid]="testId()"
+    (click)="add($event)"
+  >
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+    </svg>
+    <span class="qd-sr-only">{{ actionLabel() }}</span>
+  </button>
+}

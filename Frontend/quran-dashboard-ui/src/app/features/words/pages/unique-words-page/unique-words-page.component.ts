@@ -32,6 +32,7 @@ import { ExplorerSearchRowComponent } from '../../components/explorer-search-row
 import { UniqueWordsTableComponent } from '../../components/unique-words-table/unique-words-table.component';
 import { WordDrilldownModalComponent } from '../../components/word-drilldown-modal/word-drilldown-modal.component';
 import { WordsExplainerComponent } from '../../components/words-explainer/words-explainer.component';
+import { WordsLocalNavComponent } from '../../components/words-local-nav/words-local-nav.component';
 import { WORDS_EXPLAINER_CONTENT } from '../../models/words-explainer.content';
 import { WordsExplainerPreference } from '../../state/words-explainer-preference';
 import { UniqueDetailFrame } from '../../../../core/navigation/detail-overlay/detail-overlay.models';
@@ -85,6 +86,7 @@ type UniqueWordsDrilldownState = ReturnType<UniqueWordsFacade['drilldownState']>
     PaginationComponent,
     WordDrilldownModalComponent,
     WordsExplainerComponent,
+    WordsLocalNavComponent,
   ],
   templateUrl: './unique-words-page.component.html',
   styleUrl: './unique-words-page.component.scss',

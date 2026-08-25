@@ -33,15 +33,19 @@
                 @if (canEdit()) {
                   <button
                     type="button"
-                    qdAction="warning"
+                    qdAction="icon-only"
                     size="sm"
                     class="abwab-door-link-record__edit"
                     [disabled]="editDisabled()"
                     [attr.aria-label]="editAriaLabel(ayah.surahNameArabic, ayah.ayahNumber)"
+                    [title]="editAriaLabel(ayah.surahNameArabic, ayah.ayahNumber)"
                     [attr.data-testid]="'abwab-door-link-record-edit-' + record().unitId"
                     (click)="requestEdit($event)"
                   >
-                    {{ editLabel }}
+                    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path d="m4 20 4.5-1 10-10-3.5-3.5-10 10zM13.5 7l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    </svg>
+                    <span class="qd-sr-only">{{ editLabel }}</span>
                   </button>
                 }
                 @if (selectable()) {

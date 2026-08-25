@@ -1,5 +1,7 @@
 <div class="qd-page">
   <div class="qd-page-shell qd-page-shell--split-workspace stems-explorer-frame">
+    <qd-words-local-nav activeSection="stems" />
+
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="stems-explorer-page-title">{{ pageTitle }}</h1>
@@ -133,6 +135,9 @@
               [view]="activeView()"
               [emptySelection]="emptySelection()"
               [selectionTitle]="panelState().summary?.stemText ?? ''"
+              [summary]="panelState().summary"
+              [wordView]="panelState().wordView"
+              [lemmasCount]="lemmasCount()"
               [linkingSource]="linkingSource()"
               [loading]="panelState().status === 'loading'"
               [notFound]="panelState().status === 'notFound'"
@@ -152,6 +157,9 @@
           [view]="activeView()"
           [emptySelection]="emptySelection()"
           [selectionTitle]="panelState().summary?.stemText ?? ''"
+          [summary]="panelState().summary"
+          [wordView]="panelState().wordView"
+          [lemmasCount]="lemmasCount()"
           [linkingSource]="linkingSource()"
           [loading]="panelState().status === 'loading'"
           [notFound]="panelState().status === 'notFound'"

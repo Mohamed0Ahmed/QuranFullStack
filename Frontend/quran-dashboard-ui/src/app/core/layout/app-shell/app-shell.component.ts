@@ -22,7 +22,7 @@ export class AppShellComponent {
 
   protected readonly mainContentId = QD_MAIN_CONTENT_ID;
 
-  protected readonly navigationSheetOpen = computed(() => this.navbar()?.sheetOpen() ?? false);
+  protected readonly shellOverlayOpen = computed(() => this.navbar()?.shellOverlayOpen() ?? false);
 
   private readonly navigationTick = toSignal(
     this.router.events.pipe(

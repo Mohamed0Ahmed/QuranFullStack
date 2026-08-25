@@ -91,18 +91,6 @@
   }
 }
 
-@for $slot from 1 through 15 {
-  [data-door-color-slot='#{$slot}'] {
-    --qd-mushaf-door-fill: var(--qd-door-highlight-#{$slot});
-    --qd-mushaf-door-marker-fill: var(--qd-door-highlight-#{$slot});
-  }
-}
-
-[data-door-color-slot='multi'] {
-  --qd-mushaf-door-fill: var(--qd-door-highlight-multi-gradient);
-  --qd-mushaf-door-marker-fill: var(--qd-door-marker-multi-gradient);
-}
-
 @media (forced-colors: active) {
   .mushaf-word--door-highlight:not(.mushaf-word--marker) .mushaf-word__door-background {
     border-block: var(--qd-s-2) solid Highlight;

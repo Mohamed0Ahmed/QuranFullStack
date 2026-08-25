@@ -1,0 +1,77 @@
+<qd-modal-shell
+  variant="wide"
+  titleText="الانتقال السريع"
+  closeLabel="إغلاق"
+  testIdPrefix="command-launcher"
+  dialogTestId="command-launcher"
+  [open]="open()"
+  [hasFooter]="false"
+  [compactHeader]="true"
+  [wideInlineSize]="'38rem'"
+  [wideBlockSize]="'min(78dvh, 36rem)'"
+  (dismissed)="closeLauncher()"
+>
+  <label class="qd-command-launcher__search">
+    <qd-nav-icon name="search" />
+    <span class="qd-sr-only">ابحث في صفحات التطبيق</span>
+    <input
+      cdkFocusInitial
+      type="search"
+      role="combobox"
+      autocomplete="off"
+      placeholder="صفحة أو مساحة عمل…"
+      aria-autocomplete="list"
+      aria-controls="command-launcher-results"
+      aria-haspopup="listbox"
+      [attr.aria-expanded]="open()"
+      [attr.aria-activedescendant]="activeDestinationId()"
+      [value]="query()"
+      (input)="updateQuery($event)"
+      (keydown)="handleSearchKeydown($event)"
+    />
+  </label>
+
+  <div
+    id="command-launcher-results"
+    class="qd-command-launcher__results"
+    aria-live="polite"
+    [attr.role]="results().length > 0 ? 'listbox' : null"
+    [attr.aria-label]="results().length > 0 ? 'صفحات التطبيق' : null"
+  >
+    @for (destination of results(); track destination.item.key; let index = $index) {
+      <a
+        #destinationOption
+        [id]="destinationId(destination.item)"
+        qdAction="tertiary"
+        role="option"
+        class="qd-command-launcher__result"
+        [class.qd-command-launcher__result--selected]="selectedIndex() === index"
+        [attr.aria-selected]="selectedIndex() === index"
+        [routerLink]="navigationTarget(destination.item)"
+        (mouseenter)="select(index)"
+        (focus)="select(index)"
+        (click)="closeLauncher()"
+      >
+        <span class="qd-command-launcher__result-icon">
+          <qd-nav-icon [name]="destination.item.icon" />
+        </span>
+        <span class="qd-command-launcher__result-copy">
+          <strong>{{ destination.item.labelAr }}</strong>
+          <small>{{ destination.section }}</small>
+        </span>
+      </a>
+    } @empty {
+      <div class="qd-command-launcher__empty" role="status">
+        <qd-nav-icon name="search" />
+        <strong>لا توجد نتيجة</strong>
+        <span>جرّب اسمًا أو مسارًا آخر.</span>
+      </div>
+    }
+  </div>
+
+  <div class="qd-command-launcher__help" aria-hidden="true">
+    <span><kbd>↑</kbd><kbd>↓</kbd> للتنقل</span>
+    <span><kbd>Enter</kbd> للفتح</span>
+    <span><kbd>Esc</kbd> للإغلاق</span>
+  </div>
+</qd-modal-shell>

@@ -2,20 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.Morpholo
 
 namespace QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
-// Identity rules (Feature 020, signed-off):
-//   - Root identity  = Corpus rootBuckwalter (unambiguous); rootArabic is the stored root_text.
-//   - Lemma identity = Corpus lemmaBuckwalter; primary lemmaArabic is the stored lemma_text; lemma→root
-//                      link taken from the co-occurring root of the SAME segment (no QUL location join).
-//   - Stem identity  = persisted schema rule only: normalized stem_text (the STEM segment's formArabic).
-//                      stemBuckwalter is audit-only and MUST NOT create a separate persisted row
-//                      (quran_stems has no buckwalter column and ResolvedStemDto has no buckwalter member).
-//
-// Audit-only JSON fields (corpusPresent, provenance, *MappingStatus, *QulCanonical, stemBuckwalter,
-// quranWordIdVerifiedAgainstDashboard, boundaryAyah, boundaryHandling, text*) are intentionally not
-// projected onto the DTO — they have no DTO members and cannot land in the DB by accident.
-//
-// QUL word-level location links are NEVER consulted: dimension identity comes only from the Corpus
-// Buckwalter + bridge Arabic already merged into each enriched record upstream in SourceAudit.
+// Only approved-root-fallbacks.json may supply a missing Corpus root; no general QUL location join is allowed.
 public sealed class EnrichedDimensionBuilder
 {
     private const string QuranicSmallYeh = "ۦ";

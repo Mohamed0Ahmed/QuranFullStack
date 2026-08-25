@@ -136,4 +136,31 @@ export class WordDrilldownModalComponent {
   protected drilldownLabel(view: WordDrilldownView): string {
     return WORD_DRILLDOWN_VIEW_LABELS[view];
   }
+
+  protected drilldownCount(view: WordDrilldownView): number | null {
+    const summary = this.state().summary;
+    if (summary === null) {
+      return null;
+    }
+
+    switch (view) {
+      case 'surahs':
+        return summary.surahsCount;
+      case 'missing':
+        return summary.missingSurahsCount;
+      case 'ayahs':
+        return summary.ayahsCount;
+    }
+  }
+
+  protected drilldownCountLabel(view: WordDrilldownView): string {
+    const count = this.drilldownCount(view);
+    return count === null ? '' : `${count}`;
+  }
+
+  protected drilldownTabAriaLabel(view: WordDrilldownView): string {
+    const label = this.drilldownLabel(view);
+    const count = this.drilldownCount(view);
+    return count === null ? label : `${label}، ${count}`;
+  }
 }

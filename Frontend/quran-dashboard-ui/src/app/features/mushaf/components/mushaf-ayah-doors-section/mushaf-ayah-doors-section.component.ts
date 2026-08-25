@@ -19,6 +19,7 @@ import { AbwabDoorLinksFacade } from '../../../abwab/state/abwab-door-links.faca
 import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissions.controller';
 import { AbwabRelationsController } from '../../../abwab/state/abwab-relations.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
+import { buildAbwabNodePaths } from '../../../abwab/state/abwab-tree-paths';
 import { abwabPermissionDenied } from '../../../abwab/state/abwab-write.controller';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
@@ -74,6 +75,7 @@ export class MushafAyahDoorsSectionComponent implements OnDestroy {
     return door?.isArchived === false ? door : null;
   });
   protected readonly liveRoots = computed(() => this.tree.snapshot()?.liveRoots ?? []);
+  private readonly pathsById = computed(() => buildAbwabNodePaths(this.liveRoots()));
 
   protected readonly loadRelations = (doorId: number) => this.relations.loadFor(doorId);
   protected readonly refetchRelations = (doorId: number) => this.relations.refetchFor(doorId);
@@ -129,6 +131,10 @@ export class MushafAyahDoorsSectionComponent implements OnDestroy {
     if (!this.tree.snapshot() && this.tree.errorMessage()) {
       this.tree.load();
     }
+  }
+
+  protected doorPath(door: AbwabNode): string {
+    return this.pathsById().get(door.id) ?? door.name;
   }
 
   protected toggleLinks(door: AbwabNode): void {

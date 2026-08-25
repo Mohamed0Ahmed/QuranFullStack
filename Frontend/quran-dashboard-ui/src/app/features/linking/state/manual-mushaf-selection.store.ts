@@ -1,11 +1,13 @@
-import { Injectable, computed, effect, inject, signal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
 import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LINKING_LABELS } from '../models/linking.labels';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
-import { LinkingManualAyahMetadataReader } from '../data-access/linking-manual-ayah-metadata.reader';
-import { linkingSourceKey } from '../utils/linking-source-key';
+import {
+  LinkingManualAyahMetadata,
+  LinkingManualAyahMetadataReader,
+} from '../data-access/linking-manual-ayah-metadata.reader';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkflowFacade } from './linking-workflow.facade';
@@ -15,7 +17,7 @@ export type ManualMushafSelectionLoadStatus = 'loading' | 'ready' | 'error';
 
 export interface ManualMushafSelectionEntry {
   verseKey: string;
-  reference: LinkingManualMushafAyahReference | null;
+  metadata: LinkingManualAyahMetadata | null;
   status: ManualMushafSelectionLoadStatus;
   errorMessage: string | null;
   operationGeneration: number;
@@ -32,6 +34,7 @@ export class ManualMushafSelectionStore {
   private readonly entriesSignal = signal<readonly ManualMushafSelectionEntry[]>([]);
   private readonly operationGenerationSignal = signal(0);
   private readonly statusMessageSignal = signal<string | null>(null);
+  private readonly directWorkflowGenerationSignal = signal<number | null>(null);
   private readonly metadataSubscriptions = new Map<string, Subscription>();
 
   readonly active = this.activeSignal.asReadonly();
@@ -46,13 +49,28 @@ export class ManualMushafSelectionStore {
     () =>
       this.active() &&
       this.entries().length > 0 &&
-      this.entries().every((entry) => entry.status === 'ready' && entry.reference !== null),
+      this.entries().every((entry) => entry.status === 'ready' && entry.metadata !== null),
   );
 
   constructor() {
     effect(() => {
       if (this.active() && !this.access.canUseLinking()) {
         this.reset(null);
+      }
+    });
+
+    effect(() => {
+      const directGeneration = this.directWorkflowGenerationSignal();
+      const workflow = this.workflow.state();
+      if (directGeneration === null) {
+        return;
+      }
+      if (workflow.operationGeneration !== directGeneration) {
+        untracked(() => this.directWorkflowGenerationSignal.set(null));
+        return;
+      }
+      if (workflow.step === 'succeeded') {
+        untracked(() => this.reset());
       }
     });
   }
@@ -106,7 +124,7 @@ export class ManualMushafSelectionStore {
       ...entries,
       {
         verseKey,
-        reference: null,
+        metadata: null,
         status: 'loading',
         errorMessage: null,
         operationGeneration,
@@ -158,14 +176,13 @@ export class ManualMushafSelectionStore {
     if (source === null) {
       return;
     }
-    const existing = this.workspace.items().some((item) => item.sourceKey === linkingSourceKey(source));
-    const sourceKey = this.workspace.addSource(source);
-    if (sourceKey === null) {
+    const result = this.workspace.addSource(source);
+    if (result === null) {
       this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionHandoffError);
       return;
     }
 
-    this.reset(existing ? LINKING_LABELS.alreadyInWorkspace : LINKING_LABELS.addedToWorkspace);
+    this.reset();
   }
 
   startDirectLink(): void {
@@ -178,7 +195,8 @@ export class ManualMushafSelectionStore {
       this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionDirectLinkError);
       return;
     }
-    this.reset(LINKING_LABELS.mushafSelectionDirectLinkStarted);
+    this.directWorkflowGenerationSignal.set(this.workflow.state().operationGeneration);
+    this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionDirectLinkStarted);
   }
 
   reset(statusMessage: string | null = null): void {
@@ -187,6 +205,7 @@ export class ManualMushafSelectionStore {
     this.activeSignal.set(false);
     this.entriesSignal.set([]);
     this.currentPageSignal.set(null);
+    this.directWorkflowGenerationSignal.set(null);
     this.statusMessageSignal.set(statusMessage);
   }
 
@@ -198,7 +217,7 @@ export class ManualMushafSelectionStore {
       kind: 'manual-mushaf-ayahs',
       label: LINKING_LABELS.mushafSelectionSource,
       manualAyahs: this.entries()
-        .map((entry) => entry.reference)
+        .map((entry) => entry.metadata?.reference ?? null)
         .filter((reference): reference is LinkingManualMushafAyahReference => reference !== null),
     };
   }
@@ -206,7 +225,7 @@ export class ManualMushafSelectionStore {
   private completeMetadataLoad(
     verseKey: string,
     operationGeneration: number,
-    reference: LinkingManualMushafAyahReference,
+    metadata: LinkingManualAyahMetadata,
   ): void {
     if (!this.isCurrentOperation(verseKey, operationGeneration)) {
       return;
@@ -215,7 +234,7 @@ export class ManualMushafSelectionStore {
     this.entriesSignal.update((entries) =>
       entries.map((entry) =>
         entry.verseKey === verseKey
-          ? { ...entry, reference, status: 'ready', errorMessage: null }
+          ? { ...entry, metadata, status: 'ready', errorMessage: null }
           : entry,
       ),
     );
@@ -225,7 +244,7 @@ export class ManualMushafSelectionStore {
   private startMetadataLoad(verseKey: string, operationGeneration: number): void {
     this.cancelMetadata(verseKey);
     const subscription = this.reader.readMetadata(verseKey).subscribe({
-      next: (reference) => this.completeMetadataLoad(verseKey, operationGeneration, reference),
+      next: (metadata) => this.completeMetadataLoad(verseKey, operationGeneration, metadata),
       error: () => {
         this.metadataSubscriptions.delete(verseKey);
         this.failMetadataLoad(verseKey, operationGeneration);

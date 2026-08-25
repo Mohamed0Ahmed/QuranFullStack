@@ -1,4 +1,24 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.surah-occurrences-list-shell {
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+}
+
+.surah-occurrences-list__row {
+  min-block-size: var(--qd-control-md);
+  padding-block: var(--qd-space-1);
+  background: transparent;
+}
+
+.surah-occurrences-list__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

@@ -1,65 +1,63 @@
-// Local layout only for the explainer hero frame. The shared visual primitives used by each
-// page's projected example region (`.qd-explainer-*` example/word/note/mini/seg/type/benefit)
-// live in the global partial `styles/_words-explainer.scss`, because projected `<ng-content>`
-// keeps the page's encapsulation, not this component's. Flat doctrine: no shadow, no lift.
 :host {
   display: block;
+  min-inline-size: 0;
 }
 
 .qd-explainer {
-  display: flex;
-  flex-direction: column;
-  gap: var(--qd-space-3);
-  margin-block-start: var(--qd-space-3);
-  padding-block-start: var(--qd-space-3);
-  border-block-start: 1px solid var(--qd-border);
+  display: grid;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-section-bg);
 }
 
 .qd-explainer__kicker {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--qd-space-2);
-  flex-wrap: wrap;
 }
 
 .qd-explainer__ordinal {
+  color: var(--qd-ink-muted);
   font-family: var(--qd-font-quran);
-  font-size: 1.25rem;
+  font-size: var(--qd-type-body-lg);
   font-weight: 700;
   line-height: 1;
-  // A decorative numeral is not a green use (allowed-green list); keep it muted.
-  color: var(--qd-text-muted);
 }
 
 .qd-explainer__eyebrow {
-  font-size: 0.8125rem;
+  color: var(--qd-green-text);
+  font-size: var(--qd-type-caption);
   font-weight: 700;
-  letter-spacing: 0.01em;
-  color: var(--qd-accent-text); // allowed-green #4: section eyebrow via the AA text shade
 }
 
 .qd-explainer__toggle {
+  flex: none;
   margin-inline-start: auto;
-  flex-shrink: 0;
+}
+
+.qd-explainer__tagline,
+.qd-explainer__body-text {
+  margin: 0;
+  color: var(--qd-ink-body);
 }
 
 .qd-explainer__tagline {
-  margin: 0;
-  font-size: 1.0625rem;
-  font-weight: 400;
-  line-height: 1.7;
-  color: var(--qd-text);
+  font-size: var(--qd-type-body);
+  line-height: var(--qd-type-body-lh);
 }
 
 .qd-explainer__body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--qd-space-3);
+  display: grid;
+  gap: var(--qd-space-2);
+  padding-block-start: var(--qd-space-2);
+  border-block-start: var(--qd-hairline);
 }
 
 .qd-explainer__body-text {
-  margin: 0;
-  font-size: 0.9375rem;
-  line-height: 1.9;
-  color: var(--qd-text);
+  max-inline-size: var(--qd-measure-prose);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
 }

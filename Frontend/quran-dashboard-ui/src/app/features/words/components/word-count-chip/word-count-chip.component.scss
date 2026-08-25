@@ -7,15 +7,20 @@
 
 .word-count-chip {
   inline-size: 100%;
+  min-block-size: var(--qd-control-sm);
   justify-content: center;
-  padding-block: 0.125rem;
-  padding-inline: 0.375rem;
+  gap: var(--qd-s-2);
+  padding: var(--qd-s-2) var(--qd-space-1);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-xs);
+  background: transparent;
   cursor: pointer;
   transition: background-color var(--qd-t-fast), border-color var(--qd-t-fast),
     color var(--qd-t-fast);
 
   &:hover:not(:disabled) {
-    background: var(--qd-surface-hover);
+    border-color: var(--qd-border-strong);
+    background: var(--qd-surface-quiet);
   }
 
   &.qd-is-selected:not(:disabled) {
@@ -31,6 +36,7 @@
 
   &:disabled,
   &--disabled {
+    color: var(--qd-ink-muted);
     cursor: default;
     pointer-events: none;
     transition: none;
@@ -39,6 +45,7 @@
 
 .word-count-chip__count {
   flex: 1;
+  font-weight: 700;
   text-align: center;
   font-variant-numeric: tabular-nums;
 }

@@ -3,12 +3,12 @@
 Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 (المنهج القرآني) — an **Arabic-first (RTL)**, scholarly/calm admin dashboard.
 
-> HOW to work here (rules): **`FRONTEND_UI_RULES.md` first for any UI-visible change**, then
-> `.architecture/FRONTEND_STRUCTURE.md`, `.architecture/UI_STYLE_SYSTEM.md`,
-> `.architecture/API_INTEGRATION_GUIDELINES.md`, plus `../../PRODUCT.md` and `../../DESIGN.md`.
-> The permanent visual authority is `.architecture/golden-ui/`. This file owns only operational
-> run/build, generated-contract, and verification guidance. Active Spec Kit artifacts own feature
-> intent and code owns implemented truth.
+> HOW to work here: use `.architecture/FRONTEND_STRUCTURE.md` for code organization and
+> `.architecture/API_INTEGRATION_GUIDELINES.md` for API work. `../../PRODUCT.md` owns users and
+> product purpose. During the UI rebuild, the owner's explicit direction controls visual work and
+> no permanent visual rule set is active. This file owns only operational run/build,
+> generated-contract, and verification guidance. Active Spec Kit artifacts own feature intent and
+> code owns implemented truth.
 
 ## Run / build
 
@@ -53,7 +53,7 @@ npm run build:verify
 
 Keep `check:no-unit-specs` independent; never fold it into `build:verify`. `npm run typecheck` is an
 alias for `typecheck:app`. `npm run test:pre-pr` runs the permission catalogue, audit action type,
-golden UI, no-unit-specs, typecheck, and production-build checks in sequence.
+no-unit-specs, typecheck, and production-build checks in sequence.
 
 New automated tests are frozen by default. The source tree must contain no Angular unit specs.
 Playwright is the retained frontend test estate, and a new journey still requires owner approval

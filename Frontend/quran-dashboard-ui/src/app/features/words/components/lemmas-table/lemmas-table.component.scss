@@ -1,16 +1,27 @@
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
-  display: block;
+  position: relative;
+  display: flex;
+  flex-direction: column;
   block-size: 100%;
   min-block-size: 0;
+  min-inline-size: 0;
+  overflow: visible;
 }
 
 .lemmas-table {
   --lemmas-table-scrollbar-gutter: 0px;
   --qd-explorer-table-scrollbar-gutter: var(--lemmas-table-scrollbar-gutter);
 
-  block-size: 100%;
+  flex: 1 1 auto;
+  block-size: auto;
+  min-block-size: 0;
+  min-inline-size: 0;
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
 }
 
 .lemmas-table__word-cell,
@@ -37,13 +48,14 @@
   justify-content: flex-start;
   overflow: hidden;
   text-align: start;
+  border-radius: var(--qd-radius-xs);
 }
 
 .lemmas-table__display,
 .lemmas-table__root-text {
   overflow: hidden;
-  font-size: var(--qd-type-body-lg);
-  line-height: var(--qd-type-body-lg-lh);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -59,7 +71,7 @@
 .lemmas-table__root-link {
   display: block;
   max-inline-size: 100%;
-  padding: var(--qd-space-1);
+  padding: var(--qd-s-2) var(--qd-space-1);
   border-radius: var(--qd-radius-sm);
   color: var(--qd-ink-body);
   text-decoration: none;

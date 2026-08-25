@@ -1,31 +1,38 @@
 <section class="abwab-door-link-operations" [attr.aria-label]="heading" data-testid="abwab-door-link-operations">
-  <div class="abwab-door-link-operations__header">
-    <h4>{{ heading }}</h4>
-    <span class="qd-text-muted">{{ doorOpen() ? selectedLabel() : noDoorHint }}</span>
-  </div>
   <div class="abwab-door-link-operations__actions">
     <button
       type="button"
-      qdAction="danger"
+      qdAction="icon-only"
+      size="sm"
+      class="abwab-door-link-operations__delete"
       [disabled]="!canDelete()"
+      [attr.aria-label]="deleteLabel"
+      [title]="deleteLabel"
       data-testid="abwab-door-link-operation-delete"
       (click)="requestDelete()"
     >
-      {{ deleteLabel }}
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+      </svg>
+      <span class="qd-sr-only">{{ deleteLabel }}</span>
     </button>
     <button
       type="button"
-      qdAction="info"
+      qdAction="icon-only"
+      size="sm"
       [disabled]="!canCopy() || state().copy.open"
+      [attr.aria-label]="copyLabel"
+      [title]="copyLabel"
       data-testid="abwab-door-link-operation-copy"
       (click)="copyController.open()"
     >
-      {{ copyLabel }}
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6" />
+        <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.6" />
+      </svg>
+      <span class="qd-sr-only">{{ copyLabel }}</span>
     </button>
   </div>
-  @if (state().copy.open) {
-    <qd-abwab-door-link-copy />
-  }
 </section>
 
 <qd-confirm-dialog

@@ -5,10 +5,10 @@
   color: var(--qd-text);
   padding: var(--qd-space-2) var(--qd-space-3);
   font-size: 0.8125rem;
-  min-height: 1.25rem;
+  min-block-size: var(--qd-control-sm);
+  margin-block: var(--qd-space-2);
 }
 
 .abwab-announcer--empty {
-  border-color: transparent;
-  background: transparent;
+  display: none;
 }

@@ -6,8 +6,11 @@
 
 .linking-ayah-card {
   position: relative;
-  gap: var(--qd-space-1);
+  gap: var(--qd-linking-ayah-card-gap, var(--qd-space-1));
   padding: var(--qd-linking-ayah-card-padding-block, var(--qd-space-1)) var(--qd-space-2);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .linking-ayah-card--grouped {
@@ -43,8 +46,8 @@
   color: var(--qd-text-muted);
   display: flex;
   flex-wrap: wrap;
-  font-size: var(--qd-type-meta);
-  gap: var(--qd-space-2);
+  font-size: var(--qd-linking-ayah-meta-font-size, var(--qd-type-meta));
+  gap: var(--qd-linking-ayah-meta-gap, var(--qd-space-2));
   justify-content: center;
   line-height: var(--qd-type-meta-lh);
   text-align: center;
@@ -67,7 +70,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  margin: 0 var(--qd-s-24);
+  margin: 0 var(--qd-linking-ayah-text-margin-inline, var(--qd-s-24));
   row-gap: 0;
   text-align: center;
 }
@@ -78,7 +81,7 @@
   font-family: var(--qd-font-quran);
   font-size: var(--qd-linking-ayah-word-font-size, var(--qd-mushaf-word-font-size));
   font-weight: 400;
-  line-height: 1.9;
+  line-height: var(--qd-linking-ayah-word-line-height, 1.9);
   white-space: normal;
 }
 
@@ -125,5 +128,9 @@
   .linking-ayah-card__word {
     font-size: var(--qd-linking-ayah-word-font-size, calc(var(--qd-mushaf-word-font-size) - var(--qd-s-2)));
     line-height: 1.55;
+  }
+
+  .linking-ayah-card__text {
+    margin-inline: var(--qd-space-2);
   }
 }

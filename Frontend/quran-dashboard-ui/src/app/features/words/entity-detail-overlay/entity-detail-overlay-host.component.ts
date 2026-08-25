@@ -42,6 +42,7 @@ import {
   ],
   providers: [EntityDetailOverlayHeaderStore],
   templateUrl: './entity-detail-overlay-host.component.html',
+  styleUrl: './entity-detail-overlay-host.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntityDetailOverlayHostComponent {

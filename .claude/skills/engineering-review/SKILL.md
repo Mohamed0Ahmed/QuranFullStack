@@ -123,11 +123,11 @@ plan/spec/contract when the work is contract-bound.
 - **Frontend architecture:** the implicated headings of
   `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` (structure,
   routeable pages, §File Size and Responsibility Guidelines),
-  `UI_STYLE_SYSTEM.md` (tokens/`qd-` classes/RTL/themes; §13 Quranic Data Display Safety
-  for Quran-facing UI), and `API_INTEGRATION_GUIDELINES.md` (page → facade/store → API
-  service flow, `ApiResponse<T>`, loading/error/empty states); `PRODUCT.md`/`DESIGN.md`
-  only when product/design decisions are involved. Frontend-only scope does not load
-  Backend or database context.
+  `API_INTEGRATION_GUIDELINES.md` (page → facade/store → API service flow,
+  `ApiResponse<T>`, loading/error/empty states), and the directly implicated code under
+  `src/app/core/layout/`, `src/app/core/navigation/`, or `src/styles/` for current UI
+  implementation truth. `PRODUCT.md`/`DESIGN.md` load only when product or rebuild-status
+  decisions are involved. Frontend-only scope does not load Backend or database context.
 - **Testing evidence classification:** the exact `TESTING_CONSTITUTION.md` rule and active Testing
   Decision, plus `Backend/tests/QuranDashboard.Tests/README.md`, `Backend/scripts/README.md`, or
   `Frontend/quran-dashboard-ui/e2e/README.md` only when its lane, runtime, preflight, or browser

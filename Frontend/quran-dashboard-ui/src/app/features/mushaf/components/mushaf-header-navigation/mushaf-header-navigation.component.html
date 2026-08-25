@@ -1,42 +1,53 @@
 <header class="mushaf-header" aria-label="التنقّل بين صفحات المصحف وإجراءاته">
   <div class="mushaf-header__deck">
     <div class="mushaf-header__deck-zone mushaf-header__deck-zone--nav">
-      <div class="mushaf-header__nav-actions">
+      <div class="mushaf-header__page-stepper" aria-label="التنقّل بين صفحات المصحف">
         <button
-          qdAction="tertiary"
+          qdAction="icon-only"
           size="sm"
           class="qd-hit-target mushaf-header__nav-button"
           type="button"
           data-testid="mushaf-prev-page"
+          aria-label="الصفحة السابقة"
+          title="الصفحة السابقة"
           [disabled]="page().previousPageNumber === null"
           (click)="onPrevious()"
         >
-          السابق
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
+        <span class="mushaf-header__page-number" aria-current="page">
+          <span class="mushaf-header__page-label">صفحة</span>
+          <strong>{{ page().pageNumber }}</strong>
+        </span>
         <button
-          qdAction="tertiary"
+          qdAction="icon-only"
           size="sm"
           class="qd-hit-target mushaf-header__nav-button"
           type="button"
           data-testid="mushaf-next-page"
+          aria-label="الصفحة التالية"
+          title="الصفحة التالية"
           [disabled]="page().nextPageNumber === null"
           (click)="onNext()"
         >
-          التالي
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="m15 6-6 6 6 6"
+              stroke="currentColor"
+              stroke-width="1.8"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
         </button>
-        @if (canSelectAyahs()) {
-          <button
-            #ayahSelectionButton
-            qdAction="tertiary"
-            size="sm"
-            class="qd-hit-target mushaf-header__nav-button"
-            type="button"
-            [attr.aria-pressed]="ayahSelectionMode()"
-            (click)="toggleAyahSelectionMode()"
-          >
-            تحديد
-          </button>
-        }
       </div>
       <div class="mushaf-header__surah-jump">
         <qd-surah-jump-picker
@@ -44,6 +55,30 @@
           (surahJump)="onSurahJump($event)"
         />
       </div>
+      @if (canSelectAyahs()) {
+        <button
+          #ayahSelectionButton
+          qdAction="secondary"
+          size="sm"
+          class="qd-hit-target mushaf-header__selection-button"
+          type="button"
+          [class.mushaf-header__selection-button--active]="ayahSelectionMode()"
+          [attr.aria-pressed]="ayahSelectionMode()"
+          [attr.title]="ayahSelectionMode() ? 'إنهاء تحديد الآيات' : 'تحديد آيات للربط'"
+          (click)="toggleAyahSelectionMode()"
+        >
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="M8 4H5a1 1 0 0 0-1 1v3m12-4h3a1 1 0 0 1 1 1v3M8 20H5a1 1 0 0 1-1-1v-3m12 4h3a1 1 0 0 0 1-1v-3M8 12l2.5 2.5L16 9"
+              stroke="currentColor"
+              stroke-width="1.7"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+          <span>تحديد آيات</span>
+        </button>
+      }
     </div>
   </div>
 </header>

@@ -6,18 +6,37 @@
     testIdPrefix="abwab-relations-modal"
     [open]="true"
     [titleText]="titleText()"
-    [showClose]="true"
+    [showClose]="false"
+    [compactHeader]="true"
+    [hasFooter]="view() === 'add'"
     [submitOnEnter]="view() === 'add' && canCreateRelation()"
     (dismissed)="close()"
-    (primaryActionRequested)="primaryAction()"
+    (primaryActionRequested)="add()"
   >
     @if (!anchorPickMode() && view() === 'overview' && status() === 'ready') {
-      <span qdModalShellHeaderExtra class="qd-chip qd-chip--pill qd-chip--static" data-testid="abwab-relations-modal-count">
+      <span
+        qdModalShellHeaderExtra
+        class="qd-chip qd-chip--pill qd-chip--static"
+        [attr.aria-label]="titleText() + ': ' + relations().length"
+        data-testid="abwab-relations-modal-count"
+      >
         {{ relations().length }}
       </span>
     }
+    <button
+      qdModalShellHeaderExtra
+      type="button"
+      qdAction="icon-only"
+      [attr.aria-label]="presentation.closeLabel"
+      [title]="presentation.closeLabel"
+      data-testid="abwab-relations-modal-close"
+      (click)="close()"
+    >
+      <span aria-hidden="true">×</span>
+      <span class="qd-sr-only">{{ presentation.closeLabel }}</span>
+    </button>
 
-    <p qdModalShellHeaderSupport class="abwab-relations-modal__desc">
+    <p qdModalShellHeaderSupport class="abwab-relations-modal__desc qd-text-muted">
       {{ presentation.description(view(), canDeleteRelation()) }}
     </p>
 
@@ -35,56 +54,18 @@
     }
 
     @if (view() === 'overview' && !anchorPickMode()) {
-      <div class="abwab-relations-modal__overview" data-testid="abwab-relations-modal-overview">
-        @if (status() === 'loading') {
-          <qd-skeleton-rows
-            class="abwab-relations-modal__loading"
-            [count]="3"
-            rowTemplate="0.5rem 6rem 1fr"
-            [loadingLabel]="presentation.loadingLabel"
-            data-testid="abwab-relations-modal-loading"
-          />
-        } @else if (status() === 'ready') {
-          @if (groups().length === 0) {
-            <qd-empty-state
-              [message]="presentation.empty(canCreateRelation())"
-              testId="qd-state-empty"
-              data-testid="abwab-relations-modal-empty"
-            />
-          } @else {
-            @for (group of groups(); track group.key) {
-              <section class="abwab-relations-modal__group" [attr.data-testid]="'abwab-relations-modal-group-' + group.key">
-                <h3>
-                  <span
-                    class="abwab-relations-modal__dot"
-                    [class]="'abwab-relations-modal__dot--' + presentation.groupDotKind(group.key)"
-                  ></span>
-                  {{ presentation.groupLabel(group.key) }}
-                  <span class="abwab-relations-modal__group-count">{{ group.relations.length }}</span>
-                </h3>
-                <div class="abwab-relations-modal__chips">
-                  @for (relation of group.relations; track relation.id) {
-                    <span class="abwab-relations-modal__chip" [title]="doorPath(relation.otherDoorId, relation.otherDoorName)">
-                      <qd-chip
-                        [removable]="canDeleteRelation()"
-                        [removeAriaLabel]="presentation.deleteAriaLabel(relation.otherDoorName)"
-                        [labelClickable]="canDeleteRelation()"
-                        [labelAriaLabel]="presentation.revealAriaLabel(relation.otherDoorName)"
-                        [ariaLabel]="!canDeleteRelation() ? presentation.revealAriaLabel(relation.otherDoorName) : null"
-                        (remove)="remove(relation)"
-                        (labelClick)="requestReveal(relation.otherDoorId)"
-                        (chipClick)="requestReveal(relation.otherDoorId)"
-                      >
-                        {{ relation.otherDoorName }}
-                      </qd-chip>
-                    </span>
-                  }
-                </div>
-              </section>
-            }
-          }
-        }
-      </div>
+      <qd-abwab-relations-overview
+        [relations]="relations()"
+        [liveRoots]="liveRoots()"
+        [status]="status()"
+        [activeGroupKey]="activeGroupKey()"
+        [canCreateRelation]="canCreateRelation()"
+        [canDeleteRelation]="canDeleteRelation()"
+        (activeGroupKeyChange)="activeGroupKey.set($event)"
+        (addRequested)="openAdd($event)"
+        (revealRequested)="revealRequested.emit($event)"
+        (deleteRequested)="remove($event)"
+      />
     } @else {
       <section class="abwab-relations-modal__add" data-testid="abwab-relations-modal-add-view">
         <h3 class="abwab-relations-modal__add-title">{{ presentation.addTitle }}</h3>
@@ -92,7 +73,7 @@
         @if (anchorPickMode()) {
           <div class="abwab-relations-modal__targets" data-testid="abwab-relations-modal-targets">
             @for (target of bulkTargets(); track target.id) {
-              <span class="abwab-relations-modal__target" [title]="doorPath(target.id, target.name)">{{ target.name }}</span>
+              <span class="qd-chip qd-chip--static" [title]="doorPath(target.id, target.name)">{{ target.name }}</span>
             }
           </div>
         }
@@ -135,7 +116,7 @@
                 {{ anchorLessLabel() }}
               </button>
             </div>
-            <span class="abwab-relations-modal__preview" data-testid="abwab-relations-modal-direction-preview">
+            <span class="abwab-relations-modal__preview qd-text-muted" data-testid="abwab-relations-modal-direction-preview">
               {{ directionPreview() }}
             </span>
           </div>
@@ -143,7 +124,7 @@
 
         <div class="abwab-relations-modal__picker">
           @if (anchorPickMode()) {
-            <p class="abwab-relations-modal__picker-hint">{{ presentation.bulkAnchorHint }}</p>
+            <p class="abwab-relations-modal__picker-hint qd-text-muted">{{ presentation.bulkAnchorHint }}</p>
           }
           <qd-abwab-door-picker
             [nodes]="liveRoots()"
@@ -158,20 +139,14 @@
             testIdPrefix="abwab-relations-modal"
             (toggled)="togglePicked($event)"
           />
-          <p class="abwab-relations-modal__selected" aria-live="polite" data-testid="abwab-relations-modal-selected">
+          <p class="abwab-relations-modal__selected qd-text-muted" aria-live="polite" data-testid="abwab-relations-modal-selected">
             {{ pickedIds().size === 0 ? presentation.noneSelectedLabel : selectedSummary() }}
           </p>
         </div>
       </section>
     }
 
-    @if (view() === 'overview' && canCreateRelation()) {
-      <div qdModalShellFooter class="abwab-relations-modal__foot">
-        <button type="button" qdAction="primary" data-testid="abwab-relations-modal-start-add" (click)="openAdd()">
-          {{ presentation.startAddLabel }}
-        </button>
-      </div>
-    } @else if (view() === 'add') {
+    @if (view() === 'add') {
       <div qdModalShellFooter class="abwab-relations-modal__foot">
         <button
           type="button"

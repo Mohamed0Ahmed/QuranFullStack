@@ -1,4 +1,3 @@
-@use '../../pages/abwab-page/abwab-page.component';
 @use '../../../../../styles/breakpoints' as bp;
 
 :host {
@@ -15,10 +14,20 @@
 
 .abwab-management-picker__tree-card {
   flex: 1;
+  min-block-size: 0;
 }
 
 .abwab-management-picker__tree-card--selection {
   padding: 0;
+}
+
+.abwab-page__tree-skeleton {
+  --qd-skeleton-h: 1.5rem;
+}
+
+.abwab-page__add-ghost {
+  align-self: flex-start;
+  margin-block-start: var(--qd-space-2);
 }
 
 .abwab-management-picker__menu-stats {

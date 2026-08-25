@@ -2,6 +2,7 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, afterNextRender, computed, inject, input, output } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { LinkingQuickAddComponent } from '../../../linking/components/linking-quick-add/linking-quick-add.component';
 import { QdDataTableComponent } from '../../../../shared/ui/data-table/data-table.component';
 import { QdDataTableRenderer, QdDataTableState } from '../../../../shared/ui/data-table/data-table.models';
 import { QdSortableHeaderComponent } from '../../../../shared/ui/data-table/sortable-header.component';
@@ -14,6 +15,7 @@ import {
   WORD_TYPE_TABLE_VIEW_TABLE_LABELS,
 } from '../../models/word-types.labels';
 import { ExplorerSortColumn } from '../../models/explorer-sort';
+import { WordTypeDetailScope } from '../../models/word-types-detail.models';
 import {
   DEFAULT_WORD_TYPE_SORT,
   PagedResultDto,
@@ -30,6 +32,10 @@ import {
 } from '../../models/word-types.models';
 import { ExplorerTableSortController } from '../../utils/explorer-table-sort.controller';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+import {
+  linkingSourcesByRow,
+  wordTypeLinkingSource,
+} from '../../utils/words-linking-source-descriptor';
 import { ExplorerTableColumnSettingsComponent } from '../explorer-table-column-settings/explorer-table-column-settings.component';
 import { ExplorerTableColumnDefinition, ExplorerTableColumnsController } from '../../state/explorer-table-columns.controller';
 
@@ -61,7 +67,7 @@ const WORD_TYPES_TABLE_COLUMNS: readonly ExplorerTableColumnDefinition[] = [
 @Component({
   selector: 'qd-word-types-table',
   standalone: true,
-  imports: [ExplorerTableColumnSettingsComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
+  imports: [ExplorerTableColumnSettingsComponent, LinkingQuickAddComponent, NgTemplateOutlet, QdActionDirective, QdDataTableComponent, QdSortableHeaderComponent, WordCountChipComponent],
   templateUrl: './word-types-table.component.html',
   styleUrl: './word-types-table.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -71,6 +77,7 @@ export class WordTypesTableComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   readonly rows = input<PagedResultDto<WordTypeTableRowDto> | null>(null);
+  readonly scope = input.required<WordTypeDetailScope>();
   readonly tableView = input<WordTypeTableView>('words');
   readonly loading = input(false);
   readonly status = input<WordTypesLoadStatus>('idle');
@@ -104,6 +111,9 @@ export class WordTypesTableComponent {
     }
     return page.items.filter((row) => this.matchesActiveView(row));
   });
+  protected readonly linkingSources = computed(() =>
+    linkingSourcesByRow(this.visibleRows(), (row) => wordTypeLinkingSource(row, this.scope())),
+  );
 
   protected readonly renderer = computed<QdDataTableRenderer>(() =>
     this.isWordView() ? 'wide-columns' : 'grouped-rows',
@@ -229,6 +239,10 @@ export class WordTypesTableComponent {
 
   protected selectRow(row: WordTypeTableRowDto): void {
     this.rowSelected.emit(row);
+  }
+
+  protected linkingSource(row: WordTypeTableRowDto) {
+    return this.linkingSources().get(row) ?? wordTypeLinkingSource(row, this.scope());
   }
 
   focusTarget(

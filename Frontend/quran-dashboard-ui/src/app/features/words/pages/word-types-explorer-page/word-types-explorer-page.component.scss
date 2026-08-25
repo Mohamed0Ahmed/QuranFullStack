@@ -5,8 +5,47 @@
   min-inline-size: 0;
 }
 
+.word-types-page {
+  max-inline-size: 100rem;
+}
+
+.word-types-page > qd-words-local-nav,
+.word-types-page > qd-explorer-toolbar,
+.word-types-page > qd-word-type-scope-counts {
+  display: block;
+  margin-block-end: var(--qd-space-2);
+}
+
+.uw-intro-band {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.4fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--qd-space-3);
+  margin-block-end: var(--qd-space-2);
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+.uw-intro-band .qd-page-header {
+  margin: 0;
+  padding: var(--qd-space-2);
+  border: 0;
+}
+
 .word-types-page__filter {
   min-inline-size: 0;
+  margin-block-end: var(--qd-space-2);
+}
+
+.word-types-page__layout.qd-explorer-layout {
+  --qd-explorer-chrome-block-size: 15rem;
+}
+
+.word-types-page__layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(22rem, 0.75fr);
+  gap: var(--qd-space-2);
 }
 
 .word-types-page__main,
@@ -15,9 +54,38 @@
   min-inline-size: 0;
 }
 
-// Desktop only (Feature 029, U3): the details panel aligns with the table row,
-// not the tabs. Below desktop the grid collapses to one column and DOM flow
-// (tabs → table → panel) takes over.
+.word-types-page__toolbar {
+  display: flex;
+  align-items: center;
+  min-inline-size: 0;
+}
+
+.word-types-page__search {
+  inline-size: min(34rem, 100%);
+}
+
+.word-types-page__sort {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.word-types-details__scroll {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: var(--qd-space-2);
+  min-block-size: 0;
+  overflow-y: auto;
+}
+
+.word-types-details__error {
+  gap: var(--qd-space-2);
+}
+
 @media (min-width: bp.$qd-bp-desktop-min) {
   .word-types-page__tabs {
     grid-column: 1;
@@ -36,30 +104,23 @@
   }
 }
 
-.word-types-page__toolbar {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .uw-intro-band,
+  .word-types-page__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
-.word-types-page__sort {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-  min-inline-size: 0;
-  color: var(--qd-text-muted);
-  font-size: 0.9rem;
-}
+@media (max-width: bp.$qd-bp-compact-max) {
+  .uw-intro-band {
+    padding: var(--qd-space-1);
+  }
 
-.word-types-details__scroll {
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: column;
-  gap: var(--qd-space-3);
-  min-block-size: 0;
-  overflow-y: auto;
-}
+  .uw-intro-band .qd-page-header {
+    padding: var(--qd-space-1);
+  }
 
-.word-types-details__error {
-  gap: var(--qd-space-3);
+  .word-types-page__search {
+    inline-size: 100%;
+  }
 }

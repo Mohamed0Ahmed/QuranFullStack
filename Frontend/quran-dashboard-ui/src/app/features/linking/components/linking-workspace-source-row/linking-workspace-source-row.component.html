@@ -30,12 +30,13 @@
       class="linking-workspace-source-row__ayahs-button"
       [attr.data-linking-editor-source-key]="row().item.sourceKey"
       [attr.aria-label]="showAyahsLabel()"
+      [title]="showAyahsLabel()"
       (click)="editRequested.emit()"
     >
-      <span class="linking-workspace-source-row__wide-label">{{ labels.showAyahs }}</span>
-      <span class="linking-workspace-source-row__compact-label" aria-hidden="true">
-        {{ labels.showAyahsCompact }}
-      </span>
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M3.5 12s3.2-5 8.5-5 8.5 5 8.5 5-3.2 5-8.5 5-8.5-5-8.5-5Z" stroke="currentColor" stroke-width="1.7" />
+        <circle cx="12" cy="12" r="2.25" stroke="currentColor" stroke-width="1.7" />
+      </svg>
       <span class="linking-workspace-source-row__ayahs-count">{{ row().countLabel }}</span>
     </button>
   </div>
@@ -50,11 +51,9 @@
         [class.linking-workspace-source-row__toggle--active]="configuration.automaticWordMatchesEnabled"
         [attr.aria-pressed]="configuration.automaticWordMatchesEnabled"
         [attr.aria-label]="automaticWordsLabel()"
+        [title]="automaticWordsLabel()"
         (click)="automaticWordsChanged.emit(!configuration.automaticWordMatchesEnabled)"
       >
-        <span class="linking-workspace-source-row__toggle-mark" aria-hidden="true">
-          {{ configuration.automaticWordMatchesEnabled ? '✓' : '' }}
-        </span>
         <span class="linking-workspace-source-row__wide-label">{{ labels.highlightStep }}</span>
         <span class="linking-workspace-source-row__compact-label" aria-hidden="true">
           {{ labels.highlightStepCompact }}
@@ -64,13 +63,16 @@
   }
 
   <button
-    qdAction="danger"
+    qdAction="icon-only"
     size="sm"
     type="button"
     class="linking-workspace-source-row__remove"
     [attr.aria-label]="labels.removeSource + ': ' + row().item.source.label"
+    [title]="labels.removeSource + ': ' + row().item.source.label"
     (click)="removeRequested.emit()"
   >
-    <span aria-hidden="true">×</span>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M7 8h10M9 8V6h6v2m-7 0 .7 11h6.6L16 8M10 11v5m4-5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+    </svg>
   </button>
 </article>

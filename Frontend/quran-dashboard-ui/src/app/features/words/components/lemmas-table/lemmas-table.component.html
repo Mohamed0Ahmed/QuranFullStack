@@ -44,7 +44,10 @@
         @case ('rowNumber') { <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__cell--row-number qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div> }
         @case ('lemma') {
           <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__word-cell" role="cell">
-            <button qdAction="row-action" size="sm" type="button" class="lemmas-table__word qd-interactive-surface" data-testid="lemmas-table-lemma-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="lemmas-table__display">{{ row.displayText }}</span></button>
+            <div class="qd-words-linking-identity">
+              <button qdAction="row-action" size="sm" type="button" class="lemmas-table__word qd-interactive-surface" data-testid="lemmas-table-lemma-button" [disabled]="row.simpleWordsCount === 0" [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null" [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null" (click)="selectRow(row)"><span class="lemmas-table__display">{{ row.displayText }}</span></button>
+              <qd-linking-quick-add [source]="linkingSource(row)" testId="lemmas-table-quick-add" />
+            </div>
           </div>
         }
         @case ('root') { <div class="lemmas-table__cell qd-explorer-table__cell lemmas-table__root-cell lemmas-table__root-cell--wide" role="cell"><ng-container *ngTemplateOutlet="rootCell; context: { row: row }" /></div> }
@@ -58,19 +61,21 @@
       <div class="lemmas-table__compact-row-number qd-explorer-mobile-row-number" aria-hidden="true">{{ rowNumber(index) }}</div>
     }
     <div class="lemmas-table__compact-identity qd-explorer-mobile-identity">
-      <button
-        qdAction="row-action"
-        size="sm"
-        type="button"
-        class="lemmas-table__word lemmas-table__word--compact qd-interactive-surface"
-        data-testid="lemmas-table-lemma-button"
-        [disabled]="row.simpleWordsCount === 0"
-        [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
-        [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
-        (click)="selectRow(row)"
-      >
-        <span class="lemmas-table__display">{{ row.displayText }}</span>
-      </button>
+      <div class="qd-words-linking-identity">
+        <button
+          qdAction="row-action"
+          size="sm"
+          type="button"
+          class="lemmas-table__word lemmas-table__word--compact qd-interactive-surface"
+          data-testid="lemmas-table-lemma-button"
+          [disabled]="row.simpleWordsCount === 0"
+          [attr.aria-disabled]="row.simpleWordsCount === 0 ? 'true' : null"
+          [attr.aria-describedby]="row.simpleWordsCount === 0 ? disabledReasonId : null"
+          (click)="selectRow(row)"
+        >
+          <span class="lemmas-table__display">{{ row.displayText }}</span>
+        </button>
+      </div>
       @if (columnSettings.isVisible('root')) {
         <div class="qd-explorer-mobile-relations">
           <span class="qd-explorer-mobile-relation-label">{{ headers.root }}:</span>
@@ -157,11 +162,11 @@
 
 <ng-template #mobileMetric let-row="row" let-column="column">
   @switch (column) {
-    @case ('occurrences') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--occurrences" testId="lemmas-table-mobile-occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" [countFirst]="true" (chipClick)="openCount(row, 'occurrences', 'ayahs')" /> }
-    @case ('ayahs') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" [countFirst]="true" (chipClick)="openCount(row, 'ayahs', 'ayahs')" /> }
-    @case ('surahs') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" [countFirst]="true" (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })" /> }
-    @case ('simple') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-simple-words" [label]="headers.simpleWords" [count]="row.simpleWordsCount" [disabled]="row.simpleWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'simple', row.simpleWordsCount)" [countFirst]="true" (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })" /> }
-    @case ('tashkeel') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-tashkeel-words" [label]="headers.tashkeelWords" [count]="row.tashkeelWordsCount" [disabled]="row.tashkeelWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" [countFirst]="true" (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })" /> }
-    @case ('stems') { <qd-word-count-chip class="qd-explorer-mobile-stat qd-explorer-mobile-stat--action" testId="lemmas-table-mobile-stems" [label]="headers.stems" [count]="row.stemsCount" [disabled]="row.stemsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'stems', row.stemsCount)" [countFirst]="true" (chipClick)="openCount(row, 'stems', 'stems')" /> }
+    @case ('occurrences') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-occurrences" [label]="headers.occurrences" [count]="row.occurrencesCount" [disabled]="row.occurrencesCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'occurrences', row.occurrencesCount)" (chipClick)="openCount(row, 'occurrences', 'ayahs')" /> }
+    @case ('ayahs') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-ayahs" [label]="headers.ayahs" [count]="row.ayahsCount" [disabled]="row.ayahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'ayahs', row.ayahsCount)" (chipClick)="openCount(row, 'ayahs', 'ayahs')" /> }
+    @case ('surahs') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-surahs" [label]="headers.surahs" [count]="row.surahsCount" [disabled]="row.surahsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'surahs', row.surahsCount)" (chipClick)="openCount(row, 'surahs', 'surahs', { surahView: 'mentioned' })" /> }
+    @case ('simple') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-simple-words" [label]="headers.simpleWords" [count]="row.simpleWordsCount" [disabled]="row.simpleWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'simple', row.simpleWordsCount)" (chipClick)="openCount(row, 'simple', 'words', { wordView: 'simple' })" /> }
+    @case ('tashkeel') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-tashkeel-words" [label]="headers.tashkeelWords" [count]="row.tashkeelWordsCount" [disabled]="row.tashkeelWordsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'tashkeel', row.tashkeelWordsCount)" (chipClick)="openCount(row, 'tashkeel', 'words', { wordView: 'tashkeel' })" /> }
+    @case ('stems') { <qd-word-count-chip class="qd-explorer-mobile-stat" testId="lemmas-table-mobile-stems" [label]="headers.stems" [count]="row.stemsCount" [disabled]="row.stemsCount === 0" [disabledReasonId]="disabledReasonId" [selected]="isCountActive(row, 'stems', row.stemsCount)" (chipClick)="openCount(row, 'stems', 'stems')" /> }
   }
 </ng-template>

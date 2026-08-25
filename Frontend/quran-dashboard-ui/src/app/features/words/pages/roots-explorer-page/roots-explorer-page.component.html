@@ -1,5 +1,7 @@
 <div class="qd-page">
   <div class="qd-page-shell qd-page-shell--split-workspace roots-explorer-frame">
+    <qd-words-local-nav activeSection="roots" />
+
     <div class="uw-intro-band">
       <div class="qd-page-header">
         <h1 class="qd-page-title" data-testid="roots-explorer-page-title">{{ pageTitle }}</h1>
@@ -112,6 +114,8 @@
               [view]="activeView()"
               [emptySelection]="emptySelection()"
               [selectionTitle]="panelState().summary?.rootText ?? ''"
+              [summary]="panelState().summary"
+              [wordView]="panelState().wordView"
               [linkingSource]="linkingSource()"
               [loading]="panelState().status === 'loading'"
               [notFound]="panelState().status === 'notFound'"
@@ -131,6 +135,8 @@
           [view]="activeView()"
           [emptySelection]="emptySelection()"
           [selectionTitle]="panelState().summary?.rootText ?? ''"
+          [summary]="panelState().summary"
+          [wordView]="panelState().wordView"
           [linkingSource]="linkingSource()"
           [loading]="panelState().status === 'loading'"
           [notFound]="panelState().status === 'notFound'"

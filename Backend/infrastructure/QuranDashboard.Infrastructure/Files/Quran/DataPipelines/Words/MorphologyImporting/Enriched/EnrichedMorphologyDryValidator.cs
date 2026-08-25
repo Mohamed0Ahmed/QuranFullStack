@@ -13,6 +13,15 @@ public sealed class EnrichedMorphologyDryValidator
 
         var checks = new List<EnrichedMorphologyDryCheck>();
 
+        var fallback = source.RootFallbackSummary;
+        checks.Add(new EnrichedMorphologyDryCheck(
+            "ENRICHED-APPROVED-ROOT-FALLBACK",
+            Expected: $"{MorphologyInvariants.ExpectedApprovedRootFallbacks} applied",
+            Observed: fallback is null ? "missing" : $"{fallback.AppliedEntries} applied",
+            Passed: fallback is not null
+                && fallback.ExpectedEntries == MorphologyInvariants.ExpectedApprovedRootFallbacks
+                && fallback.AppliedEntries == MorphologyInvariants.ExpectedApprovedRootFallbacks));
+
         checks.Add(new EnrichedMorphologyDryCheck(
             "ENRICHED-RECORD-COUNT",
             Expected: "77432",

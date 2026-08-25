@@ -14,7 +14,7 @@
   gap: var(--qd-space-2);
   min-block-size: 0;
   overflow: hidden;
-  padding: var(--qd-space-2);
+  padding: 0 var(--qd-space-2) var(--qd-space-2);
 }
 
 .linking-source-ayah-editor__header {
@@ -22,6 +22,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--qd-space-2);
+  padding: var(--qd-space-2) 0;
+  border-block-end: var(--qd-hairline);
 }
 
 .linking-source-ayah-editor__summary {
@@ -32,6 +34,11 @@
 
 .linking-source-ayah-editor__back {
   flex: 0 0 auto;
+}
+
+.linking-source-ayah-editor__back svg {
+  inline-size: 1rem;
+  block-size: 1rem;
 }
 
 .linking-source-ayah-editor__words-toggle {
@@ -61,13 +68,38 @@
 }
 
 .linking-source-ayah-editor__ready-count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--qd-space-1);
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-meta);
   line-height: var(--qd-type-meta-lh);
 }
 
-.linking-source-ayah-editor__compact-count {
-  display: none;
+.linking-source-ayah-editor__metric {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--qd-space-1);
+  min-block-size: var(--qd-s-24);
+  padding-inline: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-pill);
+  background: var(--qd-section-bg);
+}
+
+.linking-source-ayah-editor__metric small {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.linking-source-ayah-editor__metric strong {
+  color: var(--qd-ink);
+}
+
+.linking-source-ayah-editor__metric--selected {
+  border-color: var(--qd-border-accent);
+  background: var(--qd-selected-bg);
 }
 
 qd-linking-virtual-ayah-list {
@@ -79,7 +111,7 @@ qd-linking-virtual-ayah-list {
 @media (max-width: bp.$qd-bp-compact-max) {
   .linking-source-ayah-editor {
     gap: var(--qd-space-1);
-    padding: var(--qd-space-1);
+    padding: 0 var(--qd-space-1) var(--qd-space-1);
   }
 
   .linking-source-ayah-editor__header {
@@ -87,8 +119,7 @@ qd-linking-virtual-ayah-list {
   }
 
   .linking-source-ayah-editor__summary {
-    display: flex;
-    align-items: baseline;
+    display: grid;
     gap: var(--qd-space-1);
   }
 
@@ -99,15 +130,11 @@ qd-linking-virtual-ayah-list {
 
   .linking-source-ayah-editor__ready-count {
     font-size: var(--qd-type-caption);
-    white-space: nowrap;
   }
 
-  .linking-source-ayah-editor__wide-count {
-    display: none;
-  }
-
-  .linking-source-ayah-editor__compact-count {
-    display: inline;
+  .linking-source-ayah-editor__metric {
+    min-block-size: var(--qd-s-20);
+    padding-inline: var(--qd-space-1);
   }
 
 }

@@ -1,4 +1,24 @@
 :host {
-  display: block;
+  display: flex;
+  flex-direction: column;
   min-inline-size: 0;
+  min-block-size: 0;
+}
+
+.lemma-stems-list-shell {
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+}
+
+.lemma-stems-list {
+  gap: 0;
+}
+
+.lemma-stems-list__row {
+  min-block-size: var(--qd-hit-target-min);
+  border: 0;
+  border-block-end: var(--qd-hairline);
+  border-radius: 0;
+  background: transparent;
 }

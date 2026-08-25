@@ -40,6 +40,9 @@
   [frameless]="true"
   [view]="frame().view"
   [selectionTitle]="panelState().summary?.stemText ?? ''"
+  [summary]="panelState().summary"
+  [wordView]="frame().wordView"
+  [lemmasCount]="lemmasCount()"
   [loading]="panelState().status === 'loading'"
   (viewChange)="onViewChange($event)"
 >

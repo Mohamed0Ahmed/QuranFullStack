@@ -63,8 +63,8 @@ export class LinkingWorkspaceSyncRunner {
     }
   }
 
-  run(actorSub: string, actorGeneration: number, operation: LinkingWorkspaceOperation): void {
-    this.enqueue(actorSub, actorGeneration, async (bindings) => {
+  run(actorSub: string, actorGeneration: number, operation: LinkingWorkspaceOperation): Promise<void> {
+    return this.enqueue(actorSub, actorGeneration, async (bindings) => {
       const snapshot = await firstValueFrom(operation(bindings.workspaceVersion()));
       if (bindings.isCurrentActor(actorSub, actorGeneration)) {
         bindings.applySnapshot(snapshot);
@@ -134,10 +134,10 @@ export class LinkingWorkspaceSyncRunner {
     actorSub: string,
     actorGeneration: number,
     work: (bindings: LinkingWorkspaceSyncBindings) => Promise<void>,
-  ): void {
+  ): Promise<void> {
     const bindings = this.bindings;
     if (bindings === null) {
-      return;
+      return Promise.resolve();
     }
     this.queue = this.queue
       .catch(() => undefined)
@@ -151,6 +151,7 @@ export class LinkingWorkspaceSyncRunner {
           await this.recover(bindings, actorSub, actorGeneration, error);
         }
       });
+    return this.queue;
   }
 
   private async recover(

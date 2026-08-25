@@ -3,15 +3,25 @@
 .abwab-toolbar {
   display: flex;
   flex-direction: column;
-  gap: var(--qd-space-3);
+  gap: var(--qd-space-2);
 }
 
 .abwab-toolbar__controls {
   align-items: stretch;
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface);
 }
 
 .abwab-toolbar__tabs {
-  --qd-tabs-track-floor: 8.5rem;
+  --qd-tabs-track-floor: 7.5rem;
+
+  order: -1;
+  padding: var(--qd-space-1);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-sm);
+  background: var(--qd-surface-recessed);
 }
 
 .abwab-toolbar__tab-label {
@@ -29,7 +39,7 @@
 .abwab-toolbar__side-actions {
   display: flex;
   align-items: center;
-  gap: var(--qd-space-2);
+  gap: var(--qd-space-1);
   flex: 0 0 auto;
 }
 
@@ -43,6 +53,18 @@
 
 .abwab-toolbar__tree-expansion {
   flex: none;
+}
+
+.abwab-toolbar__tree-expansion .qd-action,
+.abwab-toolbar__view-btn {
+  --qd-action-size: var(--qd-control-sm);
+  --qd-action-padding-inline: var(--qd-space-2);
+}
+
+.abwab-toolbar__tree-expansion svg,
+.abwab-toolbar__view-btn svg {
+  inline-size: 1rem;
+  block-size: 1rem;
 }
 
 .abwab-toolbar__view-btn {
@@ -72,6 +94,9 @@
 
   .abwab-toolbar__controls {
     gap: var(--qd-space-2);
+    padding-inline: 0;
+    border-inline: 0;
+    border-radius: 0;
   }
 
   .abwab-toolbar__search {

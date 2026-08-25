@@ -10,6 +10,7 @@ import {
 import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-display-text';
 import { MushafWordDto } from '../../models/mushaf.models';
 import {
+  MushafDoorResolvedColorSlot,
   MushafDoorDetailsRequest,
   MushafDoorResolvedHighlight,
 } from '../../models/mushaf-door-highlights.models';
@@ -46,6 +47,24 @@ export class MushafWordComponent implements OnDestroy {
   private previewOpen = false;
 
   protected readonly displayText = computed(() => toQuranWordDisplayText(this.word().textUthmani));
+  protected readonly doorFill = computed(() => {
+    const slot: MushafDoorResolvedColorSlot | undefined = this.doorHighlight()?.colorSlot;
+    if (slot === undefined) {
+      return null;
+    }
+    return slot === 'multi'
+      ? 'var(--qd-door-highlight-multi-gradient)'
+      : `var(--qd-door-highlight-${slot})`;
+  });
+  protected readonly doorMarkerFill = computed(() => {
+    const slot: MushafDoorResolvedColorSlot | undefined = this.doorHighlight()?.colorSlot;
+    if (slot === undefined) {
+      return null;
+    }
+    return slot === 'multi'
+      ? 'var(--qd-door-marker-multi-gradient)'
+      : `var(--qd-door-highlight-${slot})`;
+  });
 
   protected readonly isSelectedAyah = computed(
     () => this.ayahSelectionMode() && this.selectedVerseKeys().includes(this.word().verseKey),

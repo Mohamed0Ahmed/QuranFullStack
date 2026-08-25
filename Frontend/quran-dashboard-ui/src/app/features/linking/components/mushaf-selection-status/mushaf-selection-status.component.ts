@@ -1,13 +1,14 @@
-import { ChangeDetectionStrategy, Component, ElementRef, inject, viewChild } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, inject, signal, viewChild } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
+import { QdModalShellComponent } from '../../../../shared/ui/modal-shell/modal-shell.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { ManualMushafSelectionStore } from '../../state/manual-mushaf-selection.store';
 
 @Component({
   selector: 'qd-mushaf-selection-status',
   standalone: true,
-  imports: [QdActionDirective],
+  imports: [QdActionDirective, QdModalShellComponent],
   templateUrl: './mushaf-selection-status.component.html',
   styleUrl: './mushaf-selection-status.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -15,6 +16,7 @@ import { ManualMushafSelectionStore } from '../../state/manual-mushaf-selection.
 export class MushafSelectionStatusComponent {
   protected readonly selection = inject(ManualMushafSelectionStore);
   protected readonly labels = LINKING_LABELS;
+  protected readonly reviewOpen = signal(false);
   private readonly cancelButton = viewChild<ElementRef<HTMLButtonElement>>('cancelButton');
 
   focusOwner(): void {
@@ -26,11 +28,19 @@ export class MushafSelectionStatusComponent {
   }
 
   protected cancel(): void {
+    this.reviewOpen.set(false);
     this.selection.cancel();
   }
 
   protected clear(): void {
+    this.reviewOpen.set(false);
     this.selection.clear();
+  }
+
+  protected toggleReview(): void {
+    if (this.selection.selectedCount() > 0) {
+      this.reviewOpen.set(true);
+    }
   }
 
   protected addToWorkspace(): void {
@@ -41,11 +51,4 @@ export class MushafSelectionStatusComponent {
     this.selection.startDirectLink();
   }
 
-  protected retry(verseKey: string): void {
-    this.selection.retry(verseKey);
-  }
-
-  protected remove(verseKey: string): void {
-    this.selection.remove(verseKey);
-  }
 }

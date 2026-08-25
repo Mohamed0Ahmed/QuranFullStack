@@ -2,6 +2,7 @@
   <ng-content select="[qdDetailsActions]" />
   <qd-details-workspace
     #workspace
+    class="qd-words-details-workspace"
     [identity]="frameless() ? '' : entityTitle()"
     variant="entity"
     [hasHeader]="!frameless()"
@@ -25,17 +26,22 @@
     @if (!frameless() && hasSelection()) {
       <button
         qdDetailsActions
-        qdAction="tertiary"
+        qdAction="icon-only"
         size="sm"
         type="button"
         class="word-drilldown-modal__close"
+        [attr.aria-label]="closeLabel"
+        [title]="closeLabel"
         data-testid="word-drilldown-close"
         (click)="closeModal.emit()"
       >
-        {{ closeLabel }}
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+        </svg>
+        <span class="qd-sr-only">{{ closeLabel }}</span>
       </button>
     }
-    <qd-tabs qdDetailsTabs layout="tracks" [ariaLabel]="drilldownViewTablistLabel" dir="rtl">
+    <qd-tabs class="qd-words-detail-tabs" qdDetailsTabs layout="tracks" [ariaLabel]="drilldownViewTablistLabel" dir="rtl">
       @for (viewKey of drilldownViews; track viewKey) {
         <button
           qdTab
@@ -46,10 +52,16 @@
           [selected]="state().view === viewKey && hasSelection()"
           [disabled]="!hasSelection()"
           [attr.disabled]="!hasSelection() ? '' : null"
+          [attr.aria-label]="drilldownTabAriaLabel(viewKey)"
           [attr.data-testid]="'word-drilldown-view-' + viewKey"
           (click)="viewChange.emit(viewKey)"
         >
-          {{ drilldownLabel(viewKey) }}
+          <span>{{ drilldownLabel(viewKey) }}</span>
+          <span
+            class="qd-tabs__count"
+            [class.qd-tabs__count--unknown]="drilldownCount(viewKey) === null"
+            aria-hidden="true"
+          >{{ drilldownCountLabel(viewKey) }}</span>
         </button>
       }
     </qd-tabs>

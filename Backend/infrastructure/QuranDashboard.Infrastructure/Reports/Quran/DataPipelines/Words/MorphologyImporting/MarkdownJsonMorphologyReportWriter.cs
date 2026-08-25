@@ -55,7 +55,8 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
             result.Warnings.ToList(),
             result.Errors.ToList(),
             result.InfoNotes.ToList(),
-            result.CorrectionSummary);
+            result.CorrectionSummary,
+            result.RootFallbackSummary);
 
         await using (var jsonStream = File.Create(jsonPath))
         {
@@ -98,6 +99,19 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         builder.AppendLine($"| multiword | {report.Totals.MultiwordCount:N0} |");
         builder.AppendLine();
         builder.AppendLine($"(empty-form renders → NULL: {report.Totals.EmptyFormRenders})");
+
+        if (report.RootFallbackSummary is not null)
+        {
+            var fallback = report.RootFallbackSummary;
+            builder.AppendLine();
+            builder.AppendLine("## Approved root fallback");
+            builder.AppendLine();
+            builder.AppendLine("- Artifact: `approved-root-fallbacks.json`");
+            builder.AppendLine($"- Artifact SHA-256: `{fallback.ArtifactSha256}`");
+            builder.AppendLine($"- Source: `{fallback.Source}`");
+            builder.AppendLine($"- Expected / applied: {fallback.ExpectedEntries:N0} / {fallback.AppliedEntries:N0}");
+            builder.AppendLine($"- Strong / linguistic / lexical: {fallback.StrongEntries:N0} / {fallback.LinguisticEntries:N0} / {fallback.LexicalEntries:N0}");
+        }
 
         if (report.CorrectionSummary is not null)
         {
@@ -218,7 +232,8 @@ public sealed class MarkdownJsonMorphologyReportWriter : IMorphologyReportWriter
         IReadOnlyList<string> Warnings,
         IReadOnlyList<string> Errors,
         IReadOnlyList<string> InfoNotes,
-        WordLemmaCorrectionSummary? CorrectionSummary);
+        WordLemmaCorrectionSummary? CorrectionSummary,
+        ApprovedRootFallbackSummary? RootFallbackSummary);
 
     private sealed record ReportTotals(
         int MorphologyRows,

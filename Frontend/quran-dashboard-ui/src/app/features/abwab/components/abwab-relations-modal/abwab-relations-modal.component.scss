@@ -1,46 +1,13 @@
-.abwab-relations-modal__desc,
-.abwab-relations-modal__preview,
-.abwab-relations-modal__selected {
-  color: var(--qd-text-muted);
-  font-size: 0.78rem;
+@use '../../../../../styles/breakpoints' as bp;
+
+:host ::ng-deep .qd-modal-shell--wide {
+  block-size: min(90dvh, 46rem);
+  min-block-size: min(90dvh, 46rem);
+  max-block-size: min(90dvh, 46rem);
 }
 
-.abwab-relations-modal__group h3,
 .abwab-relations-modal__picker-hint {
-  color: var(--qd-text-muted);
-  font-size: 0.75rem;
   margin-block-end: var(--qd-space-2);
-}
-
-
-.abwab-relations-modal__group {
-  margin-block-end: var(--qd-space-4);
-}
-
-.abwab-relations-modal__loading {
-  display: block;
-  --qd-skeleton-h: 1.25rem;
-  margin-block-end: var(--qd-space-4);
-}
-
-.abwab-relations-modal__group h3 {
-  display: flex;
-  align-items: center;
-  gap: var(--qd-space-2);
-}
-
-.abwab-relations-modal__overview {
-  min-block-size: 9rem;
-}
-
-.abwab-relations-modal__group-count {
-  min-inline-size: 1.5rem;
-  padding-inline: var(--qd-space-1);
-  border-radius: var(--qd-radius-pill);
-  background: var(--qd-section-bg);
-  color: var(--qd-text-muted);
-  font-size: 0.6875rem;
-  text-align: center;
 }
 
 .abwab-relations-modal__dot {
@@ -62,42 +29,31 @@
   background: var(--qd-text-muted);
 }
 
-.abwab-relations-modal__chips,
 .abwab-relations-modal__targets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--qd-space-2);
 }
 
-.abwab-relations-modal__chip {
-  display: inline-flex;
-}
-
 .abwab-relations-modal__targets {
+  grid-column: 1 / -1;
   margin-block-end: var(--qd-space-3);
-}
-
-.abwab-relations-modal__target {
-  font-size: 0.8125rem;
-  background: var(--qd-section-bg);
-  border: 1px solid var(--qd-border);
-  border-radius: var(--qd-radius-md);
-  padding: var(--qd-space-1) var(--qd-space-2);
-  max-inline-size: 14rem;
-  min-inline-size: 0;
-  overflow-wrap: anywhere;
 }
 
 .abwab-relations-modal__add-title {
-  font-size: 0.9rem;
-  font-weight: 700;
+  grid-column: 1 / -1;
   margin-block-end: var(--qd-space-3);
 }
 
+.abwab-relations-modal__add {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: var(--qd-space-2) var(--qd-space-3);
+}
+
 .abwab-relations-modal__types {
-  display: block;
   inline-size: fit-content;
-  padding: var(--qd-space-1);
 }
 
 .abwab-relations-modal__types,
@@ -120,7 +76,6 @@
   gap: var(--qd-space-2);
   font-size: 0.78rem;
   padding: var(--qd-space-2) var(--qd-space-3);
-  margin-block-start: var(--qd-space-2);
 }
 
 .abwab-relations-modal__pill {
@@ -147,18 +102,28 @@
 }
 
 .abwab-relations-modal__picker {
-  margin-block-start: var(--qd-space-3);
+  grid-column: 1 / -1;
   padding: var(--qd-space-2);
 }
 
-.abwab-relations-modal__selected {
-  margin-block-start: var(--qd-space-2);
-  min-block-size: 1.25rem;
+.abwab-relations-modal__foot {
+  display: contents;
 }
 
-.abwab-relations-modal__foot {
-  display: flex;
-  flex: 1 1 auto;
-  min-inline-size: 0;
-  gap: var(--qd-space-2);
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host ::ng-deep .qd-modal-shell--wide {
+    block-size: min(94dvh, 46rem);
+    min-block-size: 0;
+    max-block-size: min(94dvh, 46rem);
+  }
+
+  .abwab-relations-modal__add {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .abwab-relations-modal__add-title,
+  .abwab-relations-modal__targets,
+  .abwab-relations-modal__picker {
+    grid-column: auto;
+  }
 }

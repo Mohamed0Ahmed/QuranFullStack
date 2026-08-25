@@ -110,64 +110,141 @@
   } @else {
     <qd-context-menu
       [position]="overlays.contextMenuPosition()"
+      [menuAriaLabel]="labels.rowMenuAriaLabel(contextDoor.name)"
       menuTestId="abwab-page-context-menu"
       backdropTestId="abwab-page-ctx-backdrop"
       (dismissed)="overlays.closeContextMenu()"
     >
-      @if (contextDoor.children.length > 0) {
-        <button
-          type="button"
-          role="menuitem"
-          class="qd-context-menu__item"
-          [disabled]="!(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
-          [attr.aria-disabled]="!(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
-          [title]="labels.treeExpandBranch"
-          data-testid="abwab-page-ctx-expand-branch"
-          (click)="tree()?.expansionCommands?.expandBranch(contextDoor.id); overlays.closeContextMenu()"
-        >
-          {{ labels.treeExpandBranch }}
-        </button>
-        <button
-          type="button"
-          role="menuitem"
-          class="qd-context-menu__item"
-          [disabled]="!(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
-          [attr.aria-disabled]="!(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
-          [title]="labels.treeCollapseBranch"
-          data-testid="abwab-page-ctx-collapse-branch"
-          (click)="tree()?.expansionCommands?.collapseBranch(contextDoor.id); overlays.closeContextMenu()"
-        >
-          {{ labels.treeCollapseBranch }}
-        </button>
-      }
-      @if (permissions.canEditDoor()) {
-        <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-edit" (click)="interactions.onCtxEdit()">{{ labels.editOp }}</button>
-      }
-      @if (permissions.canCreateDoor()) {
-        <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-add-child" (click)="interactions.onCtxAddChild()">{{ labels.addChildOp }}</button>
-      }
-      @if (permissions.canMoveDoor()) {
-        <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-move" (click)="interactions.onCtxMove()">{{ labels.moveOp }}</button>
-      }
-      <button
-        type="button"
-        role="menuitem"
-        class="qd-context-menu__item"
-        [attr.aria-label]="inclusionsContextMenuLabel(contextDoor)"
-        data-testid="abwab-page-ctx-inclusions"
-        (click)="modalUrl.openInclusionsFromContext()"
-      >
-        <span>{{ labels.inclusionsOp }}</span>
-        <span class="abwab-overlays-host__menu-counts" aria-hidden="true">
-          {{ labels.inclusionsContextMenuCounts(contextDoor.inclusionSourceCount, contextDoor.inclusionConsumerCount) }}
-        </span>
-      </button>
-      <button type="button" role="menuitem" class="qd-context-menu__item" data-testid="abwab-page-ctx-relations" (click)="interactions.onCtxRelations()">{{ labels.relationsOp }}</button>
-      @if (permissions.canArchiveDoor()) {
-        <button type="button" role="menuitem" class="qd-context-menu__item qd-context-menu__item--danger" data-testid="abwab-page-ctx-archive" (click)="overlays.ctxArchive()">
-          {{ labels.archiveOp }}
-        </button>
-      }
+      <div class="abwab-overlays-host__menu-card" role="presentation">
+        <header class="abwab-overlays-host__menu-header" role="presentation">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v5H4zM4 14h7v5H4zM15 14h5v5h-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" /></svg>
+          <span><strong>{{ contextDoor.name }}</strong><small>خيارات الباب</small></span>
+        </header>
+
+        @if (contextDoor.children.length > 0) {
+          <div class="abwab-overlays-host__menu-group" role="group" aria-label="الفرع">
+            <button
+              type="button"
+              role="menuitem"
+              class="qd-context-menu__item abwab-overlays-host__menu-item"
+              [disabled]="!(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
+              [attr.aria-disabled]="!(tree()?.expansionCommands?.canExpandBranch(contextDoor.id) ?? false)"
+              [title]="labels.treeExpandBranch"
+              data-testid="abwab-page-ctx-expand-branch"
+              (click)="tree()?.expansionCommands?.expandBranch(contextDoor.id); overlays.closeContextMenu()"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 3-5 5m0-5v5h5M16 3l5 5m0-5v5h-5M8 21l-5-5m0 5v-5h5M16 21l5-5m0 5v-5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <span>{{ labels.treeExpandBranch }}</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              class="qd-context-menu__item abwab-overlays-host__menu-item"
+              [disabled]="!(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
+              [attr.aria-disabled]="!(tree()?.expansionCommands?.canCollapseBranch(contextDoor.id) ?? false)"
+              [title]="labels.treeCollapseBranch"
+              data-testid="abwab-page-ctx-collapse-branch"
+              (click)="tree()?.expansionCommands?.collapseBranch(contextDoor.id); overlays.closeContextMenu()"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m8 8-5-5m5 0v5H3M16 8l5-5m-5 0v5h5M8 16l-5 5m5 0v-5H3M16 16l5 5m-5 0v-5h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <span>{{ labels.treeCollapseBranch }}</span>
+            </button>
+          </div>
+        }
+
+        @if (permissions.canEditDoor() || permissions.canCreateDoor() || permissions.canMoveDoor()) {
+          <div class="abwab-overlays-host__menu-group" role="group" aria-label="تحرير الباب">
+            @if (permissions.canEditDoor()) {
+              <button
+                type="button"
+                role="menuitem"
+                class="qd-context-menu__item abwab-overlays-host__menu-item"
+                [title]="labels.editOp"
+                data-testid="abwab-page-ctx-edit"
+                (click)="interactions.onCtxEdit()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10zM13.5 7l3.5 3.5" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+                <span>{{ labels.editOp }}</span>
+              </button>
+            }
+            @if (permissions.canCreateDoor()) {
+              <button
+                type="button"
+                role="menuitem"
+                class="qd-context-menu__item abwab-overlays-host__menu-item"
+                [title]="labels.addChildOp"
+                data-testid="abwab-page-ctx-add-child"
+                (click)="interactions.onCtxAddChild()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" /></svg>
+                <span>{{ labels.addChildOp }}</span>
+              </button>
+            }
+            @if (permissions.canMoveDoor()) {
+              <button
+                type="button"
+                role="menuitem"
+                class="qd-context-menu__item abwab-overlays-host__menu-item"
+                [title]="labels.moveOp"
+                data-testid="abwab-page-ctx-move"
+                (click)="interactions.onCtxMove()"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3v18M8 7l4-4 4 4M8 17l4 4 4-4M3 12h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" /></svg>
+                <span>{{ labels.moveOp }}</span>
+              </button>
+            }
+          </div>
+        }
+
+        <div class="abwab-overlays-host__menu-group" role="group" aria-label="مصادر وعلاقات الباب">
+          <button
+            type="button"
+            role="menuitem"
+            class="qd-context-menu__item abwab-overlays-host__menu-item"
+            [attr.aria-label]="inclusionsContextMenuLabel(contextDoor)"
+            [title]="inclusionsContextMenuLabel(contextDoor)"
+            data-testid="abwab-page-ctx-inclusions"
+            (click)="modalUrl.openInclusionsFromContext()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3 4 7l8 4 8-4zM4 12l8 4 8-4M4 17l8 4 8-4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" /></svg>
+            <span class="abwab-overlays-host__menu-copy">
+              <span>{{ labels.inclusionsOp }}</span>
+              <small aria-hidden="true">{{ labels.inclusionsContextMenuCounts(contextDoor.inclusionSourceCount, contextDoor.inclusionConsumerCount) }}</small>
+            </span>
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            class="qd-context-menu__item abwab-overlays-host__menu-item"
+            [attr.aria-label]="labels.rowRelationsAriaLabel(contextDoor.name, contextDoor.relationCount)"
+            [title]="labels.rowRelationsAriaLabel(contextDoor.name, contextDoor.relationCount)"
+            data-testid="abwab-page-ctx-relations"
+            (click)="interactions.onCtxRelations()"
+          >
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.5" /><circle cx="18" cy="6" r="3" stroke="currentColor" stroke-width="1.5" /><circle cx="18" cy="18" r="3" stroke="currentColor" stroke-width="1.5" /><path d="m9 11 6-4M9 13l6 4" stroke="currentColor" stroke-width="1.5" /></svg>
+            <span class="abwab-overlays-host__menu-copy">
+              <span>{{ labels.relationsOp }}</span>
+              <small aria-hidden="true">{{ contextDoor.relationCount }}</small>
+            </span>
+          </button>
+        </div>
+
+        @if (permissions.canArchiveDoor()) {
+          <div class="abwab-overlays-host__menu-group abwab-overlays-host__menu-group--danger" role="presentation">
+            <button
+              type="button"
+              role="menuitem"
+              class="qd-context-menu__item qd-context-menu__item--danger abwab-overlays-host__menu-item"
+              [title]="labels.archiveOp"
+              data-testid="abwab-page-ctx-archive"
+              (click)="overlays.ctxArchive()"
+            >
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 6h18M5 6l1 14h12l1-14M9 10h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
+              <span>{{ labels.archiveOp }}</span>
+            </button>
+          </div>
+        }
+      </div>
     </qd-context-menu>
   }
 }

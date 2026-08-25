@@ -28,12 +28,15 @@ import { CurrentUserStore } from '../../auth/current-user.store';
 import { LinkingAccessService } from '../../../features/linking/state/linking-access.service';
 import { LinkingFocusCoordinator } from '../../../features/linking/state/linking-focus.coordinator';
 import { LinkingWorkspaceStore } from '../../../features/linking/state/linking-workspace.store';
+import { CommandLauncherComponent } from '../command-launcher/command-launcher.component';
+import { NavIconComponent } from '../nav-icon/nav-icon.component';
 
 const MORE_MENU_ITEM: NavItem = {
   key: 'more',
   labelAr: 'المزيد',
   labelEn: 'More',
   route: NAV_GROUP_ONLY_ROUTE,
+  icon: 'more',
   group: 'primary',
   children: NAV_MENU.filter((item) => item.group === 'more'),
 };
@@ -47,6 +50,8 @@ const MORE_MENU_ITEM: NavItem = {
     AppNavigationComponent,
     QdActionDirective,
     QdModalShellComponent,
+    CommandLauncherComponent,
+    NavIconComponent,
   ],
   templateUrl: './top-navbar.component.html',
   styleUrls: ['./top-navbar.component.scss'],
@@ -62,11 +67,14 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly linkingFocus = inject(LinkingFocusCoordinator);
   private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
+  protected readonly commandLauncherOpen = signal(false);
 
   readonly sheetOpen = signal(false);
+  readonly shellOverlayOpen = computed(() => this.sheetOpen() || this.commandLauncherOpen());
 
   protected readonly locked = this.scrollLock.isLocked;
-  protected readonly toggleInert = computed(() => this.locked() && !this.sheetOpen());
+  protected readonly navbarInert = computed(() => this.locked() || this.shellOverlayOpen());
+  protected readonly toggleInert = computed(() => this.navbarInert() && !this.sheetOpen());
   protected readonly openMenuKey = signal<string | null>(null);
   protected readonly wide = signal(true);
   protected readonly canUseLinking = this.linkingAccess.canUseLinking;
@@ -121,6 +129,15 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
     if (open !== null) {
       this.closeMenu(open);
     }
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  onDocumentKeydown(event: KeyboardEvent): void {
+    if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') {
+      return;
+    }
+    event.preventDefault();
+    this.openCommandLauncher();
   }
 
   @HostListener('document:click', ['$event'])
@@ -189,6 +206,21 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
 
   closeSheet(): void {
     this.sheetOpen.set(false);
+  }
+
+  openCommandLauncher(): void {
+    this.openMenuKey.set(null);
+    if (!this.sheetOpen()) {
+      this.commandLauncherOpen.set(true);
+      return;
+    }
+
+    this.closeSheet();
+    afterNextRender(() => this.commandLauncherOpen.set(true), { injector: this.injector });
+  }
+
+  setCommandLauncherOpen(open: boolean): void {
+    this.commandLauncherOpen.set(open);
   }
 
   openLinkingWorkspace(): void {

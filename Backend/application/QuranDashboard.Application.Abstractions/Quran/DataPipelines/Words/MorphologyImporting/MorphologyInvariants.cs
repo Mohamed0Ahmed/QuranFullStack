@@ -16,6 +16,8 @@ public static class MorphologyInvariants
         "Quran foundation data (quran_words) is missing or empty. Run import-foundation first.";
 
     public const string CheckSourceUnchanged = "MORPH-SOURCE-UNCHANGED";
+    public const string CheckApprovedRootFallback = "MORPH-APPROVED-ROOT-FALLBACK";
+    public const int ExpectedApprovedRootFallbacks = 45;
     public const string CheckWordLemmaNormalizationApplied = "MORPH-WORD-LEMMA-NORMALIZATION-APPLIED";
     public const string CheckWordLemmaShiftClean = "MORPH-WORD-LEMMA-SHIFT-CLEAN";
     public const string CheckWordLemmaReplaceValid = "MORPH-WORD-LEMMA-REPLACE-VALID";

@@ -3,10 +3,10 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
-import { QdNoticeComponent } from '../../../../shared/ui/notice/notice.component';
 import { LINKING_LABELS } from '../../models/linking.labels';
 import { LinkingManualLinkShape } from '../../models/linking-manual-mushaf.models';
 import { LinkingSourceTypeOption } from '../../models/linking-source.models';
+import { LINKING_WORKFLOW_NAVIGABLE_STEPS } from '../../models/linking-workflow.models';
 import { LinkingInlineSourceWorkflowController } from '../../state/linking-inline-source-workflow.controller';
 import { LinkingWorkflowFacade, LinkingWorkflowStep } from '../../state/linking-workflow.facade';
 import { linkingSourceTypeCodes } from '../../utils/linking-source-types';
@@ -27,7 +27,6 @@ import {
     QdActionDirective,
     QdErrorStateComponent,
     ExplorerPanelSkeletonComponent,
-    QdNoticeComponent,
     LinkingAyahSelectionToolbarComponent,
     LinkingDoorStepComponent,
     LinkingManualShapeSelectorComponent,
@@ -66,6 +65,9 @@ export class DirectLinkWorkflowComponent {
   protected readonly showExecutionProgress = computed(() =>
     ['queued', 'running', 'finalizing'].includes(this.currentStep()),
   );
+  protected readonly showWorkflowNavigation = computed(() =>
+    !['succeeded', 'failed', 'cancelled'].includes(this.currentStep()),
+  );
   protected readonly executionProgress = computed(() => calculateExecutionProgress(
     this.execution().job?.status ?? null,
     this.execution().job?.stage ?? null,
@@ -102,6 +104,16 @@ export class DirectLinkWorkflowComponent {
   protected cancelExecution(): void { this.workflow.cancelExecution(); }
   protected canNavigateTo(step: LinkingWorkflowStep): boolean { return this.workflow.canNavigateTo(step); }
   protected navigateTo(step: LinkingWorkflowStep): void { this.workflow.navigateTo(step); }
+  protected isStepCompleted(step: LinkingWorkflowStep): boolean {
+    const stepIndex = LINKING_WORKFLOW_NAVIGABLE_STEPS.indexOf(step);
+    const currentIndex = LINKING_WORKFLOW_NAVIGABLE_STEPS.indexOf(this.currentStep());
+    const progressIndex = currentIndex >= 0
+      ? currentIndex
+      : LINKING_EXECUTION_STEPS.has(this.currentStep())
+        ? LINKING_WORKFLOW_NAVIGABLE_STEPS.length
+        : -1;
+    return stepIndex >= 0 && stepIndex < progressIndex;
+  }
 
   protected onEnter(event: Event): void {
     if (!(event instanceof KeyboardEvent) || event.defaultPrevented || event.isComposing || event.target instanceof HTMLButtonElement) {
@@ -171,6 +183,13 @@ export class DirectLinkWorkflowComponent {
     return this.labels.operationSteps[step];
   }
 }
+
+const LINKING_EXECUTION_STEPS = new Set<LinkingWorkflowStep>([
+  'submitting',
+  'queued',
+  'running',
+  'finalizing',
+]);
 
 function calculateExecutionProgress(
   status: string | null,

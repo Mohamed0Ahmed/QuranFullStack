@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.DataImporter.Import.DefaultPaths;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Corrections;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting.Enriched;
 
 namespace QuranDashboard.DataImporter.Import.VerbRunners;
@@ -55,9 +56,16 @@ internal static class ValidateEnrichedMorphologyRunner
         var manifestReader = scope.ServiceProvider.GetRequiredService<EnrichedMorphologyManifestReader>();
         var sourceReader = scope.ServiceProvider.GetRequiredService<EnrichedMorphologyReader>();
         var dimensionBuilder = scope.ServiceProvider.GetRequiredService<EnrichedDimensionBuilder>();
+        var rootFallbackReader = scope.ServiceProvider.GetRequiredService<ApprovedRootFallbackReader>();
+        var rootFallbackApplier = scope.ServiceProvider.GetRequiredService<ApprovedRootFallbackApplier>();
         var validator = new EnrichedMorphologyDryValidator();
 
-        var importSource = new EnrichedMorphologyImportSource(manifestReader, sourceReader, dimensionBuilder);
+        var importSource = new EnrichedMorphologyImportSource(
+            manifestReader,
+            sourceReader,
+            dimensionBuilder,
+            rootFallbackReader,
+            rootFallbackApplier);
         var data = await importSource.LoadAsync(sourcePath, CancellationToken.None);
         var manifest = await manifestReader.ReadAsync(sourcePath, CancellationToken.None);
         var result = validator.Validate(data, manifest);

@@ -1,44 +1,94 @@
-<section class="direct-link-workflow" [attr.aria-label]="labels.operation" (keydown.enter)="onEnter($event)">
-  <header class="direct-link-workflow__header">
-    @if (currentStep() !== 'succeeded') {
-      <button qdAction="tertiary" size="sm" type="button" (click)="cancel()">{{ labels.cancel }}</button>
-    }
-  </header>
-
-  <ol class="direct-link-workflow__steps" aria-label="مراحل الربط">
-    @for (step of steps(); track step) {
-      <li
-        [class.direct-link-workflow__step--current]="currentStep() === step"
-        [class.direct-link-workflow__step--available]="canNavigateTo(step)"
+<section
+  class="direct-link-workflow"
+  [class.direct-link-workflow--terminal]="!showWorkflowNavigation()"
+  [attr.aria-label]="labels.operation"
+  (keydown.enter)="onEnter($event)"
+>
+  @if (showWorkflowNavigation()) {
+    <header class="direct-link-workflow__header">
+      <button
+        qdAction="icon-only"
+        size="sm"
+        type="button"
+        [attr.aria-label]="labels.cancel"
+        [title]="labels.cancel"
+        (click)="cancel()"
       >
-        <button
-          type="button"
-          [disabled]="!canNavigateTo(step)"
-          [attr.aria-current]="currentStep() === step ? 'step' : null"
-          (click)="navigateTo(step)"
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
+    </header>
+
+    <ol class="direct-link-workflow__steps m-0 flex list-none overflow-x-auto border-b border-qd-hairline bg-qd-surface-quiet px-qd-8 py-qd-4 compact:px-qd-4" aria-label="مراحل الربط">
+      @for (step of steps(); track step; let index = $index) {
+        <li
+          class="min-w-0 flex-1 text-qd-ink-muted compact:min-w-[8.25rem] compact:flex-none"
+          [class.direct-link-workflow__step--current]="currentStep() === step"
+          [class.direct-link-workflow__step--available]="canNavigateTo(step)"
+          [class.direct-link-workflow__step--completed]="isStepCompleted(step)"
+          [class.text-qd-ink]="canNavigateTo(step) || isStepCompleted(step)"
+          [class.text-qd-green-text]="currentStep() === step"
         >
-          {{ stepLabel(step) }}
-        </button>
-      </li>
-    }
-  </ol>
+          <button
+            type="button"
+            class="flex h-qd-control-md w-full items-center gap-qd-8 rounded-qd-sm border-0 bg-transparent px-qd-8 py-qd-4 text-start font-qd-ui text-qd-meta transition-colors duration-qd-state hover:bg-qd-surface-quiet hover:text-qd-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-qd-green-solid disabled:cursor-default disabled:opacity-100 compact:h-qd-hit-target compact:px-qd-4"
+            [class.bg-qd-green-tint]="currentStep() === step"
+            [disabled]="!canNavigateTo(step)"
+            [attr.aria-current]="currentStep() === step ? 'step' : null"
+            (click)="navigateTo(step)"
+          >
+            <span
+              class="direct-link-workflow__step-marker inline-grid h-qd-24 w-qd-24 flex-none place-items-center rounded-qd-pill text-qd-caption tabular-nums"
+              aria-hidden="true"
+            >
+              @if (isStepCompleted(step)) {
+                <svg class="direct-link-workflow__step-check" viewBox="0 0 16 16" fill="none">
+                  <path d="m3.5 8.2 2.7 2.7 6.3-6.1" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              } @else {
+                {{ index + 1 }}
+              }
+            </span>
+            <span class="grid min-w-0">
+              <strong class="qd-truncate font-semibold">{{ stepLabel(step) }}</strong>
+              @if (isStepCompleted(step)) {
+                <span class="qd-sr-only">{{ labels.completed }}</span>
+              }
+              @if (step === 'configure-source') {
+                @if (directDraft(); as draft) {
+                  <small class="qd-truncate text-qd-caption text-qd-ink-muted" [title]="draft.label">{{ draft.label }}</small>
+                }
+              } @else if (step === 'door') {
+                @if (workflow.selectedDoorId(); as doorId) {
+                  <small class="qd-ltr-isolate qd-truncate text-qd-caption text-qd-ink-muted">#{{ doorId }}</small>
+                }
+              }
+            </span>
+          </button>
+        </li>
+      }
+    </ol>
+  }
 
   <div
     class="direct-link-workflow__body"
     [class.direct-link-workflow__body--preflight]="currentStep() === 'preflighting' || currentStep() === 'ready'"
     [class.direct-link-workflow__body--configuration]="currentStep() === 'configure-source'"
+    [class.grid]="showExecutionProgress()"
+    [class.place-items-center]="showExecutionProgress()"
   >
     @if (showExecutionProgress()) {
       @if (execution().job; as job) {
         <section
-          class="grid gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-16 compact:p-qd-12"
+          class="grid w-full max-w-[42rem] gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-16 compact:p-qd-12"
           [attr.aria-label]="labels.executionProgress"
         >
           <header class="flex items-baseline justify-between gap-qd-12">
             <p id="linking-execution-progress-stage" class="m-0 text-qd-body-lg font-semibold text-qd-ink" role="status">
               {{ executionStageLabel() }}
             </p>
-            <strong class="qd-ltr-isolate m-0 text-qd-body font-semibold text-qd-green-text tabular-nums">
+            <strong class="qd-ltr-isolate text-qd-body font-semibold text-qd-green-text tabular-nums">
               {{ executionProgress() }}%
             </strong>
           </header>
@@ -52,7 +102,7 @@
             aria-valuemax="100"
           >
             <span
-              class="block h-full rounded-qd-pill bg-qd-green"
+              class="block h-full rounded-qd-pill bg-qd-green-solid"
               [style.inline-size.%]="executionProgress()"
             ></span>
           </div>
@@ -147,18 +197,47 @@
       @case ('ready') { <qd-linking-preflight-step /> }
       @case ('submitting') { <qd-panel-skeleton shape="text" [loadingLabel]="labels.submitting" /> }
       @case ('succeeded') {
-        <qd-notice [message]="labels.success" [dismissLabel]="labels.close" (dismiss)="acknowledge()" />
+        <div class="grid h-full min-h-[12rem] place-items-center p-qd-16 compact:p-qd-8">
+          <section class="grid w-full max-w-qd-modal-form justify-items-center gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-20 text-center compact:p-qd-16" role="status" aria-live="polite">
+            <span class="grid h-qd-48 w-qd-48 place-items-center rounded-qd-pill border border-qd-green-quiet bg-qd-green-tint text-qd-green-text" aria-hidden="true">
+              <svg class="h-qd-24 w-qd-24" viewBox="0 0 24 24" fill="none">
+                <path d="m6 12 4 4 8-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+            <h2 class="m-0 text-qd-h3 text-qd-ink">{{ labels.success }}</h2>
+            @if (execution().job; as job) {
+              <p class="m-0 text-qd-meta text-qd-ink-muted">
+                {{ labels.executionProgressItems }}:
+                <strong class="qd-ltr-isolate text-qd-ink tabular-nums">{{ job.processedItems }} / {{ job.totalItems || '—' }}</strong>
+              </p>
+            }
+            <button qdAction="primary" type="button" (click)="acknowledge()">{{ labels.close }}</button>
+          </section>
+        </div>
       }
       @case ('failed') {
-        <qd-error-state
-          severity="write"
-          [message]="state().errorMessage || labels.sourceLoadError"
-          [actionLabel]="isCopy() ? labels.copyReturn : labels.retry"
-          (action)="isCopy() ? cancel() : retryPreflight()"
-        />
+        <div class="grid h-full min-h-[12rem] place-items-center p-qd-16 compact:p-qd-8">
+          <qd-error-state
+            class="w-full max-w-qd-modal-form"
+            severity="write"
+            [message]="state().errorMessage || labels.sourceLoadError"
+            [actionLabel]="isCopy() ? labels.copyReturn : labels.retry"
+            (action)="isCopy() ? cancel() : retryPreflight()"
+          />
+        </div>
       }
       @case ('cancelled') {
-        <qd-notice [message]="labels.cancel" [dismissLabel]="labels.close" (dismiss)="cancel()" />
+        <div class="grid h-full min-h-[12rem] place-items-center p-qd-16 compact:p-qd-8">
+          <section class="grid w-full max-w-qd-modal-form justify-items-center gap-qd-12 rounded-qd-md border border-qd-hairline bg-qd-surface-quiet p-qd-20 text-center compact:p-qd-16" role="status" aria-live="polite">
+            <span class="grid h-qd-48 w-qd-48 place-items-center rounded-qd-pill border border-qd-hairline-strong bg-qd-surface text-qd-ink-muted" aria-hidden="true">
+              <svg class="h-qd-24 w-qd-24" viewBox="0 0 24 24" fill="none">
+                <path d="M7 7l10 10M17 7 7 17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+              </svg>
+            </span>
+            <h2 class="m-0 text-qd-h3 text-qd-ink">{{ labels.cancel }}</h2>
+            <button qdAction="secondary" type="button" (click)="cancel()">{{ labels.close }}</button>
+          </section>
+        </div>
       }
       }
     }
@@ -172,8 +251,10 @@
       <button qdAction="primary" type="button" [disabled]="!canAdvanceDoor()" (click)="next()">{{ labels.preflightTitle }}</button>
     }
     @if (currentStep() === 'ready') {
-      @if (isCopy() && isNoOp()) {
-        <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyAcknowledge }}</button>
+      @if (isNoOp()) {
+        @if (isCopy()) {
+          <button qdAction="secondary" type="button" (click)="acknowledge()">{{ labels.copyAcknowledge }}</button>
+        }
       } @else {
         <button qdAction="primary" type="button" [disabled]="!canSubmit()" (click)="submit()">{{ labels.confirm }}</button>
       }

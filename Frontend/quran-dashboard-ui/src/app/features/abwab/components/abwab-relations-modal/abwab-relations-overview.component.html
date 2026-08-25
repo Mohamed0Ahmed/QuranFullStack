@@ -1,0 +1,115 @@
+<qd-tabs
+  class="abwab-relations-overview__tabs"
+  layout="grid"
+  [ariaLabel]="presentation.overviewTabsAriaLabel"
+>
+  @for (tab of tabs; track tab.key) {
+    <button
+      type="button"
+      qdTab
+      [id]="tabId(tab.key)"
+      [panelId]="panelId"
+      [selected]="activeGroupKey() === tab.key"
+      [attr.data-testid]="'abwab-relations-overview-tab-' + tab.key"
+      (click)="activeGroupKeyChange.emit(tab.key)"
+    >
+      <span>{{ tab.label }}</span>
+      <span
+        class="qd-tabs__count"
+        [class.qd-tabs__count--empty]="countFor(tab.key) === 0"
+      >{{ countFor(tab.key) }}</span>
+    </button>
+  }
+</qd-tabs>
+
+<section
+  class="abwab-relations-overview__panel"
+  role="tabpanel"
+  [id]="panelId"
+  [attr.aria-labelledby]="tabId(activeGroupKey())"
+  data-testid="abwab-relations-modal-overview"
+>
+  @if (status() === 'loading') {
+    <qd-skeleton-rows
+      class="abwab-relations-overview__loading"
+      [count]="3"
+      rowTemplate="1fr auto"
+      [loadingLabel]="presentation.loadingLabel"
+      data-testid="abwab-relations-modal-loading"
+    />
+  } @else if (status() === 'ready') {
+    @if (activeRelations().length === 0) {
+      <div class="abwab-relations-overview__empty" data-testid="abwab-relations-modal-empty">
+        <p>{{ activeTab().emptyMessage }}</p>
+        @if (canCreateRelation()) {
+          <button
+            type="button"
+            qdAction="primary"
+            data-testid="abwab-relations-modal-start-add"
+            (click)="addRequested.emit(activeGroupKey())"
+          >
+            <span aria-hidden="true">＋</span>
+            <span>{{ presentation.startAddLabel }}</span>
+          </button>
+        }
+      </div>
+    } @else {
+      <ul class="abwab-relations-overview__list">
+        @for (relation of activeRelations(); track relation.id) {
+          <li class="abwab-relations-overview__row">
+            <div class="abwab-relations-overview__identity">
+              <span class="abwab-relations-overview__name">{{ relation.otherDoorName }}</span>
+              @if (doorPath(relation) !== relation.otherDoorName) {
+                <small>{{ doorPath(relation) }}</small>
+              }
+            </div>
+            <div class="abwab-relations-overview__row-actions">
+              <button
+                type="button"
+                qdAction="icon-only"
+                [attr.aria-label]="presentation.revealAriaLabel(relation.otherDoorName)"
+                [title]="presentation.revealAriaLabel(relation.otherDoorName)"
+                [attr.data-testid]="'abwab-relations-modal-reveal-' + relation.id"
+                (click)="revealRequested.emit(relation.otherDoorId)"
+              >
+                <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <span class="qd-sr-only">{{ presentation.revealAriaLabel(relation.otherDoorName) }}</span>
+              </button>
+              @if (canDeleteRelation()) {
+                <button
+                  type="button"
+                  qdAction="icon-only"
+                  class="abwab-relations-overview__delete"
+                  [attr.aria-label]="presentation.deleteAriaLabel(relation.otherDoorName)"
+                  [title]="presentation.deleteAriaLabel(relation.otherDoorName)"
+                  [attr.data-testid]="'abwab-relations-modal-delete-' + relation.id"
+                  (click)="deleteRequested.emit(relation)"
+                >
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M4 7h16M9 7V4h6v3M7 7l1 14h8l1-14M10 11v6M14 11v6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                  </svg>
+                  <span class="qd-sr-only">{{ presentation.deleteAriaLabel(relation.otherDoorName) }}</span>
+                </button>
+              }
+            </div>
+          </li>
+        }
+      </ul>
+      @if (canCreateRelation()) {
+        <div class="abwab-relations-overview__actions">
+          <button
+            type="button"
+            qdAction="primary"
+            data-testid="abwab-relations-modal-start-add"
+            (click)="addRequested.emit(activeGroupKey())"
+          >
+            <span aria-hidden="true">＋</span>
+            <span>{{ presentation.startAddLabel }}</span>
+          </button>
+        </div>
+      }
+    }
+  }
+</section>

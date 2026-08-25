@@ -42,6 +42,113 @@
   min-block-size: 0;
 }
 
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab {
+  grid-column: span 2;
+}
+
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:first-child:last-child {
+  grid-column: span 6;
+}
+
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:first-child:nth-last-child(2),
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:first-child:nth-last-child(2) ~ .qd-tabs__tab {
+  grid-column: span 3;
+}
+
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:nth-child(4):last-child {
+  grid-column: 2 / span 4;
+}
+
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:nth-child(4):nth-last-child(2),
+.qd-words-detail-tabs > .qd-tabs.qd-tabs--tracks > .qd-tabs__tab:nth-child(4):nth-last-child(2) ~ .qd-tabs__tab {
+  grid-column: span 3;
+}
+
+.qd-words-detail-tabs .qd-tabs__tab > span:first-child {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.qd-words-detail-tabs .qd-tabs__count {
+  --qd-tabs-count-padding-inline: var(--qd-space-1);
+
+  flex: 0 0 auto;
+  min-inline-size: calc(4ch + 2 * var(--qd-tabs-count-padding-inline));
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .qd-words-details-workspace .qd-details__header {
+    align-items: center;
+    gap: var(--qd-space-2);
+    padding: var(--qd-space-2) var(--qd-space-3);
+  }
+
+  .qd-words-details-workspace .qd-details__identity-zone {
+    gap: var(--qd-s-2);
+  }
+
+  .qd-words-details-workspace .qd-details__identity {
+    font-size: var(--qd-type-h3);
+    line-height: var(--qd-type-h3-lh);
+  }
+
+  .qd-words-details-workspace .explorer-panel-header__label {
+    font-size: var(--qd-type-caption);
+    line-height: var(--qd-type-caption-lh);
+  }
+
+  .qd-words-details-workspace .qd-details__actions {
+    gap: var(--qd-space-1);
+  }
+
+  .qd-words-details-workspace .qd-details__header .qd-details__actions .quran-source-linking-actions .qd-action {
+    --qd-action-size: var(--qd-control-sm);
+    --qd-action-padding-inline: var(--qd-space-2);
+
+    font-size: var(--qd-type-caption);
+  }
+
+  .qd-words-details-workspace .qd-details__tabs {
+    padding-inline: var(--qd-space-3);
+    padding-block: var(--qd-space-1) 0;
+  }
+
+  .qd-words-details-workspace .qd-details__tabs .qd-tabs__tab,
+  .qd-words-details-workspace .qd-explorer-subtabs .qd-tabs__tab {
+    min-block-size: var(--qd-control-sm);
+    padding: var(--qd-s-2) var(--qd-space-2);
+  }
+
+  .qd-words-details-workspace .qd-details__body {
+    padding: var(--qd-space-1) var(--qd-space-3) var(--qd-space-3);
+  }
+
+  .qd-words-details-workspace .qd-explorer-subtabs {
+    margin-block-end: var(--qd-space-2);
+  }
+
+  .qd-words-details-workspace .ayah-type-filters,
+  .qd-words-details-workspace .lemma-ayah-type-filters,
+  .qd-words-details-workspace .stem-ayah-type-filters {
+    margin-block-end: var(--qd-space-1);
+  }
+
+  .qd-words-details-workspace .ayah-type-filters__chip,
+  .qd-words-details-workspace .ayah-type-filters__chip--loading,
+  .qd-words-details-workspace .lemma-ayah-type-filters__chip,
+  .qd-words-details-workspace .lemma-ayah-type-filters__chip--loading,
+  .qd-words-details-workspace .stem-ayah-type-filters__chip,
+  .qd-words-details-workspace .stem-ayah-type-filters__chip--loading {
+    min-block-size: var(--qd-control-sm);
+    padding: var(--qd-s-2) var(--qd-space-2);
+  }
+}
+
 .qd-explorer-layout {
   --qd-explorer-chrome-block-size: 14rem;
   --qd-explorer-table-header-height: 2.75rem;
