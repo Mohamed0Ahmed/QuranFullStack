@@ -13,6 +13,7 @@ public static class ImportValidationCheckIds
     public const string IdContiguous = "id-contiguous";
     public const string SourceAlignment = "source-alignment";
     public const string ImlaeiCleanKey = "imlaei-clean-key";
+    public const string MasaqSearchWords = "masaq-search-words";
     public const string LayoutCoverage = "layout-coverage";
     public const string WordPageLine = "word-page-line";
     public const string LineWordRefs = "line-word-refs";
@@ -36,6 +37,7 @@ public static class ImportValidationCheckIds
             [IdContiguous] = ImportValidationSeverities.Hard,
             [SourceAlignment] = ImportValidationSeverities.Hard,
             [ImlaeiCleanKey] = ImportValidationSeverities.Hard,
+            [MasaqSearchWords] = ImportValidationSeverities.Hard,
             [LayoutCoverage] = ImportValidationSeverities.Hard,
             [WordPageLine] = ImportValidationSeverities.Hard,
             [LineWordRefs] = ImportValidationSeverities.Hard,
@@ -59,6 +61,7 @@ public static class ImportValidationCheckIds
         IdContiguous,
         SourceAlignment,
         ImlaeiCleanKey,
+        MasaqSearchWords,
         LayoutCoverage,
         WordPageLine,
         LineWordRefs,

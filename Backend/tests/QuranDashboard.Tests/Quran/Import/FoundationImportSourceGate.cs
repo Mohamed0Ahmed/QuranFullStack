@@ -7,10 +7,18 @@ internal static class FoundationImportSourceGate
         "..", "..", "..", "..", "..", "..",
         "resources", "import-sources", "quran-foundation"));
 
-    public static bool IsMissing => !Directory.Exists(SourceRoot);
+    public static string MasaqSourceFile { get; } = Path.GetFullPath(Path.Combine(
+        SourceRoot,
+        "..",
+        "masaq-corpus-aligned",
+        "masaq-search-words.dashboard-ready.json"));
+
+    public static bool IsMissing =>
+        !Directory.Exists(SourceRoot)
+        || !File.Exists(MasaqSourceFile);
 
     public static string MissingReason =>
-        $"Staged foundation import source package is missing: {SourceRoot}";
+        $"Staged foundation import sources are missing: foundation={SourceRoot}; masaq={MasaqSourceFile}";
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]

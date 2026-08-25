@@ -60,9 +60,10 @@ public sealed class ValidationFailureTests
         }
         finally
         {
-            if (Directory.Exists(corruptSourceRoot))
+            var corruptSourceParent = Directory.GetParent(corruptSourceRoot)?.FullName;
+            if (corruptSourceParent is not null && Directory.Exists(corruptSourceParent))
             {
-                Directory.Delete(corruptSourceRoot, recursive: true);
+                Directory.Delete(corruptSourceParent, recursive: true);
             }
 
             if (Directory.Exists(reportDir))

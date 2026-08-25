@@ -86,7 +86,7 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
                 .Where(w => w.Id == id)
                 .Select(w => new UniqueWordSummaryRow(
                     UniqueWordKindKeys.Simple,
-                    w.TextUthmaniSimple,
+                    w.TextImlaeiSimple,
                     w.OccurrencesCount,
                     w.AyahsCount,
                     w.SurahsCount))

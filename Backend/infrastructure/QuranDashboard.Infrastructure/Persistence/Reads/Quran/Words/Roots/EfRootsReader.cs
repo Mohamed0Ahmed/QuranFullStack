@@ -76,7 +76,7 @@ public sealed class EfRootsReader(QuranDashboardDbContext db) : IRootsReader
                     w.SurahNumber,
                     w.AyahNumber,
                     w.WordNumber,
-                    u.TextUthmaniSimple))
+                    u.TextImlaeiSimple))
                 .ToListAsync(cancellationToken)
             : await (
                 from m in _db.WordMorphologies.AsNoTracking()

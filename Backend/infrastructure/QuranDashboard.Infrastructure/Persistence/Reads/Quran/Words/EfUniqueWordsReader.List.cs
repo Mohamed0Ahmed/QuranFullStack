@@ -33,7 +33,7 @@ public sealed partial class EfUniqueWordsReader
         var sql = $"""
             SELECT
                 id AS "{nameof(UniqueWordListRow.Id)}",
-                text_uthmani_simple AS "{nameof(UniqueWordListRow.DisplayText)}",
+                text_imlaei_simple AS "{nameof(UniqueWordListRow.DisplayText)}",
                 occurrences_count AS "{nameof(UniqueWordListRow.OccurrencesCount)}",
                 ayahs_count AS "{nameof(UniqueWordListRow.AyahsCount)}",
                 surahs_count AS "{nameof(UniqueWordListRow.SurahsCount)}",

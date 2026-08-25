@@ -30,7 +30,9 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
 - When `--source` is omitted, defaults resolve under `resources/import-sources/`
   (`DataImporterDefaults`): `quran-morphology`, `quran-enriched-morphology`,
   `mutashabihat`, `quran-tafsirs`, `quran-translations`, `quran-navigation-metadata`,
-  `quran-full-i3rab`. `import-foundation` requires an explicit `--source`.
+  `quran-full-i3rab`. `import-foundation` requires an explicit `--source` pointing to
+  `quran-foundation` and also requires the sibling
+  `masaq-corpus-aligned/masaq-search-words.dashboard-ready.json` source.
 - `resources/` is **local and gitignored** — packages are not in CI/other clones. Repo root
   is auto-detected (the folder containing both `resources/` and `Backend/`).
 - Import work uses staged, canonicalized source packages under
