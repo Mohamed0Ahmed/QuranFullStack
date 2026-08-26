@@ -10,10 +10,17 @@
       qdTab
       routerLinkActive
       [routerLink]="tab.route"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{
+        paths: 'exact',
+        queryParams: 'ignored',
+        matrixParams: 'ignored',
+        fragment: 'ignored',
+      }"
       [selected]="activeLink.isActive"
       panelId="phrase-search-route-panel"
       ariaCurrentWhenActive="page"
+      (keydown.enter)="activateTab($event)"
+      (keydown.space)="activateTab($event)"
     >
       {{ tab.label }}
     </a>

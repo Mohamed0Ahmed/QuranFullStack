@@ -36,4 +36,11 @@ export class PhraseSearchTabsComponent {
       route: phraseSearchRoutePath(WORDS_PHRASES_SIMILARITY_SEGMENT),
     },
   ] as const;
+
+  protected activateTab(event: Event): void {
+    event.preventDefault();
+    if (event.currentTarget instanceof HTMLElement) {
+      event.currentTarget.click();
+    }
+  }
 }
