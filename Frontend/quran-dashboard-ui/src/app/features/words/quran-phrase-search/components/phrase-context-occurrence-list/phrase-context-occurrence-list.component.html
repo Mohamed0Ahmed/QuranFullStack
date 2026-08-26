@@ -1,0 +1,50 @@
+<section class="context-occurrences" aria-labelledby="context-occurrences-title">
+  <header>
+    <div>
+      <p>مواضع السياق الكامل</p>
+      <h2 id="context-occurrences-title">{{ totalCount() }} موضعًا مستقلًا</h2>
+    </div>
+    <button type="button" class="qd-btn qd-btn-secondary" (click)="closeRequested.emit()">
+      إغلاق المواضع
+    </button>
+  </header>
+
+  <div class="context-occurrences__legend" aria-label="مفتاح تمييز السياق">
+    <span class="context-occurrences__key context-occurrences__key--query">عبارة البحث</span>
+    <span class="context-occurrences__key context-occurrences__key--previous">السياق السابق</span>
+    <span class="context-occurrences__key context-occurrences__key--following">السياق اللاحق</span>
+  </div>
+
+  <div qdResultList listVariant="quran-result" listLabel="مواضع السياق الكامل">
+    @for (row of rows(); track row.occurrence.occurrenceId; let index = $index) {
+      <article qdAyahCard qdResultItem [position]="index + 1" [setSize]="totalCount()">
+        <header class="context-occurrences__meta">
+          <strong>{{ row.occurrence.surahNameArabic }} · {{ row.occurrence.verseKey }}</strong>
+          <span>صفحة {{ row.occurrence.pageFrom }}</span>
+        </header>
+        <a
+          class="context-occurrences__ayah qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+        >
+          <qd-phrase-highlighted-ayah
+            roleScheme="context"
+            [words]="row.occurrence.words"
+            [contextHighlights]="row.occurrence.highlights"
+          />
+        </a>
+      </article>
+    }
+  </div>
+
+  @if (nextCursor()) {
+    <button
+      type="button"
+      class="qd-btn qd-btn-secondary context-occurrences__more"
+      [disabled]="busy()"
+      (click)="moreRequested.emit()"
+    >
+      تحميل مواضع إضافية
+    </button>
+  }
+</section>

@@ -1,0 +1,71 @@
+<section class="phrase-query" aria-labelledby="phrase-query-title">
+  <div class="phrase-query__heading">
+    <div>
+      <h2 id="phrase-query-title">{{ label() }}</h2>
+      <p>{{ help() }}</p>
+    </div>
+    <qd-phrase-text-mode-toggle
+      [mode]="state().mode"
+      [availableModes]="availableModes()"
+      [disabled]="state().status === 'loading'"
+      (modeChange)="modeChange.emit($event)"
+    />
+  </div>
+
+  <div class="phrase-query__submit-row">
+    <label class="phrase-query__field">
+      <span class="qd-sr-only">{{ label() }}</span>
+      <textarea
+        class="qd-input phrase-query__input"
+        dir="rtl"
+        rows="2"
+        [value]="state().rawQuery"
+        [disabled]="state().status === 'loading'"
+        [attr.aria-invalid]="state().status === 'invalid' ? 'true' : null"
+        aria-describedby="phrase-query-feedback"
+        (input)="draftChange.emit($any($event.target).value)"
+        (keydown)="onKeydown($event)"
+      ></textarea>
+    </label>
+    <button
+      type="button"
+      class="qd-btn qd-btn-primary"
+      [disabled]="state().status === 'loading'"
+      (click)="submitRequested.emit()"
+    >
+      {{ state().status === 'loading' ? 'جارٍ البحث…' : 'بحث' }}
+    </button>
+  </div>
+
+  <div id="phrase-query-feedback" class="phrase-query__feedback" aria-live="polite">
+    @if (state().message) {
+      <p [class.phrase-query__feedback--error]="state().status !== 'ambiguous'">
+        {{ state().message }}
+      </p>
+    }
+  </div>
+
+  @if (state().candidates.length > 0) {
+    <div class="phrase-query__candidates" aria-label="تسلسلات الكلمات المطابقة">
+      @for (candidate of state().candidates; track candidate.resolutionRef) {
+        <button
+          type="button"
+          class="phrase-query__candidate"
+          [attr.aria-current]="
+            state().selectedResolutionRef === candidate.resolutionRef ? 'true' : null
+          "
+          [disabled]="state().status === 'loading'"
+          (click)="candidateSelected.emit(candidate)"
+        >
+          <span class="phrase-query__candidate-text">{{ candidate.displayText }}</span>
+          <span class="phrase-query__tokens">
+            @for (token of candidate.tokens; track $index) {
+              <span>{{ token.textUthmani }}</span>
+            }
+          </span>
+          <small>{{ candidate.wordCount }} كلمات مصدرية</small>
+        </button>
+      }
+    </div>
+  }
+</section>

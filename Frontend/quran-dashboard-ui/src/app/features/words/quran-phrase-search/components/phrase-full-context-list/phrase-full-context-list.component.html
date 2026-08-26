@@ -1,0 +1,54 @@
+<section class="full-contexts" aria-labelledby="full-contexts-title">
+  <header>
+    <div>
+      <p>السياقات الكاملة</p>
+      <h2 id="full-contexts-title">الطرفان محفوظان معًا</h2>
+    </div>
+    <strong>{{ totalCount() }} سياقًا كاملًا</strong>
+  </header>
+
+  <div qdResultList listVariant="master" listLabel="السياقات الكاملة للعبارة">
+    @for (item of items(); track item.contextRef; let index = $index) {
+      <div
+        qdResultItem
+        selectable
+        [selected]="selectedContextRef() === item.contextRef"
+        [current]="selectedContextRef() === item.contextRef"
+        [position]="index + 1"
+        [setSize]="totalCount()"
+      >
+        <button
+          type="button"
+          class="full-contexts__item"
+          [attr.aria-current]="selectedContextRef() === item.contextRef ? 'true' : null"
+          [disabled]="busy()"
+          (click)="contextSelected.emit(item.contextRef)"
+        >
+          <span class="full-contexts__phrase" dir="rtl">
+            @for (token of previousForDisplay(item.previousTokens); track $index) {
+              <span class="full-contexts__before">{{ token.textUthmani }}</span>
+            }
+            @for (token of item.queryTokens; track $index) {
+              <strong>{{ token.textUthmani }}</strong>
+            }
+            @for (token of item.followingTokens; track $index) {
+              <span class="full-contexts__after">{{ token.textUthmani }}</span>
+            }
+          </span>
+          <small>هذا السياق الكامل نفسه: {{ item.exactFullContextCount }} موضعًا</small>
+        </button>
+      </div>
+    }
+  </div>
+
+  @if (nextCursor()) {
+    <button
+      type="button"
+      class="qd-btn qd-btn-secondary full-contexts__more"
+      [disabled]="busy()"
+      (click)="moreRequested.emit()"
+    >
+      تحميل سياقات كاملة إضافية
+    </button>
+  }
+</section>

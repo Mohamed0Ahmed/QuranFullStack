@@ -2,7 +2,11 @@
   @for (word of words(); track word.quranWordId) {
     <span
       class="phrase-highlighted-ayah__word"
-      [class.phrase-highlighted-ayah__word--query]="isQueryWord(word.quranWordId)"
+      [class.phrase-highlighted-ayah__word--query]="wordRole(word.quranWordId) === 'query'"
+      [class.phrase-highlighted-ayah__word--previous]="wordRole(word.quranWordId) === 'previous'"
+      [class.phrase-highlighted-ayah__word--following]="wordRole(word.quranWordId) === 'following'"
+      [class.phrase-highlighted-ayah__word--matched]="wordRole(word.quranWordId) === 'matched'"
+      [class.phrase-highlighted-ayah__word--differing]="wordRole(word.quranWordId) === 'differing'"
       [attr.aria-label]="wordAriaLabel(word)"
     >{{ word.textUthmani }}</span>{{ $last ? '' : ' ' }}
   }

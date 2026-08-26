@@ -6,6 +6,20 @@ import {
   WORDS_PHRASES_SIMILARITY_SEGMENT,
 } from '../../../core/navigation/route-paths';
 import { PhraseRepetitionsFacade } from './state/phrase-repetitions.facade';
+import { PhraseContextFacade } from './state/phrase-context.facade';
+import { PhraseContextSelectionStore } from './state/phrase-context-selection.store';
+import { PhraseContextRequestStatusStore } from './state/phrase-context-request-status.store';
+import { PhraseContextResolutionStore } from './state/phrase-context-resolution.store';
+import { PhraseContextWorkspaceLoader } from './state/phrase-context-workspace.loader';
+import { PhraseLongStateSessionStore } from './state/phrase-long-state-session.store';
+import { PhraseRouteNavigationCoordinator } from './state/phrase-route-navigation.coordinator';
+import { PhraseSimilarityFacade } from './state/phrase-similarity.facade';
+import { PhraseSimilarityResultsLoader } from './state/phrase-similarity-results.loader';
+import { PhraseActionRequestGate } from './state/phrase-action-request-gate';
+import { PhraseNoticeStore } from './state/phrase-notice.store';
+import { PhraseContextActionCoordinator } from './state/phrase-context-action.coordinator';
+import { PhraseSimilarityResultStore } from './state/phrase-similarity-result.store';
+import { PhraseSimilarityResolutionStore } from './state/phrase-similarity-resolution.store';
 
 const loadShell = () =>
   import('./pages/quran-phrase-search-shell/quran-phrase-search-shell.component').then(
@@ -17,9 +31,14 @@ const loadRepetitionsPage = () =>
     (m) => m.PhraseRepetitionsPageComponent,
   );
 
-const loadDeferredPage = () =>
-  import('./pages/phrase-search-deferred-page/phrase-search-deferred-page.component').then(
-    (m) => m.PhraseSearchDeferredPageComponent,
+const loadContextPage = () =>
+  import('./pages/phrase-context-page/phrase-context-page.component').then(
+    (m) => m.PhraseContextPageComponent,
+  );
+
+const loadSimilarityPage = () =>
+  import('./pages/phrase-similarity-page/phrase-similarity-page.component').then(
+    (m) => m.PhraseSimilarityPageComponent,
   );
 
 export const QURAN_PHRASE_SEARCH_ROUTES: Routes = [
@@ -40,21 +59,35 @@ export const QURAN_PHRASE_SEARCH_ROUTES: Routes = [
       },
       {
         path: WORDS_PHRASES_CONTEXT_SEGMENT,
-        loadComponent: loadDeferredPage,
+        loadComponent: loadContextPage,
+        providers: [
+          PhraseContextFacade,
+          PhraseContextActionCoordinator,
+          PhraseContextSelectionStore,
+          PhraseContextRequestStatusStore,
+          PhraseContextResolutionStore,
+          PhraseContextWorkspaceLoader,
+          PhraseActionRequestGate,
+          PhraseLongStateSessionStore,
+          PhraseNoticeStore,
+          PhraseRouteNavigationCoordinator,
+        ],
         title: 'سياق العبارة القرآنية',
-        data: {
-          titleAr: 'البحث اليدوي في السياق',
-          messageAr: 'ستُستكمل أدوات هذا القسم في المرحلة التالية من مساحة البحث.',
-        },
       },
       {
         path: WORDS_PHRASES_SIMILARITY_SEGMENT,
-        loadComponent: loadDeferredPage,
+        loadComponent: loadSimilarityPage,
+        providers: [
+          PhraseSimilarityFacade,
+          PhraseSimilarityResultStore,
+          PhraseSimilarityResolutionStore,
+          PhraseSimilarityResultsLoader,
+          PhraseActionRequestGate,
+          PhraseLongStateSessionStore,
+          PhraseNoticeStore,
+          PhraseRouteNavigationCoordinator,
+        ],
         title: 'تشابه العبارات القرآنية',
-        data: {
-          titleAr: 'المتشابهات الموضعية',
-          messageAr: 'ستُستكمل أدوات هذا القسم في المرحلة التالية من مساحة البحث.',
-        },
       },
     ],
   },

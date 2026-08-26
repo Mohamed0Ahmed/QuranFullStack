@@ -1,0 +1,497 @@
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { EMPTY, Observable, Subscription, map, of, switchMap } from 'rxjs';
+import { catchError, distinctUntilChanged, tap } from 'rxjs/operators';
+
+import { PhraseResolutionCandidateDto } from '../../../../core/api/generated/models/phrase-resolution-candidate-dto';
+import { PhraseSearchCapabilitiesResponse } from '../../../../core/api/generated/models/phrase-search-capabilities-response';
+import { PhraseResolutionApi } from '../data-access/phrase-resolution.api';
+import {
+  DEFAULT_PHRASE_CONTEXT_URL_STATE,
+  ParsedPhraseContextUrlState,
+  PhraseContextState,
+  PhraseContextUrlState,
+} from '../models/phrase-context.models';
+import {
+  PHRASE_INDEX_UNAVAILABLE_MESSAGE,
+} from '../models/phrase-query.models';
+import { PhraseTextMode } from '../models/phrase-repetitions.models';
+import {
+  parsePhraseContextUrlState,
+  contextPageOnlyChanged,
+  phraseContextStateKey,
+} from './phrase-context-url-sync';
+import { PhraseContextSelectionStore } from './phrase-context-selection.store';
+import { PhraseActionRequestGate } from './phrase-action-request-gate';
+import {
+  PhraseContextActionCoordinator,
+  PhraseContextActionHooks,
+} from './phrase-context-action.coordinator';
+import {
+  PhraseContextRequestStatusStore,
+  PhraseContextRequestTarget,
+} from './phrase-context-request-status.store';
+import { PhraseRouteNavigationCoordinator } from './phrase-route-navigation.coordinator';
+import { PhraseNoticeStore } from './phrase-notice.store';
+import { phraseEnvelopeFailure, phraseRequestFailure } from './phrase-request-failure';
+import { PhraseContextResolutionStore } from './phrase-context-resolution.store';
+import {
+  PhraseContextLoadResult,
+  PhraseContextWorkspaceLoader,
+} from './phrase-context-workspace.loader';
+
+const INVALID_ROUTE_MESSAGE = 'رابط البحث السياقي غير صالح أو يحتوي على مراجع منتهية.';
+
+@Injectable()
+export class PhraseContextFacade {
+  private readonly workspaceLoader = inject(PhraseContextWorkspaceLoader);
+  private readonly resolutionApi = inject(PhraseResolutionApi);
+  private readonly resolutionFlow = inject(PhraseContextResolutionStore);
+  private readonly selection = inject(PhraseContextSelectionStore);
+  private readonly requestStatus = inject(PhraseContextRequestStatusStore);
+  private readonly routeCoordinator = inject(PhraseRouteNavigationCoordinator);
+  private readonly actionGate = inject(PhraseActionRequestGate);
+  private readonly notice = inject(PhraseNoticeStore);
+  private readonly actions = inject(PhraseContextActionCoordinator);
+  private readonly _route = signal(DEFAULT_PHRASE_CONTEXT_URL_STATE);
+  private readonly _routeInvalid = signal(false);
+  private readonly _capabilities = signal<PhraseSearchCapabilitiesResponse | null>(null);
+  private route?: ActivatedRoute;
+  private routeSub?: Subscription;
+  private readonly actionHooks: PhraseContextActionHooks = {
+    currentRoute: () => this._route(),
+    acceptBuild: (activeBuildId) => this.ensureBuild(activeBuildId),
+    resetBuild: (activeBuildId) => this.resetForBuildChange(activeBuildId),
+    navigate: (state, replaceUrl) => this.navigate(state, replaceUrl),
+  };
+  readonly state = computed<PhraseContextState>(() => ({
+    route: this._route(),
+    routeInvalid: this._routeInvalid(),
+    mode: this.resolutionFlow.mode(),
+    capabilitiesStatus: this.requestStatus.capabilities(),
+    capabilities: this._capabilities(),
+    resolution: this.resolutionFlow.state(),
+    branchesStatus: this.requestStatus.branches(),
+    branches: this.selection.branches(),
+    previousOptions: this.selection.previousOptions(),
+    followingOptions: this.selection.followingOptions(),
+    groupsStatus: this.requestStatus.groups(),
+    groups: this.selection.groups(),
+    groupsTotalCount: this.selection.groupsTotalCount(),
+    groupsNextCursor: this.selection.groupsNextCursor(),
+    occurrencesStatus: this.requestStatus.occurrences(),
+    occurrences: this.selection.occurrences(),
+    occurrencesTotalCount: this.selection.occurrencesTotalCount(),
+    occurrencesNextCursor: this.selection.occurrencesNextCursor(),
+    selectedContextRef: this.selection.selectedContextRef(),
+    errorMessage: this.requestStatus.errorMessage(),
+    notice: this.notice.message(),
+    sessionOnly: this.notice.sessionOnly(),
+    focusTarget: this.selection.focusTarget(),
+  }));
+
+  bindToRoute(route: ActivatedRoute): void {
+    this.unbindFromRoute();
+    this.route = route;
+    this.routeCoordinator.bind(route);
+    this.routeSub = route.queryParamMap
+      .pipe(
+        tap(() => this.actionGate.invalidate()),
+        map(parsePhraseContextUrlState),
+        map((parsed) => {
+          const restored = this.routeCoordinator.restoreContext(parsed);
+          this.notice.applyNavigation(restored.outcome);
+          return restored.parsed;
+        }),
+        distinctUntilChanged(
+          (a, b) => a.invalid === b.invalid && phraseContextStateKey(a.state) === phraseContextStateKey(b.state),
+        ),
+        switchMap((parsed) => this.runRoute(parsed)),
+      )
+      .subscribe();
+  }
+
+  unbindFromRoute(): void {
+    this.routeSub?.unsubscribe();
+    this.actionGate.invalidate();
+    this.routeSub = undefined;
+    this.route = undefined;
+    this.routeCoordinator.unbind();
+  }
+
+  setDraft(rawQuery: string): void {
+    if (rawQuery === this.resolutionFlow.state().rawQuery) {
+      return;
+    }
+    this.actionGate.invalidate();
+    this.resolutionFlow.setDraft(rawQuery);
+    this.clearWorkspaceForNewSubmission();
+  }
+
+  setMode(mode: PhraseTextMode): void {
+    if (!this.resolutionFlow.setMode(mode)) {
+      return;
+    }
+    this.selection.clearAll();
+    this.navigate({ ...this._route(), resolution: null, before: null, after: null, contextsPage: 1 });
+  }
+
+  submitQuery(): void {
+    this.clearWorkspaceForNewSubmission();
+    const epoch = this.actionGate.begin();
+    const submittedMode = this.resolutionFlow.mode();
+    const submittedQuery = this.resolutionFlow.state().rawQuery.trim();
+    const subscription = this.resolutionFlow
+      .resolve()
+      .pipe(
+        tap((mapped) => {
+          if (
+            !this.actionGate.isCurrent(epoch) ||
+            this.resolutionFlow.mode() !== submittedMode ||
+            this.resolutionFlow.state().rawQuery.trim() !== submittedQuery ||
+            !mapped
+          ) {
+            return;
+          }
+          this.resolutionFlow.accept(mapped);
+          if (mapped.activeBuildId && !this.ensureBuild(mapped.activeBuildId)) {
+            return;
+          }
+          if (mapped.autoCandidate) {
+            this.selectCandidate(mapped.autoCandidate);
+          }
+        }),
+        catchError((error: unknown) => {
+          if (!this.actionGate.isCurrent(epoch)) {
+            return of(undefined);
+          }
+          const failure = phraseRequestFailure(error);
+          this.resolutionFlow.fail(failure.status, failure.message);
+          return of(undefined);
+        }),
+      )
+      .subscribe();
+    this.actionGate.track(epoch, subscription);
+  }
+
+  selectCandidate(candidate: PhraseResolutionCandidateDto): void {
+    const build = this._capabilities()?.activeBuildId ?? this._route().build;
+    this.selection.clearAll();
+    this.navigate({
+      build,
+      q: this.resolutionFlow.state().rawQuery,
+      resolution: candidate.resolutionRef,
+      before: null,
+      after: null,
+      contextsPage: 1,
+    });
+  }
+
+  selectPrevious(selectionRef: string): void {
+    this.selection.requestFocus('previous');
+    this.selection.rememberPreviousRef(selectionRef, this._route().before);
+    this.startWorkspaceRefresh();
+    this.navigate({ ...this._route(), before: selectionRef, contextsPage: 1 });
+  }
+
+  selectFollowing(selectionRef: string): void {
+    this.selection.requestFocus('following');
+    this.selection.rememberFollowingRef(selectionRef, this._route().after);
+    this.startWorkspaceRefresh();
+    this.navigate({ ...this._route(), after: selectionRef, contextsPage: 1 });
+  }
+
+  reversePrevious(): void {
+    const lookup = this.selection.previousParentRef(this._route().before);
+    if (!lookup.known) {
+      this.notice.parentUnavailable();
+      return;
+    }
+    this.selection.requestFocus('previous');
+    this.startWorkspaceRefresh();
+    this.navigate({ ...this._route(), before: lookup.parent, contextsPage: 1 });
+  }
+
+  reverseFollowing(): void {
+    const lookup = this.selection.followingParentRef(this._route().after);
+    if (!lookup.known) {
+      this.notice.parentUnavailable();
+      return;
+    }
+    this.selection.requestFocus('following');
+    this.startWorkspaceRefresh();
+    this.navigate({ ...this._route(), after: lookup.parent, contextsPage: 1 });
+  }
+
+  loadMorePrevious(): void {
+    const branches = this.selection.branches();
+    if (!branches?.previous.nextCursor) {
+      return;
+    }
+    this.selection.requestFocus('previous-more');
+    this.actions.loadBranchPage(
+      this._route(),
+      'previous',
+      branches.previous.nextCursor,
+      this.actionHooks,
+    );
+  }
+
+  loadMoreFollowing(): void {
+    const branches = this.selection.branches();
+    if (!branches?.following.nextCursor) {
+      return;
+    }
+    this.selection.requestFocus('following-more');
+    this.actions.loadBranchPage(
+      this._route(),
+      'following',
+      branches.following.nextCursor,
+      this.actionHooks,
+    );
+  }
+
+  loadMoreGroups(): void {
+    const cursor = this.selection.groupsNextCursor();
+    const route = this._route();
+    if (!cursor || !route.resolution) {
+      return;
+    }
+    this.actions.loadMoreGroups(route, cursor, this.actionHooks);
+  }
+
+  selectContext(contextRef: string): void {
+    this.selection.selectContext(contextRef);
+    this.actions.loadOccurrences(this._route(), contextRef, null, false, this.actionHooks);
+  }
+
+  loadMoreOccurrences(): void {
+    const contextRef = this.selection.selectedContextRef();
+    const cursor = this.selection.occurrencesNextCursor();
+    if (contextRef && cursor) {
+      this.actions.loadOccurrences(this._route(), contextRef, cursor, true, this.actionHooks);
+    }
+  }
+
+  clearSelectedContext(): void {
+    this.actionGate.invalidate();
+    this.selection.clearOccurrences();
+    this.requestStatus.occurrences.set('idle');
+  }
+
+  clearFocusTarget(): void {
+    this.selection.clearFocusTarget();
+  }
+
+  retry(): void {
+    if (
+      this.requestStatus.capabilities() === 'error' ||
+      this.requestStatus.capabilities() === 'unavailable'
+    ) {
+      this._capabilities.set(null);
+    }
+    const epoch = this.actionGate.begin();
+    const subscription = this.runRoute({ state: this._route(), invalid: false }).subscribe();
+    this.actionGate.track(epoch, subscription);
+  }
+
+  resetInvalidState(): void {
+    this.navigate({
+      ...DEFAULT_PHRASE_CONTEXT_URL_STATE,
+      build: this._capabilities()?.activeBuildId ?? null,
+    }, true);
+  }
+
+  dismissNotice(): void {
+    this.notice.dismiss();
+  }
+  private runRoute(parsed: ParsedPhraseContextUrlState): Observable<void> {
+    if (
+      !parsed.invalid &&
+      contextPageOnlyChanged(this._route(), parsed.state) &&
+      this.selection.groups().length > 0
+    ) {
+      this._route.set(parsed.state);
+      return of(undefined);
+    }
+    this._route.set(parsed.state);
+    this._routeInvalid.set(parsed.invalid);
+    this.requestStatus.errorMessage.set('');
+    if (parsed.invalid) {
+      this.requestStatus.branches.set('invalid');
+      this.requestStatus.groups.set('invalid');
+      this.requestStatus.errorMessage.set(INVALID_ROUTE_MESSAGE);
+      return EMPTY;
+    }
+    const capabilities = this._capabilities();
+    if (capabilities) {
+      return this.runWithCapabilities(parsed.state);
+    }
+    this.requestStatus.capabilities.set('loading');
+    const routeKey = phraseContextStateKey(parsed.state);
+    return this.resolutionApi.getCapabilities().pipe(
+      switchMap((response) => {
+        if (routeKey !== phraseContextStateKey(this._route())) {
+          return EMPTY;
+        }
+        if (!response.isSuccess || !response.data) {
+          const failure = phraseEnvelopeFailure(response.errors, response.message);
+          this.requestStatus.fail('capabilities', failure.status, failure.message);
+          return EMPTY;
+        }
+        this._capabilities.set(response.data);
+        this.requestStatus.capabilities.set('success');
+        return this.runWithCapabilities(parsed.state);
+      }),
+      catchError((error: unknown) => this.applyRouteError(error, 'capabilities', routeKey)),
+    );
+  }
+
+  private runWithCapabilities(route: PhraseContextUrlState): Observable<void> {
+    const capabilities = this._capabilities();
+    if (!capabilities?.exactReady) {
+      this.requestStatus.capabilities.set('unavailable');
+      this.requestStatus.errorMessage.set(PHRASE_INDEX_UNAVAILABLE_MESSAGE);
+      return EMPTY;
+    }
+    if (route.build === null) {
+      this.navigate({ ...route, build: capabilities.activeBuildId }, true);
+      return EMPTY;
+    }
+    if (!sameBuild(route.build, capabilities.activeBuildId)) {
+      this.resetForBuildChange(capabilities.activeBuildId);
+      return EMPTY;
+    }
+    if (!route.resolution) {
+      this.selection.clearAll();
+      this.requestStatus.branches.set('idle');
+      this.requestStatus.groups.set('idle');
+      this.requestStatus.occurrences.set('idle');
+      this.resolutionFlow.restoreIdle(route.q);
+      return of(undefined);
+    }
+    this.resolutionFlow.markLoading(route.q, route.resolution);
+    this.selection.clearWorkspace();
+    this.requestStatus.branches.set('loading');
+    this.requestStatus.groups.set('loading');
+    const routeKey = phraseContextStateKey(route);
+    return this.workspaceLoader.loadWorkspace(route).pipe(
+      tap((result) => {
+        if (
+          routeKey !== phraseContextStateKey(this._route()) ||
+          !this.acceptLoadResult(result, 'workspace') ||
+          result.kind !== 'workspace' ||
+          routeKey !== phraseContextStateKey(this._route())
+        ) {
+          return;
+        }
+        this.selection.replaceBranches(result.branches, route.before, route.after);
+        this.selection.replaceGroups(result.groupPages[0]);
+        result.groupPages.slice(1).forEach((page) => this.selection.appendGroups(page));
+        this.resolutionFlow.restoreFromBranches(route.q, result.branches);
+        this.requestStatus.branches.set('success');
+        this.requestStatus.groups.set(
+          result.groupPages[0].totalCount === 0 ? 'empty' : 'success',
+        );
+        if (route.contextsPage > result.groupPages.length) {
+          this.navigate({ ...route, contextsPage: result.groupPages.length }, true);
+        }
+      }),
+      catchError((error: unknown) => this.applyRouteError(error, 'workspace', routeKey)),
+      map(() => undefined),
+    );
+  }
+
+  private acceptLoadResult(
+    result: PhraseContextLoadResult,
+    target: PhraseContextRequestTarget,
+  ): boolean {
+    if (result.kind === 'failure') {
+      if (result.failure.status === 'stale') {
+        this.resetForBuildChange(null);
+      } else {
+        this.requestStatus.fail(target, result.failure.status, result.failure.message);
+      }
+      return false;
+    }
+    if (!this.ensureBuild(result.activeBuildId)) {
+      return false;
+    }
+    return true;
+  }
+
+  private applyRouteError(
+    error: unknown,
+    target: PhraseContextRequestTarget,
+    routeKey: string,
+  ): Observable<void> {
+    if (routeKey !== phraseContextStateKey(this._route())) {
+      return of(undefined);
+    }
+    const failure = phraseRequestFailure(error);
+    if (failure.status === 'stale') {
+      this.resetForBuildChange(null);
+    } else {
+      this.requestStatus.fail(target, failure.status, failure.message);
+    }
+    return of(undefined);
+  }
+
+  private ensureBuild(activeBuildId: string): boolean {
+    const expected = this._route().build ?? this._capabilities()?.activeBuildId ?? null;
+    if (expected && sameBuild(expected, activeBuildId)) {
+      return true;
+    }
+    this.resetForBuildChange(activeBuildId);
+    return false;
+  }
+
+  private startWorkspaceRefresh(): void {
+    this.requestStatus.branches.set('refreshing');
+    this.requestStatus.groups.set('refreshing');
+  }
+
+  private resetForBuildChange(activeBuildId: string | null): void {
+    this.actionGate.invalidate();
+    this.selection.clearAll();
+    this.routeCoordinator.clearBuildScopedState();
+    this.notice.indexChanged();
+    this.requestStatus.branches.set('stale');
+    this.requestStatus.groups.set('stale');
+    this.requestStatus.occurrences.set('stale');
+    this.navigate(
+      {
+        ...DEFAULT_PHRASE_CONTEXT_URL_STATE,
+        build: activeBuildId,
+        q: this._route().q || this.resolutionFlow.state().rawQuery,
+      },
+      true,
+    );
+  }
+
+  private navigate(state: PhraseContextUrlState, replaceUrl = false): void {
+    const outcome = this.routeCoordinator.navigateContext(
+      state,
+      this._route(),
+      replaceUrl,
+      () => {
+        const epoch = this.actionGate.begin();
+        const subscription = this.runRoute({ state, invalid: false }).subscribe();
+        this.actionGate.track(epoch, subscription);
+      },
+    );
+    this.notice.applyNavigation(outcome);
+  }
+
+  private clearWorkspaceForNewSubmission(): void {
+    this.selection.clearAll();
+    this.requestStatus.branches.set('idle');
+    this.requestStatus.groups.set('idle');
+    this.requestStatus.occurrences.set('idle');
+    this.requestStatus.errorMessage.set('');
+  }
+}
+
+function sameBuild(expected: string, actual: string): boolean {
+  return expected.toLowerCase() === actual.toLowerCase();
+}

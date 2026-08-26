@@ -1,0 +1,162 @@
+<section
+  class="context-explorer"
+  aria-labelledby="context-explorer-title"
+  [attr.aria-busy]="busy() ? 'true' : null"
+>
+  <header class="context-explorer__header">
+    <div>
+      <p class="context-explorer__eyebrow">سياق واحد مقترن</p>
+      <h2 id="context-explorer-title">وسّع ما قبل العبارة وما بعدها</h2>
+    </div>
+    <strong>{{ branches().totalOccurrenceCount }} موضعًا في المجموعة الحالية</strong>
+  </header>
+
+  <p class="context-explorer__focus-rule">
+    بعد اختيار فرع ينتقل التركيز إلى أول خيار في المستوى الجديد. تحميل المزيد يبقي التركيز في الجانب نفسه.
+  </p>
+
+  <div class="context-explorer__layout">
+    <section class="context-side context-side--previous" aria-labelledby="previous-side-title">
+      <header>
+        <div>
+          <p>الجانب السابق</p>
+          <h3 id="previous-side-title">الأقرب أولًا، باتجاه بداية الآية</h3>
+        </div>
+        <span>{{ branches().previous.totalOptions }} خيارًا</span>
+      </header>
+
+      @if (branches().previousSelection.tokens.length > 0) {
+        <div class="context-breadcrumb" aria-label="مسار السياق السابق المحدد">
+          @for (token of branches().previousSelection.tokens; track $index) {
+            <span>{{ token.textUthmani }}</span>
+          }
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary"
+            aria-label="الرجوع مستوى واحدًا في السياق السابق"
+            [attr.autofocus]="
+              focusTarget() === 'previous' && previousOptions().length === 0 ? '' : null
+            "
+            [disabled]="busy()"
+            (click)="previousReversed.emit()"
+          >
+            رجوع مستوى
+          </button>
+        </div>
+      }
+
+      <div class="context-side__counts">
+        <span>يمر عبر هذا الجانب: {{ branches().previous.passesThroughCount }}</span>
+        <span>ينتهي عند حد هذا الجانب: {{ branches().previous.sideEndsHereCount }}</span>
+      </div>
+
+      <div class="context-side__options" aria-label="خيارات المستوى التالي قبل العبارة">
+        @for (option of previousOptions(); track option.selectionRef) {
+          <button
+            type="button"
+            class="context-option"
+            [class.context-option--boundary]="option.boundaryKind !== null"
+            [disabled]="busy()"
+            [attr.autofocus]="$first && focusTarget() === 'previous' ? '' : null"
+            (click)="selectPrevious(option)"
+          >
+            <strong>{{ boundaryLabel(option) }}</strong>
+            <span>يمر {{ option.passesThroughCount }}</span>
+            <small>ينتهي عند حد الجانب {{ option.sideEndsHereCount }}</small>
+          </button>
+        }
+      </div>
+
+      @if (branches().previous.nextCursor) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary context-side__more"
+          [disabled]="busy()"
+          (click)="previousMoreRequested.emit()"
+        >
+          تحميل خيارات سابقة إضافية
+        </button>
+      }
+    </section>
+
+    <section class="context-query" aria-labelledby="fixed-query-title">
+      <p>العبارة الثابتة</p>
+      <h3 id="fixed-query-title">
+        @for (token of branches().query.tokens; track $index) {
+          <span>{{ token.textUthmani }}</span>
+        }
+      </h3>
+      <strong>{{ branches().totalOccurrenceCount }} موضعًا</strong>
+      @if (branches().exactFullContextCount !== null) {
+        <span class="context-query__exact">
+          السياق الكامل نفسه: {{ branches().exactFullContextCount }} موضعًا
+        </span>
+      } @else {
+        <span>يظهر العدد الدقيق للسياق الكامل بعد تثبيت الحدين.</span>
+      }
+    </section>
+
+    <section class="context-side context-side--following" aria-labelledby="following-side-title">
+      <header>
+        <div>
+          <p>الجانب اللاحق</p>
+          <h3 id="following-side-title">الأقرب أولًا، باتجاه نهاية الآية</h3>
+        </div>
+        <span>{{ branches().following.totalOptions }} خيارًا</span>
+      </header>
+
+      @if (branches().followingSelection.tokens.length > 0) {
+        <div class="context-breadcrumb" aria-label="مسار السياق اللاحق المحدد">
+          @for (token of branches().followingSelection.tokens; track $index) {
+            <span>{{ token.textUthmani }}</span>
+          }
+          <button
+            type="button"
+            class="qd-btn qd-btn-secondary"
+            aria-label="الرجوع مستوى واحدًا في السياق اللاحق"
+            [attr.autofocus]="
+              focusTarget() === 'following' && followingOptions().length === 0 ? '' : null
+            "
+            [disabled]="busy()"
+            (click)="followingReversed.emit()"
+          >
+            رجوع مستوى
+          </button>
+        </div>
+      }
+
+      <div class="context-side__counts">
+        <span>يمر عبر هذا الجانب: {{ branches().following.passesThroughCount }}</span>
+        <span>ينتهي عند حد هذا الجانب: {{ branches().following.sideEndsHereCount }}</span>
+      </div>
+
+      <div class="context-side__options" aria-label="خيارات المستوى التالي بعد العبارة">
+        @for (option of followingOptions(); track option.selectionRef) {
+          <button
+            type="button"
+            class="context-option"
+            [class.context-option--boundary]="option.boundaryKind !== null"
+            [disabled]="busy()"
+            [attr.autofocus]="$first && focusTarget() === 'following' ? '' : null"
+            (click)="selectFollowing(option)"
+          >
+            <strong>{{ boundaryLabel(option) }}</strong>
+            <span>يمر {{ option.passesThroughCount }}</span>
+            <small>ينتهي عند حد الجانب {{ option.sideEndsHereCount }}</small>
+          </button>
+        }
+      </div>
+
+      @if (branches().following.nextCursor) {
+        <button
+          type="button"
+          class="qd-btn qd-btn-secondary context-side__more"
+          [disabled]="busy()"
+          (click)="followingMoreRequested.emit()"
+        >
+          تحميل خيارات لاحقة إضافية
+        </button>
+      }
+    </section>
+  </div>
+</section>

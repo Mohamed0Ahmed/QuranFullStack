@@ -1,0 +1,69 @@
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+
+import { PhraseContextBranchesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-branches-response-api-response';
+import { PhraseContextGroupsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-groups-response-api-response';
+import { PhraseContextOccurrencesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response-api-response';
+import { environment } from '../../../../../environments/environment';
+
+@Injectable({ providedIn: 'root' })
+export class PhraseContextApi {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search/contexts`;
+
+  getBranches(
+    resolutionRef: string,
+    previousRef: string | null,
+    followingRef: string | null,
+    previousCursor: string | null,
+    followingCursor: string | null,
+    pageSize: number,
+  ): Observable<PhraseContextBranchesResponseApiResponse> {
+    let params = new HttpParams()
+      .set('resolutionRef', resolutionRef)
+      .set('previousPageSize', pageSize)
+      .set('followingPageSize', pageSize);
+    params = setOptional(params, 'previousRef', previousRef);
+    params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'previousCursor', previousCursor);
+    params = setOptional(params, 'followingCursor', followingCursor);
+    return this.http.get<PhraseContextBranchesResponseApiResponse>(
+      `${this.baseUrl}/branches`,
+      { params },
+    );
+  }
+
+  getGroups(
+    resolutionRef: string,
+    previousRef: string | null,
+    followingRef: string | null,
+    cursor: string | null,
+    pageSize: number,
+  ): Observable<PhraseContextGroupsResponseApiResponse> {
+    let params = new HttpParams().set('resolutionRef', resolutionRef).set('pageSize', pageSize);
+    params = setOptional(params, 'previousRef', previousRef);
+    params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'cursor', cursor);
+    return this.http.get<PhraseContextGroupsResponseApiResponse>(`${this.baseUrl}/groups`, {
+      params,
+    });
+  }
+
+  getOccurrences(
+    contextRef: string,
+    cursor: string | null,
+    pageSize: number,
+  ): Observable<PhraseContextOccurrencesResponseApiResponse> {
+    let params = new HttpParams().set('contextRef', contextRef).set('pageSize', pageSize);
+    params = setOptional(params, 'cursor', cursor);
+    return this.http.get<PhraseContextOccurrencesResponseApiResponse>(
+      `${this.baseUrl}/occurrences`,
+      { params },
+    );
+  }
+}
+
+function setOptional(params: HttpParams, key: string, value: string | null): HttpParams {
+  return value ? params.set(key, value) : params;
+}
