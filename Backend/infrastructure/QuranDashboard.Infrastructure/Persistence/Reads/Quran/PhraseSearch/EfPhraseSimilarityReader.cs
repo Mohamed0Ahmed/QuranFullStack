@@ -1,15 +1,18 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Domain.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
 public sealed partial class EfPhraseSimilarityReader(
     QuranDashboardDbContext db,
-    PhraseSimilarityOccurrenceHydrator occurrenceHydrator) : IPhraseSimilarityReader
+    PhraseSimilarityOccurrenceHydrator occurrenceHydrator,
+    PhraseSearchReadCache cache) : IPhraseSimilarityReader
 {
     private readonly QuranDashboardDbContext db = db;
     private readonly PhraseSimilarityOccurrenceHydrator occurrenceHydrator = occurrenceHydrator;
+    private readonly PhraseSearchReadCache cache = cache;
 
     private async Task<SimilarityVariantRow?> LoadVariantAsync(
         Guid buildId,

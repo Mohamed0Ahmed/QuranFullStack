@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
@@ -20,6 +21,13 @@ public sealed partial class EfPhraseContextReader
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseContextOccurrencesResponse>.BuildChanged();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.ContextOccurrences(context, paging);
+        if (cache.TryGet(cacheKey, out PhraseContextOccurrencesResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseContextOccurrencesResponse>.Success(cached);
         }
 
         var resolution = new PhraseResolutionReference(
@@ -77,6 +85,7 @@ public sealed partial class EfPhraseContextReader
                 scope),
             pageItems);
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(paging.PageSize));
         return new PhraseSearchReadResult<PhraseContextOccurrencesResponse>.Success(response);
     }
 

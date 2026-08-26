@@ -7,10 +7,12 @@ import { PhraseSimilarityMatchesResponseApiResponse } from '../../../../core/api
 import { PhraseSimilaritySearchResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-search-response-api-response';
 import { environment } from '../../../../../environments/environment';
 import { PhraseTextMode } from '../models/phrase-repetitions.models';
+import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
 export class PhraseSimilarityApi {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search`;
 
   search(
@@ -24,9 +26,19 @@ export class PhraseSimilarityApi {
       .set('minimumMatchedWords', minimumMatchedWords)
       .set('page', page)
       .set('pageSize', pageSize);
-    return this.http.get<PhraseSimilaritySearchResponseApiResponse>(
-      `${this.baseUrl}/similarities/search`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey(
+        'similarity-search',
+        resolutionRef,
+        minimumMatchedWords,
+        page,
+        pageSize,
+      ),
+      () =>
+        this.http.get<PhraseSimilaritySearchResponseApiResponse>(
+          `${this.baseUrl}/similarities/search`,
+          { params },
+        ),
     );
   }
 
@@ -43,9 +55,13 @@ export class PhraseSimilarityApi {
       .set('threshold', threshold)
       .set('page', page)
       .set('pageSize', pageSize);
-    return this.http.get<PhraseSimilarityGroupsResponseApiResponse>(
-      `${this.baseUrl}/similarity-groups`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey('similarity-groups', mode, length, threshold, page, pageSize),
+      () =>
+        this.http.get<PhraseSimilarityGroupsResponseApiResponse>(
+          `${this.baseUrl}/similarity-groups`,
+          { params },
+        ),
     );
   }
 
@@ -60,9 +76,20 @@ export class PhraseSimilarityApi {
       .set('threshold', threshold)
       .set('page', page)
       .set('pageSize', pageSize);
-    return this.http.get<PhraseSimilarityMatchesResponseApiResponse>(
-      `${this.baseUrl}/similarity-groups/${encodeURIComponent(buildId)}/${variantId}/matches`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey(
+        'similarity-matches',
+        buildId,
+        variantId,
+        threshold,
+        page,
+        pageSize,
+      ),
+      () =>
+        this.http.get<PhraseSimilarityMatchesResponseApiResponse>(
+          `${this.baseUrl}/similarity-groups/${encodeURIComponent(buildId)}/${variantId}/matches`,
+          { params },
+        ),
     );
   }
 }

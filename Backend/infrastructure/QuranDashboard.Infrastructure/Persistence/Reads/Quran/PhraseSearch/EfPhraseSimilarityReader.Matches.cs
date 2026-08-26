@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
@@ -23,6 +24,18 @@ public sealed partial class EfPhraseSimilarityReader
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseSimilarityMatchesResponse>.BuildChanged();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.SimilarityMatches(
+            snapshot.ActiveBuildId,
+            anchorVariantId,
+            threshold,
+            page,
+            pageSize);
+        if (cache.TryGet(cacheKey, out PhraseSimilarityMatchesResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseSimilarityMatchesResponse>.Success(cached);
         }
 
         var group = await (
@@ -75,6 +88,7 @@ public sealed partial class EfPhraseSimilarityReader
                 rows,
                 cancellationToken));
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));
         return new PhraseSearchReadResult<PhraseSimilarityMatchesResponse>.Success(response);
     }
 }

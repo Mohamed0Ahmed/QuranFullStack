@@ -1,11 +1,14 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Domain.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
-public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db) : IPhraseRepetitionsReader
+public sealed partial class EfPhraseRepetitionsReader(
+    QuranDashboardDbContext db,
+    PhraseSearchReadCache cache) : IPhraseRepetitionsReader
 {
     public async Task<PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>> GetCapabilitiesAsync(
         CancellationToken cancellationToken)
@@ -14,6 +17,13 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
         if (snapshot is null)
         {
             return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Unavailable();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.Capabilities(snapshot.ActiveBuildId);
+        if (cache.TryGet(cacheKey, out PhraseSearchCapabilitiesResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Success(cached);
         }
 
         var lengthRows = await db.QuranPhraseVariants
@@ -55,6 +65,7 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
             modes);
 
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response);
         return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Success(response);
     }
 
@@ -70,6 +81,19 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
         if (snapshot is null)
         {
             return new PhraseSearchReadResult<PhraseRepetitionsPageResponse>.Unavailable();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.Repetitions(
+            snapshot.ActiveBuildId,
+            mode,
+            wordCount,
+            sort,
+            page,
+            pageSize);
+        if (cache.TryGet(cacheKey, out PhraseRepetitionsPageResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseRepetitionsPageResponse>.Success(cached);
         }
 
         var variants = db.QuranPhraseVariants
@@ -121,6 +145,7 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
             items);
 
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));
         return new PhraseSearchReadResult<PhraseRepetitionsPageResponse>.Success(response);
     }
 
@@ -141,6 +166,17 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseOccurrencePageResponse>.BuildChanged();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.RepetitionOccurrences(
+            snapshot.ActiveBuildId,
+            variantId,
+            page,
+            pageSize);
+        if (cache.TryGet(cacheKey, out PhraseOccurrencePageResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseOccurrencePageResponse>.Success(cached);
         }
 
         var variant = await db.QuranPhraseVariants
@@ -215,6 +251,7 @@ public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db
             items);
 
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));
         return new PhraseSearchReadResult<PhraseOccurrencePageResponse>.Success(response);
     }
 

@@ -1,12 +1,14 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Domain.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
 public sealed class EfPhraseQueryResolutionReader(
     QuranDashboardDbContext db,
-    IPhraseSearchReferenceCodec codec) : IPhraseQueryResolutionReader
+    IPhraseSearchReferenceCodec codec,
+    PhraseSearchReadCache cache) : IPhraseQueryResolutionReader
 {
     public async Task<PhraseSearchReadResult<PhraseQueryResolutionResponse>> ResolveAsync(
         PhraseTextMode mode,
@@ -17,6 +19,16 @@ public sealed class EfPhraseQueryResolutionReader(
         if (snapshot is null)
         {
             return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Unavailable();
+        }
+
+        var cacheKey = PhraseSearchCacheKeys.Resolution(
+            snapshot.ActiveBuildId,
+            mode,
+            normalizedSegments);
+        if (cache.TryGet(cacheKey, out PhraseQueryResolutionResponse cached))
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Success(cached);
         }
 
         var candidates = await ResolveCandidatesAsync(
@@ -56,6 +68,7 @@ public sealed class EfPhraseQueryResolutionReader(
             status,
             candidateDtos);
         await snapshot.CompleteAsync(cancellationToken);
+        cache.Set(cacheKey, response);
         return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Success(response);
     }
 

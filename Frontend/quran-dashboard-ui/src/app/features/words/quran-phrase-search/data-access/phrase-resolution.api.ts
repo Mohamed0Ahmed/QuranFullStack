@@ -6,15 +6,19 @@ import { PhraseQueryResolutionResponseApiResponse } from '../../../../core/api/g
 import { PhraseSearchCapabilitiesResponseApiResponse } from '../../../../core/api/generated/models/phrase-search-capabilities-response-api-response';
 import { environment } from '../../../../../environments/environment';
 import { PhraseTextMode } from '../models/phrase-repetitions.models';
+import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
 export class PhraseResolutionApi {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search`;
 
   getCapabilities(): Observable<PhraseSearchCapabilitiesResponseApiResponse> {
-    return this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
-      `${this.baseUrl}/capabilities`,
+    return this.cache.capabilities(() =>
+      this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
+        `${this.baseUrl}/capabilities`,
+      ),
     );
   }
 
@@ -23,9 +27,13 @@ export class PhraseResolutionApi {
     encodedQuery: string,
   ): Observable<PhraseQueryResolutionResponseApiResponse> {
     const params = new HttpParams().set('mode', mode).set('q64', encodedQuery);
-    return this.http.get<PhraseQueryResolutionResponseApiResponse>(
-      `${this.baseUrl}/query-resolutions`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey('resolution', mode, encodedQuery),
+      () =>
+        this.http.get<PhraseQueryResolutionResponseApiResponse>(
+          `${this.baseUrl}/query-resolutions`,
+          { params },
+        ),
     );
   }
 }

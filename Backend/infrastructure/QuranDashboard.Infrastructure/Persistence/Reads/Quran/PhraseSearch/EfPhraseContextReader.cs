@@ -1,15 +1,18 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Domain.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
 public sealed partial class EfPhraseContextReader(
     QuranDashboardDbContext db,
-    IPhraseSearchReferenceCodec codec) : IPhraseContextReader
+    IPhraseSearchReferenceCodec codec,
+    PhraseSearchReadCache cache) : IPhraseContextReader
 {
     private readonly QuranDashboardDbContext db = db;
     private readonly IPhraseSearchReferenceCodec codec = codec;
+    private readonly PhraseSearchReadCache cache = cache;
 
     private async Task<PopulationLoadResult> LoadPopulationAsync(
         PhraseSearchReadSnapshot snapshot,

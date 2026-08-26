@@ -7,10 +7,12 @@ import { PhraseContextGroupsResponseApiResponse } from '../../../../core/api/gen
 import { PhraseContextOccurrencesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response-api-response';
 import { PhraseContextResultsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-results-response-api-response';
 import { environment } from '../../../../../environments/environment';
+import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
 export class PhraseContextApi {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search/contexts`;
 
   getBranches(
@@ -29,9 +31,21 @@ export class PhraseContextApi {
     params = setOptional(params, 'followingRef', followingRef);
     params = setOptional(params, 'previousCursor', previousCursor);
     params = setOptional(params, 'followingCursor', followingCursor);
-    return this.http.get<PhraseContextBranchesResponseApiResponse>(
-      `${this.baseUrl}/branches`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey(
+        'context-branches',
+        resolutionRef,
+        previousRef,
+        followingRef,
+        previousCursor,
+        followingCursor,
+        pageSize,
+      ),
+      () =>
+        this.http.get<PhraseContextBranchesResponseApiResponse>(
+          `${this.baseUrl}/branches`,
+          { params },
+        ),
     );
   }
 
@@ -46,9 +60,20 @@ export class PhraseContextApi {
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
     params = setOptional(params, 'cursor', cursor);
-    return this.http.get<PhraseContextGroupsResponseApiResponse>(`${this.baseUrl}/groups`, {
-      params,
-    });
+    return this.cache.buildScoped(
+      phraseSearchCacheKey(
+        'context-groups',
+        resolutionRef,
+        previousRef,
+        followingRef,
+        cursor,
+        pageSize,
+      ),
+      () =>
+        this.http.get<PhraseContextGroupsResponseApiResponse>(`${this.baseUrl}/groups`, {
+          params,
+        }),
+    );
   }
 
   getResults(
@@ -60,9 +85,19 @@ export class PhraseContextApi {
     let params = new HttpParams().set('resolutionRef', resolutionRef).set('pageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
-    return this.http.get<PhraseContextResultsResponseApiResponse>(`${this.baseUrl}/results`, {
-      params,
-    });
+    return this.cache.buildScoped(
+      phraseSearchCacheKey(
+        'context-results',
+        resolutionRef,
+        previousRef,
+        followingRef,
+        pageSize,
+      ),
+      () =>
+        this.http.get<PhraseContextResultsResponseApiResponse>(`${this.baseUrl}/results`, {
+          params,
+        }),
+    );
   }
 
   getOccurrences(
@@ -72,9 +107,13 @@ export class PhraseContextApi {
   ): Observable<PhraseContextOccurrencesResponseApiResponse> {
     let params = new HttpParams().set('contextRef', contextRef).set('pageSize', pageSize);
     params = setOptional(params, 'cursor', cursor);
-    return this.http.get<PhraseContextOccurrencesResponseApiResponse>(
-      `${this.baseUrl}/occurrences`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey('context-occurrences', contextRef, cursor, pageSize),
+      () =>
+        this.http.get<PhraseContextOccurrencesResponseApiResponse>(
+          `${this.baseUrl}/occurrences`,
+          { params },
+        ),
     );
   }
 }

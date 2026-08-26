@@ -10,15 +10,19 @@ import {
   PhraseRepetitionSort,
   PhraseTextMode,
 } from '../models/phrase-repetitions.models';
+import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
 export class PhraseRepetitionsApi {
   private readonly http = inject(HttpClient);
+  private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search`;
 
   getCapabilities(): Observable<PhraseSearchCapabilitiesResponseApiResponse> {
-    return this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
-      `${this.baseUrl}/capabilities`,
+    return this.cache.capabilities(() =>
+      this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
+        `${this.baseUrl}/capabilities`,
+      ),
     );
   }
 
@@ -36,9 +40,13 @@ export class PhraseRepetitionsApi {
       .set('page', page)
       .set('pageSize', pageSize);
 
-    return this.http.get<PhraseRepetitionsPageResponseApiResponse>(
-      `${this.baseUrl}/repetitions`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey('repetitions', mode, length, sort, page, pageSize),
+      () =>
+        this.http.get<PhraseRepetitionsPageResponseApiResponse>(
+          `${this.baseUrl}/repetitions`,
+          { params },
+        ),
     );
   }
 
@@ -49,9 +57,13 @@ export class PhraseRepetitionsApi {
     pageSize: number,
   ): Observable<PhraseOccurrencePageResponseApiResponse> {
     const params = new HttpParams().set('page', page).set('pageSize', pageSize);
-    return this.http.get<PhraseOccurrencePageResponseApiResponse>(
-      `${this.baseUrl}/repetitions/${encodeURIComponent(buildId)}/${variantId}/occurrences`,
-      { params },
+    return this.cache.buildScoped(
+      phraseSearchCacheKey('repetition-occurrences', buildId, variantId, page, pageSize),
+      () =>
+        this.http.get<PhraseOccurrencePageResponseApiResponse>(
+          `${this.baseUrl}/repetitions/${encodeURIComponent(buildId)}/${variantId}/occurrences`,
+          { params },
+        ),
     );
   }
 }
