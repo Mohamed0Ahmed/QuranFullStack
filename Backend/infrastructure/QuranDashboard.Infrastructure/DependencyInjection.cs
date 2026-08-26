@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddNavigationImport();
         services.AddFullI3rabImport();
         services.AddSimpleI3rabGeneration();
+        services.AddPhraseSearch(configuration);
         services.AddAbwab();
         services.AddLinking(configuration);
 

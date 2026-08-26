@@ -76,6 +76,9 @@ Only two dependencies actually constrain the order:
 2. **`rebuild-words` → `import-morphology` → `generate-i3rab`.** Display words come from
    foundation words; morphology attaches to display words; simple i3rab is generated from
    morphology segments.
+3. **`rebuild-words` → `build-phrase-index`.** PhraseSearch consumes the foundation words and
+   both rebuilt exact word-identity links. It is source-free and does not depend on morphology,
+   tafsirs, translations, navigation, Mutashabihat, Abwab, or i3rab.
 
 Every other verb — `import-mutashabihat`, `import-tafsirs`, `import-translations`,
 `import-navigation-metadata`, `import-full-i3rab` — resolves `verse_key → ayah_id` against
@@ -97,6 +100,30 @@ reseed actually landed.
 captured in one run. The reset → migrate → `import-foundation` → `rebuild-words` head of the chain
 has been; the individual imports have each been run against an already-foundation-seeded database.
 Treat the ordering above as derived from the code, not as a replayed transcript.
+
+`build-phrase-index [--report-out <path>] [--force]` is dispatched through the DataImporter.
+The default report root is `resources/report/quran-phrase-search/`; each build gets its own
+build-ID directory. A first build initializes the migration-seeded null PhraseSearch source
+fingerprint only after verifying every readable word has consistent simple and tashkil identity
+links. A later build requires `--force` while an active generation exists. The command never
+deletes the active or compatible previous generation before activation, and `Ctrl+C` cancels
+staging while preserving the prior active pointer.
+
+Before a build row is created, the preflight measures the current PostgreSQL database and phrase
+relations. It reserves one full current database size for a new generation including indexes, one
+more for WAL, and the configured safety margin. Local loopback runs read free bytes from the
+PostgreSQL data filesystem; remote runs fail closed unless the operator provides verified free
+bytes with the `operator-verified-database-filesystem-v1` contract. Failed build audit rows are
+retained for `PhraseSearch:FailedBuildRetentionDays` (30 by default) after their durable report;
+child rows are removed only when the build is Failed and neither active nor previous.
+Eligible superseded-generation cleanup runs after activation commits, never during preflight,
+source approval, staging, or activation. If that housekeeping fails, the activated generation
+remains active and the report plus command message records `post-activation-cleanup-failed`.
+
+`rollback-phrase-index` is the matching operational rollback verb. It takes no arguments and
+refuses unless both pointers exist, the current source fingerprint still matches, and the previous
+generation uses the current format with exact and similarity readiness. The pointer and status swap
+is one source-fenced transaction; migration down is not the runtime rollback path.
 
 ### `create-smoke-dump`
 

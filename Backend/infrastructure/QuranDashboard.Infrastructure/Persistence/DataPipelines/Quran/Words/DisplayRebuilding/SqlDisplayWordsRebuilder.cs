@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.DisplayRebuilding;
 
@@ -59,7 +60,7 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         WHERE quran_words_unique_simple.word_key_imlaei_simple = EXCLUDED.word_key_imlaei_simple
         """;
 
-    private const string RemoveObsoleteUniqueRowsSql = DisplayWordsSql.TashkeelIdentityCte +
+    private const string RemoveObsoleteUniqueRowsSql = QuranTashkeelIdentitySql.IdentityCte +
         """
         , current_tashkeel AS (
           SELECT DISTINCT ON (
@@ -126,12 +127,15 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
     private readonly QuranDashboardDbContext dbContext;
     private readonly ILinkingDataRevisionWriterStore revisionStore;
+    private readonly PhraseSourceStateCoordinator phraseSourceStateCoordinator;
 
     public SqlDisplayWordsRebuilder(
         QuranDashboardDbContext dbContext,
+        PhraseSourceStateCoordinator phraseSourceStateCoordinator,
         ILinkingDataRevisionWriterStore? revisionStore = null)
     {
         this.dbContext = dbContext;
+        this.phraseSourceStateCoordinator = phraseSourceStateCoordinator;
         this.revisionStore = revisionStore ?? new LinkingDataRevisionStore();
     }
 
@@ -167,6 +171,10 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
         try
         {
+            await phraseSourceStateCoordinator.LockSourceMutationAsync(
+                npgsqlConnection,
+                transaction,
+                ct);
             await revisionStore.LockForWriteAsync(npgsqlConnection, transaction, ct);
 
             if (!force && await AnyTargetTableHasDataAsync(npgsqlConnection, transaction, ct))
@@ -206,6 +214,30 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
             if (allHardPassed)
             {
+                var phraseSource = await phraseSourceStateCoordinator.RefreshAfterDisplayRebuildAsync(
+                    npgsqlConnection,
+                    transaction,
+                    expectedReadableWords,
+                    ct);
+                if (!phraseSource.Passed)
+                {
+                    await transaction.RollbackAsync(ct);
+                    var phraseErrors = phraseSource.Checks
+                        .Where(check => !check.Passed)
+                        .Select(check => $"{check.Id}: expected {check.Expected}, observed {check.Observed}")
+                        .ToList();
+                    return new DisplayWordsRebuildResult(
+                        runAtUtc,
+                        FailVerdict,
+                        Persisted: false,
+                        Forced: force,
+                        totals,
+                        checks,
+                        warnings,
+                        phraseErrors,
+                        BuildInfoNotes(persisted: false));
+                }
+
                 await revisionStore.IncrementAsync(npgsqlConnection, transaction, ct);
                 await transaction.CommitAsync(ct);
 

@@ -55,6 +55,7 @@ using QuranDashboard.Application.Quran.DataPipelines.Words.SimpleI3rabGeneration
 using QuranDashboard.Application.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Application.Quran.DataPipelines.FullI3rab;
+using QuranDashboard.Application.Quran.DataPipelines.PhraseSearch;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafAyahDoors;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafDoorHighlights;
@@ -137,6 +138,8 @@ public static class DependencyInjection
         services.AddScoped<ImportNavigationMetadataHandler>();
         services.AddScoped<ImportFullI3rabHandler>();
         services.AddScoped<GenerateI3rabHandler>();
+        services.AddScoped<BuildPhraseIndexHandler>();
+        services.AddScoped<RollbackPhraseIndexHandler>();
         services.AddScoped<GetMushafPageHandler>();
         services.AddScoped<GetMushafAyahDoorsHandler>();
         services.AddScoped<GetMushafDoorHighlightsHandler>();

@@ -22,6 +22,8 @@ and *Safety* sections, and `Backend/report/README.md` when a durable report appl
 | `import-navigation-metadata` | juz/hizb/rub/sajda | `--source` `--report-out` `--force` |
 | `import-full-i3rab` | full إعراب | `--source` `--report-out` `--force` |
 | `generate-i3rab` | generate simplified إعراب (no source) | `--report-out` `--force` |
+| `build-phrase-index` | build and atomically activate the derived PhraseSearch index (no source) | `--report-out` `--force` |
+| `rollback-phrase-index` | atomically reactivate the compatible previous PhraseSearch generation | none |
 
 Running with no verb or an unknown verb prints usage and exits non-zero.
 
@@ -42,6 +44,10 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
   stage or canonicalize a package.
 - Report defaults land under `resources/report/...` or `Backend/report/feature-XXX-.../`
   depending on the verb; override with `--report-out`.
+- `build-phrase-index` writes one Markdown and one JSON report under
+  `resources/report/quran-phrase-search/<build-id>/` by default. It requires the Quran
+  foundation and both rebuilt exact word-identity links, initializes a null PhraseSearch
+  source fingerprint under the shared source lock, and refuses an unapproved fingerprint.
 
 ## Safety
 
@@ -51,6 +57,26 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
   versioned `Corrections/` data.
 - Preserve traceability from every imported or generated result back to its staged package and
   upstream provenance.
+- The derived phrase builder stages a complete generation before a short source-fenced activation.
+  Without `--force`, it refuses to replace an active generation. With `--force`, the active
+  generation remains readable until the replacement passes every hard check and activates.
+  Eligible superseded-generation cleanup runs only after activation commits. A cleanup failure
+  leaves the new active and compatible previous generation intact and is surfaced in the Active
+  report and command message as `post-activation-cleanup-failed`.
+- `PhraseSearch:CleanupGraceMinutes` defaults to 15, `PhraseSearch:FailedBuildRetentionDays`
+  defaults to 30, and `PhraseSearch:RequestTimeoutSeconds` defaults to 10. Cleanup configuration
+  is rejected unless the grace is longer than the request timeout.
+- The disk preflight budgets one current database size for the additional generation and indexes,
+  a second current database size for WAL, and `PhraseSearch:DiskSafetyBytes` as a margin (4 GiB by
+  default). A loopback database is measured on the PostgreSQL data filesystem. A remote database
+  fails closed unless the operator supplies both `PhraseSearch:VerifiedDatabaseFreeBytes` and the
+  exact `PhraseSearch:DatabaseStorageProofContract` value
+  `operator-verified-database-filesystem-v1`; reports contain the proof kind and byte counts but no
+  storage paths.
+- `rollback-phrase-index` takes the same source fence, recomputes the current semantic source
+  fingerprint, requires a format-compatible generation with both readiness flags, and swaps the
+  active and previous pointers with their statuses in one transaction. It refuses when no compatible
+  previous generation exists.
 
 ## Related
 

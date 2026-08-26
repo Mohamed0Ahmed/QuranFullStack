@@ -44,6 +44,10 @@ internal static class DataImporterDefaults
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "report", "words-simple-i3rab"));
 
+    internal static string ResolveDefaultPhraseIndexReportDir() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "quran-phrase-search"));
+
     internal static string ResolveDefaultMutashabihatReportDir() =>
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "report", "mutashabihat"));

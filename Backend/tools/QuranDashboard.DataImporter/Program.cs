@@ -34,6 +34,8 @@ internal static class Program
             "import-navigation-metadata" => await ImportNavigationMetadataRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-full-i3rab" => await ImportFullI3rabRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "generate-i3rab" => await GenerateI3rabRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "build-phrase-index" => await BuildPhraseIndexRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "rollback-phrase-index" => await RollbackPhraseIndexRunner.RunAsync(verbArgs, createHost, PrintUsage),
             _ => UnknownVerb(verb)
         };
     }
@@ -90,5 +92,9 @@ internal static class Program
             "  QuranDashboard.DataImporter import-full-i3rab [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter build-phrase-index [--report-out <path>] [--force]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter rollback-phrase-index");
     }
 }
