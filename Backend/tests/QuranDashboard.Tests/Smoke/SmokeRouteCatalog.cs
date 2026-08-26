@@ -234,6 +234,13 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.ServiceUnavailable),
         },
         new(
+            "api/quran/phrase-search/contexts/results",
+            "/api/quran/phrase-search/contexts/results?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
             "api/quran/phrase-search/contexts/occurrences",
             "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
             HttpStatusCode.ServiceUnavailable)

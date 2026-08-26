@@ -6391,6 +6391,126 @@
         }
       }
     },
+    "/api/quran/phrase-search/contexts/results": {
+      "get": {
+        "tags": [
+          "PhraseSearchContextResults"
+        ],
+        "parameters": [
+          {
+            "name": "resolutionRef",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "previousRef",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "followingRef",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseContextResultsResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/quran/phrase-search/query-resolutions": {
       "get": {
         "tags": [
@@ -16544,6 +16664,65 @@
         },
         "additionalProperties": false
       },
+      "PhraseContextResultsResponse": {
+        "required": [
+          "activeBuildId",
+          "items",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "activeBuildId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseContextOccurrenceDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseContextResultsResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseContextResultsResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PhraseContextSidePageDto": {
         "required": [
           "nextCursor",
@@ -16644,7 +16823,10 @@
           "exactFullContextCount",
           "followingTokens",
           "previousTokens",
-          "queryTokens"
+          "queryTokens",
+          "representativeAyahNumber",
+          "representativeSurahNameArabic",
+          "representativeVerseKey"
         ],
         "type": "object",
         "properties": {
@@ -16672,6 +16854,16 @@
           "exactFullContextCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "representativeSurahNameArabic": {
+            "type": "string"
+          },
+          "representativeAyahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "representativeVerseKey": {
+            "type": "string"
           }
         },
         "additionalProperties": false
@@ -21893,6 +22085,9 @@
     },
     {
       "name": "PhraseSearchContextOccurrences"
+    },
+    {
+      "name": "PhraseSearchContextResults"
     },
     {
       "name": "PhraseSearchQueryResolutions"

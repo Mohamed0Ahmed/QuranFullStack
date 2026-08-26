@@ -19,7 +19,7 @@ public sealed class GetPhraseContextGroupsHandler(
             return new PhraseReadOutcome<PhraseContextGroupsResponse>.Invalid(PhraseRequestInvalidKind.Reference);
         }
 
-        if (!PhraseContextRequestParser.TryPageSize(query.PageSize, out var pageSize))
+        if (!PhraseContextRequestParser.TryResultPageSize(query.PageSize, out var pageSize))
         {
             return new PhraseReadOutcome<PhraseContextGroupsResponse>.Invalid(PhraseRequestInvalidKind.Paging);
         }

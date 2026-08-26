@@ -1,13 +1,17 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, forkJoin, map, of, switchMap, toArray } from 'rxjs';
+import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
 import { PhraseContextGroupsResponse } from '../../../../core/api/generated/models/phrase-context-groups-response';
 import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response';
+import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import { PhraseContextApi } from '../data-access/phrase-context.api';
-import { PHRASE_CONTEXT_PAGE_SIZE, PhraseContextUrlState } from '../models/phrase-context.models';
+import {
+  PHRASE_CONTEXT_BRANCH_PAGE_SIZE,
+  PHRASE_CONTEXT_RESULT_PAGE_SIZE,
+  PhraseContextUrlState,
+} from '../models/phrase-context.models';
 import { PhraseRequestFailure, phraseEnvelopeFailure } from './phrase-request-failure';
-import { loadPhraseContextGroupPages } from './phrase-context-page-loader';
 
 interface PhraseContextLoadFailure {
   readonly kind: 'failure';
@@ -18,7 +22,7 @@ interface PhraseContextWorkspaceSuccess {
   readonly kind: 'workspace';
   readonly activeBuildId: string;
   readonly branches: PhraseContextBranchesResponse;
-  readonly groupPages: readonly PhraseContextGroupsResponse[];
+  readonly results: PhraseContextResultsResponse;
 }
 
 interface PhraseContextBranchesSuccess {
@@ -58,55 +62,31 @@ export class PhraseContextWorkspaceLoader {
         route.after,
         null,
         null,
-        PHRASE_CONTEXT_PAGE_SIZE,
+        PHRASE_CONTEXT_BRANCH_PAGE_SIZE,
       ),
-      this.api.getGroups(
+      this.api.getResults(
         route.resolution!,
         route.before,
         route.after,
-        null,
-        PHRASE_CONTEXT_PAGE_SIZE,
+        PHRASE_CONTEXT_RESULT_PAGE_SIZE,
       ),
     ]).pipe(
-      switchMap(([branches, groups]) => {
+      switchMap(([branches, results]) => {
         if (!branches.isSuccess || !branches.data) {
           return of(failureResult(branches.errors, branches.message));
         }
-        if (!groups.isSuccess || !groups.data) {
-          return of(failureResult(groups.errors, groups.message));
+        if (!results.isSuccess || !results.data) {
+          return of(failureResult(results.errors, results.message));
         }
-        if (!sameBuild(branches.data.activeBuildId, groups.data.activeBuildId)) {
+        if (!sameBuild(branches.data.activeBuildId, results.data.activeBuildId)) {
           return of(invalidResult('استجابات السياق لا تنتمي إلى جيل فهرس واحد.'));
         }
-        const firstGroupPage = groups.data;
-        return loadPhraseContextGroupPages(
-          this.api,
-          route,
-          firstGroupPage.nextCursor,
-          route.contextsPage - 1,
-        ).pipe(
-          toArray(),
-          map((additionalResponses): PhraseContextLoadResult => {
-            const failed = additionalResponses.find(
-              (response) => !response.isSuccess || !response.data,
-            );
-            if (failed) {
-              return failureResult(failed.errors, failed.message);
-            }
-            const additionalPages = additionalResponses.map((response) => response.data!);
-            const wrongBuild = additionalPages.some(
-              (page) => !sameBuild(branches.data!.activeBuildId, page.activeBuildId),
-            );
-            return wrongBuild
-              ? invalidResult('صفحات السياق لا تنتمي إلى جيل فهرس واحد.')
-              : {
-                  kind: 'workspace',
-                  activeBuildId: branches.data!.activeBuildId,
-                  branches: branches.data!,
-                  groupPages: [firstGroupPage, ...additionalPages],
-                };
-          }),
-        );
+        return of({
+          kind: 'workspace' as const,
+          activeBuildId: branches.data.activeBuildId,
+          branches: branches.data,
+          results: results.data,
+        });
       }),
     );
   }
@@ -123,7 +103,7 @@ export class PhraseContextWorkspaceLoader {
         route.after,
         previousCursor,
         followingCursor,
-        PHRASE_CONTEXT_PAGE_SIZE,
+        PHRASE_CONTEXT_BRANCH_PAGE_SIZE,
       )
       .pipe(
         map((response) =>
@@ -148,7 +128,7 @@ export class PhraseContextWorkspaceLoader {
         route.before,
         route.after,
         cursor,
-        PHRASE_CONTEXT_PAGE_SIZE,
+        PHRASE_CONTEXT_RESULT_PAGE_SIZE,
       )
       .pipe(
         map((response) =>
@@ -167,7 +147,7 @@ export class PhraseContextWorkspaceLoader {
     contextRef: string,
     cursor: string | null,
   ): Observable<PhraseContextLoadResult> {
-    return this.api.getOccurrences(contextRef, cursor, PHRASE_CONTEXT_PAGE_SIZE).pipe(
+    return this.api.getOccurrences(contextRef, cursor, PHRASE_CONTEXT_RESULT_PAGE_SIZE).pipe(
       map((response) =>
         response.isSuccess && response.data
           ? {

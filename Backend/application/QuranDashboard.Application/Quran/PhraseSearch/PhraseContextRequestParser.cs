@@ -56,6 +56,12 @@ public sealed class PhraseContextRequestParser(IPhraseSearchReferenceCodec codec
         return pageSize > 0 && pageSize <= PhraseSearchPaging.MaximumPageSize;
     }
 
+    internal static bool TryResultPageSize(int? value, out int pageSize)
+    {
+        pageSize = value ?? PhraseSearchPaging.DefaultPageSize;
+        return pageSize > 0 && pageSize <= PhraseSearchPaging.MaximumContextResultPageSize;
+    }
+
     private bool TryDecodePath(
         string? value,
         PhraseContextSide side,

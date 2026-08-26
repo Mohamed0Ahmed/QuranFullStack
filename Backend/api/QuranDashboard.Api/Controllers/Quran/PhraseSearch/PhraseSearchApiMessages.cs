@@ -9,6 +9,7 @@ internal static class PhraseSearchApiMessages
     internal const string ContextBranchesLoaded = "تم تحميل مسارات سياق العبارة";
     internal const string ContextGroupsLoaded = "تم تحميل السياقات الكاملة للعبارة";
     internal const string ContextOccurrencesLoaded = "تم تحميل مواضع السياق الكامل";
+    internal const string ContextResultsLoaded = "تم تحميل آيات السياق";
     internal const string SimilaritiesLoaded = "تم تحميل العبارات المتشابهة";
     internal const string SimilarityGroupsLoaded = "تم تحميل مجموعات العبارات المتشابهة";
     internal const string SimilarityMatchesLoaded = "تم تحميل العبارات المطابقة لمجموعة التشابه";

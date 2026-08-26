@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { PhraseContextBranchesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-branches-response-api-response';
 import { PhraseContextGroupsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-groups-response-api-response';
 import { PhraseContextOccurrencesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response-api-response';
+import { PhraseContextResultsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-results-response-api-response';
 import { environment } from '../../../../../environments/environment';
 
 @Injectable({ providedIn: 'root' })
@@ -46,6 +47,20 @@ export class PhraseContextApi {
     params = setOptional(params, 'followingRef', followingRef);
     params = setOptional(params, 'cursor', cursor);
     return this.http.get<PhraseContextGroupsResponseApiResponse>(`${this.baseUrl}/groups`, {
+      params,
+    });
+  }
+
+  getResults(
+    resolutionRef: string,
+    previousRef: string | null,
+    followingRef: string | null,
+    pageSize: number,
+  ): Observable<PhraseContextResultsResponseApiResponse> {
+    let params = new HttpParams().set('resolutionRef', resolutionRef).set('pageSize', pageSize);
+    params = setOptional(params, 'previousRef', previousRef);
+    params = setOptional(params, 'followingRef', followingRef);
+    return this.http.get<PhraseContextResultsResponseApiResponse>(`${this.baseUrl}/results`, {
       params,
     });
   }

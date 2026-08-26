@@ -85,7 +85,10 @@ public sealed partial class EfPhraseContextReader
             FullPathTokens(representative, PhraseContextSide.Previous),
             CreateResolvedQuery(resolution, representative).Tokens,
             FullPathTokens(representative, PhraseContextSide.Following),
-            group.Occurrences.Count);
+            group.Occurrences.Count,
+            representative.Row.SurahNameArabic,
+            representative.Row.AyahNumber,
+            representative.Row.VerseKey);
     }
 
     private static string ContextKey(

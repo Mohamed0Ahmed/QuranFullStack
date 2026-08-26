@@ -1,50 +1,65 @@
-<section class="context-occurrences" aria-labelledby="context-occurrences-title">
-  <header>
-    <div>
-      <p>مواضع السياق الكامل</p>
-      <h2 id="context-occurrences-title">{{ totalCount() }} موضعًا مستقلًا</h2>
+<qd-data-table
+  class="phrase-context-occurrences-table qd-explorer-table"
+  renderer="standard"
+  [rows]="rows()"
+  [rowId]="rowIdentity"
+  ariaLabel="جدول مواضع السياق المحدد"
+  bodyAriaLabel="مواضع السياق المحدد في الآيات"
+  [columnCount]="4"
+  [totalRowCount]="totalCount()"
+  [state]="busy() ? 'refreshing' : 'ready'"
+  [rowHeight]="rowHeight"
+  [compactRowHeight]="compactRowHeight"
+  scrollStateKey="words.phrases.context-occurrences"
+  [style.--qd-explorer-table-columns]="'minmax(2.5rem, 0.22fr) minmax(7rem, 0.75fr) minmax(4.5rem, 0.45fr) minmax(20rem, 3fr)'"
+>
+  <ng-template #headerTemplate>
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
+    <div class="occurrence-table__cell qd-explorer-table__header-cell" role="columnheader">السورة والآية</div>
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__header-cell" role="columnheader">الصفحة</div>
+    <div class="occurrence-table__cell qd-explorer-table__header-cell" role="columnheader">نص الآية</div>
+  </ng-template>
+
+  <ng-template #rowTemplate let-row let-index="index">
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ index + 1 }}</div>
+    <div class="occurrence-table__cell occurrence-table__cell--location qd-explorer-table__cell" role="cell">
+      <strong>{{ row.occurrence.surahNameArabic }}</strong>
+      <span>آية {{ row.occurrence.ayahNumber }}</span>
     </div>
-    <button type="button" class="qd-btn qd-btn-secondary" (click)="closeRequested.emit()">
-      إغلاق المواضع
-    </button>
-  </header>
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell" role="cell">{{ row.occurrence.pageFrom }}</div>
+    <div class="occurrence-table__cell occurrence-table__cell--ayah qd-explorer-table__cell" role="cell">
+      <a
+        class="occurrence-table__ayah-link qd-interactive-surface"
+        [qdAyahOverlayLink]="row.mushafTarget"
+        [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+      >
+        <qd-phrase-highlighted-ayah
+          roleScheme="context"
+          [words]="row.occurrence.words"
+          [compact]="true"
+          [contextHighlights]="row.highlights"
+        />
+      </a>
+    </div>
+  </ng-template>
 
-  <div class="context-occurrences__legend" aria-label="مفتاح تمييز السياق">
-    <span class="context-occurrences__key context-occurrences__key--query">عبارة البحث</span>
-    <span class="context-occurrences__key context-occurrences__key--previous">السياق السابق</span>
-    <span class="context-occurrences__key context-occurrences__key--following">السياق اللاحق</span>
-  </div>
+  <ng-template #compactRowTemplate let-row let-index="index">
+    <div class="occurrence-table__compact">
+      <span class="occurrence-table__compact-number">{{ index + 1 }}</span>
+      <strong>{{ row.occurrence.surahNameArabic }} · آية {{ row.occurrence.ayahNumber }}</strong>
+      <a
+        class="occurrence-table__ayah-link qd-interactive-surface"
+        [qdAyahOverlayLink]="row.mushafTarget"
+        [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+      >
+        <qd-phrase-highlighted-ayah
+          roleScheme="context"
+          [words]="row.occurrence.words"
+          [compact]="true"
+          [contextHighlights]="row.highlights"
+        />
+      </a>
+    </div>
+  </ng-template>
 
-  <div qdResultList listVariant="quran-result" listLabel="مواضع السياق الكامل">
-    @for (row of rows(); track row.occurrence.occurrenceId; let index = $index) {
-      <article qdAyahCard qdResultItem [position]="index + 1" [setSize]="totalCount()">
-        <header class="context-occurrences__meta">
-          <strong>{{ row.occurrence.surahNameArabic }} · {{ row.occurrence.verseKey }}</strong>
-          <span>صفحة {{ row.occurrence.pageFrom }}</span>
-        </header>
-        <a
-          class="context-occurrences__ayah qd-interactive-surface"
-          [qdAyahOverlayLink]="row.mushafTarget"
-          [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
-        >
-          <qd-phrase-highlighted-ayah
-            roleScheme="context"
-            [words]="row.occurrence.words"
-            [contextHighlights]="row.occurrence.highlights"
-          />
-        </a>
-      </article>
-    }
-  </div>
-
-  @if (nextCursor()) {
-    <button
-      type="button"
-      class="qd-btn qd-btn-secondary context-occurrences__more"
-      [disabled]="busy()"
-      (click)="moreRequested.emit()"
-    >
-      تحميل مواضع إضافية
-    </button>
-  }
-</section>
+</qd-data-table>

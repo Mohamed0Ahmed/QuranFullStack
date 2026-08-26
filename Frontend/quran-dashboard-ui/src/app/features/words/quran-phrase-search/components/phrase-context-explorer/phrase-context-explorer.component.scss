@@ -11,8 +11,7 @@
   min-inline-size: 0;
 }
 
-.context-explorer__header,
-.context-side > header {
+.context-explorer__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -20,173 +19,118 @@
 }
 
 .context-explorer__header h2,
-.context-explorer__header p,
-.context-side h3,
-.context-side p,
-.context-query h3,
-.context-query p {
+.context-explorer__header p {
   margin: 0;
 }
 
-.context-explorer__eyebrow,
-.context-side p,
-.context-query p {
+.context-explorer__header p {
   color: var(--qd-green-text);
   font-size: var(--qd-type-caption);
   font-weight: 700;
 }
 
-.context-explorer__focus-rule {
-  margin: 0;
+.context-explorer__result-count {
+  display: grid;
+  justify-items: end;
+  gap: var(--qd-s-2);
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-caption);
 }
 
-.context-explorer__layout {
+.context-explorer__result-count strong {
+  color: var(--qd-ink);
+  font-size: var(--qd-type-body);
+}
+
+.context-explorer__network {
+  position: relative;
   display: grid;
-  grid-template-areas: 'previous query following';
-  grid-template-columns: minmax(0, 1fr) minmax(13rem, 0.7fr) minmax(0, 1fr);
-  align-items: start;
-  gap: var(--qd-space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qd-space-4);
+  block-size: 34rem;
   min-inline-size: 0;
 }
 
-.context-side,
-.context-query {
+.context-explorer__network > qd-phrase-context-web {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.context-explorer__loading {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
   display: grid;
+  place-content: center;
+  justify-items: center;
   gap: var(--qd-space-2);
-  min-inline-size: 0;
-  padding: var(--qd-space-3);
   border: var(--qd-hairline);
   border-radius: var(--qd-radius-md);
-  background: var(--qd-surface);
-}
-
-.context-side--previous {
-  grid-area: previous;
-}
-
-.context-side--following {
-  grid-area: following;
-}
-
-.context-query {
-  grid-area: query;
-  position: sticky;
-  inset-block-start: var(--qd-space-3);
-  text-align: center;
-}
-
-.context-query h3 {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: var(--qd-space-1);
-  color: var(--qd-ink);
-  font-family: var(--qd-font-quran);
-  font-size: var(--qd-type-h2);
-  line-height: 1.8;
-}
-
-.context-query h3 span {
-  padding: 0.1rem 0.45rem;
-  border-block-end: 2px solid var(--qd-accent);
-  background: var(--qd-accent-tint);
-}
-
-.context-query > span {
-  color: var(--qd-ink-muted);
-  font-size: var(--qd-type-caption);
-}
-
-.context-query__exact {
-  color: var(--qd-success) !important;
-  font-weight: 700;
-}
-
-.context-breadcrumb,
-.context-side__counts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--qd-space-1);
-}
-
-.context-breadcrumb span,
-.context-side__counts span {
-  padding: 0.25rem 0.55rem;
-  border-radius: var(--qd-radius-pill);
-  background: var(--qd-section-bg);
+  background: color-mix(in oklch, var(--qd-surface) 88%, var(--qd-accent-tint));
   color: var(--qd-ink-body);
   font-size: var(--qd-type-caption);
 }
 
-.context-breadcrumb span {
-  border: var(--qd-hairline);
-  font-family: var(--qd-font-quran);
+.context-explorer__loading > span {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 2px solid var(--qd-accent-soft);
+  border-block-start-color: var(--qd-accent);
+  border-radius: 50%;
+  animation: context-loading-spin 0.8s linear infinite;
 }
 
-.context-side__options {
-  display: grid;
-  gap: var(--qd-space-2);
+@keyframes context-loading-spin {
+  to { transform: rotate(1turn); }
 }
 
-.context-option {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.2rem var(--qd-space-2);
-  padding: var(--qd-space-2);
-  border: var(--qd-hairline);
-  border-radius: var(--qd-radius-sm);
-  background: var(--qd-section-bg);
-  color: inherit;
-  font: inherit;
-  text-align: start;
-}
-
-.context-option:hover {
-  border-color: var(--qd-accent);
-  background: var(--qd-accent-tint);
-}
-
-.context-option:focus-visible {
-  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
-  outline-offset: var(--qd-focus-ring-offset);
-}
-
-.context-option strong {
-  font-family: var(--qd-font-quran);
-  font-size: var(--qd-type-body);
-}
-
-.context-option span,
-.context-option small {
-  color: var(--qd-ink-muted);
-  font-size: var(--qd-type-caption);
-}
-
-.context-option small {
-  grid-column: 1 / -1;
-}
-
-.context-option--boundary {
-  border-style: dashed;
-  background: var(--qd-warning-tint);
-}
-
-.context-side__more {
-  inline-size: 100%;
-}
-
-@media (max-width: 1079px) {
-  .context-explorer__layout {
-    grid-template-areas:
-      'query query'
-      'previous following';
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: bp.$qd-bp-wide-desktop-min) {
+  .context-explorer__network {
+    gap: 4rem;
+    padding-block-start: 3rem;
   }
 
-  .context-query {
-    position: static;
+  .context-explorer__network::before,
+  .context-explorer__network::after,
+  qd-phrase-context-web::before {
+    position: absolute;
+    background: var(--qd-border-strong);
+    content: '';
+  }
+
+  .context-explorer__network::before {
+    inset-block-start: 0;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    block-size: 1.5rem;
+  }
+
+  .context-explorer__network::after {
+    inset-block-start: 1.5rem;
+    inset-inline: 25%;
+    block-size: 1px;
+  }
+
+  qd-phrase-context-web {
+    position: relative;
+  }
+
+  qd-phrase-context-web::before {
+    inset-block-start: -1.5rem;
+    inset-inline-start: 50%;
+    inline-size: 1px;
+    block-size: 1.5rem;
+  }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .context-explorer__network {
+    grid-template-columns: minmax(0, 1fr);
+    block-size: auto;
+  }
+
+  .context-explorer__network > qd-phrase-context-web {
+    block-size: 30rem;
   }
 }
 
@@ -196,22 +140,17 @@
     flex-direction: column;
   }
 
-  .context-explorer__layout {
-    grid-template-areas:
-      'query'
-      'previous'
-      'following';
-    grid-template-columns: minmax(0, 1fr);
+  .context-explorer__result-count {
+    justify-items: start;
   }
 
-  .context-side,
-  .context-query {
-    padding: var(--qd-space-2);
+  .context-explorer__network > qd-phrase-context-web {
+    block-size: 27rem;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .context-option {
-    transition: none;
+  .context-explorer__loading > span {
+    animation: none;
   }
 }

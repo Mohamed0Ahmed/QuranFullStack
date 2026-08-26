@@ -238,6 +238,19 @@ qd-data-table.qd-explorer-table .qd-data-table__row {
     repeat(3, minmax(5.25rem, 0.7fr)));
 }
 
+.phrase-contexts-table .qd-data-table__header-row,
+.phrase-contexts-table .qd-data-table__row:not(.qd-data-table__row--compact),
+.phrase-context-occurrences-table .qd-data-table__header-row,
+.phrase-context-occurrences-table .qd-data-table__row:not(.qd-data-table__row--compact) {
+  grid-template-columns: var(--qd-explorer-table-columns);
+}
+
+qd-data-table.phrase-contexts-table .qd-data-table__body.qd-data-table__body--virtual,
+qd-data-table.phrase-context-occurrences-table .qd-data-table__body.qd-data-table__body--virtual {
+  flex: 1 1 0;
+  block-size: 0;
+}
+
 .word-types-table .qd-data-table__header-row,
 .word-types-table .qd-data-table__row:not(.qd-data-table__row--compact),
 .word-types-table__loading-row {

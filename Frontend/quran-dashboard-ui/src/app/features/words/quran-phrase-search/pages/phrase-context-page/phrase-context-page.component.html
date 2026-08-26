@@ -47,6 +47,7 @@
     <qd-phrase-query-resolution
       [state]="state().resolution"
       [availableModes]="availableModes()"
+      [inlineControls]="true"
       label="العبارة المراد استكشاف سياقها"
       (draftChange)="facade.setDraft($event)"
       (modeChange)="facade.setMode($event)"
@@ -119,7 +120,7 @@
           />
 
           @if (state().groupsStatus === 'empty') {
-            <qd-empty-state message="لا توجد سياقات كاملة ضمن اختيارات الطرفين الحالية." />
+            <qd-empty-state message="لا توجد آيات ضمن اختيارات الطرفين الحالية." />
           } @else if (
             state().groupsStatus === 'error' || state().groupsStatus === 'unavailable'
           ) {
@@ -128,52 +129,16 @@
               actionLabel="إعادة المحاولة"
               (action)="facade.retry()"
             />
-          } @else if (state().groups.length > 0) {
-            <qd-phrase-full-context-list
-              [items]="state().groups"
-              [totalCount]="state().groupsTotalCount"
-              [nextCursor]="state().groupsNextCursor"
-              [selectedContextRef]="state().selectedContextRef"
-              [busy]="state().groupsStatus === 'refreshing'"
-              (contextSelected)="facade.selectContext($event)"
-              (moreRequested)="facade.loadMoreGroups()"
-            />
-          }
-
-          @if (state().selectedContextRef) {
-            @if (state().occurrencesStatus === 'loading') {
-              <qd-panel-skeleton
-                shape="rows"
-                [rowsCount]="4"
-                rowTemplate="4rem minmax(12rem, 1fr)"
-                loadingLabel="جارٍ تحميل مواضع السياق الكامل…"
-              />
-            } @else if (
-              state().occurrencesStatus === 'error' ||
-              state().occurrencesStatus === 'unavailable' ||
-              state().occurrencesStatus === 'invalid'
-            ) {
-              <qd-error-state
-                [message]="state().errorMessage"
-                actionLabel="إغلاق المواضع"
-                (action)="facade.clearSelectedContext()"
-              />
-            } @else if (state().occurrencesStatus === 'empty') {
-              <qd-empty-state
-                message="لا توجد مواضع متاحة لهذا السياق الكامل."
-                actionLabel="إغلاق المواضع"
-                (action)="facade.clearSelectedContext()"
-              />
-            } @else if (state().occurrences.length > 0) {
+          } @else if (state().occurrences.length > 0) {
+            <section class="phrase-context-results" aria-label="آيات السياق المطابقة">
               <qd-phrase-context-occurrence-list
                 [items]="state().occurrences"
                 [totalCount]="state().occurrencesTotalCount"
-                [nextCursor]="state().occurrencesNextCursor"
-                [busy]="state().occurrencesStatus === 'refreshing'"
-                (closeRequested)="facade.clearSelectedContext()"
-                (moreRequested)="facade.loadMoreOccurrences()"
+                [previousHighlightWordCount]="branches.previousSelection.tokens.length"
+                [followingHighlightWordCount]="branches.followingSelection.tokens.length"
+                [busy]="state().groupsStatus === 'refreshing'"
               />
-            }
+            </section>
           }
         }
       </div>

@@ -1,0 +1,95 @@
+<section class="context-current" aria-labelledby="current-context-title">
+  <header class="context-current__header">
+    <div>
+      <span>السياق الحالي</span>
+      <h3 id="current-context-title">المقطع المركّب</h3>
+    </div>
+    @if (branches().exactFullContextCount !== null) {
+      <strong>
+        السياق الكامل: {{ occurrenceLabel(branches().exactFullContextCount!) }}
+      </strong>
+    } @else {
+      <span>اختر من الجانبين لمعرفة عدد السياقات المطابقة كاملة.</span>
+    }
+  </header>
+
+  <div class="context-current__phrase" dir="rtl">
+    @if (
+      branches().previousSelection.tokens.length > 0 ||
+      branches().previousSelection.endsAtBoundary
+    ) {
+      <div
+        class="context-current__segment context-current__segment--previous"
+        aria-label="ما يسبق العبارة"
+      >
+        <div class="context-current__tokens">
+          @if (branches().previousSelection.endsAtBoundary) {
+            <span class="context-current__token context-current__token--boundary context-current__token--active">
+              بداية الآية
+            </span>
+          }
+          @for (token of previousDisplayTokens(); track $index; let isCurrent = $first) {
+            <span
+              class="context-current__token"
+              [class.context-current__token--active]="
+                isCurrent && !branches().previousSelection.endsAtBoundary
+              "
+            >
+              {{ token.textUthmani }}
+            </span>
+          }
+        </div>
+      </div>
+    }
+
+    <div
+      class="context-current__segment context-current__segment--query"
+      aria-label="العبارة الأصلية"
+    >
+      <div class="context-current__tokens">
+        @for (token of branches().query.tokens; track token.exactTokenId) {
+          <span class="context-current__token">{{ token.textUthmani }}</span>
+        }
+      </div>
+    </div>
+
+    @if (
+      branches().followingSelection.tokens.length > 0 ||
+      branches().followingSelection.endsAtBoundary
+    ) {
+      <div
+        class="context-current__segment context-current__segment--following"
+        aria-label="ما يلي العبارة"
+      >
+        <div class="context-current__tokens">
+          @for (
+            token of branches().followingSelection.tokens;
+            track $index;
+            let isCurrent = $last
+          ) {
+            <span
+              class="context-current__token"
+              [class.context-current__token--active]="
+                isCurrent && !branches().followingSelection.endsAtBoundary
+              "
+            >
+              {{ token.textUthmani }}
+            </span>
+          }
+          @if (branches().followingSelection.endsAtBoundary) {
+            <span class="context-current__token context-current__token--boundary context-current__token--active">
+              نهاية الآية
+            </span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="context-current__legend" aria-label="دليل ألوان السياق">
+    <span><i class="context-current__swatch context-current__swatch--previous"></i>ما يسبق العبارة</span>
+    <span><i class="context-current__swatch context-current__swatch--query"></i>العبارة الأصلية</span>
+    <span><i class="context-current__swatch context-current__swatch--following"></i>ما يلي العبارة</span>
+    <span><i class="context-current__swatch context-current__swatch--active"></i>المستوى الحالي</span>
+  </div>
+</section>

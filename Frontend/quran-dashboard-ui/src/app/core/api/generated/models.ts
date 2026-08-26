@@ -207,6 +207,8 @@ export type { PhraseContextHighlightsDto } from './models/phrase-context-highlig
 export type { PhraseContextOccurrenceDto } from './models/phrase-context-occurrence-dto';
 export type { PhraseContextOccurrencesResponse } from './models/phrase-context-occurrences-response';
 export type { PhraseContextOccurrencesResponseApiResponse } from './models/phrase-context-occurrences-response-api-response';
+export type { PhraseContextResultsResponse } from './models/phrase-context-results-response';
+export type { PhraseContextResultsResponseApiResponse } from './models/phrase-context-results-response-api-response';
 export type { PhraseContextSidePageDto } from './models/phrase-context-side-page-dto';
 export type { PhraseExactTokenDto } from './models/phrase-exact-token-dto';
 export type { PhraseFullContextDto } from './models/phrase-full-context-dto';

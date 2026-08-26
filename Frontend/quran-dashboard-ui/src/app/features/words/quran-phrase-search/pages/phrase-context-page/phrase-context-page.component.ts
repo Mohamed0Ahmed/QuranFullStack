@@ -17,7 +17,6 @@ import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.compon
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseContextExplorerComponent } from '../../components/phrase-context-explorer/phrase-context-explorer.component';
 import { PhraseContextOccurrenceListComponent } from '../../components/phrase-context-occurrence-list/phrase-context-occurrence-list.component';
-import { PhraseFullContextListComponent } from '../../components/phrase-full-context-list/phrase-full-context-list.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
 import { PhraseResolutionCandidateDto } from '../../../../../core/api/generated/models/phrase-resolution-candidate-dto';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
@@ -30,7 +29,6 @@ import { PhraseContextFacade } from '../../state/phrase-context.facade';
     ExplorerPanelSkeletonComponent,
     PhraseContextExplorerComponent,
     PhraseContextOccurrenceListComponent,
-    PhraseFullContextListComponent,
     PhraseQueryResolutionComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -65,7 +63,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     if (!state.branches || (state.branchesStatus !== 'success' && state.branchesStatus !== 'refreshing')) {
       return '';
     }
-    return `تم تحديث السياق، ${state.branches.totalOccurrenceCount} موضعًا و${state.groupsTotalCount} سياقًا كاملًا`;
+    return `تم تحديث السياق، ${state.occurrencesTotalCount} موضعًا معروضًا في جدول الآيات`;
   });
 
   constructor() {
@@ -121,13 +119,13 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
       return;
     }
     const side = pending.startsWith('previous') ? 'previous' : 'following';
-    const scope = `.context-side--${side}`;
+    const scope = `.context-web--${side}`;
     const primarySelector = pending.endsWith('more')
-      ? `${scope} .context-side__more, ${scope} .context-option:last-of-type`
-      : `${scope} .context-option`;
+      ? `${scope} .context-web__more, ${scope} .context-node:last-of-type`
+      : `${scope} .context-node`;
     const target =
       this.host.nativeElement.querySelector<HTMLButtonElement>(primarySelector) ??
-      this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-breadcrumb button`);
+      this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-web__actions button`);
     if (!target || target.disabled) {
       this.retryFocus(pending, attempt);
       return;

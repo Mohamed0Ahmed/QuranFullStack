@@ -102,6 +102,7 @@ export class PhraseRouteNavigationCoordinator {
       replaceUrl,
       phraseContextStateKey(state) !== phraseContextStateKey(current),
       onSkipped,
+      true,
     );
     return sessionOnly ? sessionOutcome(state.q, target.q) : shareableOutcome();
   }
@@ -143,13 +144,19 @@ export class PhraseRouteNavigationCoordinator {
     replaceUrl: boolean,
     stateChanged: boolean,
     onSkipped: () => void,
+    preserveScroll = false,
   ): void {
     if (!this.route) {
       return;
     }
+    const view = this.document.defaultView;
+    const scrollPosition = preserveScroll && view ? { left: view.scrollX, top: view.scrollY } : null;
     void this.router
       .navigate([], { relativeTo: this.route, queryParams, replaceUrl })
       .then((navigated) => {
+        if (navigated && scrollPosition && view) {
+          view.scrollTo({ ...scrollPosition, behavior: 'auto' });
+        }
         if (!navigated && stateChanged) {
           onSkipped();
         }

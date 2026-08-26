@@ -33,6 +33,23 @@
   color: var(--qd-ink-muted);
 }
 
+.phrase-context-results {
+  min-inline-size: 0;
+  block-size: var(--qd-explorer-table-card-height);
+}
+
+.phrase-context-results > qd-phrase-context-occurrence-list {
+  display: block;
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+@media (max-width: 1079px) {
+  .phrase-context-results {
+    block-size: min(68vh, 38rem);
+  }
+}
+
 @media (max-width: 767px) {
   .phrase-context-page__heading {
     grid-template-columns: minmax(0, 1fr);

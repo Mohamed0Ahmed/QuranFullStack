@@ -3,7 +3,7 @@ import { concatMap } from 'rxjs/operators';
 
 import { PhraseContextGroupsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-groups-response-api-response';
 import { PhraseContextApi } from '../data-access/phrase-context.api';
-import { PHRASE_CONTEXT_PAGE_SIZE, PhraseContextUrlState } from '../models/phrase-context.models';
+import { PHRASE_CONTEXT_RESULT_PAGE_SIZE, PhraseContextUrlState } from '../models/phrase-context.models';
 
 export function loadPhraseContextGroupPages(
   api: PhraseContextApi,
@@ -20,7 +20,7 @@ export function loadPhraseContextGroupPages(
       route.before,
       route.after,
       cursor,
-      PHRASE_CONTEXT_PAGE_SIZE,
+      PHRASE_CONTEXT_RESULT_PAGE_SIZE,
     )
     .pipe(
       concatMap((response) => {

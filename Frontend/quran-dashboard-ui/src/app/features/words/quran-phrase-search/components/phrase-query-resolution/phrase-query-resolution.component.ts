@@ -18,6 +18,7 @@ export class PhraseQueryResolutionComponent {
   readonly availableModes = input.required<readonly PhraseTextMode[]>();
   readonly label = input('عبارة البحث');
   readonly help = input('تُرسل العبارة عند الضغط على زر البحث أو مفتاح Enter فقط.');
+  readonly inlineControls = input(false);
 
   readonly draftChange = output<string>();
   readonly modeChange = output<PhraseTextMode>();

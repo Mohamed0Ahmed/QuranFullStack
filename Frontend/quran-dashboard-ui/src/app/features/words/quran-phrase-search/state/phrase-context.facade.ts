@@ -386,15 +386,14 @@ export class PhraseContextFacade {
           return;
         }
         this.selection.replaceBranches(result.branches, route.before, route.after);
-        this.selection.replaceGroups(result.groupPages[0]);
-        result.groupPages.slice(1).forEach((page) => this.selection.appendGroups(page));
+        this.selection.replaceResults(result.results);
         this.resolutionFlow.restoreFromBranches(route.q, result.branches);
         this.requestStatus.branches.set('success');
         this.requestStatus.groups.set(
-          result.groupPages[0].totalCount === 0 ? 'empty' : 'success',
+          result.results.totalCount === 0 ? 'empty' : 'success',
         );
-        if (route.contextsPage > result.groupPages.length) {
-          this.navigate({ ...route, contextsPage: result.groupPages.length }, true);
+        if (route.contextsPage !== 1) {
+          this.navigate({ ...route, contextsPage: 1 }, true);
         }
       }),
       catchError((error: unknown) => this.applyRouteError(error, 'workspace', routeKey)),

@@ -79,6 +79,7 @@ export class QdDataTableComponent<T> {
   readonly selectedRow = input<T | null>(null);
   readonly selected = input<(row: T, selectedRow: T | null) => boolean>((row, selectedRow) => row === selectedRow);
   readonly selectable = input(false);
+  readonly rowSelectable = input<(row: T) => boolean>(() => true);
   readonly virtual = input(true);
   readonly rowHeight = input(40);
   readonly compactRowHeight = input(88);
@@ -164,13 +165,13 @@ export class QdDataTableComponent<T> {
   }
 
   protected selectRow(row: T): void {
-    if (this.canSelect()) {
+    if (this.canSelect(row)) {
       this.rowSelected.emit(row);
     }
   }
 
   protected onRowKeydown(event: KeyboardEvent, row: T): void {
-    if (!this.canSelect() || (event.key !== 'Enter' && event.key !== ' ')) {
+    if (!this.canSelect(row) || (event.key !== 'Enter' && event.key !== ' ')) {
       return;
     }
 
@@ -182,8 +183,8 @@ export class QdDataTableComponent<T> {
     return { $implicit: row, row, index };
   }
 
-  protected canSelect(): boolean {
-    return this.selectable() && this.renderer() !== 'grouped-rows';
+  protected canSelect(row: T): boolean {
+    return this.selectable() && this.rowSelectable()(row) && this.renderer() !== 'grouped-rows';
   }
 
   private scrollVirtualRowIntoView(

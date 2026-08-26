@@ -4,32 +4,59 @@
       <h2 id="phrase-query-title">{{ label() }}</h2>
       <p>{{ help() }}</p>
     </div>
-    <qd-phrase-text-mode-toggle
-      [mode]="state().mode"
-      [availableModes]="availableModes()"
-      [disabled]="state().status === 'loading'"
-      (modeChange)="modeChange.emit($event)"
-    />
+    @if (!inlineControls()) {
+      <qd-phrase-text-mode-toggle
+        [mode]="state().mode"
+        [availableModes]="availableModes()"
+        [disabled]="state().status === 'loading'"
+        (modeChange)="modeChange.emit($event)"
+      />
+    }
   </div>
 
-  <div class="phrase-query__submit-row">
+  <div
+    class="phrase-query__submit-row"
+    [class.phrase-query__submit-row--inline]="inlineControls()"
+  >
     <label class="phrase-query__field">
       <span class="qd-sr-only">{{ label() }}</span>
-      <textarea
-        class="qd-input phrase-query__input"
-        dir="rtl"
-        rows="2"
-        [value]="state().rawQuery"
-        [disabled]="state().status === 'loading'"
-        [attr.aria-invalid]="state().status === 'invalid' ? 'true' : null"
-        aria-describedby="phrase-query-feedback"
-        (input)="draftChange.emit($any($event.target).value)"
-        (keydown)="onKeydown($event)"
-      ></textarea>
+      @if (inlineControls()) {
+        <input
+          class="qd-input phrase-query__input phrase-query__input--single-line"
+          type="text"
+          dir="rtl"
+          [value]="state().rawQuery"
+          [disabled]="state().status === 'loading'"
+          [attr.aria-invalid]="state().status === 'invalid' ? 'true' : null"
+          aria-describedby="phrase-query-feedback"
+          (input)="draftChange.emit($any($event.target).value)"
+          (keydown)="onKeydown($event)"
+        />
+      } @else {
+        <textarea
+          class="qd-input phrase-query__input"
+          dir="rtl"
+          rows="2"
+          [value]="state().rawQuery"
+          [disabled]="state().status === 'loading'"
+          [attr.aria-invalid]="state().status === 'invalid' ? 'true' : null"
+          aria-describedby="phrase-query-feedback"
+          (input)="draftChange.emit($any($event.target).value)"
+          (keydown)="onKeydown($event)"
+        ></textarea>
+      }
     </label>
+    @if (inlineControls()) {
+      <qd-phrase-text-mode-toggle
+        [mode]="state().mode"
+        [availableModes]="availableModes()"
+        [disabled]="state().status === 'loading'"
+        (modeChange)="modeChange.emit($event)"
+      />
+    }
     <button
       type="button"
-      class="qd-btn qd-btn-primary"
+      class="qd-btn qd-btn-primary phrase-query__submit"
       [disabled]="state().status === 'loading'"
       (click)="submitRequested.emit()"
     >

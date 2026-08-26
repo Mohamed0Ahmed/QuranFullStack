@@ -1,0 +1,96 @@
+<section
+  class="context-web"
+  [class.context-web--previous]="side() === 'previous'"
+  [class.context-web--following]="side() === 'following'"
+  [attr.aria-labelledby]="side() + '-side-title'"
+>
+  <header class="context-web__hub">
+    <div>
+      <span>{{ side() === 'previous' ? 'قبل العبارة' : 'بعد العبارة' }}</span>
+      <h3 [id]="side() + '-side-title'">
+        {{ side() === 'previous' ? 'ما يسبق العبارة' : 'ما يلي العبارة' }}
+      </h3>
+      <small>الخيارات الأقرب أولًا</small>
+    </div>
+    <div class="context-web__summary">
+      <strong>{{ optionLabel(page().totalOptions) }}</strong>
+      <span>{{ occurrenceLabel(page().passesThroughCount) }}</span>
+    </div>
+  </header>
+
+  <div class="context-web__actions">
+    @if (selection().tokens.length > 0 || selection().endsAtBoundary) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary"
+        [attr.aria-label]="
+          side() === 'previous'
+            ? 'العودة مستوى واحدًا فيما يسبق العبارة'
+            : 'العودة مستوى واحدًا فيما يلي العبارة'
+        "
+        [attr.autofocus]="focused() && options().length === 0 ? '' : null"
+        [disabled]="busy()"
+        (click)="reversed.emit()"
+      >
+        تراجع خطوة
+      </button>
+    }
+    @if (page().sideEndsHereCount > 0) {
+      <span>
+        {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:
+        {{ occurrenceLabel(page().sideEndsHereCount) }}
+      </span>
+    }
+  </div>
+
+  @if (options().length > 0) {
+    <div
+      class="context-web__options"
+      [attr.aria-label]="
+        side() === 'previous'
+          ? 'خيارات المستوى التالي قبل العبارة'
+          : 'خيارات المستوى التالي بعد العبارة'
+      "
+    >
+      @for (option of options(); track option.selectionRef) {
+        <button
+          type="button"
+          class="context-node"
+          [class.context-node--boundary]="option.boundaryKind !== null"
+          [disabled]="busy()"
+          [attr.autofocus]="$first && focused() ? '' : null"
+          [attr.aria-label]="boundaryLabel(option) + '، ' + occurrenceLabel(option.passesThroughCount)"
+          (click)="optionSelected.emit(option.selectionRef)"
+        >
+          <strong>{{ boundaryLabel(option) }}</strong>
+          <span>{{ occurrenceLabel(option.passesThroughCount) }}</span>
+          @if (option.sideEndsHereCount > 0 && option.boundaryKind === null) {
+            <small>
+              {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:
+              {{ occurrenceLabel(option.sideEndsHereCount) }}
+            </small>
+          }
+        </button>
+      }
+    </div>
+  } @else {
+    <p class="context-web__end">
+      {{
+        side() === 'previous'
+          ? 'وصل المسار إلى بداية الآية.'
+          : 'وصل المسار إلى نهاية الآية.'
+      }}
+    </p>
+  }
+
+  @if (page().nextCursor) {
+    <button
+      type="button"
+      class="qd-btn qd-btn-secondary context-web__more"
+      [disabled]="busy()"
+      (click)="moreRequested.emit()"
+    >
+      {{ side() === 'previous' ? 'عرض خيارات سابقة أخرى' : 'عرض خيارات لاحقة أخرى' }}
+    </button>
+  }
+</section>

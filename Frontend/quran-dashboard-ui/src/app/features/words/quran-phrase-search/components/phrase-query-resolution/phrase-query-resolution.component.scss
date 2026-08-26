@@ -44,6 +44,11 @@
   gap: var(--qd-space-2);
 }
 
+.phrase-query__submit-row--inline {
+  grid-template-columns: minmax(18rem, 1fr) minmax(12rem, 18rem) auto;
+  align-items: center;
+}
+
 .phrase-query__field,
 .phrase-query__input {
   min-inline-size: 0;
@@ -56,6 +61,17 @@
   font-family: var(--qd-font-quran);
   font-size: var(--qd-type-body);
   line-height: 1.9;
+}
+
+.phrase-query__input--single-line,
+.phrase-query__submit-row--inline .phrase-query__submit {
+  min-block-size: var(--qd-control-md);
+  block-size: var(--qd-control-md);
+}
+
+.phrase-query__input--single-line {
+  resize: none;
+  line-height: normal;
 }
 
 .phrase-query__feedback {

@@ -61,4 +61,5 @@ export const DEFAULT_PHRASE_CONTEXT_URL_STATE: PhraseContextUrlState = {
   contextsPage: 1,
 };
 
-export const PHRASE_CONTEXT_PAGE_SIZE = 25;
+export const PHRASE_CONTEXT_BRANCH_PAGE_SIZE = 25;
+export const PHRASE_CONTEXT_RESULT_PAGE_SIZE = 1000;

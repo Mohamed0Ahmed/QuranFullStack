@@ -8,4 +8,7 @@ export interface PhraseFullContextGroupDto {
   followingTokens: Array<PhraseExactTokenDto>;
   previousTokens: Array<PhraseExactTokenDto>;
   queryTokens: Array<PhraseExactTokenDto>;
+  representativeAyahNumber: number;
+  representativeSurahNameArabic: string;
+  representativeVerseKey: string;
 }

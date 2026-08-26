@@ -4,6 +4,7 @@ import { PhraseContextBranchesResponse } from '../../../../core/api/generated/mo
 import { PhraseContextGroupsResponse } from '../../../../core/api/generated/models/phrase-context-groups-response';
 import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/models/phrase-context-occurrence-dto';
 import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response';
+import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import { PhraseFullContextGroupDto } from '../../../../core/api/generated/models/phrase-full-context-group-dto';
 import { PhraseContextFocusTarget } from '../models/phrase-context.models';
 import {
@@ -147,6 +148,13 @@ export class PhraseContextSelectionStore {
     this._occurrences.set(response.items);
     this._occurrencesTotalCount.set(response.totalCount);
     this._occurrencesNextCursor.set(response.nextCursor);
+  }
+
+  replaceResults(response: PhraseContextResultsResponse): void {
+    this._selectedContextRef.set(null);
+    this._occurrences.set(response.items);
+    this._occurrencesTotalCount.set(response.totalCount);
+    this._occurrencesNextCursor.set(null);
   }
 
   appendOccurrences(response: PhraseContextOccurrencesResponse): void {

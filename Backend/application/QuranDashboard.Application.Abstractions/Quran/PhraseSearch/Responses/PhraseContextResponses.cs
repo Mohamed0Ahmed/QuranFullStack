@@ -44,12 +44,20 @@ public sealed record PhraseContextGroupsResponse(
     string? NextCursor,
     IReadOnlyList<PhraseFullContextGroupDto> Items);
 
+public sealed record PhraseContextResultsResponse(
+    Guid ActiveBuildId,
+    int TotalCount,
+    IReadOnlyList<PhraseContextOccurrenceDto> Items);
+
 public sealed record PhraseFullContextGroupDto(
     string ContextRef,
     IReadOnlyList<PhraseExactTokenDto> PreviousTokens,
     IReadOnlyList<PhraseExactTokenDto> QueryTokens,
     IReadOnlyList<PhraseExactTokenDto> FollowingTokens,
-    int ExactFullContextCount);
+    int ExactFullContextCount,
+    string RepresentativeSurahNameArabic,
+    short RepresentativeAyahNumber,
+    string RepresentativeVerseKey);
 
 public sealed record PhraseContextOccurrencesResponse(
     Guid ActiveBuildId,
