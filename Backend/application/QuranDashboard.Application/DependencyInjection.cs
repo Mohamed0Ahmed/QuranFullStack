@@ -64,6 +64,9 @@ using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseContextBran
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseContextGroups;
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseContextOccurrences;
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.ResolvePhraseQuery;
+using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseSimilarityGroups;
+using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseSimilarityMatches;
+using QuranDashboard.Application.Quran.PhraseSearch.Queries.SearchPhraseSimilarities;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafPage;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafAyahDoors;
 using QuranDashboard.Application.Quran.MushafReader.Queries.GetMushafDoorHighlights;
@@ -156,6 +159,9 @@ public static class DependencyInjection
         services.AddScoped<GetPhraseContextBranchesHandler>();
         services.AddScoped<GetPhraseContextGroupsHandler>();
         services.AddScoped<GetPhraseContextOccurrencesHandler>();
+        services.AddScoped<SearchPhraseSimilaritiesHandler>();
+        services.AddScoped<GetPhraseSimilarityGroupsHandler>();
+        services.AddScoped<GetPhraseSimilarityMatchesHandler>();
         services.AddScoped<GetMushafPageHandler>();
         services.AddScoped<GetMushafAyahDoorsHandler>();
         services.AddScoped<GetMushafDoorHighlightsHandler>();

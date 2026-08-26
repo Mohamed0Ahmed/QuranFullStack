@@ -47,6 +47,8 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<IPhraseRepetitionsReader, EfPhraseRepetitionsReader>();
         services.AddScoped<IPhraseQueryResolutionReader, EfPhraseQueryResolutionReader>();
         services.AddScoped<IPhraseContextReader, EfPhraseContextReader>();
+        services.AddScoped<PhraseSimilarityOccurrenceHydrator>();
+        services.AddScoped<IPhraseSimilarityReader, EfPhraseSimilarityReader>();
         return services;
     }
 }

@@ -27,6 +27,15 @@ internal static class PhraseSearchApiFailure
         PhraseRequestInvalidKind.Paging => Fail<T>(
             PhraseSearchApiMessages.InvalidPaging,
             PhraseSearchErrorCodes.InvalidPaging),
+        PhraseRequestInvalidKind.Length => Fail<T>(
+            PhraseSearchApiMessages.InvalidLength,
+            PhraseSearchErrorCodes.InvalidLength),
+        PhraseRequestInvalidKind.Threshold => Fail<T>(
+            PhraseSearchApiMessages.InvalidSimilarityThreshold,
+            PhraseSearchErrorCodes.InvalidSimilarityThreshold),
+        PhraseRequestInvalidKind.MinimumMatchedWords => Fail<T>(
+            PhraseSearchApiMessages.InvalidMinimumMatchedWords,
+            PhraseSearchErrorCodes.InvalidMinimumMatchedWords),
         _ => throw new InvalidOperationException($"Unhandled {nameof(PhraseRequestInvalidKind)} value: {kind}."),
     };
 
@@ -37,6 +46,10 @@ internal static class PhraseSearchApiFailure
     internal static ApiResponse<T> Unavailable<T>() => Fail<T>(
         PhraseSearchApiMessages.IndexUnavailable,
         PhraseSearchErrorCodes.IndexUnavailable);
+
+    internal static ApiResponse<T> SimilarityGroupNotFound<T>() => Fail<T>(
+        PhraseSearchApiMessages.SimilarityGroupNotFound,
+        PhraseSearchErrorCodes.SimilarityGroupNotFound);
 
     private static ApiResponse<T> Fail<T>(string message, string errorCode) =>
         ApiResponse<T>.Fail(message, [errorCode]);

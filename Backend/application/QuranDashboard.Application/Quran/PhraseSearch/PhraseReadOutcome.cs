@@ -8,6 +8,7 @@ public abstract record PhraseReadOutcome<T>
     public sealed record Invalid(PhraseRequestInvalidKind Kind) : PhraseReadOutcome<T>;
     public sealed record Unavailable : PhraseReadOutcome<T>;
     public sealed record BuildChanged : PhraseReadOutcome<T>;
+    public sealed record NotFound : PhraseReadOutcome<T>;
 }
 
 public enum PhraseRequestInvalidKind
@@ -19,4 +20,7 @@ public enum PhraseRequestInvalidKind
     Reference,
     Cursor,
     Paging,
+    Length,
+    Threshold,
+    MinimumMatchedWords,
 }

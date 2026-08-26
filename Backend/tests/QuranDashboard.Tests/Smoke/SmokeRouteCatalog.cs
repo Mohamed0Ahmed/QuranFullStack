@@ -216,6 +216,18 @@ internal static class SmokeRouteCatalog
             "api/quran/phrase-search/contexts/occurrences",
             "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
             HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/similarities/search",
+            "/api/quran/phrase-search/similarities/search?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQACAAAAAQAAAALDBrQxDPHCLw&minimumMatchedWords=1",
+            HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/similarity-groups",
+            "/api/quran/phrase-search/similarity-groups?mode=simple&length=4&threshold=50",
+            HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/similarity-groups/{buildId}/{variantId}/matches",
+            "/api/quran/phrase-search/similarity-groups/00000000-0000-0000-0000-000000000001/1/matches?threshold=50",
+            HttpStatusCode.ServiceUnavailable),
 
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are

@@ -49,8 +49,8 @@ public sealed class EfPhraseRepetitionsReader(QuranDashboardDbContext db) : IPhr
             PhraseRepetitionSortKeys.Occurrences,
             PhraseSearchPaging.DefaultPageSize,
             PhraseSearchPaging.MaximumPageSize,
-            PhraseIndexBuildConstants.Thresholds.Min(),
-            [.. PhraseIndexBuildConstants.Thresholds],
+            PhraseSimilarityContract.Thresholds.Min(),
+            [.. PhraseSimilarityContract.Thresholds],
             modes);
 
         await snapshot.CompleteAsync(cancellationToken);

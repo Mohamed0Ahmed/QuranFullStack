@@ -20,5 +20,4 @@ internal static class PhraseIndexBuildConstants
     internal const int MinimumSimilarityLength = 4;
     internal const int CommandTimeoutSeconds = 3_600;
 
-    internal static readonly short[] Thresholds = [50, 60, 70, 80, 90];
 }
