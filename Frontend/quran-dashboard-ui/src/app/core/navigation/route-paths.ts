@@ -54,3 +54,18 @@ export const WORDS_TYPES_SEGMENT = 'types' as const;
 export function wordTypesRoutePath(): string {
   return `${WORDS_ROUTE_PATH}/${WORDS_TYPES_SEGMENT}`;
 }
+
+export const WORDS_PHRASES_SEGMENT = 'phrases' as const;
+export const WORDS_PHRASES_REPETITIONS_SEGMENT = 'repetitions' as const;
+export const WORDS_PHRASES_CONTEXT_SEGMENT = 'context' as const;
+export const WORDS_PHRASES_SIMILARITY_SEGMENT = 'similarity' as const;
+
+export function phraseSearchBaseRoutePath(): string {
+  return `${WORDS_ROUTE_PATH}/${WORDS_PHRASES_SEGMENT}`;
+}
+
+export function phraseSearchRoutePath(
+  section: string = WORDS_PHRASES_REPETITIONS_SEGMENT,
+): string {
+  return `${phraseSearchBaseRoutePath()}/${section}`;
+}

@@ -1,0 +1,21 @@
+<qd-tabs
+  class="phrase-search-tabs"
+  dir="rtl"
+  ariaLabel="أقسام البحث في القرآن"
+  layout="tracks"
+>
+  @for (tab of tabs; track tab.key) {
+    <a
+      #activeLink="routerLinkActive"
+      qdTab
+      routerLinkActive
+      [routerLink]="tab.route"
+      [routerLinkActiveOptions]="{ exact: true }"
+      [selected]="activeLink.isActive"
+      panelId="phrase-search-route-panel"
+      ariaCurrentWhenActive="page"
+    >
+      {{ tab.label }}
+    </a>
+  }
+</qd-tabs>

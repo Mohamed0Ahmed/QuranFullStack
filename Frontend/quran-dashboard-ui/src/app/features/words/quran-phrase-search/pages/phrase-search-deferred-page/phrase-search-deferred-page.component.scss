@@ -1,0 +1,16 @@
+.phrase-search-deferred {
+  display: grid;
+  gap: var(--qd-space-3);
+  min-block-size: 18rem;
+  place-content: center;
+  padding: var(--qd-space-5) var(--qd-space-3);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  text-align: center;
+}
+
+.phrase-search-deferred h2 {
+  margin: 0;
+  font-size: var(--qd-type-h2);
+}

@@ -1,0 +1,22 @@
+.phrase-highlighted-ayah {
+  margin: 0;
+  color: var(--qd-ink);
+  font-family: var(--qd-font-quran);
+  font-size: var(--qd-type-h3);
+  line-height: 2.15;
+}
+
+.phrase-highlighted-ayah__word {
+  display: inline;
+  padding-inline: 0.09em;
+}
+
+.phrase-highlighted-ayah__word--query {
+  padding: 0.04em 0.16em 0.12em;
+  border-block-end: 2px solid var(--qd-accent);
+  border-radius: var(--qd-radius-xs);
+  background: var(--qd-accent-tint);
+  color: var(--qd-green-text);
+  font-weight: 700;
+  box-decoration-break: clone;
+}

@@ -1,0 +1,9 @@
+<p class="phrase-highlighted-ayah" dir="rtl">
+  @for (word of words(); track word.quranWordId) {
+    <span
+      class="phrase-highlighted-ayah__word"
+      [class.phrase-highlighted-ayah__word--query]="isQueryWord(word.quranWordId)"
+      [attr.aria-label]="wordAriaLabel(word)"
+    >{{ word.textUthmani }}</span>{{ $last ? '' : ' ' }}
+  }
+</p>

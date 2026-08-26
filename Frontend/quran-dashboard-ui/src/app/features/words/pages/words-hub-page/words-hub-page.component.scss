@@ -68,6 +68,14 @@
   background: var(--qd-surface);
 }
 
+.words-hub-phrase {
+  margin-block-start: var(--qd-space-3);
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
 @media (max-width: bp.$qd-bp-tablet-max) {
   .words-hub-header {
     grid-template-columns: minmax(0, 1fr);

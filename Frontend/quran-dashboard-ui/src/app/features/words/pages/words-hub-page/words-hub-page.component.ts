@@ -13,6 +13,7 @@ import {
 } from '../../models/words-explainer.content';
 import {
   lemmasRoutePath,
+  phraseSearchRoutePath,
   rootsRoutePath,
   stemsRoutePath,
   uniqueWordsRoutePath,
@@ -59,6 +60,14 @@ export class WordsHubPageComponent {
   protected get chain() {
     return WORDS_HUB_CHAIN;
   }
+  protected readonly phraseSearchCard = {
+    ordinal: 'بحث',
+    eyebrow: 'استكشاف العبارات',
+    title: 'البحث في القرآن',
+    description:
+      'استعرض العبارات المتكررة ومواضعها داخل الآيات، مع الحفاظ على النص العثماني وحدود الكلمات الأصلية.',
+    route: phraseSearchRoutePath(),
+  } as const;
 
   protected get cards(): readonly WordsHubCardViewModel[] {
     return (this.cardsCache ??= WORDS_EXPLAINER_ORDER.map((key) => {

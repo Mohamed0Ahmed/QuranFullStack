@@ -1,0 +1,225 @@
+<section
+  class="phrase-repetitions-page"
+  aria-labelledby="phrase-repetitions-title"
+  [attr.aria-busy]="controlsBusy() ? 'true' : null"
+>
+  <div class="phrase-repetitions-page__heading">
+    <div>
+      <p class="phrase-repetitions-page__eyebrow">التكرارات الدقيقة</p>
+      <h2 id="phrase-repetitions-title">العبارات الأكثر ورودًا</h2>
+    </div>
+    <p>اختر طول العبارة ونمط هويتها، ثم افتح أي نتيجة لمراجعة كل مواضعها.</p>
+  </div>
+
+  <qd-notice
+    tone="info"
+    [message]="state().indexNotice"
+    dismissLabel="إخفاء"
+    (dismiss)="dismissIndexNotice()"
+  />
+
+  @if (state().routeInvalid) {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="العودة للإعدادات الافتراضية"
+      (action)="resetInvalidState()"
+    />
+  } @else if (!state().capabilities) {
+    @switch (state().capabilitiesStatus) {
+      @case ('unavailable') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="retry()"
+        />
+      }
+      @case ('error') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="retry()"
+        />
+      }
+      @default {
+        <qd-panel-skeleton
+          shape="rows"
+          [rowsCount]="6"
+          rowTemplate="minmax(9rem, 1fr) 7rem"
+          loadingLabel="جارٍ تجهيز فهرس البحث…"
+        />
+      }
+    }
+  } @else if (
+    state().capabilitiesStatus === 'unavailable' || state().capabilitiesStatus === 'error'
+  ) {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="إعادة المحاولة"
+      (action)="retry()"
+    />
+  } @else {
+    <div class="phrase-repetitions-page__controls" aria-label="مرشحات التكرارات">
+      <label class="phrase-repetitions-page__field">
+        <span>عدد كلمات العبارة</span>
+        <select
+          class="qd-select"
+          [value]="state().route.length"
+          [disabled]="controlsBusy()"
+          (change)="onLengthChange($any($event.target).value)"
+        >
+          @for (length of availableLengths(); track length) {
+            <option [value]="length">{{ length }} كلمات</option>
+          }
+        </select>
+      </label>
+
+      <div class="phrase-repetitions-page__field">
+        <span>نمط النص</span>
+        <qd-phrase-text-mode-toggle
+          [mode]="state().route.mode"
+          [availableModes]="availableModes()"
+          [disabled]="controlsBusy()"
+          (modeChange)="onModeChange($event)"
+        />
+      </div>
+
+      <label class="phrase-repetitions-page__field">
+        <span>ترتيب النتائج</span>
+        <select
+          class="qd-select"
+          [value]="state().route.sort"
+          [disabled]="controlsBusy()"
+          (change)="onSortChange($any($event.target).value)"
+        >
+          @for (option of sortOptions; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <div
+      class="phrase-repetitions-page__list-region"
+      [class.qd-refreshing-region]="state().listStatus === 'refreshing'"
+      [attr.aria-busy]="listBusy() ? 'true' : null"
+    >
+      <qd-refreshing-indicator
+        [active]="
+          state().capabilitiesStatus === 'refreshing' || state().listStatus === 'refreshing'
+        "
+        testId="phrase-repetitions-refreshing"
+      />
+
+      <p class="qd-sr-only" role="status" aria-live="polite">{{ countAnnouncement() }}</p>
+
+      @if (state().listStatus === 'invalid') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="العودة للإعدادات الافتراضية"
+          (action)="resetInvalidState()"
+        />
+      } @else if (state().listStatus === 'unavailable') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="retry()"
+        />
+      } @else if (state().listStatus === 'error') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="retry()"
+        />
+      } @else if (state().listStatus === 'loading' && !state().list) {
+        <qd-panel-skeleton
+          shape="rows"
+          [rowsCount]="8"
+          rowTemplate="minmax(12rem, 1fr) 7rem"
+          loadingLabel="جارٍ تحميل العبارات المتكررة…"
+        />
+      } @else if (state().listStatus === 'empty') {
+        <qd-empty-state message="لا توجد عبارات متكررة بهذه الخيارات. جرّب طولًا أو نمطًا آخر." />
+      } @else if (state().list; as list) {
+        <div class="phrase-repetitions-page__meta">
+          <strong>{{ list.totalCount }} عبارة</strong>
+          <span>الصفحة {{ list.page }} · {{ list.pageSize }} نتيجة في الصفحة</span>
+        </div>
+
+        <div class="phrase-repetitions-page__workspace">
+          <div class="phrase-repetitions-page__master">
+            <qd-phrase-repetitions-list
+              [items]="list.items"
+              [totalCount]="list.totalCount"
+              [page]="list.page"
+              [pageSize]="list.pageSize"
+              [selectedVariantId]="state().route.phrase"
+              [disabled]="listBusy()"
+              (phraseSelected)="onPhraseSelected($event)"
+            />
+
+            <qd-pagination
+              [currentPage]="list.page"
+              [pageSize]="list.pageSize"
+              [totalCount]="list.totalCount"
+              [disabled]="controlsBusy()"
+              ariaLabel="صفحات العبارات المتكررة"
+              (pageChange)="onPageChange($event)"
+            />
+          </div>
+
+          <aside
+            class="phrase-repetitions-page__details"
+            aria-label="تفاصيل العبارة المحددة"
+            [class.qd-refreshing-region]="state().occurrencesStatus === 'refreshing'"
+            [attr.aria-busy]="occurrencesBusy() ? 'true' : null"
+          >
+            @if (state().route.phrase === null) {
+              <qd-empty-state message="اختر عبارة من القائمة لعرض مواضعها كاملة داخل الآيات." />
+            } @else if (
+              state().occurrencesStatus === 'loading' && !state().occurrences
+            ) {
+              <qd-panel-skeleton
+                shape="rows"
+                [rowsCount]="5"
+                rowTemplate="5rem minmax(12rem, 1fr)"
+                loadingLabel="جارٍ تحميل مواضع العبارة…"
+              />
+            } @else if (
+              state().occurrencesStatus === 'unavailable' ||
+              state().occurrencesStatus === 'error'
+            ) {
+              <qd-error-state
+                [message]="state().occurrencesErrorMessage"
+                actionLabel="إعادة المحاولة"
+                (action)="retry()"
+              />
+            } @else if (state().occurrencesStatus === 'invalid') {
+              <qd-error-state
+                [message]="state().occurrencesErrorMessage"
+                actionLabel="إغلاق التفاصيل"
+                (action)="clearPhrase()"
+              />
+            } @else if (state().occurrencesStatus === 'empty') {
+              <qd-empty-state
+                message="لا توجد مواضع متاحة لهذه العبارة."
+                actionLabel="إغلاق التفاصيل"
+                (action)="clearPhrase()"
+              />
+            } @else if (state().occurrences; as occurrences) {
+              <qd-refreshing-indicator
+                [active]="state().occurrencesStatus === 'refreshing'"
+                testId="phrase-occurrences-refreshing"
+              />
+              <qd-phrase-occurrence-list
+                [response]="occurrences"
+                [disabled]="state().occurrencesStatus === 'refreshing'"
+                (closeRequested)="clearPhrase()"
+                (pageChange)="onOccurrencePageChange($event)"
+              />
+            }
+          </aside>
+        </div>
+      }
+    </div>
+  }
+</section>
