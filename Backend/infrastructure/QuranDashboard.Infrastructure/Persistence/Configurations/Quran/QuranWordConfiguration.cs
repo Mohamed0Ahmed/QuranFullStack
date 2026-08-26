@@ -84,6 +84,9 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
 
         builder.HasIndex(w => w.Location).IsUnique();
 
+        builder.HasIndex(w => w.AyahId)
+            .HasDatabaseName("IX_quran_words_ayah_id");
+
         builder.HasIndex(w => new { w.SurahNumber, w.AyahNumber, w.WordNumber },
                 "IX_quran_words_surah_ayah_word")
             .HasDatabaseName("IX_quran_words_surah_ayah_word");
@@ -93,6 +96,10 @@ public sealed class QuranWordConfiguration : IEntityTypeConfiguration<QuranWord>
         builder.HasIndex(w => new { w.SurahNumber, w.AyahNumber, w.WordNumber },
                 "IX_quran_words_readable_surah_ayah_word")
             .HasDatabaseName("IX_quran_words_readable_surah_ayah_word")
+            .HasFilter("is_ayah_marker = false");
+
+        builder.HasIndex(w => new { w.AyahId, w.WordNumber })
+            .HasDatabaseName("IX_quran_words_readable_ayah_word")
             .HasFilter("is_ayah_marker = false");
 
         builder.HasIndex(w => w.WordKeyImlaeiSimple, "IX_quran_words_word_key_imlaei_simple")
