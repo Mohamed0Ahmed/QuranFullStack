@@ -1,4 +1,8 @@
-<p class="phrase-highlighted-ayah" dir="rtl">
+<p
+  class="phrase-highlighted-ayah"
+  [class.phrase-highlighted-ayah--compact]="compact()"
+  dir="rtl"
+>
   @for (word of words(); track word.quranWordId) {
     <span
       class="phrase-highlighted-ayah__word"

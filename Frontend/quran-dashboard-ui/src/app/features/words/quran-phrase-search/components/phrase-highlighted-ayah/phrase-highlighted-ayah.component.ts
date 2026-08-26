@@ -17,6 +17,7 @@ type PhraseWordRole = 'query' | 'previous' | 'following' | 'matched' | 'differin
 export class PhraseHighlightedAyahComponent {
   readonly words = input.required<readonly PhraseAyahWordDto[]>();
   readonly queryQuranWordIds = input<readonly number[]>([]);
+  readonly compact = input(false);
   readonly roleScheme = input<PhraseHighlightScheme>('query');
   readonly contextHighlights = input<PhraseContextHighlightsDto | null>(null);
   readonly similarityHighlights = input<PhraseSimilarityHighlightsDto | null>(null);

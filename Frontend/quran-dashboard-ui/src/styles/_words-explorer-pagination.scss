@@ -48,4 +48,36 @@
   .qd-explorer-layout .qd-explorer-layout__table .qd-pagination__jump-submit {
     padding-inline: var(--qd-space-2);
   }
+
+  .phrase-occurrences .qd-pagination,
+  .phrase-occurrences .qd-pagination__controls,
+  .phrase-occurrences .qd-pagination__pages {
+    gap: var(--qd-s-2);
+  }
+
+  .phrase-occurrences .qd-pagination__nav,
+  .phrase-occurrences .qd-pagination__page,
+  .phrase-occurrences .qd-pagination__jump-input,
+  .phrase-occurrences .qd-pagination__jump-submit {
+    min-block-size: var(--qd-control-sm);
+    block-size: var(--qd-control-sm);
+    padding-block: 0;
+    font-size: var(--qd-type-meta);
+  }
+
+  .phrase-occurrences .qd-pagination__nav {
+    min-inline-size: 3.5rem;
+    padding-inline: var(--qd-space-1);
+  }
+
+  .phrase-occurrences .qd-pagination__page {
+    min-inline-size: var(--qd-control-sm);
+    padding-inline: var(--qd-space-1);
+  }
+
+  .phrase-occurrences .qd-pagination__jump-input {
+    inline-size: 3.25rem;
+    min-inline-size: 3.25rem;
+    max-inline-size: 3.25rem;
+  }
 }

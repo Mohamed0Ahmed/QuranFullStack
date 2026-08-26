@@ -62,5 +62,5 @@ public sealed class GetPhraseRepetitionsHandler(IPhraseRepetitionsReader reader)
     private static bool IsPagingValid(int page, int pageSize) =>
         page >= PhraseSearchPaging.DefaultPage
         && pageSize > 0
-        && pageSize <= PhraseSearchPaging.MaximumPageSize;
+        && pageSize <= PhraseSearchPaging.MaximumRepetitionPageSize;
 }

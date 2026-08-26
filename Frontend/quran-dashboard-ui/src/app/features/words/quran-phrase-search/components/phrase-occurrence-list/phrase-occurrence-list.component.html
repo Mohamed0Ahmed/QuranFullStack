@@ -1,8 +1,7 @@
 <section class="phrase-occurrences" aria-labelledby="phrase-occurrences-title">
   <header class="phrase-occurrences__header">
     <div>
-      <p class="phrase-occurrences__eyebrow">مواضع العبارة</p>
-      <h2 id="phrase-occurrences-title">{{ response().phrase.displayText }}</h2>
+      <h3 id="phrase-occurrences-title">{{ response().phrase.displayText }}</h3>
       <p>
         {{ response().phrase.occurrenceCount }} موضعًا ·
         {{ response().phrase.ayahCount }} آية ·
@@ -11,11 +10,12 @@
     </div>
     <button
       type="button"
-      class="qd-btn qd-btn-secondary phrase-occurrences__close"
+      class="phrase-occurrences__close qd-interactive-surface"
       aria-label="إغلاق تفاصيل العبارة"
+      title="إغلاق تفاصيل العبارة"
       (click)="closeRequested.emit()"
     >
-      إغلاق
+      <span aria-hidden="true">×</span>
     </button>
   </header>
 
@@ -48,6 +48,7 @@
           [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
         >
           <qd-phrase-highlighted-ayah
+            [compact]="true"
             [words]="row.occurrence.words"
             [queryQuranWordIds]="row.occurrence.highlights.queryQuranWordIds"
           />

@@ -55,7 +55,8 @@ export const DEFAULT_PHRASE_REPETITIONS_URL_STATE: PhraseRepetitionsUrlState = {
   occPage: 1,
 };
 
-export const PHRASE_REPETITIONS_PAGE_SIZE = 25;
+export const PHRASE_REPETITIONS_PAGE_SIZE = 1000;
+export const PHRASE_OCCURRENCES_PAGE_SIZE = 25;
 
 export const PHRASE_REPETITION_SORT_OPTIONS: readonly {
   readonly value: PhraseRepetitionSort;

@@ -4,11 +4,8 @@
   [attr.aria-busy]="controlsBusy() ? 'true' : null"
 >
   <div class="phrase-repetitions-page__heading">
-    <div>
-      <p class="phrase-repetitions-page__eyebrow">التكرارات الدقيقة</p>
-      <h2 id="phrase-repetitions-title">العبارات الأكثر ورودًا</h2>
-    </div>
-    <p>اختر طول العبارة ونمط هويتها، ثم افتح أي نتيجة لمراجعة كل مواضعها.</p>
+    <h2 id="phrase-repetitions-title">العبارات الأكثر ورودًا</h2>
+    <p>حتى 1000 عبارة في الصفحة، اختر صفًا لعرض مواضعه.</p>
   </div>
 
   <qd-notice
@@ -103,13 +100,6 @@
       [class.qd-refreshing-region]="state().listStatus === 'refreshing'"
       [attr.aria-busy]="listBusy() ? 'true' : null"
     >
-      <qd-refreshing-indicator
-        [active]="
-          state().capabilitiesStatus === 'refreshing' || state().listStatus === 'refreshing'
-        "
-        testId="phrase-repetitions-refreshing"
-      />
-
       <p class="qd-sr-only" role="status" aria-live="polite">{{ countAnnouncement() }}</p>
 
       @if (state().listStatus === 'invalid') {
@@ -142,11 +132,56 @@
       } @else if (state().list; as list) {
         <div class="phrase-repetitions-page__meta">
           <strong>{{ list.totalCount }} عبارة</strong>
-          <span>الصفحة {{ list.page }} · {{ list.pageSize }} نتيجة في الصفحة</span>
+          <span>الصفحة {{ list.page }} · {{ list.items.length }} معروضة</span>
         </div>
 
-        <div class="phrase-repetitions-page__workspace">
-          <div class="phrase-repetitions-page__master">
+        <ng-template #detailsContent>
+          @if (state().route.phrase === null) {
+            <qd-empty-state message="اختر عبارة من الجدول لعرض مواضعها." />
+          } @else if (state().occurrencesStatus === 'loading' && !state().occurrences) {
+            <qd-panel-skeleton
+              shape="rows"
+              [rowsCount]="5"
+              rowTemplate="5rem minmax(12rem, 1fr)"
+              loadingLabel="جارٍ تحميل مواضع العبارة…"
+            />
+          } @else if (
+            state().occurrencesStatus === 'unavailable' ||
+            state().occurrencesStatus === 'error'
+          ) {
+            <qd-error-state
+              [message]="state().occurrencesErrorMessage"
+              actionLabel="إعادة المحاولة"
+              (action)="retry()"
+            />
+          } @else if (state().occurrencesStatus === 'invalid') {
+            <qd-error-state
+              [message]="state().occurrencesErrorMessage"
+              actionLabel="إغلاق التفاصيل"
+              (action)="clearPhrase()"
+            />
+          } @else if (state().occurrencesStatus === 'empty') {
+            <qd-empty-state
+              message="لا توجد مواضع متاحة لهذه العبارة."
+              actionLabel="إغلاق التفاصيل"
+              (action)="clearPhrase()"
+            />
+          } @else if (state().occurrences; as occurrences) {
+            <qd-refreshing-indicator
+              [active]="state().occurrencesStatus === 'refreshing'"
+              testId="phrase-occurrences-refreshing"
+            />
+            <qd-phrase-occurrence-list
+              [response]="occurrences"
+              [disabled]="state().occurrencesStatus === 'refreshing'"
+              (closeRequested)="clearPhrase()"
+              (pageChange)="onOccurrencePageChange($event)"
+            />
+          }
+        </ng-template>
+
+        <div class="phrase-repetitions-page__workspace qd-explorer-layout qd-page-split qd-page-split--data">
+          <section class="phrase-repetitions-page__master qd-explorer-layout__table" aria-label="جدول التكرارات">
             <qd-phrase-repetitions-list
               [items]="list.items"
               [totalCount]="list.totalCount"
@@ -155,70 +190,54 @@
               [selectedVariantId]="state().route.phrase"
               [disabled]="listBusy()"
               (phraseSelected)="onPhraseSelected($event)"
-            />
+            >
+              <qd-pagination
+                phraseRepetitionsTablePagination
+                [currentPage]="list.page"
+                [pageSize]="list.pageSize"
+                [totalCount]="list.totalCount"
+                [disabled]="controlsBusy()"
+                ariaLabel="صفحات العبارات المتكررة"
+                (pageChange)="onPageChange($event)"
+              />
+            </qd-phrase-repetitions-list>
+          </section>
 
-            <qd-pagination
-              [currentPage]="list.page"
-              [pageSize]="list.pageSize"
-              [totalCount]="list.totalCount"
-              [disabled]="controlsBusy()"
-              ariaLabel="صفحات العبارات المتكررة"
-              (pageChange)="onPageChange($event)"
-            />
-          </div>
-
-          <aside
-            class="phrase-repetitions-page__details"
-            aria-label="تفاصيل العبارة المحددة"
-            [class.qd-refreshing-region]="state().occurrencesStatus === 'refreshing'"
-            [attr.aria-busy]="occurrencesBusy() ? 'true' : null"
-          >
-            @if (state().route.phrase === null) {
-              <qd-empty-state message="اختر عبارة من القائمة لعرض مواضعها كاملة داخل الآيات." />
-            } @else if (
-              state().occurrencesStatus === 'loading' && !state().occurrences
-            ) {
-              <qd-panel-skeleton
-                shape="rows"
-                [rowsCount]="5"
-                rowTemplate="5rem minmax(12rem, 1fr)"
-                loadingLabel="جارٍ تحميل مواضع العبارة…"
-              />
-            } @else if (
-              state().occurrencesStatus === 'unavailable' ||
-              state().occurrencesStatus === 'error'
-            ) {
-              <qd-error-state
-                [message]="state().occurrencesErrorMessage"
-                actionLabel="إعادة المحاولة"
-                (action)="retry()"
-              />
-            } @else if (state().occurrencesStatus === 'invalid') {
-              <qd-error-state
-                [message]="state().occurrencesErrorMessage"
-                actionLabel="إغلاق التفاصيل"
-                (action)="clearPhrase()"
-              />
-            } @else if (state().occurrencesStatus === 'empty') {
-              <qd-empty-state
-                message="لا توجد مواضع متاحة لهذه العبارة."
-                actionLabel="إغلاق التفاصيل"
-                (action)="clearPhrase()"
-              />
-            } @else if (state().occurrences; as occurrences) {
-              <qd-refreshing-indicator
-                [active]="state().occurrencesStatus === 'refreshing'"
-                testId="phrase-occurrences-refreshing"
-              />
-              <qd-phrase-occurrence-list
-                [response]="occurrences"
-                [disabled]="state().occurrencesStatus === 'refreshing'"
-                (closeRequested)="clearPhrase()"
-                (pageChange)="onOccurrencePageChange($event)"
-              />
-            }
-          </aside>
+          @if (isDesktop()) {
+            <aside
+              class="phrase-repetitions-page__details qd-explorer-layout__panel"
+              aria-label="تفاصيل العبارة المحددة"
+              [class.qd-refreshing-region]="state().occurrencesStatus === 'refreshing'"
+              [attr.aria-busy]="occurrencesBusy() ? 'true' : null"
+            >
+              <ng-container *ngTemplateOutlet="detailsContent" />
+            </aside>
+          }
         </div>
+
+        @if (!isDesktop() && state().route.phrase !== null) {
+          <qd-modal-shell
+            variant="overlay"
+            testIdPrefix="phrase-repetition-details"
+            dialogTestId="phrase-repetition-details-modal"
+            [open]="true"
+            titleText="تفاصيل العبارة"
+            [showTitle]="false"
+            [showClose]="false"
+            [hasFooter]="false"
+            [flushBody]="true"
+            [trapFocus]="true"
+            (dismissed)="clearPhrase()"
+          >
+            <div
+              class="phrase-repetitions-page__mobile-details"
+              [class.qd-refreshing-region]="state().occurrencesStatus === 'refreshing'"
+              [attr.aria-busy]="occurrencesBusy() ? 'true' : null"
+            >
+              <ng-container *ngTemplateOutlet="detailsContent" />
+            </div>
+          </qd-modal-shell>
+        }
       }
     </div>
   }

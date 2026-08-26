@@ -9,6 +9,7 @@ public sealed record PhraseSearchCapabilitiesResponse(
     string DefaultRepetitionSort,
     int DefaultPageSize,
     int MaximumPageSize,
+    int MaximumRepetitionPageSize,
     short MinimumSimilarityPercent,
     IReadOnlyList<short> SimilarityThresholds,
     IReadOnlyList<PhraseTextModeCapabilitiesDto> Modes);

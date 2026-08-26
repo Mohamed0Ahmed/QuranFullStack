@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
@@ -7,6 +8,8 @@ import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/erro
 import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.component';
 import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
+import { QdModalShellComponent } from '../../../../../shared/ui/modal-shell/modal-shell.component';
+import { QD_BP_DESKTOP_MIN_QUERY } from '../../../../../shared/layout/breakpoints';
 import { PhraseOccurrenceListComponent } from '../../components/phrase-occurrence-list/phrase-occurrence-list.component';
 import { PhraseRepetitionsListComponent } from '../../components/phrase-repetitions-list/phrase-repetitions-list.component';
 import { PhraseTextModeToggleComponent } from '../../components/phrase-text-mode-toggle/phrase-text-mode-toggle.component';
@@ -24,6 +27,7 @@ import { PhraseRepetitionsFacade } from '../../state/phrase-repetitions.facade';
   standalone: true,
   imports: [
     ExplorerPanelSkeletonComponent,
+    NgTemplateOutlet,
     PaginationComponent,
     PhraseOccurrenceListComponent,
     PhraseRepetitionsListComponent,
@@ -31,6 +35,7 @@ import { PhraseRepetitionsFacade } from '../../state/phrase-repetitions.facade';
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdNoticeComponent,
+    QdModalShellComponent,
     QdRefreshingIndicatorComponent,
   ],
   templateUrl: './phrase-repetitions-page.component.html',
@@ -79,12 +84,22 @@ export class PhraseRepetitionsPageComponent implements OnInit, OnDestroy {
     }
     return `تم تحميل ${state.list?.totalCount ?? 0} عبارة متكررة`;
   });
+  protected readonly isDesktop = signal(true);
+  private desktopQuery?: MediaQueryList;
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
+    this.isDesktop.set(event.matches);
 
   ngOnInit(): void {
     this.facade.bindToRoute(this.route);
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+      this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
+      this.isDesktop.set(this.desktopQuery.matches);
+      this.desktopQuery.addEventListener('change', this.onDesktopChange);
+    }
   }
 
   ngOnDestroy(): void {
+    this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
     this.facade.unbindFromRoute();
   }
 

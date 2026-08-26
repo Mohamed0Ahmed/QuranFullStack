@@ -1,34 +1,51 @@
-<div
-  class="phrase-repetitions-list"
-  qdResultList
-  listVariant="master"
-  listLabel="العبارات القرآنية المتكررة"
+<qd-data-table
+  class="phrase-repetitions-table qd-explorer-table"
+  renderer="standard"
+  [rows]="items()"
+  [rowId]="rowIdentity"
+  ariaLabel="جدول العبارات القرآنية المتكررة"
+  bodyAriaLabel="قائمة العبارات القرآنية المتكررة"
+  [columnCount]="5"
+  [totalRowCount]="totalCount()"
+  [selectedRow]="selectedRow()"
+  [selected]="sameRow"
+  [selectable]="!disabled()"
+  [state]="disabled() ? 'refreshing' : 'ready'"
+  [rowHeight]="rowHeight"
+  [compactRowHeight]="compactRowHeight"
+  [scrollStateKey]="scrollStateKey()"
+  [style.--qd-explorer-table-columns]="'minmax(2.75rem, 0.25fr) minmax(12rem, 2.4fr) repeat(3, minmax(5.25rem, 0.7fr))'"
+  (rowSelected)="phraseSelected.emit($event.variantId)"
 >
-  @for (item of items(); track item.variantId; let index = $index) {
-    <div
-      qdResultItem
-      selectable
-      [selected]="selectedVariantId() === item.variantId"
-      [current]="selectedVariantId() === item.variantId"
-      [position]="position(index)"
-      [setSize]="totalCount()"
-    >
-      <button
-        type="button"
-        class="phrase-repetitions-list__row"
-        [class.phrase-repetitions-list__row--selected]="selectedVariantId() === item.variantId"
-        [attr.aria-label]="item.displayText + '، ' + item.occurrenceCount + ' موضعًا'"
-        [disabled]="disabled()"
-        (click)="phraseSelected.emit(item.variantId)"
-      >
-        <span class="phrase-repetitions-list__copy">
-          <span class="phrase-repetitions-list__phrase" dir="rtl">{{ item.displayText }}</span>
-          <span class="phrase-repetitions-list__support">
-            {{ item.ayahCount }} آية · {{ item.surahCount }} سورة
-          </span>
-        </span>
-        <strong class="phrase-repetitions-list__count">{{ item.occurrenceCount }} موضعًا</strong>
-      </button>
+  <ng-template #headerTemplate>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--numeric qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--phrase qd-explorer-table__header-cell" role="columnheader">العبارة</div>
+    <div class="phrase-repetitions-table__cell qd-explorer-table__header-cell qd-explorer-table__header-cell--numeric" role="columnheader">المواضع</div>
+    <div class="phrase-repetitions-table__cell qd-explorer-table__header-cell qd-explorer-table__header-cell--numeric" role="columnheader">الآيات</div>
+    <div class="phrase-repetitions-table__cell qd-explorer-table__header-cell qd-explorer-table__header-cell--numeric" role="columnheader">السور</div>
+  </ng-template>
+
+  <ng-template #rowTemplate let-item let-index="index">
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ position(index) }}</div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--phrase qd-explorer-table__cell" role="cell"><span dir="rtl">{{ item.displayText }}</span></div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.occurrenceCount }}</div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.ayahCount }}</div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.surahCount }}</div>
+  </ng-template>
+
+  <ng-template #compactRowTemplate let-item let-index="index">
+    <div class="phrase-repetitions-table__compact">
+      <span class="phrase-repetitions-table__compact-number" aria-hidden="true">{{ position(index) }}</span>
+      <span class="phrase-repetitions-table__compact-phrase" dir="rtl">{{ item.displayText }}</span>
+      <span class="phrase-repetitions-table__compact-metrics">
+        <span><strong>{{ item.occurrenceCount }}</strong> موضعًا</span>
+        <span><strong>{{ item.ayahCount }}</strong> آية</span>
+        <span><strong>{{ item.surahCount }}</strong> سورة</span>
+      </span>
     </div>
-  }
-</div>
+  </ng-template>
+
+  <ng-template #paginationTemplate>
+    <ng-content select="[phraseRepetitionsTablePagination]" />
+  </ng-template>
+</qd-data-table>

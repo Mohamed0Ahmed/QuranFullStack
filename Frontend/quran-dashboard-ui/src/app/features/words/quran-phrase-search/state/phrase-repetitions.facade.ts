@@ -10,6 +10,7 @@ import { lastPageNumber } from '../../../../shared/ui/pagination/pagination-rang
 import { PhraseRepetitionsApi } from '../data-access/phrase-repetitions.api';
 import {
   DEFAULT_PHRASE_REPETITIONS_URL_STATE,
+  PHRASE_OCCURRENCES_PAGE_SIZE,
   PHRASE_REPETITIONS_PAGE_SIZE,
   ParsedPhraseRepetitionsUrlState,
   PhraseLoadStatus,
@@ -347,7 +348,7 @@ export class PhraseRepetitionsFacade {
         route.build,
         route.phrase,
         route.occPage,
-        PHRASE_REPETITIONS_PAGE_SIZE,
+        PHRASE_OCCURRENCES_PAGE_SIZE,
       )
       .pipe(
         tap((response) => {
