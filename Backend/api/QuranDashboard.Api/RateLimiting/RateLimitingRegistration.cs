@@ -1,5 +1,7 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Http.Timeouts;
+using QuranDashboard.Api.Controllers.Quran.PhraseSearch;
 
 namespace QuranDashboard.Api.RateLimiting;
 
@@ -12,6 +14,9 @@ internal static class RateLimitingRegistration
 
     public static IServiceCollection AddRateLimiting(this IServiceCollection services, IConfiguration configuration)
     {
+        var configured = configuration
+            .GetSection(RateLimitingOptions.SectionName)
+            .Get<RateLimitingOptions>() ?? new RateLimitingOptions();
         services.AddOptions<RateLimitingOptions>()
             .Bind(configuration.GetSection(RateLimitingOptions.SectionName))
             .ValidateOnStart();
@@ -24,11 +29,33 @@ internal static class RateLimitingRegistration
         {
             limiterOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             limiterOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(CreatePartition);
+            limiterOptions.AddConcurrencyLimiter(
+                PhraseSearchComputePolicy.Name,
+                concurrencyOptions =>
+                {
+                    concurrencyOptions.PermitLimit = configured.PhraseSearchComputePermitLimit;
+                    concurrencyOptions.QueueLimit = configured.PhraseSearchComputeQueueLimit;
+                    concurrencyOptions.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+                });
             limiterOptions.OnRejected = static async (context, cancellationToken) =>
             {
                 var writer = context.HttpContext.RequestServices.GetRequiredService<RateLimitRejectionWriter>();
                 await writer.WriteAsync(context, cancellationToken);
             };
+        });
+        services.AddRequestTimeouts(timeoutOptions =>
+        {
+            timeoutOptions.AddPolicy(
+                PhraseSearchComputePolicy.Name,
+                new RequestTimeoutPolicy
+                {
+                    Timeout = TimeSpan.FromSeconds(configured.PhraseSearchComputeTimeoutSeconds),
+                    TimeoutStatusCode = StatusCodes.Status503ServiceUnavailable,
+                    WriteTimeoutResponse = static context => context.Response.WriteAsJsonAsync(
+                        ApiResponse<object>.Fail(
+                            PhraseSearchApiMessages.ComputeTimeout,
+                            [PhraseSearchErrorCodes.ComputeTimeout])),
+                });
         });
 
         return services;

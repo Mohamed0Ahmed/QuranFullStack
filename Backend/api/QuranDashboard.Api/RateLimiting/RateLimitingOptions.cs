@@ -19,6 +19,12 @@ public sealed class RateLimitingOptions
     public int HealthPermitLimit { get; set; } = 300;
 
     public int HealthWindowSeconds { get; set; } = 60;
+
+    public int PhraseSearchComputePermitLimit { get; set; } = 4;
+
+    public int PhraseSearchComputeQueueLimit { get; set; } = 8;
+
+    public int PhraseSearchComputeTimeoutSeconds { get; set; } = 10;
 }
 
 internal sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimitingOptions>
@@ -60,6 +66,21 @@ internal sealed class RateLimitingOptionsValidator : IValidateOptions<RateLimiti
         if (options.HealthWindowSeconds <= 0)
         {
             failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.HealthWindowSeconds)} must be greater than 0.");
+        }
+
+        if (options.PhraseSearchComputePermitLimit <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.PhraseSearchComputePermitLimit)} must be greater than 0.");
+        }
+
+        if (options.PhraseSearchComputeQueueLimit < 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.PhraseSearchComputeQueueLimit)} must be greater than or equal to 0.");
+        }
+
+        if (options.PhraseSearchComputeTimeoutSeconds <= 0)
+        {
+            failures.Add($"{RateLimitingOptions.SectionName}:{nameof(RateLimitingOptions.PhraseSearchComputeTimeoutSeconds)} must be greater than 0.");
         }
 
         return failures.Count > 0

@@ -200,6 +200,22 @@ internal static class SmokeRouteCatalog
             "api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences",
             "/api/quran/phrase-search/repetitions/00000000-0000-0000-0000-000000000001/1/occurrences",
             HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/query-resolutions",
+            "/api/quran/phrase-search/query-resolutions?mode=simple&q64=eA",
+            HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/contexts/branches",
+            "/api/quran/phrase-search/contexts/branches?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/contexts/groups",
+            "/api/quran/phrase-search/contexts/groups?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/contexts/occurrences",
+            "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
+            HttpStatusCode.ServiceUnavailable),
 
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are

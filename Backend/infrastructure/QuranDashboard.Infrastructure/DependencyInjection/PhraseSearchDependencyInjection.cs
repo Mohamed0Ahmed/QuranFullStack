@@ -43,7 +43,10 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<PhraseIndexBuildFinalizer>();
         services.AddScoped<IPhraseIndexBuilder, EfPhraseIndexBuilder>();
         services.AddScoped<IPhraseIndexRollback, PhraseIndexRollbackService>();
+        services.AddSingleton<IPhraseSearchReferenceCodec, PhraseSearchReferenceCodec>();
         services.AddScoped<IPhraseRepetitionsReader, EfPhraseRepetitionsReader>();
+        services.AddScoped<IPhraseQueryResolutionReader, EfPhraseQueryResolutionReader>();
+        services.AddScoped<IPhraseContextReader, EfPhraseContextReader>();
         return services;
     }
 }
