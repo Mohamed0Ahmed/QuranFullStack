@@ -13,84 +13,161 @@
       <small>الخيارات الأقرب أولًا</small>
     </div>
     <div class="context-web__summary">
-      <strong>{{ optionLabel(page().totalOptions) }}</strong>
+      <strong>{{ optionLabel(displayedOptionCount()) }}</strong>
       <span>{{ occurrenceLabel(page().passesThroughCount) }}</span>
+      @if (page().sideEndsHereCount > 0) {
+        <small>
+          {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:
+          {{ occurrenceLabel(page().sideEndsHereCount) }}
+        </small>
+      }
     </div>
   </header>
 
-  <div class="context-web__actions">
-    @if (selection().tokens.length > 0 || selection().endsAtBoundary) {
+  <nav
+    class="context-web__path"
+    [attr.dir]="side() === 'previous' ? 'ltr' : 'rtl'"
+    [attr.aria-label]="
+      side() === 'previous' ? 'مسار الكلمات السابقة المختارة' : 'مسار الكلمات اللاحقة المختارة'
+    "
+  >
+    @if (selection().selectionRef === null) {
+      <span
+        class="context-path__current qd-chip qd-chip--static qd-is-selected"
+        dir="rtl"
+        aria-current="page"
+      >
+        العبارة الأصلية
+      </span>
+    } @else {
       <button
         type="button"
-        class="qd-btn qd-btn-secondary"
+        class="context-path__item context-path__item--root qd-chip qd-chip--pill"
+        dir="rtl"
+        [disabled]="busy()"
+        (click)="pathSelected.emit(null)"
+      >
+        العبارة الأصلية
+      </button>
+      @if (pathSteps().length === 0) {
+        <span class="context-path__separator" aria-hidden="true">
+          {{ side() === 'previous' ? '›' : '‹' }}
+        </span>
+        <span
+          class="context-path__current qd-chip qd-chip--static qd-is-selected"
+          dir="rtl"
+          aria-current="page"
+        >
+          {{ fallbackCurrentLabel() }}
+        </span>
+      } @else {
+        @for (step of pathSteps(); track step.selectionRef) {
+          <span class="context-path__separator" aria-hidden="true">
+            {{ side() === 'previous' ? '›' : '‹' }}
+          </span>
+          @if ($last) {
+            <span
+              class="context-path__current qd-chip qd-chip--static qd-is-selected"
+              dir="rtl"
+              [class.context-path__current--boundary]="step.boundaryKind !== null"
+              aria-current="page"
+            >
+              {{ step.displayText }}
+            </span>
+          } @else {
+            <button
+              type="button"
+              class="context-path__item qd-chip qd-chip--pill"
+              dir="rtl"
+              [disabled]="busy()"
+              [attr.aria-label]="'الرجوع إلى مستوى ' + step.displayText"
+              (click)="pathSelected.emit(step.selectionRef)"
+            >
+              {{ step.displayText }}
+            </button>
+          }
+        }
+      }
+    }
+  </nav>
+
+  @if (tableOptions().length > 0) {
+    <div
+      class="context-web__table-region"
+    >
+      <table
+        class="context-options-table"
         [attr.aria-label]="
           side() === 'previous'
-            ? 'العودة مستوى واحدًا فيما يسبق العبارة'
-            : 'العودة مستوى واحدًا فيما يلي العبارة'
+            ? 'خيارات المستوى التالي قبل العبارة'
+            : 'خيارات المستوى التالي بعد العبارة'
         "
-        [attr.autofocus]="focused() && options().length === 0 ? '' : null"
-        [disabled]="busy()"
-        (click)="reversed.emit()"
       >
-        تراجع خطوة
-      </button>
-    }
-    @if (page().sideEndsHereCount > 0) {
-      <span>
-        {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:
-        {{ occurrenceLabel(page().sideEndsHereCount) }}
-      </span>
-    }
-  </div>
-
-  @if (options().length > 0) {
-    <div
-      class="context-web__options"
-      [attr.aria-label]="
-        side() === 'previous'
-          ? 'خيارات المستوى التالي قبل العبارة'
-          : 'خيارات المستوى التالي بعد العبارة'
-      "
-    >
-      @for (option of options(); track option.selectionRef) {
-        <button
-          type="button"
-          class="context-node"
-          [class.context-node--boundary]="option.boundaryKind !== null"
-          [disabled]="busy()"
-          [attr.autofocus]="$first && focused() ? '' : null"
-          [attr.aria-label]="boundaryLabel(option) + '، ' + occurrenceLabel(option.passesThroughCount)"
-          (click)="optionSelected.emit(option.selectionRef)"
-        >
-          <strong>{{ boundaryLabel(option) }}</strong>
-          <span>{{ occurrenceLabel(option.passesThroughCount) }}</span>
-          @if (option.sideEndsHereCount > 0 && option.boundaryKind === null) {
-            <small>
-              {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:
-              {{ occurrenceLabel(option.sideEndsHereCount) }}
-            </small>
+        <thead>
+          <tr>
+            <th class="context-options-table__index" scope="col">م</th>
+            <th scope="col">الكلمة أو الحد</th>
+            <th scope="col">عدد المواضع</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (option of tableOptions(); track option.selectionRef) {
+            <tr
+              [class.context-options-table__row--boundary]="option.boundaryKind !== null"
+              [class.context-options-table__row--current]="
+                option.selectionRef === selection().selectionRef
+              "
+            >
+              <td class="context-options-table__index">{{ $index + 1 }}</td>
+              <td>
+                <button
+                  type="button"
+                  class="context-option"
+                  [class.context-option--boundary]="option.boundaryKind !== null"
+                  [disabled]="busy() || option.selectionRef === selection().selectionRef"
+                  [attr.aria-current]="
+                    option.selectionRef === selection().selectionRef ? 'true' : null
+                  "
+                  [attr.aria-label]="
+                    option.displayText + '، ' + occurrenceLabel(option.passesThroughCount)
+                  "
+                  (click)="optionSelected.emit(option.selectionRef)"
+                >
+                  {{ option.displayText }}
+                </button>
+              </td>
+              <td class="context-options-table__count">
+                <span class="context-options-table__count-value qd-chip__count">
+                  {{ option.passesThroughCount }}
+                </span>
+              </td>
+            </tr>
           }
-        </button>
-      }
+        </tbody>
+      </table>
     </div>
   } @else {
-    <p class="context-web__end">
-      {{
-        side() === 'previous'
-          ? 'وصل المسار إلى بداية الآية.'
-          : 'وصل المسار إلى نهاية الآية.'
-      }}
-    </p>
+    <div class="context-web__table-region context-web__table-region--empty">
+      <p class="context-web__end">
+        {{
+          side() === 'previous'
+            ? 'وصل المسار إلى بداية الآية.'
+            : 'وصل المسار إلى نهاية الآية.'
+        }}
+      </p>
+    </div>
   }
 
-  @if (page().nextCursor) {
-    <button
-      type="button"
-      class="qd-btn qd-btn-secondary context-web__more"
-      [disabled]="busy()"
-      (click)="moreRequested.emit()"
-    >
-      {{ side() === 'previous' ? 'عرض خيارات سابقة أخرى' : 'عرض خيارات لاحقة أخرى' }}
-    </button>
-  }
+  <div class="context-web__footer">
+    @if (page().nextCursor) {
+      <button
+        type="button"
+        class="qd-btn qd-btn-secondary context-web__more"
+        [disabled]="busy()"
+        (click)="moreRequested.emit()"
+      >
+        {{ side() === 'previous' ? 'عرض خيارات سابقة أخرى' : 'عرض خيارات لاحقة أخرى' }}
+      </button>
+    }
+  </div>
 </section>

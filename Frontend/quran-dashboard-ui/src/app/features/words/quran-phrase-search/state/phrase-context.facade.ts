@@ -123,9 +123,7 @@ export class PhraseContextFacade {
     if (rawQuery === this.resolutionFlow.state().rawQuery) {
       return;
     }
-    this.actionGate.invalidate();
     this.resolutionFlow.setDraft(rawQuery);
-    this.clearWorkspaceForNewSubmission();
   }
 
   setMode(mode: PhraseTextMode): void {
@@ -207,38 +205,26 @@ export class PhraseContextFacade {
 
   selectPrevious(selectionRef: string): void {
     this.selection.requestFocus('previous');
-    this.selection.rememberPreviousRef(selectionRef, this._route().before);
     this.startWorkspaceRefresh();
     this.navigate({ ...this._route(), before: selectionRef, contextsPage: 1 });
   }
 
   selectFollowing(selectionRef: string): void {
     this.selection.requestFocus('following');
-    this.selection.rememberFollowingRef(selectionRef, this._route().after);
     this.startWorkspaceRefresh();
     this.navigate({ ...this._route(), after: selectionRef, contextsPage: 1 });
   }
 
-  reversePrevious(): void {
-    const lookup = this.selection.previousParentRef(this._route().before);
-    if (!lookup.known) {
-      this.notice.parentUnavailable();
-      return;
-    }
+  selectPreviousPath(selectionRef: string | null): void {
     this.selection.requestFocus('previous');
     this.startWorkspaceRefresh();
-    this.navigate({ ...this._route(), before: lookup.parent, contextsPage: 1 });
+    this.navigate({ ...this._route(), before: selectionRef, contextsPage: 1 });
   }
 
-  reverseFollowing(): void {
-    const lookup = this.selection.followingParentRef(this._route().after);
-    if (!lookup.known) {
-      this.notice.parentUnavailable();
-      return;
-    }
+  selectFollowingPath(selectionRef: string | null): void {
     this.selection.requestFocus('following');
     this.startWorkspaceRefresh();
-    this.navigate({ ...this._route(), after: lookup.parent, contextsPage: 1 });
+    this.navigate({ ...this._route(), after: selectionRef, contextsPage: 1 });
   }
 
   loadMorePrevious(): void {
@@ -400,10 +386,14 @@ export class PhraseContextFacade {
       }
       return this.resolveRestoredQuery(route);
     }
-    this.resolutionFlow.markLoading(route.q, route.resolution);
-    this.selection.clearWorkspace();
-    this.requestStatus.branches.set('loading');
-    this.requestStatus.groups.set('loading');
+    if (this.selection.branches()) {
+      this.startWorkspaceRefresh();
+    } else {
+      this.resolutionFlow.markLoading(route.q, route.resolution);
+      this.selection.clearWorkspace();
+      this.requestStatus.branches.set('loading');
+      this.requestStatus.groups.set('loading');
+    }
     const routeKey = phraseContextStateKey(route);
     return this.workspaceLoader.loadWorkspace(route).pipe(
       tap((result) => {
@@ -415,9 +405,12 @@ export class PhraseContextFacade {
         ) {
           return;
         }
-        this.selection.replaceBranches(result.branches, route.before, route.after);
+        this.selection.replaceBranches(result.branches);
         this.selection.replaceResults(result.results);
-        this.resolutionFlow.restoreFromBranches(route.q, result.branches);
+        this.resolutionFlow.restoreFromBranches(
+          this.resolutionFlow.state().rawQuery,
+          result.branches,
+        );
         this.requestStatus.branches.set('success');
         this.requestStatus.groups.set(
           result.results.totalCount === 0 ? 'empty' : 'success',

@@ -16,6 +16,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--qd-space-2);
+  min-block-size: 3.5rem;
 }
 
 .context-explorer__header h2,
@@ -46,8 +47,8 @@
   position: relative;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--qd-space-4);
-  block-size: 34rem;
+  gap: var(--qd-space-3);
+  block-size: 40rem;
   min-inline-size: 0;
 }
 
@@ -84,53 +85,14 @@
   to { transform: rotate(1turn); }
 }
 
-@media (min-width: bp.$qd-bp-wide-desktop-min) {
-  .context-explorer__network {
-    gap: 4rem;
-    padding-block-start: 3rem;
-  }
-
-  .context-explorer__network::before,
-  .context-explorer__network::after,
-  qd-phrase-context-web::before {
-    position: absolute;
-    background: var(--qd-border-strong);
-    content: '';
-  }
-
-  .context-explorer__network::before {
-    inset-block-start: 0;
-    inset-inline-start: 50%;
-    inline-size: 1px;
-    block-size: 1.5rem;
-  }
-
-  .context-explorer__network::after {
-    inset-block-start: 1.5rem;
-    inset-inline: 25%;
-    block-size: 1px;
-  }
-
-  qd-phrase-context-web {
-    position: relative;
-  }
-
-  qd-phrase-context-web::before {
-    inset-block-start: -1.5rem;
-    inset-inline-start: 50%;
-    inline-size: 1px;
-    block-size: 1.5rem;
-  }
-}
-
 @media (max-width: bp.$qd-bp-tablet-max) {
   .context-explorer__network {
     grid-template-columns: minmax(0, 1fr);
-    block-size: auto;
+    block-size: calc(68rem + var(--qd-space-3));
   }
 
   .context-explorer__network > qd-phrase-context-web {
-    block-size: 30rem;
+    block-size: 34rem;
   }
 }
 
@@ -145,7 +107,11 @@
   }
 
   .context-explorer__network > qd-phrase-context-web {
-    block-size: 27rem;
+    block-size: 30rem;
+  }
+
+  .context-explorer__network {
+    block-size: calc(60rem + var(--qd-space-3));
   }
 }
 

@@ -33,9 +33,8 @@
       [selection]="branches().previousSelection"
       [options]="previousOptions()"
       [busy]="busy()"
-      [focused]="focusTarget() === 'previous'"
       (optionSelected)="previousSelected.emit($event)"
-      (reversed)="previousReversed.emit()"
+      (pathSelected)="previousPathSelected.emit($event)"
       (moreRequested)="previousMoreRequested.emit()"
     />
     <qd-phrase-context-web
@@ -44,9 +43,8 @@
       [selection]="branches().followingSelection"
       [options]="followingOptions()"
       [busy]="busy()"
-      [focused]="focusTarget() === 'following'"
       (optionSelected)="followingSelected.emit($event)"
-      (reversed)="followingReversed.emit()"
+      (pathSelected)="followingPathSelected.emit($event)"
       (moreRequested)="followingMoreRequested.emit()"
     />
   </div>

@@ -179,7 +179,7 @@ public sealed partial class EfPhraseContextReader(
     {
         if (path is null)
         {
-            return new PhraseSelectedPathDto(null, false, []);
+            return new PhraseSelectedPathDto(null, false, [], []);
         }
 
         var tokens = Enumerable.Range(0, path.SelectedExactTokenIds.Count)
@@ -191,7 +191,40 @@ public sealed partial class EfPhraseContextReader(
             throw new InvalidDataException("PhraseSearch selected path does not match the filtered occurrence population.");
         }
 
-        return new PhraseSelectedPathDto(codec.EncodePath(path), path.EndsAtBoundary, tokens);
+        return new PhraseSelectedPathDto(
+            codec.EncodePath(path),
+            path.EndsAtBoundary,
+            tokens,
+            CreateSelectedPathSteps(path, side, tokens));
+    }
+
+    private IReadOnlyList<PhraseSelectedPathStepDto> CreateSelectedPathSteps(
+        PhrasePathReference path,
+        PhraseContextSide side,
+        IReadOnlyList<PhraseExactTokenDto> tokens)
+    {
+        var steps = tokens
+            .Select((token, index) => new PhraseSelectedPathStepDto(
+                codec.EncodePath(new PhrasePathReference(
+                    path.BuildId,
+                    path.Mode,
+                    path.Side,
+                    path.QueryExactTokenIds,
+                    path.SelectedExactTokenIds.Take(index + 1).ToArray(),
+                    false)),
+                token.TextUthmani,
+                null))
+            .ToList();
+        if (path.EndsAtBoundary)
+        {
+            steps.Add(new PhraseSelectedPathStepDto(
+                codec.EncodePath(path),
+                side == PhraseContextSide.Previous ? "بداية الآية" : "نهاية الآية",
+                side == PhraseContextSide.Previous
+                    ? PhraseContextBoundaryKinds.AyahStart
+                    : PhraseContextBoundaryKinds.AyahEnd));
+        }
+        return steps;
     }
 
     private static ContextWord GetSelectedPathWord(

@@ -7,10 +7,7 @@ import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated
 import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import { PhraseFullContextGroupDto } from '../../../../core/api/generated/models/phrase-full-context-group-dto';
 import { PhraseContextFocusTarget } from '../models/phrase-context.models';
-import {
-  PhraseContextParentLookup,
-  PhraseLongStateSessionStore,
-} from './phrase-long-state-session.store';
+import { PhraseLongStateSessionStore } from './phrase-long-state-session.store';
 
 @Injectable()
 export class PhraseContextSelectionStore {
@@ -46,10 +43,6 @@ export class PhraseContextSelectionStore {
   readonly focusTarget = this._focusTarget.asReadonly();
   readonly hasSelectedContext = computed(() => this._selectedContextRef() !== null);
 
-  rememberPreviousRef(child: string, current: string | null): void {
-    this.longState.saveContextParent('previous', child, current);
-  }
-
   requestFocus(target: PhraseContextFocusTarget): void {
     this._focusTarget.set(target);
     this.longState.saveFocusTarget(target);
@@ -60,34 +53,13 @@ export class PhraseContextSelectionStore {
     this.longState.clearFocusTarget();
   }
 
-  rememberFollowingRef(child: string, current: string | null): void {
-    this.longState.saveContextParent('following', child, current);
-  }
-
-  previousParentRef(current: string | null): PhraseContextParentLookup {
-    return this.longState.restoreContextParent('previous', current);
-  }
-
-  followingParentRef(current: string | null): PhraseContextParentLookup {
-    return this.longState.restoreContextParent('following', current);
-  }
-
-  replaceBranches(
-    response: PhraseContextBranchesResponse,
-    previousParentRef: string | null,
-    followingParentRef: string | null,
-  ): void {
+  replaceBranches(response: PhraseContextBranchesResponse): void {
     this._branches.set(response);
     this._previousOptions.set(response.previous.options);
     this._followingOptions.set(response.following.options);
-    this.rememberOptionParents('previous', response.previous.options, previousParentRef);
-    this.rememberOptionParents('following', response.following.options, followingParentRef);
   }
 
-  appendPrevious(
-    response: PhraseContextBranchesResponse,
-    parentRef: string | null,
-  ): void {
+  appendPrevious(response: PhraseContextBranchesResponse): void {
     const current = this._branches();
     this._branches.set(
       current
@@ -99,13 +71,9 @@ export class PhraseContextSelectionStore {
         : response,
     );
     this._previousOptions.update((items) => appendUniqueOptions(items, response.previous.options));
-    this.rememberOptionParents('previous', response.previous.options, parentRef);
   }
 
-  appendFollowing(
-    response: PhraseContextBranchesResponse,
-    parentRef: string | null,
-  ): void {
+  appendFollowing(response: PhraseContextBranchesResponse): void {
     const current = this._branches();
     this._branches.set(
       current
@@ -117,7 +85,6 @@ export class PhraseContextSelectionStore {
         : response,
     );
     this._followingOptions.update((items) => appendUniqueOptions(items, response.following.options));
-    this.rememberOptionParents('following', response.following.options, parentRef);
   }
 
   replaceGroups(response: PhraseContextGroupsResponse): void {
@@ -182,17 +149,6 @@ export class PhraseContextSelectionStore {
     this._occurrences.set([]);
     this._occurrencesTotalCount.set(0);
     this._occurrencesNextCursor.set(null);
-  }
-
-  private rememberOptionParents(
-    side: 'previous' | 'following',
-    options: PhraseContextBranchesResponse['previous']['options'],
-    parentRef: string | null,
-  ): void {
-    this.longState.saveContextParents(
-      side,
-      options.map((option) => ({ child: option.selectionRef, parent: parentRef })),
-    );
   }
 }
 

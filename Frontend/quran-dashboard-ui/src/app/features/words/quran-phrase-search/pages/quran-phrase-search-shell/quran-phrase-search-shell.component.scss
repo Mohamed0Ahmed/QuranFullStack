@@ -1,5 +1,3 @@
-@use '../../../../../../styles/breakpoints' as bp;
-
 :host {
   display: block;
   min-inline-size: 0;
@@ -9,42 +7,7 @@
   max-inline-size: 100rem;
 }
 
-.phrase-search-shell__header {
-  display: grid;
-  grid-template-columns: minmax(15rem, 0.55fr) minmax(0, 1fr);
-  align-items: end;
-  gap: var(--qd-space-3);
-  padding: var(--qd-space-3) var(--qd-space-2);
-  border: var(--qd-hairline);
-  border-radius: var(--qd-radius-md) var(--qd-radius-md) 0 0;
-  background: var(--qd-surface);
-}
-
-.phrase-search-shell__eyebrow {
-  margin: 0 0 var(--qd-space-1);
-  color: var(--qd-green-text);
-  font-size: var(--qd-type-caption);
-  font-weight: 700;
-}
-
-.phrase-search-shell__subtitle {
-  max-inline-size: var(--qd-measure-prose);
-  margin: 0;
-}
-
 .phrase-search-shell__content {
   min-inline-size: 0;
-  padding-block-start: var(--qd-space-3);
   outline: none;
-}
-
-@media (max-width: bp.$qd-bp-compact-max) {
-  .phrase-search-shell__frame {
-    padding-inline: var(--qd-space-2);
-  }
-
-  .phrase-search-shell__header {
-    grid-template-columns: minmax(0, 1fr);
-    padding: var(--qd-space-2);
-  }
 }

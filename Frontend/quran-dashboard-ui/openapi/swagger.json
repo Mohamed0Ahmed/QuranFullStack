@@ -17412,6 +17412,7 @@
         "required": [
           "endsAtBoundary",
           "selectionRef",
+          "steps",
           "tokens"
         ],
         "type": "object",
@@ -17428,6 +17429,33 @@
             "items": {
               "$ref": "#/components/schemas/PhraseExactTokenDto"
             }
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseSelectedPathStepDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSelectedPathStepDto": {
+        "required": [
+          "boundaryKind",
+          "displayText",
+          "selectionRef"
+        ],
+        "type": "object",
+        "properties": {
+          "selectionRef": {
+            "type": "string"
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "boundaryKind": {
+            "type": "string",
+            "nullable": true
           }
         },
         "additionalProperties": false

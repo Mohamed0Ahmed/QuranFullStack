@@ -13,11 +13,7 @@ type PhraseNoticeKind =
   | 'index-changed'
   | 'long-query-retained'
   | 'long-query-omitted'
-  | 'long-without-query'
-  | 'parent-unavailable';
-
-const PARENT_UNAVAILABLE_MESSAGE =
-  'لا تتوفر هوية المستوى السابق لهذا الرابط في الجلسة الحالية. اختر المسار من بدايته لاستعادة الرجوع مستوىً مستوى.';
+  | 'long-without-query';
 
 @Injectable()
 export class PhraseNoticeStore {
@@ -45,10 +41,6 @@ export class PhraseNoticeStore {
   indexChanged(): void {
     this.sessionOnly.set(false);
     this.set('index-changed', PHRASE_INDEX_CHANGED_MESSAGE);
-  }
-
-  parentUnavailable(): void {
-    this.set('parent-unavailable', PARENT_UNAVAILABLE_MESSAGE);
   }
 
   dismiss(): void {

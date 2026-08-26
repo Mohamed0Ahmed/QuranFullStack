@@ -7,6 +7,7 @@ import {
   effect,
   ElementRef,
   inject,
+  signal,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
@@ -21,6 +22,8 @@ import { PhraseQueryResolutionComponent } from '../../components/phrase-query-re
 import { PhraseResolutionCandidateDto } from '../../../../../core/api/generated/models/phrase-resolution-candidate-dto';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
 import { PhraseContextFacade } from '../../state/phrase-context.facade';
+
+const MINIMUM_WORKSPACE_BUSY_MS = 300;
 
 @Component({
   selector: 'qd-phrase-context-page',
@@ -44,6 +47,8 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private focusTimer?: ReturnType<typeof setTimeout>;
+  private workspaceBusyTimer?: ReturnType<typeof setTimeout>;
+  private readonly minimumWorkspaceBusy = signal(false);
 
   protected readonly state = this.facade.state;
   protected readonly availableModes = computed<readonly PhraseTextMode[]>(() =>
@@ -58,6 +63,9 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
       state.groupsStatus === 'refreshing'
     );
   });
+  protected readonly workspaceInteractionBusy = computed(
+    () => this.workspaceBusy() || this.minimumWorkspaceBusy(),
+  );
   protected readonly countAnnouncement = computed(() => {
     const state = this.state();
     if (!state.branches || (state.branchesStatus !== 'success' && state.branchesStatus !== 'refreshing')) {
@@ -69,7 +77,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   constructor() {
     effect(() => {
       const pending = this.state().focusTarget;
-      if (!pending || this.workspaceBusy()) {
+      if (!pending || this.workspaceInteractionBusy()) {
         return;
       }
       this.clearFocusTimer();
@@ -83,6 +91,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.clearFocusTimer();
+    this.clearWorkspaceBusyTimer();
     this.facade.unbindFromRoute();
   }
 
@@ -91,6 +100,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectBranch(side: 'previous' | 'following', selectionRef: string): void {
+    this.showWorkspaceBusy();
     if (side === 'previous') {
       this.facade.selectPrevious(selectionRef);
     } else {
@@ -98,15 +108,17 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     }
   }
 
-  protected reverseBranch(side: 'previous' | 'following'): void {
+  protected selectPath(side: 'previous' | 'following', selectionRef: string | null): void {
+    this.showWorkspaceBusy();
     if (side === 'previous') {
-      this.facade.reversePrevious();
+      this.facade.selectPreviousPath(selectionRef);
     } else {
-      this.facade.reverseFollowing();
+      this.facade.selectFollowingPath(selectionRef);
     }
   }
 
   protected loadMoreBranches(side: 'previous' | 'following'): void {
+    this.showWorkspaceBusy();
     if (side === 'previous') {
       this.facade.loadMorePrevious();
     } else {
@@ -115,17 +127,19 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   private restoreFocus(pending: string, attempt: number): void {
-    if (this.state().focusTarget !== pending || this.workspaceBusy()) {
+    if (this.state().focusTarget !== pending || this.workspaceInteractionBusy()) {
       return;
     }
     const side = pending.startsWith('previous') ? 'previous' : 'following';
     const scope = `.context-web--${side}`;
-    const primarySelector = pending.endsWith('more')
-      ? `${scope} .context-web__more, ${scope} .context-node:last-of-type`
-      : `${scope} .context-node`;
-    const target =
-      this.host.nativeElement.querySelector<HTMLButtonElement>(primarySelector) ??
-      this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-web__actions button`);
+    const options = this.host.nativeElement.querySelectorAll<HTMLButtonElement>(
+      `${scope} .context-option`,
+    );
+    const target = pending.endsWith('more')
+      ? (this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-web__more`) ??
+        options.item(options.length - 1))
+      : (options.item(0) ??
+        this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-path__item`));
     if (!target || target.disabled) {
       this.retryFocus(pending, attempt);
       return;
@@ -152,6 +166,22 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     if (this.focusTimer) {
       clearTimeout(this.focusTimer);
       this.focusTimer = undefined;
+    }
+  }
+
+  private showWorkspaceBusy(): void {
+    this.clearWorkspaceBusyTimer();
+    this.minimumWorkspaceBusy.set(true);
+    this.workspaceBusyTimer = setTimeout(() => {
+      this.minimumWorkspaceBusy.set(false);
+      this.workspaceBusyTimer = undefined;
+    }, MINIMUM_WORKSPACE_BUSY_MS);
+  }
+
+  private clearWorkspaceBusyTimer(): void {
+    if (this.workspaceBusyTimer) {
+      clearTimeout(this.workspaceBusyTimer);
+      this.workspaceBusyTimer = undefined;
     }
   }
 }

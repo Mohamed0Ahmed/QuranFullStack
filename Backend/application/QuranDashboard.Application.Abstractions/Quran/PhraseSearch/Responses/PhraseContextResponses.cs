@@ -18,7 +18,13 @@ public sealed record PhraseResolvedQueryDto(
 public sealed record PhraseSelectedPathDto(
     string? SelectionRef,
     bool EndsAtBoundary,
-    IReadOnlyList<PhraseExactTokenDto> Tokens);
+    IReadOnlyList<PhraseExactTokenDto> Tokens,
+    IReadOnlyList<PhraseSelectedPathStepDto> Steps);
+
+public sealed record PhraseSelectedPathStepDto(
+    string SelectionRef,
+    string DisplayText,
+    string? BoundaryKind);
 
 public sealed record PhraseContextSidePageDto(
     long PassesThroughCount,

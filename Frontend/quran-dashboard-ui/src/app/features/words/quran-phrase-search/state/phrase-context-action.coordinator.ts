@@ -80,9 +80,9 @@ export class PhraseContextActionCoordinator {
             return;
           }
           if (side === 'previous') {
-            this.selection.appendPrevious(result.branches, route.before);
+            this.selection.appendPrevious(result.branches);
           } else {
-            this.selection.appendFollowing(result.branches, route.after);
+            this.selection.appendFollowing(result.branches);
           }
           this.status.branches.set('success');
         }),

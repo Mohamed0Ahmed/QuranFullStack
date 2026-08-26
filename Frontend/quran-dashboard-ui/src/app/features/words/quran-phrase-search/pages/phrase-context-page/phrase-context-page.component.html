@@ -1,12 +1,4 @@
-<section class="phrase-context-page" aria-labelledby="phrase-context-title">
-  <header class="phrase-context-page__heading">
-    <div>
-      <p>البحث اليدوي في السياق</p>
-      <h2 id="phrase-context-title">تتبّع ما يسبق العبارة وما يتبعها</h2>
-    </div>
-    <p>كل اختيار يحدّث الطرفين والنتائج من مجموعة مواضع واحدة داخل حدود الآية.</p>
-  </header>
-
+<section class="phrase-context-page" aria-label="البحث اليدوي في السياق">
   <qd-notice
     tone="info"
     [message]="state().notice"
@@ -71,16 +63,14 @@
         actionLabel="إعادة المحاولة"
         (action)="facade.retry()"
       />
-    } @else if (state().resolution.status === 'resolved' && state().route.resolution) {
+    } @else if (state().route.resolution) {
       <div
         class="phrase-context-page__workspace"
-        [class.qd-refreshing-region]="workspaceBusy()"
-        [attr.aria-busy]="workspaceBusy() ? 'true' : null"
+        [class.qd-refreshing-region]="workspaceInteractionBusy()"
+        [attr.aria-busy]="workspaceInteractionBusy() ? 'true' : null"
       >
         <qd-refreshing-indicator
-          [active]="
-            state().branchesStatus === 'refreshing' || state().groupsStatus === 'refreshing'
-          "
+          [active]="workspaceInteractionBusy()"
           testId="phrase-context-refreshing"
         />
 
@@ -109,12 +99,11 @@
             [branches]="branches"
             [previousOptions]="state().previousOptions"
             [followingOptions]="state().followingOptions"
-            [busy]="workspaceBusy()"
-            [focusTarget]="state().focusTarget"
+            [busy]="workspaceInteractionBusy()"
             (previousSelected)="selectBranch('previous', $event)"
             (followingSelected)="selectBranch('following', $event)"
-            (previousReversed)="reverseBranch('previous')"
-            (followingReversed)="reverseBranch('following')"
+            (previousPathSelected)="selectPath('previous', $event)"
+            (followingPathSelected)="selectPath('following', $event)"
             (previousMoreRequested)="loadMoreBranches('previous')"
             (followingMoreRequested)="loadMoreBranches('following')"
           />
@@ -136,7 +125,7 @@
                 [totalCount]="state().occurrencesTotalCount"
                 [previousHighlightWordCount]="branches.previousSelection.tokens.length"
                 [followingHighlightWordCount]="branches.followingSelection.tokens.length"
-                [busy]="state().groupsStatus === 'refreshing'"
+                [busy]="workspaceInteractionBusy()"
               />
             </section>
           }

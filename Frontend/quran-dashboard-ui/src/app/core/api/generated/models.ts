@@ -228,6 +228,7 @@ export type { PhraseResolvedQueryDto } from './models/phrase-resolved-query-dto'
 export type { PhraseSearchCapabilitiesResponse } from './models/phrase-search-capabilities-response';
 export type { PhraseSearchCapabilitiesResponseApiResponse } from './models/phrase-search-capabilities-response-api-response';
 export type { PhraseSelectedPathDto } from './models/phrase-selected-path-dto';
+export type { PhraseSelectedPathStepDto } from './models/phrase-selected-path-step-dto';
 export type { PhraseSimilarityGroupDto } from './models/phrase-similarity-group-dto';
 export type { PhraseSimilarityGroupsResponse } from './models/phrase-similarity-groups-response';
 export type { PhraseSimilarityGroupsResponseApiResponse } from './models/phrase-similarity-groups-response-api-response';

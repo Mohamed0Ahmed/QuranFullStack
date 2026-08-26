@@ -7,7 +7,6 @@ import {
 
 import { PhraseContextBranchOptionDto } from '../../../../../core/api/generated/models/phrase-context-branch-option-dto';
 import { PhraseContextBranchesResponse } from '../../../../../core/api/generated/models/phrase-context-branches-response';
-import { PhraseContextFocusTarget } from '../../models/phrase-context.models';
 import { phraseOccurrenceLabel } from '../phrase-context-copy';
 import { PhraseContextCurrentComponent } from '../phrase-context-current/phrase-context-current.component';
 import { PhraseContextWebComponent } from '../phrase-context-web/phrase-context-web.component';
@@ -25,12 +24,11 @@ export class PhraseContextExplorerComponent {
   readonly previousOptions = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly followingOptions = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly busy = input(false);
-  readonly focusTarget = input<PhraseContextFocusTarget | null>(null);
 
   readonly previousSelected = output<string>();
   readonly followingSelected = output<string>();
-  readonly previousReversed = output<void>();
-  readonly followingReversed = output<void>();
+  readonly previousPathSelected = output<string | null>();
+  readonly followingPathSelected = output<string | null>();
   readonly previousMoreRequested = output<void>();
   readonly followingMoreRequested = output<void>();
 
