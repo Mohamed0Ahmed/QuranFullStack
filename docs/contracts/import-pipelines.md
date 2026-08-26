@@ -10,6 +10,8 @@ code owns pipeline implementation and `CODING_PRINCIPLES.md` §10 owns source sa
 ## Authoritative sources
 
 - CLI verbs / importer host → [`DataImporter/README.md`](../../Backend/tools/QuranDashboard.DataImporter/README.md)
+- Operational rebuild, PhraseSearch build/rollback, and canonical-dump runbook → [`Backend/scripts/README.md`](../../Backend/scripts/README.md)
+- PhraseSearch build and rollback implementation → [`DataPipelines/Quran/PhraseSearch/`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/)
 - File data pipelines → [`Files/Quran/DataPipelines/`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Files/Quran/DataPipelines/)
 - Persistence data pipelines → [`Persistence/DataPipelines/Quran/`](../../Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/)
 

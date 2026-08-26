@@ -101,6 +101,8 @@ captured in one run. The reset → migrate → `import-foundation` → `rebuild-
 has been; the individual imports have each been run against an already-foundation-seeded database.
 Treat the ordering above as derived from the code, not as a replayed transcript.
 
+### PhraseSearch index operations
+
 `build-phrase-index [--report-out <path>] [--force]` is dispatched through the DataImporter.
 The default report root is `resources/report/quran-phrase-search/`; each build gets its own
 build-ID directory. A first build initializes the migration-seeded null PhraseSearch source
@@ -124,6 +126,30 @@ remains active and the report plus command message records `post-activation-clea
 refuses unless both pointers exist, the current source fingerprint still matches, and the previous
 generation uses the current format with exact and similarity readiness. The pointer and status swap
 is one source-fenced transaction; migration down is not the runtime rollback path.
+
+Run the deterministic first build, forced replacement, or operational rollback from `Backend/`
+with the exact target connection supplied explicitly. Keep reports under the gitignored
+`resources/` tree unless a separate evidence task authorizes a retained report:
+
+```bash
+./scripts/qd-build
+
+ConnectionStrings__QuranDashboardDb='<target connection>' DOTNET_ENVIRONMENT=Production \
+  dotnet run --project tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj --no-build -- \
+  build-phrase-index --report-out resources/report/quran-phrase-search
+
+ConnectionStrings__QuranDashboardDb='<target connection>' DOTNET_ENVIRONMENT=Production \
+  dotnet run --project tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj --no-build -- \
+  build-phrase-index --force --report-out resources/report/quran-phrase-search
+
+ConnectionStrings__QuranDashboardDb='<target connection>' DOTNET_ENVIRONMENT=Production \
+  dotnet run --project tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj --no-build -- \
+  rollback-phrase-index
+```
+
+Never paste the resolved connection or a raw remote storage proof into a report. The capacity
+formula and measured deployment guidance live in
+[`Backend/README.md` §PhraseSearch build capacity](../README.md#phrasesearch-build-capacity).
 
 ### `create-smoke-dump`
 
@@ -149,7 +175,28 @@ Guards, each of which exits non-zero and dumps nothing:
 The dump is written to a temp file in the destination directory and renamed into place, so an
 interrupted run never leaves a truncated archive where the tests expect a complete one. The
 manifest records the migration head, the dump's sha256, the `pg_dump` version, and the row count
-of every `quran_*` table; the smoke data tier verifies the first two before it starts a container.
+of every dumped non-PhraseSearch `quran_*` table; the smoke data tier verifies the first two before
+it starts a container.
+
+`create-smoke-dump` deliberately excludes **DATA** for every `public.quran_phrase_*` table from
+both the archive and manifest while migrations continue to own the schema. A fresh migrated
+restore therefore keeps the seeded singleton `quran_phrase_index_state` row and no active,
+previous, build, occurrence, or other derived PhraseSearch rows. This is an unavailable index,
+not an empty successful index: every catalogued PhraseSearch route must answer `503` until an
+operator runs `build-phrase-index`. The exclusion is implemented in
+[`create-smoke-dump:161`](create-smoke-dump#L161) and asserted across the restored tables and all
+ten routes by [`SmokeDataReadTests.cs:28`](../tests/QuranDashboard.Tests/Smoke/Data/SmokeDataReadTests.cs#L28)
+and [`SmokeRouteCatalog.cs:137`](../tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs#L137).
+
+Before replacing an existing canonical artifact, copy both the dump and manifest to a recoverable
+operator backup, regenerate only from a source at the repository migration head, and compare every
+non-PhraseSearch manifest table count with the prior artifact. The five built-in baseline counts
+are necessary but do not prove that unrelated canonical families survived. The 2026-08-26 artifact
+repair restored the prior artifact into a disposable database, migrated it to current head, and
+preserved all 32 non-PhraseSearch manifest counts before regenerating with the PhraseSearch
+exclusion; its tafsir source, entry, and ayah-entry counts remained 84, 382,704, and 523,824.
+That is repair provenance for the external operator artifact, not a permanent promise that later
+canonical imports can never change those counts.
 
 Connection string resolution, in order: `ConnectionStrings__QuranDashboardDb`, then the
 `ConnectionStrings:QuranDashboardDb` user secret of `api/QuranDashboard.Api`.
@@ -158,8 +205,10 @@ Connection string resolution, in order: `ConnectionStrings__QuranDashboardDb`, t
 fixture restores into `postgres:18-alpine` for the same reason — a pg16 `pg_restore` rejects an
 archive written by a newer `pg_dump`.
 
-`resources/` is gitignored: the artifact is a local operator product, regenerated by this command
-rather than committed.
+`resources/` is gitignored: the artifact, its manifest, operator backups, and build reports are
+external operator products, regenerated or retained outside Git rather than committed. Do not put
+connection strings, raw remote storage proofs, temporary paths, or volatile PhraseSearch build IDs
+into tracked documentation.
 
 ### `wipe-abwab`
 

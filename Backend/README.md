@@ -59,6 +59,35 @@ TLS is terminated at Railway's edge; the container serves plain HTTP on `$PORT`
 (`app.UseHttpsRedirection()` no-ops with no HTTPS port configured). Railway healthcheck path:
 `/api/health` (liveness — returns `200` with per-check status in the body).
 
+### PhraseSearch build capacity
+
+PhraseSearch replacement builds are intentionally storage-heavy. The preflight computes required
+free space as one current database size for the staged generation, one current database size for
+WAL headroom, plus `PhraseSearch:DiskSafetyBytes` (4 GiB by default); the executable formula is in
+[`PhraseDatabaseStoragePreflight.cs:45`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/PhraseDatabaseStoragePreflight.cs#L45),
+and a build is created only after that hard check is recorded
+([`EfPhraseIndexBuilder.cs:113`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/EfPhraseIndexBuilder.cs#L113)).
+
+The following is a **2026-08-26 local two-generation observation, not a capacity SLA or a remote
+measurement**:
+
+| Measure | Observed value |
+|---|---:|
+| Steady database with active and previous generations | 5,016,975,039 bytes |
+| Required free space before the next replacement | 14,328,917,374 bytes |
+| Hard database-plus-free-space total | 19,345,892,413 bytes (19.35 GB / 18.02 GiB) |
+| Second forced build wall time | 8 minutes 54 seconds |
+| Second forced build peak RSS | 424,016 KiB |
+
+A decimal 20 GB volume is therefore only barely above the observed hard total. Use **25 GB or
+more** as the starting capacity class, then prove the deployed database filesystem's freshly
+available bytes and its WAL retention/archiving behavior immediately before a build. The remote
+preflight fails closed without the operator free-space proof contract; that proof does not inspect
+the provider's WAL policy for the operator. WAL LSN deltas are cumulative bytes generated during
+a run, not resident WAL bytes on disk, so they cannot be substituted for a resident-filesystem
+measurement. Build, forced replacement, report, cancellation, and rollback commands are retained
+in [`scripts/README.md`](scripts/README.md#phrase-search-index-operations).
+
 **One instance — a real constraint that nothing in the contract above enforces.** Railway runs a
 single instance of this container today, but that is a fact about the current deployment, not
 something `railway.json`, the `Dockerfile`, or any variable pins. It is load-bearing because the

@@ -100,7 +100,7 @@ if [[ "${ALLOW_REMOTE}" != true ]]; then
   esac
 fi
 
-# 3. The dump is a third of a gigabyte and this replaces it outright, so say so and stop.
+# 3. The dump is a sizable binary artifact and this replaces it outright, so say so and stop.
 if [[ "${CONFIRMED}" != true ]]; then
   echo "WARNING: this overwrites the canonical smoke dump and its manifest." >&2
   if [[ -f "${DUMP_FILE}" ]]; then
@@ -158,8 +158,13 @@ mkdir -p "${DUMP_DIR}"
 TMP_DUMP="$(mktemp "${DUMP_DIR}/.${DUMP_NAME}.dump.XXXXXX")"
 trap 'rm -f "${TMP_DUMP}" "${MANIFEST_FILE}.tmp"' EXIT
 
-echo "Dumping public.quran_* from ${PGDATABASE} (migration head ${migration_id})…"
-pg_dump --format=custom --data-only --table='public.quran_*' --file="${TMP_DUMP}"
+echo "Dumping public.quran_* except public.quran_phrase_* from ${PGDATABASE} (migration head ${migration_id})…"
+pg_dump \
+  --format=custom \
+  --data-only \
+  --table='public.quran_*' \
+  --exclude-table-data='public.quran_phrase_*' \
+  --file="${TMP_DUMP}"
 
 dump_sha256="$(sha256sum "${TMP_DUMP}" | cut -d' ' -f1)"
 
@@ -168,10 +173,11 @@ dump_sha256="$(sha256sum "${TMP_DUMP}" | cut -d' ' -f1)"
 # otherwise leave a new dump beside the old manifest — a pairing the data tier's gate rejects as
 # corrupt on every subsequent run.
 #
-# They cover every quran_* table, not only the five guarded in step 5, because the data tier reads its
-# expectations from here. Note that step 5 read its counts before pg_dump and these are read after it:
-# on a database with a concurrent writer the two halves would describe different snapshots. That is
-# accepted — this dumps a single-operator local database.
+# They cover every dumped quran_* table, not only the five guarded in step 5, because the data tier
+# reads its expectations from here. Phrase-search data is deterministic and excluded from both the
+# archive and this enumeration. Note that step 5 read its counts before pg_dump and these are read
+# after it: on a database with a concurrent writer the two halves would describe different snapshots.
+# That is accepted — this dumps a single-operator local database.
 pg_dump_version="$(pg_dump --version | awk '{print $3}')"
 table_rows="$(pg_query "
   SELECT c.relname || '|' ||
@@ -179,7 +185,10 @@ table_rows="$(pg_query "
             format('SELECT count(*) AS cnt FROM public.%I', c.relname), false, true, '')))[1]::text
   FROM pg_class c
   JOIN pg_namespace n ON n.oid = c.relnamespace
-  WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname LIKE 'quran\_%'
+  WHERE n.nspname = 'public'
+    AND c.relkind = 'r'
+    AND c.relname LIKE 'quran\_%'
+    AND c.relname NOT LIKE 'quran\_phrase\_%'
   ORDER BY c.relname;")"
 
 {

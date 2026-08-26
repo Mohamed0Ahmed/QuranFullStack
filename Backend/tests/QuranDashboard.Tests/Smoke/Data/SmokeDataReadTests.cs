@@ -4,12 +4,16 @@ namespace QuranDashboard.Tests.Smoke.Data;
 
 // The other half of the two-status model: SmokeRoutePipelineTests proves each route answers its
 // DerivedStatus against an empty schema, and these prove the same routes answer their Seeded expectation
-// once the canonical dump is restored. Seven of the twelve — the Mushaf page, ayah study and word
-// analysis reads, and all four unique-word reads at id 1 — answer 404 there and 200 here, which is the
-// whole reason a seeded expectation is a second status rather than a payload flag on the first.
+// once the canonical dump is restored. Seven routes answer 404 there and 200 here, while every phrase
+// route remains unavailable because the canonical artifact deliberately excludes its derived data.
+// Those independent outcomes are why a seeded expectation is a second status rather than a payload
+// flag on the first.
 [Collection(nameof(SmokeDataCollection))]
 public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
 {
+    private const string PhraseTablePrefix = "quran_phrase_";
+    private const string PhraseStateTable = "quran_phrase_index_state";
+
     public static TheoryData<string> SeededPaths()
     {
         var paths = new TheoryData<string>();
@@ -23,7 +27,7 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
 
     [SmokeDumpTheory]
     [MemberData(nameof(SeededPaths))]
-    public async Task SeededRoute_AnswersItsSeededExpectation_WithRealData(string path)
+    public async Task SeededRoute_AnswersItsCanonicalExpectation_AfterRestore(string path)
     {
         var seeded = SmokeRouteCatalog.ByPath(path).Seeded!;
 
@@ -33,7 +37,10 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
         response.StatusCode.Should().Be(seeded.Status);
         var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
 
-        AssertPayload(envelope.GetProperty("data"), seeded.Payload);
+        if (seeded.Payload is not null)
+        {
+            AssertPayload(envelope.GetProperty("data"), seeded.Payload);
+        }
     }
 
     // Residual guard on the restore, not the primary one: a non-zero pg_restore exit already throws inside
@@ -42,7 +49,7 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
     // short. xUnit orders cases by a hash of their unique id, not by declaration, so this makes no claim
     // about running first — it reports a short table alongside the read failures, naming the shortfall.
     [SmokeDumpFact]
-    public async Task RestoredDatabase_CarriesEveryRowCountTheManifestRecords()
+    public async Task RestoredDatabase_MatchesManifestAndKeepsPhraseDataExcluded()
     {
         var restored = await fixture.CountRowsAsync(fixture.Manifest.Tables.Keys);
 
@@ -52,6 +59,16 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
             .ToArray();
 
         shortfalls.Should().BeEmpty();
+
+        fixture.Manifest.Tables.Keys.Should().NotContain(
+            table => table.StartsWith(PhraseTablePrefix, StringComparison.Ordinal));
+
+        var phraseRows = await fixture.CountRowsWithPrefixAsync(PhraseTablePrefix);
+        phraseRows.Should().ContainKey(PhraseStateTable);
+        phraseRows[PhraseStateTable].Should().Be(1);
+        phraseRows
+            .Where(table => table.Key != PhraseStateTable)
+            .Should().OnlyContain(table => table.Value == 0);
     }
 
     private void AssertPayload(JsonElement data, SmokeSeededPayload payload)

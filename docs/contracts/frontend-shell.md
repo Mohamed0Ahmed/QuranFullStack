@@ -10,6 +10,7 @@ during the UI rebuild.
 ## Authoritative sources
 
 - Core (navigation, data-access, app shell) → [`app/core/`](../../Frontend/quran-dashboard-ui/src/app/core/)
+- PhraseSearch route and URL-state implementation → [`app.routes.ts`](../../Frontend/quran-dashboard-ui/src/app/app.routes.ts), [`quran-phrase-search/`](../../Frontend/quran-dashboard-ui/src/app/features/words/quran-phrase-search/)
 - Shared building blocks → [`app/shared/`](../../Frontend/quran-dashboard-ui/src/app/shared/)
 - Current styles / tokens → [`styles/`](../../Frontend/quran-dashboard-ui/src/styles/)
 - Response envelope (frontend model) → [response-envelope.md](./response-envelope.md)

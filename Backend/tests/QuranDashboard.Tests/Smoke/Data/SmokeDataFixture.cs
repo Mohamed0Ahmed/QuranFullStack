@@ -56,8 +56,8 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         _serverLease = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
             nameof(SmokeDataFixture),
             RestoreImage,
-            // Bind-mounted read-only rather than copied in: the archive is ~350 MB, and copying streams
-            // every byte through the Docker API before the restore can begin.
+            // Bind-mounted read-only rather than copied in: copying the archive would stream every byte
+            // through the Docker API before the restore can begin.
             builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory, DumpMountPath, AccessMode.ReadOnly));
         ConnectionString = _serverLease.ConnectionString;
 
@@ -119,6 +119,33 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         return counts;
     }
 
+    internal async Task<IReadOnlyDictionary<string, int>> CountRowsWithPrefixAsync(string prefix)
+    {
+        var tables = new List<string>();
+        await using (var connection = new NpgsqlConnection(ConnectionString))
+        {
+            await connection.OpenAsync();
+
+            const string sql = """
+                SELECT tablename
+                FROM pg_catalog.pg_tables
+                WHERE schemaname = 'public'
+                  AND left(tablename, length(@prefix)) = @prefix
+                ORDER BY tablename;
+                """;
+            await using var command = new NpgsqlCommand(sql, connection);
+            command.Parameters.AddWithValue("prefix", prefix);
+
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                tables.Add(reader.GetString(0));
+            }
+        }
+
+        return await CountRowsAsync(tables);
+    }
+
     private WebApplicationFactory<HealthController> Factory => _apiFactory
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture.");
@@ -127,7 +154,7 @@ public sealed class SmokeDataFixture : IAsyncLifetime
     {
         var connection = new NpgsqlConnectionStringBuilder(ConnectionString);
 
-        // Run inside the container, against the mounted archive, so no part of 350 MB crosses the Docker
+        // Run inside the container, against the mounted archive, so the archive never crosses the Docker
         // API twice.
         //
         // --jobs rather than --single-transaction: pg_restore refuses the two together, and the restore
