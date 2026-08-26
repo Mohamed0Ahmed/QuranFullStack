@@ -143,7 +143,11 @@ export class PhraseLongStateSessionStore {
 }
 
 function sameContextBase(stored: PhraseContextUrlState, base: PhraseContextUrlState): boolean {
-  return stored.build === base.build && (base.q === '' || stored.q === base.q);
+  return (
+    stored.build === base.build &&
+    stored.mode === base.mode &&
+    (base.q === '' || stored.q === base.q)
+  );
 }
 
 function sameSimilarityBase(

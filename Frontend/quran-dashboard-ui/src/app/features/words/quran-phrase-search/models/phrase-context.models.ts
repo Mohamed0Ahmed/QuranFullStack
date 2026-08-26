@@ -8,6 +8,7 @@ import { PhraseResolutionViewState } from './phrase-query.models';
 
 export interface PhraseContextUrlState {
   readonly build: string | null;
+  readonly mode: PhraseTextMode;
   readonly q: string;
   readonly resolution: string | null;
   readonly before: string | null;
@@ -54,6 +55,7 @@ export type PhraseContextFocusTarget =
 
 export const DEFAULT_PHRASE_CONTEXT_URL_STATE: PhraseContextUrlState = {
   build: null,
+  mode: 'simple',
   q: '',
   resolution: null,
   before: null,

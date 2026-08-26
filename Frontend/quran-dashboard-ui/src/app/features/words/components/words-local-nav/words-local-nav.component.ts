@@ -4,7 +4,6 @@ import { RouterLink } from '@angular/router';
 import {
   WORDS_ROUTE_PATH,
   lemmasRoutePath,
-  phraseSearchRoutePath,
   rootsRoutePath,
   stemsRoutePath,
   uniqueWordsRoutePath,
@@ -22,8 +21,7 @@ export type WordsLocalNavSection =
   | 'roots'
   | 'lemmas'
   | 'stems'
-  | 'types'
-  | 'phrases';
+  | 'types';
 
 @Component({
   selector: 'qd-words-local-nav',
@@ -43,6 +41,5 @@ export class WordsLocalNavComponent {
     { key: 'lemmas', label: LEMMAS_PAGE_TITLE, route: lemmasRoutePath() },
     { key: 'stems', label: STEMS_PAGE_TITLE, route: stemsRoutePath() },
     { key: 'types', label: WORD_TYPES_PAGE_TITLE, route: wordTypesRoutePath() },
-    { key: 'phrases', label: 'البحث في القرآن', route: phraseSearchRoutePath() },
   ] as const;
 }

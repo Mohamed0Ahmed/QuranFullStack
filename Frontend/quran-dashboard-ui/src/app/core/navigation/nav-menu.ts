@@ -1,5 +1,12 @@
 import { NAV_ITEMS, NavItem } from './nav-items';
-import { ABWAB_ROUTE_PATH, SETTINGS_ACCESS_ROUTE_PATH } from './route-paths';
+import {
+  ABWAB_ROUTE_PATH,
+  SETTINGS_ACCESS_ROUTE_PATH,
+  WORDS_PHRASES_CONTEXT_SEGMENT,
+  WORDS_PHRASES_REPETITIONS_SEGMENT,
+  WORDS_PHRASES_SIMILARITY_SEGMENT,
+  phraseSearchRoutePath,
+} from './route-paths';
 import { WORDS_MENU_ITEMS } from './words-nav-items';
 
 const ABWAB_MENU_ITEMS: readonly NavItem[] = [
@@ -32,6 +39,32 @@ const ABWAB_MENU_ITEMS: readonly NavItem[] = [
 
 const childrenByParentKey: Record<string, NavItem[]> = {
   words: [...WORDS_MENU_ITEMS],
+  'quran-search': [
+    {
+      key: 'quran-search-repetitions',
+      labelAr: 'التكرارات',
+      labelEn: 'Repetitions',
+      route: phraseSearchRoutePath(WORDS_PHRASES_REPETITIONS_SEGMENT),
+      icon: 'search',
+      group: 'primary',
+    },
+    {
+      key: 'quran-search-context',
+      labelAr: 'البحث اليدوي',
+      labelEn: 'Manual Search',
+      route: phraseSearchRoutePath(WORDS_PHRASES_CONTEXT_SEGMENT),
+      icon: 'search',
+      group: 'primary',
+    },
+    {
+      key: 'quran-search-similarity',
+      labelAr: 'المتشابهات',
+      labelEn: 'Similarities',
+      route: phraseSearchRoutePath(WORDS_PHRASES_SIMILARITY_SEGMENT),
+      icon: 'compare',
+      group: 'primary',
+    },
+  ],
   abwab: [...ABWAB_MENU_ITEMS],
   settings: [
     {

@@ -2,8 +2,6 @@ import { NavItem } from './nav-items';
 import {
   WORDS_ROUTE_PATH,
   lemmasRoutePath,
-  phraseSearchBaseRoutePath,
-  phraseSearchRoutePath,
   rootsRoutePath,
   stemsRoutePath,
   uniqueWordsRoutePath,
@@ -58,15 +56,6 @@ export const WORDS_MENU_ITEMS: readonly NavItem[] = [
     labelEn: 'Word Types',
     route: wordTypesRoutePath(),
     icon: 'template',
-    group: 'primary',
-  },
-  {
-    key: 'words-phrases',
-    labelAr: 'البحث في القرآن',
-    labelEn: 'Quran Phrase Search',
-    route: phraseSearchRoutePath(),
-    resumePath: phraseSearchBaseRoutePath(),
-    icon: 'search',
     group: 'primary',
   },
 ];

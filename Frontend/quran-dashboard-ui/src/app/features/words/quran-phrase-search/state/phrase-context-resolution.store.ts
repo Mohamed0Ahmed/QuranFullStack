@@ -77,10 +77,12 @@ export class PhraseContextResolutionStore {
     this.state.update((current) => ({ ...current, status, message }));
   }
 
-  restoreIdle(rawQuery: string): void {
+  restoreIdle(rawQuery: string, mode: PhraseTextMode): void {
+    this.mode.set(mode);
     this.state.update((current) => ({
       ...current,
       rawQuery: rawQuery || current.rawQuery,
+      mode,
       status: rawQuery ? 'idle' : current.status === 'invalid' ? 'invalid' : 'idle',
       selectedResolutionRef: null,
     }));

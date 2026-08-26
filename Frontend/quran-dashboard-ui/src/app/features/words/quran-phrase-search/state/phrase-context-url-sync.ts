@@ -5,12 +5,19 @@ import {
   ParsedPhraseContextUrlState,
   PhraseContextUrlState,
 } from '../models/phrase-context.models';
+import { isPhraseTextMode } from '../models/phrase-repetitions.models';
 
 const BUILD_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const OPAQUE_REF_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContextUrlState {
   const build = parseBuild(params.get('build'));
+  const modeValue = params.get('mode');
+  const mode = isPhraseTextMode(modeValue)
+    ? { value: modeValue, invalid: false }
+    : modeValue
+      ? { value: DEFAULT_PHRASE_CONTEXT_URL_STATE.mode, invalid: true }
+      : { value: DEFAULT_PHRASE_CONTEXT_URL_STATE.mode, invalid: false };
   const resolution = parseReference(params.get('resolution'));
   const before = parseReference(params.get('before'));
   const after = parseReference(params.get('after'));
@@ -18,6 +25,7 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
   const q = params.get('q') ?? '';
   const state: PhraseContextUrlState = {
     build: build.value,
+    mode: mode.value,
     q,
     resolution: resolution.value,
     before: before.value,
@@ -30,6 +38,7 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
     state,
     invalid:
       build.invalid ||
+      mode.invalid ||
       resolution.invalid ||
       before.invalid ||
       after.invalid ||
@@ -42,6 +51,7 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
 export function serializePhraseContextUrlState(state: PhraseContextUrlState): Params {
   return {
     build: state.build,
+    mode: state.mode,
     q: state.q || null,
     resolution: state.resolution,
     before: state.before,
@@ -57,6 +67,7 @@ export function safePhraseContextUrlState(
   const safeWithQuery: PhraseContextUrlState = {
     ...DEFAULT_PHRASE_CONTEXT_URL_STATE,
     build: state.build,
+    mode: state.mode,
     q: state.q,
   };
   return phraseUrlLength(
@@ -70,6 +81,7 @@ export function safePhraseContextUrlState(
 export function phraseContextStateKey(state: PhraseContextUrlState): string {
   return [
     state.build,
+    state.mode,
     state.q,
     state.resolution,
     state.before,
@@ -85,6 +97,7 @@ export function contextPageOnlyChanged(
   return (
     current.contextsPage !== next.contextsPage &&
     current.build === next.build &&
+    current.mode === next.mode &&
     current.q === next.q &&
     current.resolution === next.resolution &&
     current.before === next.before &&

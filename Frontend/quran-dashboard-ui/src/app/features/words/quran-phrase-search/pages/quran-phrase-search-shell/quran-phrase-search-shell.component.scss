@@ -9,11 +9,6 @@
   max-inline-size: 100rem;
 }
 
-.phrase-search-shell__frame > qd-words-local-nav {
-  display: block;
-  margin-block-end: var(--qd-space-2);
-}
-
 .phrase-search-shell__header {
   display: grid;
   grid-template-columns: minmax(15rem, 0.55fr) minmax(0, 1fr);

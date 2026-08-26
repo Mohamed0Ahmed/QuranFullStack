@@ -54,7 +54,7 @@ export class CommandLauncherComponent {
   protected readonly selectedIndex = signal(0);
   protected readonly destinations = computed<readonly CommandDestination[]>(() =>
     this.items().flatMap((item) => [
-      { item, section: 'التنقل الرئيسي' },
+      ...(item.route ? [{ item, section: 'التنقل الرئيسي' }] : []),
       ...(item.children ?? []).map((child) => ({ item: child, section: item.labelAr })),
     ]),
   );

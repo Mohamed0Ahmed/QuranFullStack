@@ -367,11 +367,19 @@ export class PhraseSimilarityFacade {
     if (route.source === 'manual') {
       if (!route.resolution) {
         this.results.status.set('idle');
-        if (route.q) {
-          this.resolution.reset();
-        }
         this.clearResultData();
-        return of(undefined);
+        if (!route.q) {
+          this.resolution.reset();
+          return of(undefined);
+        }
+        if (
+          this.resolution.draft() === route.q &&
+          this.resolution.status() !== 'idle' &&
+          this.resolution.status() !== 'loading'
+        ) {
+          return of(undefined);
+        }
+        return this.resolveRestoredQuery(route);
       }
       this.resolution.fail('resolved');
       return this.results.load(
@@ -421,7 +429,39 @@ export class PhraseSimilarityFacade {
     this.resolution.restoreDraft(query);
     if (mapped.autoCandidate) {
       this.selectCandidate(mapped.autoCandidate);
+    } else if (this._route().source === 'manual' && this._route().q !== query) {
+      this.navigate({
+        ...this._route(),
+        q: query,
+        resolution: null,
+        page: 1,
+      });
     }
+  }
+
+  private resolveRestoredQuery(route: PhraseSimilarityUrlState): Observable<void> {
+    const routeKey = phraseSimilarityStateKey(route);
+    this.resolution.restoreDraft(route.q);
+    this.resolution.start();
+    return this.resolutionApi
+      .resolve(route.mode, encodePhraseQuery(route.q))
+      .pipe(
+        tap((response) => {
+          if (routeKey === phraseSimilarityStateKey(this._route())) {
+            this.acceptResolution(route.q, route.mode, response);
+          }
+        }),
+        catchError((error: unknown) => {
+          if (routeKey !== phraseSimilarityStateKey(this._route())) {
+            return of(undefined);
+          }
+          const failure = phraseRequestFailure(error);
+          this.resolution.fail(failure.status);
+          this._errorMessage.set(failure.message);
+          return of(undefined);
+        }),
+        map(() => undefined),
+      );
   }
 
   private cancelAndClearResults(): void {

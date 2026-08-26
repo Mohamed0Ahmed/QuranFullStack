@@ -133,7 +133,14 @@ export class PhraseContextFacade {
       return;
     }
     this.selection.clearAll();
-    this.navigate({ ...this._route(), resolution: null, before: null, after: null, contextsPage: 1 });
+    this.navigate({
+      ...this._route(),
+      mode,
+      resolution: null,
+      before: null,
+      after: null,
+      contextsPage: 1,
+    });
   }
 
   submitQuery(): void {
@@ -159,6 +166,16 @@ export class PhraseContextFacade {
           }
           if (mapped.autoCandidate) {
             this.selectCandidate(mapped.autoCandidate);
+          } else {
+            this.navigate({
+              ...this._route(),
+              mode: submittedMode,
+              q: submittedQuery,
+              resolution: null,
+              before: null,
+              after: null,
+              contextsPage: 1,
+            });
           }
         }),
         catchError((error: unknown) => {
@@ -179,6 +196,7 @@ export class PhraseContextFacade {
     this.selection.clearAll();
     this.navigate({
       build,
+      mode: this.resolutionFlow.mode(),
       q: this.resolutionFlow.state().rawQuery,
       resolution: candidate.resolutionRef,
       before: null,
@@ -367,8 +385,20 @@ export class PhraseContextFacade {
       this.requestStatus.branches.set('idle');
       this.requestStatus.groups.set('idle');
       this.requestStatus.occurrences.set('idle');
-      this.resolutionFlow.restoreIdle(route.q);
-      return of(undefined);
+      if (!route.q) {
+        this.resolutionFlow.restoreIdle('', route.mode);
+        return of(undefined);
+      }
+      const resolution = this.resolutionFlow.state();
+      if (
+        resolution.rawQuery === route.q &&
+        resolution.mode === route.mode &&
+        resolution.status !== 'idle' &&
+        resolution.status !== 'loading'
+      ) {
+        return of(undefined);
+      }
+      return this.resolveRestoredQuery(route);
     }
     this.resolutionFlow.markLoading(route.q, route.resolution);
     this.selection.clearWorkspace();
@@ -397,6 +427,34 @@ export class PhraseContextFacade {
         }
       }),
       catchError((error: unknown) => this.applyRouteError(error, 'workspace', routeKey)),
+      map(() => undefined),
+    );
+  }
+
+  private resolveRestoredQuery(route: PhraseContextUrlState): Observable<void> {
+    this.resolutionFlow.restoreIdle(route.q, route.mode);
+    const routeKey = phraseContextStateKey(route);
+    return this.resolutionFlow.resolve().pipe(
+      tap((mapped) => {
+        if (!mapped || routeKey !== phraseContextStateKey(this._route())) {
+          return;
+        }
+        this.resolutionFlow.accept(mapped);
+        if (mapped.activeBuildId && !this.ensureBuild(mapped.activeBuildId)) {
+          return;
+        }
+        if (mapped.autoCandidate) {
+          this.selectCandidate(mapped.autoCandidate);
+        }
+      }),
+      catchError((error: unknown) => {
+        if (routeKey !== phraseContextStateKey(this._route())) {
+          return of(undefined);
+        }
+        const failure = phraseRequestFailure(error);
+        this.resolutionFlow.fail(failure.status, failure.message);
+        return of(undefined);
+      }),
       map(() => undefined),
     );
   }
@@ -462,6 +520,7 @@ export class PhraseContextFacade {
       {
         ...DEFAULT_PHRASE_CONTEXT_URL_STATE,
         build: activeBuildId,
+        mode: this.resolutionFlow.mode(),
         q: this._route().q || this.resolutionFlow.state().rawQuery,
       },
       true,

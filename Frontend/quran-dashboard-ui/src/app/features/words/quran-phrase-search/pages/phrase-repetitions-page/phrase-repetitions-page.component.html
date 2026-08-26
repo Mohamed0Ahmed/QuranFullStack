@@ -65,7 +65,9 @@
           (change)="onLengthChange($any($event.target).value)"
         >
           @for (length of availableLengths(); track length) {
-            <option [value]="length">{{ length }} كلمات</option>
+            <option [value]="length" [selected]="state().route.length === length">
+              {{ length }} كلمات
+            </option>
           }
         </select>
       </label>
@@ -89,7 +91,9 @@
           (change)="onSortChange($any($event.target).value)"
         >
           @for (option of sortOptions; track option.value) {
-            <option [value]="option.value">{{ option.label }}</option>
+            <option [value]="option.value" [selected]="state().route.sort === option.value">
+              {{ option.label }}
+            </option>
           }
         </select>
       </label>
