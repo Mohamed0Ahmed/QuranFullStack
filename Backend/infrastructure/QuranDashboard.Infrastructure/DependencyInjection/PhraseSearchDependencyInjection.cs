@@ -1,6 +1,8 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.PhraseSearch;
+using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
@@ -41,6 +43,7 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<PhraseIndexBuildFinalizer>();
         services.AddScoped<IPhraseIndexBuilder, EfPhraseIndexBuilder>();
         services.AddScoped<IPhraseIndexRollback, PhraseIndexRollbackService>();
+        services.AddScoped<IPhraseRepetitionsReader, EfPhraseRepetitionsReader>();
         return services;
     }
 }

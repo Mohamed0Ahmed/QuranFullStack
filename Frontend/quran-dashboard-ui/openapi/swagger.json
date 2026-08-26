@@ -3569,6 +3569,13 @@
             }
           },
           {
+            "name": "typeCode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "schema": {
@@ -5953,6 +5960,309 @@
         }
       }
     },
+    "/api/quran/phrase-search/capabilities": {
+      "get": {
+        "tags": [
+          "PhraseSearchCapabilities"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quran/phrase-search/repetitions": {
+      "get": {
+        "tags": [
+          "PhraseSearchRepetitions"
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "length",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseRepetitionsPageResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences": {
+      "get": {
+        "tags": [
+          "PhraseSearchRepetitions"
+        ],
+        "parameters": [
+          {
+            "name": "buildId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "variantId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int64"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseOccurrencePageResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/words/roots": {
       "get": {
         "tags": [
@@ -6248,6 +6558,13 @@
             "name": "wordKind",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -6669,6 +6986,13 @@
             "name": "wordKind",
             "in": "path",
             "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "typeCode",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -14943,6 +15267,493 @@
         },
         "additionalProperties": false
       },
+      "PhraseAyahWordDto": {
+        "required": [
+          "pageNumber",
+          "quranWordId",
+          "textUthmani",
+          "wordNumber"
+        ],
+        "type": "object",
+        "properties": {
+          "quranWordId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "wordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "textUthmani": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseOccurrenceDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "endWordNumber",
+          "highlights",
+          "occurrenceId",
+          "pageFrom",
+          "pageTo",
+          "startWordNumber",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "occurrenceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startWordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endWordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseAyahWordDto"
+            }
+          },
+          "highlights": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseOccurrenceHighlightsDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseOccurrenceHighlightsDto": {
+        "required": [
+          "queryQuranWordIds"
+        ],
+        "type": "object",
+        "properties": {
+          "queryQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseOccurrencePageResponse": {
+        "required": [
+          "activeBuildId",
+          "items",
+          "page",
+          "pageSize",
+          "phrase",
+          "totalCount"
+        ],
+        "type": "object",
+        "properties": {
+          "activeBuildId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "phrase": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseRepetitionDetailDto"
+              }
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseOccurrenceDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseOccurrencePageResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseOccurrencePageResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseRepetitionDetailDto": {
+        "required": [
+          "ayahCount",
+          "displayText",
+          "mode",
+          "occurrenceCount",
+          "surahCount",
+          "variantId",
+          "wordCount"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ayahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseRepetitionListItemDto": {
+        "required": [
+          "ayahCount",
+          "displayText",
+          "firstQuranWordId",
+          "occurrenceCount",
+          "surahCount",
+          "variantId"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ayahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "firstQuranWordId": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseRepetitionsPageResponse": {
+        "required": [
+          "activeBuildId",
+          "items",
+          "mode",
+          "page",
+          "pageSize",
+          "sort",
+          "totalCount",
+          "wordCount"
+        ],
+        "type": "object",
+        "properties": {
+          "activeBuildId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "sort": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseRepetitionListItemDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseRepetitionsPageResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseRepetitionsPageResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSearchCapabilitiesResponse": {
+        "required": [
+          "activeBuildId",
+          "defaultMode",
+          "defaultPageSize",
+          "defaultRepetitionLength",
+          "defaultRepetitionSort",
+          "exactReady",
+          "maximumPageSize",
+          "minimumSimilarityPercent",
+          "modes",
+          "similarityReady",
+          "similarityThresholds"
+        ],
+        "type": "object",
+        "properties": {
+          "activeBuildId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "exactReady": {
+            "type": "boolean"
+          },
+          "similarityReady": {
+            "type": "boolean"
+          },
+          "defaultMode": {
+            "type": "string"
+          },
+          "defaultRepetitionLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "defaultRepetitionSort": {
+            "type": "string"
+          },
+          "defaultPageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximumPageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minimumSimilarityPercent": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "similarityThresholds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "modes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseTextModeCapabilitiesDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSearchCapabilitiesResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSearchCapabilitiesResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseTextModeCapabilitiesDto": {
+        "required": [
+          "maximumRepeatedLength",
+          "maximumSupportedLength",
+          "mode",
+          "repeatedLengths",
+          "supportedLengths"
+        ],
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string"
+          },
+          "supportedLengths": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "repeatedLengths": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "maximumSupportedLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximumRepeatedLength": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
       "PreviewLogtoSubjectRelinkBody": {
         "required": [
           "evidenceToken",
@@ -19042,6 +19853,12 @@
     },
     {
       "name": "MushafWordAnalysis"
+    },
+    {
+      "name": "PhraseSearchCapabilities"
+    },
+    {
+      "name": "PhraseSearchRepetitions"
     },
     {
       "name": "Roots"

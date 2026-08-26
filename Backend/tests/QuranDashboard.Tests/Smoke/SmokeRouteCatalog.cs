@@ -194,6 +194,13 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyPage()),
         },
 
+        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable),
+        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable),
+        new(
+            "api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences",
+            "/api/quran/phrase-search/repetitions/00000000-0000-0000-0000-000000000001/1/occurrences",
+            HttpStatusCode.ServiceUnavailable),
+
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are
         // distinct templates on the same controller; `.../word-types/table` (list) collides by prefix
