@@ -23,16 +23,53 @@
 }
 
 .phrase-repetitions-table__cell--phrase {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
   color: var(--qd-ink);
   font-family: var(--qd-font-quran);
   font-size: 1.02rem;
   line-height: 1.6;
 }
 
-.phrase-repetitions-table__cell--phrase span {
+.phrase-repetitions-table__phrase-text {
+  min-inline-size: 0;
   overflow: hidden;
+  text-align: start;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.phrase-repetitions-table__cell--phrase .phrase-repetitions-table__phrase-text {
+  flex: 1;
+}
+
+.phrase-repetitions-table__copy {
+  --qd-action-size: 1.75rem;
+
+  flex: 0 0 auto;
+  border-color: transparent;
+  border-radius: var(--qd-radius-pill);
+  background: transparent;
+  color: var(--qd-ink-muted);
+}
+
+.phrase-repetitions-table__copy:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: transparent;
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.phrase-repetitions-table__copy--complete {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.phrase-repetitions-table__copy svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .phrase-repetitions-table__compact {
@@ -57,13 +94,18 @@
 
 .phrase-repetitions-table__compact-phrase {
   grid-area: phrase;
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
   color: var(--qd-ink);
   font-family: var(--qd-font-quran);
   font-size: var(--qd-type-body);
   line-height: 1.7;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.phrase-repetitions-table__compact-phrase .phrase-repetitions-table__phrase-text {
+  flex: 1;
 }
 
 .phrase-repetitions-table__compact-metrics {

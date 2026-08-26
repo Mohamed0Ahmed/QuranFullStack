@@ -5,7 +5,7 @@ using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
-public sealed class EfPhraseRepetitionsReader(QuranDashboardDbContext db) : IPhraseRepetitionsReader
+public sealed partial class EfPhraseRepetitionsReader(QuranDashboardDbContext db) : IPhraseRepetitionsReader
 {
     public async Task<PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>> GetCapabilitiesAsync(
         CancellationToken cancellationToken)
@@ -83,19 +83,32 @@ public sealed class EfPhraseRepetitionsReader(QuranDashboardDbContext db) : IPhr
         var ordered = ApplySort(variants, sort);
         var pageOffset = CalculatePageOffset(page, pageSize);
 
-        IReadOnlyList<PhraseRepetitionListItemDto> items = pageOffset is null
+        IReadOnlyList<PhraseRepetitionListItemRow> pageVariants = pageOffset is null
             ? []
             : await ordered
                 .Skip(pageOffset.Value)
                 .Take(pageSize)
-                .Select(variant => new PhraseRepetitionListItemDto(
+                .Select(variant => new PhraseRepetitionListItemRow(
                     variant.Id,
                     variant.DisplayText,
+                    variant.WordCount,
                     variant.OccurrenceCount,
                     variant.AyahCount,
                     variant.SurahCount,
                     variant.FirstQuranWordId))
                 .ToListAsync(cancellationToken);
+        var simpleDisplayTexts = mode == PhraseTextMode.Simple
+            ? await LoadSimpleDisplayTextsAsync(pageVariants, cancellationToken)
+            : new Dictionary<long, string>();
+        IReadOnlyList<PhraseRepetitionListItemDto> items = pageVariants
+            .Select(variant => new PhraseRepetitionListItemDto(
+                variant.VariantId,
+                simpleDisplayTexts.GetValueOrDefault(variant.VariantId, variant.DisplayText),
+                variant.OccurrenceCount,
+                variant.AyahCount,
+                variant.SurahCount,
+                variant.FirstQuranWordId))
+            .ToList();
 
         var response = new PhraseRepetitionsPageResponse(
             snapshot.ActiveBuildId,

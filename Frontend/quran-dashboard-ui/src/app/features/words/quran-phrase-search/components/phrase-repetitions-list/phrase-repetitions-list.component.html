@@ -27,7 +27,29 @@
 
   <ng-template #rowTemplate let-item let-index="index">
     <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ position(index) }}</div>
-    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--phrase qd-explorer-table__cell" role="cell"><span dir="rtl">{{ item.displayText }}</span></div>
+    <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--phrase qd-explorer-table__cell" role="cell">
+      <span class="phrase-repetitions-table__phrase-text" dir="rtl">{{ item.displayText }}</span>
+      <button
+        type="button"
+        qdAction="icon-only"
+        size="sm"
+        class="phrase-repetitions-table__copy"
+        [class.phrase-repetitions-table__copy--complete]="copiedVariantId() === item.variantId"
+        [attr.aria-label]="copiedVariantId() === item.variantId ? 'تم نسخ العبارة: ' + item.displayText : 'نسخ العبارة: ' + item.displayText"
+        (click)="copyPhrase($event, item)"
+      >
+        @if (copiedVariantId() === item.variantId) {
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" />
+          </svg>
+        } @else {
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6" />
+            <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.6" />
+          </svg>
+        }
+      </button>
+    </div>
     <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.occurrenceCount }}</div>
     <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.ayahCount }}</div>
     <div class="phrase-repetitions-table__cell phrase-repetitions-table__cell--metric qd-explorer-table__cell" role="cell">{{ item.surahCount }}</div>
@@ -36,7 +58,29 @@
   <ng-template #compactRowTemplate let-item let-index="index">
     <div class="phrase-repetitions-table__compact">
       <span class="phrase-repetitions-table__compact-number" aria-hidden="true">{{ position(index) }}</span>
-      <span class="phrase-repetitions-table__compact-phrase" dir="rtl">{{ item.displayText }}</span>
+      <div class="phrase-repetitions-table__compact-phrase">
+        <span class="phrase-repetitions-table__phrase-text" dir="rtl">{{ item.displayText }}</span>
+        <button
+          type="button"
+          qdAction="icon-only"
+          size="sm"
+          class="phrase-repetitions-table__copy"
+          [class.phrase-repetitions-table__copy--complete]="copiedVariantId() === item.variantId"
+          [attr.aria-label]="copiedVariantId() === item.variantId ? 'تم نسخ العبارة: ' + item.displayText : 'نسخ العبارة: ' + item.displayText"
+          (click)="copyPhrase($event, item)"
+        >
+          @if (copiedVariantId() === item.variantId) {
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="m5 12 4.5 4.5L19 7" stroke="currentColor" stroke-width="2" />
+            </svg>
+          } @else {
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="8" y="8" width="11" height="11" rx="2" stroke="currentColor" stroke-width="1.6" />
+              <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" stroke="currentColor" stroke-width="1.6" />
+            </svg>
+          }
+        </button>
+      </div>
       <span class="phrase-repetitions-table__compact-metrics">
         <span><strong>{{ item.occurrenceCount }}</strong> موضعًا</span>
         <span><strong>{{ item.ayahCount }}</strong> آية</span>

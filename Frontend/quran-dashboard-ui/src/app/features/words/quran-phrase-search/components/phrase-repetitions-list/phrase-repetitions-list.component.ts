@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, input, output, signal } from '@angular/core';
 
 import { PhraseRepetitionListItemDto } from '../../../../../core/api/generated/models/phrase-repetition-list-item-dto';
+import { QdActionDirective } from '../../../../../shared/ui/action/action.directive';
 import { QdDataTableComponent } from '../../../../../shared/ui/data-table/data-table.component';
 
 const ROW_HEIGHT = 40;
@@ -9,12 +10,15 @@ const COMPACT_ROW_HEIGHT = 88;
 @Component({
   selector: 'qd-phrase-repetitions-list',
   standalone: true,
-  imports: [QdDataTableComponent],
+  imports: [QdActionDirective, QdDataTableComponent],
   templateUrl: './phrase-repetitions-list.component.html',
   styleUrl: './phrase-repetitions-list.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseRepetitionsListComponent {
+  private readonly destroyRef = inject(DestroyRef);
+  private copiedTimer: ReturnType<typeof setTimeout> | undefined;
+
   readonly items = input.required<readonly PhraseRepetitionListItemDto[]>();
   readonly totalCount = input.required<number>();
   readonly page = input.required<number>();
@@ -24,6 +28,7 @@ export class PhraseRepetitionsListComponent {
 
   readonly phraseSelected = output<number>();
 
+  protected readonly copiedVariantId = signal<number | null>(null);
   protected readonly rowHeight = ROW_HEIGHT;
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly selectedRow = computed(
@@ -40,5 +45,26 @@ export class PhraseRepetitionsListComponent {
 
   protected position(index: number): number {
     return (this.page() - 1) * this.pageSize() + index + 1;
+  }
+
+  constructor() {
+    this.destroyRef.onDestroy(() => clearTimeout(this.copiedTimer));
+  }
+
+  protected copyPhrase(event: MouseEvent, item: PhraseRepetitionListItemDto): void {
+    event.stopPropagation();
+    if (!navigator.clipboard) {
+      return;
+    }
+
+    void navigator.clipboard.writeText(item.displayText)
+      .then(() => this.showCopied(item.variantId))
+      .catch(() => undefined);
+  }
+
+  private showCopied(variantId: number): void {
+    clearTimeout(this.copiedTimer);
+    this.copiedVariantId.set(variantId);
+    this.copiedTimer = setTimeout(() => this.copiedVariantId.set(null), 2000);
   }
 }
