@@ -62,11 +62,13 @@ public static class PhraseSearchCacheKeys
     public static string SimilaritySearch(
         PhraseResolutionReference resolution,
         short minimumMatchedWords,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize) =>
         $"phrase-search:{resolution.BuildId:N}:similarity-search:{Hash(
             ResolutionParts(resolution)
                 .Append(minimumMatchedWords.ToString(CultureInfo.InvariantCulture))
+                .Append(((short)sort).ToString(CultureInfo.InvariantCulture))
                 .Append(page.ToString(CultureInfo.InvariantCulture))
                 .Append(pageSize.ToString(CultureInfo.InvariantCulture)))}";
 

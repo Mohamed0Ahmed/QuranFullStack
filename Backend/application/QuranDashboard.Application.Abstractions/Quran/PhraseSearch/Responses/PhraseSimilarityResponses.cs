@@ -5,6 +5,7 @@ public sealed record PhraseSimilaritySearchResponse(
     string Mode,
     short WordCount,
     short MinimumMatchedWords,
+    string Sort,
     int Page,
     int PageSize,
     int TotalAyahCount,

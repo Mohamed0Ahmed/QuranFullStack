@@ -2,7 +2,10 @@ import { Injectable } from '@angular/core';
 
 import { PhraseContextUrlState } from '../models/phrase-context.models';
 import { PhraseContextFocusTarget } from '../models/phrase-context.models';
-import { PhraseSimilarityUrlState } from '../models/phrase-similarity.models';
+import {
+  isPhraseSimilarityResultSort,
+  PhraseSimilarityUrlState,
+} from '../models/phrase-similarity.models';
 
 interface StoredPhraseLongState {
   readonly context?: PhraseContextUrlState;
@@ -38,7 +41,13 @@ export class PhraseLongStateSessionStore {
 
   restoreSimilarity(base: PhraseSimilarityUrlState): PhraseSimilarityUrlState | null {
     const stored = this.state.similarity;
-    return stored && sameSimilarityBase(stored, base) ? stored : null;
+    if (!stored || !sameSimilarityBase(stored, base)) {
+      return null;
+    }
+    return {
+      ...stored,
+      sort: isPhraseSimilarityResultSort(stored.sort) ? stored.sort : base.sort,
+    };
   }
 
   clearSimilarity(): void {

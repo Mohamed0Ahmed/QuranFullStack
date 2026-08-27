@@ -8,6 +8,7 @@ public interface IPhraseSimilarityReader
     Task<PhraseSearchReadResult<PhraseSimilaritySearchResponse>> SearchAsync(
         PhraseResolutionReference resolution,
         short minimumMatchedWords,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

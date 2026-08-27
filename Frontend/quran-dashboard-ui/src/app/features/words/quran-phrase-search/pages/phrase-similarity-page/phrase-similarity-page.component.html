@@ -74,6 +74,19 @@
           </select>
         </label>
 
+        <label class="phrase-similarity-page__field">
+          <span>ترتيب النتائج</span>
+          <select
+            class="qd-select"
+            [value]="state().route.sort"
+            [disabled]="busy()"
+            (change)="onSort($any($event.target).value)"
+          >
+            <option value="strength">حسب درجة المطابقة</option>
+            <option value="mushaf-order">حسب ترتيب المصحف</option>
+          </select>
+        </label>
+
         <div class="phrase-similarity-page__rule">
           <strong>{{ facade.minimumMatchedWords() }} كلمة متطابقة على الأقل</strong>
           <span>
@@ -135,7 +148,7 @@
           [totalAyahCount]="state().totalAyahCount"
           [totalOccurrenceCount]="state().totalOccurrenceCount"
           [page]="state().route.page"
-          [resultSetKey]="state().route.resolution + '|' + state().route.min + '|' + state().route.page"
+          [resultSetKey]="state().route.resolution + '|' + state().route.min + '|' + state().route.sort + '|' + state().route.page"
           [busy]="busy()"
           (pageChange)="facade.setPage($event)"
         />

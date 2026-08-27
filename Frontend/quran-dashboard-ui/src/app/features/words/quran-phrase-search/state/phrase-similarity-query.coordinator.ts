@@ -19,6 +19,7 @@ const INVALID_QUERY_MESSAGE = 'اكتب عبارة من كلمتين على ال
 
 export interface PhraseSimilarityQueryHooks {
   readonly currentRoute: () => PhraseSimilarityUrlState;
+  readonly currentMode: () => PhraseTextMode;
   readonly activeBuildId: () => string | null;
   readonly clearResults: () => void;
   readonly setResultsIdle: () => void;
@@ -61,7 +62,7 @@ export class PhraseSimilarityQueryCoordinator {
           if (
             this.gate.isCurrent(epoch) &&
             this.resolution.draft().trim() === query &&
-            hooks.currentRoute().mode === route.mode
+            hooks.currentMode() === route.mode
           ) {
             this.acceptResolution(query, route.mode, response, hooks);
           }
@@ -141,10 +142,18 @@ export class PhraseSimilarityQueryCoordinator {
     }
     this.resolution.restoreDraft(query);
     if (mapped.autoCandidate) {
-      this.selectCandidate(mapped.autoCandidate, hooks.currentRoute(), hooks);
-    } else if (hooks.currentRoute().q !== query) {
+      this.selectCandidate(
+        mapped.autoCandidate,
+        { ...hooks.currentRoute(), mode },
+        hooks,
+      );
+    } else if (
+      hooks.currentRoute().q !== query ||
+      hooks.currentRoute().mode !== mode
+    ) {
       hooks.navigate({
         ...hooks.currentRoute(),
+        mode,
         q: query,
         resolution: null,
         page: 1,

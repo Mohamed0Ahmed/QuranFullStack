@@ -6,6 +6,13 @@ import { PhraseSimilarityPhraseDto } from '../../../../core/api/generated/models
 import { PhraseLoadStatus, PhraseTextMode } from './phrase-repetitions.models';
 import { PhraseResolutionStatus } from './phrase-query.models';
 
+export const PHRASE_SIMILARITY_RESULT_SORTS = ['strength', 'mushaf-order'] as const;
+export type PhraseSimilarityResultSort = (typeof PHRASE_SIMILARITY_RESULT_SORTS)[number];
+
+export function isPhraseSimilarityResultSort(value: unknown): value is PhraseSimilarityResultSort {
+  return PHRASE_SIMILARITY_RESULT_SORTS.includes(value as PhraseSimilarityResultSort);
+}
+
 export interface PhraseSimilarityUrlState {
   readonly build: string | null;
   readonly q: string;
@@ -13,6 +20,7 @@ export interface PhraseSimilarityUrlState {
   readonly mode: PhraseTextMode;
   readonly length: number;
   readonly min: number;
+  readonly sort: PhraseSimilarityResultSort;
   readonly page: number;
 }
 
@@ -45,6 +53,7 @@ export const DEFAULT_PHRASE_SIMILARITY_URL_STATE: PhraseSimilarityUrlState = {
   mode: 'simple',
   length: 4,
   min: 60,
+  sort: 'strength',
   page: 1,
 };
 

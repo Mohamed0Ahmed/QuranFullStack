@@ -80,7 +80,7 @@ public sealed partial class EfPhraseSimilarityReader
           FROM ranked_ayahs AS ranked
           JOIN quran_ayahs AS ayah
             ON ayah.id = ranked.ayah_id
-          ORDER BY ranked.difference_count,
+          ORDER BY CASE WHEN @sort_by_strength THEN ranked.difference_count END,
                    ayah.surah_number,
                    ayah.ayah_number
           OFFSET @offset
@@ -109,7 +109,7 @@ public sealed partial class EfPhraseSimilarityReader
           ON ayah.id = occurrence.ayah_id
         JOIN quran_surahs AS surah
           ON surah.surah_number = ayah.surah_number
-        ORDER BY paged.difference_count,
+        ORDER BY CASE WHEN @sort_by_strength THEN paged.difference_count END,
                  ayah.surah_number,
                  ayah.ayah_number,
                  occurrence.start_word_number,
@@ -140,6 +140,7 @@ public sealed partial class EfPhraseSimilarityReader
         Guid buildId,
         SimilarityVariantRow anchor,
         short minimumMatchedWords,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -151,6 +152,7 @@ public sealed partial class EfPhraseSimilarityReader
             minimumMatchedWords);
         command.Parameters.AddWithValue("offset", NpgsqlDbType.Bigint, CalculateOffset(page, pageSize));
         command.Parameters.AddWithValue("page_size", pageSize);
+        command.Parameters.AddWithValue("sort_by_strength", sort == PhraseSimilaritySort.Strength);
         var rows = new List<SimilarityAyahOccurrenceRow>();
         await using (var reader = await command.ExecuteReaderAsync(
             CommandBehavior.SequentialAccess,

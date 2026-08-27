@@ -10,6 +10,7 @@ import { PhraseLoadStatus, PhraseTextMode } from '../models/phrase-repetitions.m
 import {
   DEFAULT_PHRASE_SIMILARITY_URL_STATE,
   ParsedPhraseSimilarityUrlState,
+  PhraseSimilarityResultSort,
   PhraseSimilarityState,
   PhraseSimilarityUrlState,
 } from '../models/phrase-similarity.models';
@@ -39,6 +40,7 @@ export class PhraseSimilarityFacade {
   private readonly resolution = inject(PhraseSimilarityResolutionStore);
 
   private readonly _route = signal(DEFAULT_PHRASE_SIMILARITY_URL_STATE);
+  private readonly _draftMode = signal<PhraseTextMode>(DEFAULT_PHRASE_SIMILARITY_URL_STATE.mode);
   private readonly _routeInvalid = signal(false);
   private readonly _capabilitiesStatus = signal<PhraseLoadStatus>('idle');
   private readonly _capabilities = signal<
@@ -48,6 +50,7 @@ export class PhraseSimilarityFacade {
 
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
+  private draftModePending = false;
   private readonly resultHooks: PhraseSimilarityResultHooks = {
     currentRoute: () => this._route(),
     acceptBuild: (activeBuildId) => this.ensureBuild(activeBuildId),
@@ -57,6 +60,7 @@ export class PhraseSimilarityFacade {
   };
   private readonly queryHooks: PhraseSimilarityQueryHooks = {
     currentRoute: () => this._route(),
+    currentMode: () => this._draftMode(),
     activeBuildId: () => this._capabilities()?.activeBuildId ?? null,
     clearResults: () => this.cancelAndClearResults(),
     setResultsIdle: () => this.results.status.set('idle'),
@@ -82,6 +86,7 @@ export class PhraseSimilarityFacade {
     sessionOnly: this.notice.sessionOnly(),
   }));
   readonly draft = this.resolution.draft.asReadonly();
+  readonly draftMode = this._draftMode.asReadonly();
 
   bindToRoute(route: ActivatedRoute): void {
     this.unbindFromRoute();
@@ -117,12 +122,11 @@ export class PhraseSimilarityFacade {
   }
 
   setMode(mode: PhraseTextMode): void {
-    if (mode === this._route().mode) {
+    if (mode === this._draftMode()) {
       return;
     }
-    this.cancelAndClearResults();
-    this.resolution.reset();
-    this.navigate({ ...this._route(), mode, resolution: null, page: 1 });
+    this._draftMode.set(mode);
+    this.draftModePending = mode !== this._route().mode;
   }
 
   setMinimumPercent(minimum: number): void {
@@ -139,6 +143,12 @@ export class PhraseSimilarityFacade {
     );
   }
 
+  setSort(sort: PhraseSimilarityResultSort): void {
+    if (sort !== this._route().sort) {
+      this.navigate({ ...this._route(), sort, page: 1 });
+    }
+  }
+
   setPage(page: number): void {
     if (page !== this._route().page) {
       this.navigate({ ...this._route(), page });
@@ -146,11 +156,18 @@ export class PhraseSimilarityFacade {
   }
 
   submitQuery(): void {
-    this.query.submit(this._route(), this.queryHooks);
+    this.query.submit(
+      { ...this._route(), mode: this._draftMode() },
+      this.queryHooks,
+    );
   }
 
   selectCandidate(candidate: PhraseResolutionCandidateDto): void {
-    this.query.selectCandidate(candidate, this._route(), this.queryHooks);
+    this.query.selectCandidate(
+      candidate,
+      { ...this._route(), mode: this._draftMode() },
+      this.queryHooks,
+    );
   }
 
   retry(): void {
@@ -186,6 +203,7 @@ export class PhraseSimilarityFacade {
 
   private runRoute(parsed: ParsedPhraseSimilarityUrlState): Observable<void> {
     this._route.set(parsed.state);
+    this.syncDraftMode(parsed.state.mode);
     this._routeInvalid.set(parsed.invalid);
     this.resolution.restoreDraft(parsed.state.q);
     this._errorMessage.set('');
@@ -305,6 +323,8 @@ export class PhraseSimilarityFacade {
     this.routeCoordinator.clearBuildScopedState();
     this.notice.indexChanged();
     this.results.status.set('stale');
+    this.draftModePending = false;
+    this._draftMode.set(this._route().mode);
     this.navigate(
       {
         ...DEFAULT_PHRASE_SIMILARITY_URL_STATE,
@@ -328,6 +348,13 @@ export class PhraseSimilarityFacade {
       },
     );
     this.notice.applyNavigation(outcome);
+  }
+
+  private syncDraftMode(mode: PhraseTextMode): void {
+    if (!this.draftModePending || this._draftMode() === mode) {
+      this._draftMode.set(mode);
+      this.draftModePending = false;
+    }
   }
 }
 

@@ -9,6 +9,7 @@ public sealed partial class EfPhraseSimilarityReader
     public async Task<PhraseSearchReadResult<PhraseSimilaritySearchResponse>> SearchAsync(
         PhraseResolutionReference resolution,
         short minimumMatchedWords,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken)
@@ -28,6 +29,7 @@ public sealed partial class EfPhraseSimilarityReader
         var cacheKey = PhraseSearchCacheKeys.SimilaritySearch(
             resolution,
             minimumMatchedWords,
+            sort,
             page,
             pageSize);
         if (cache.TryGet(cacheKey, out PhraseSimilaritySearchResponse cached))
@@ -55,6 +57,7 @@ public sealed partial class EfPhraseSimilarityReader
             snapshot.ActiveBuildId,
             anchor,
             minimumMatchedWords,
+            sort,
             page,
             pageSize,
             cancellationToken);
@@ -63,6 +66,7 @@ public sealed partial class EfPhraseSimilarityReader
             PhraseTextModeContract.CanonicalKey(anchor.Mode),
             anchor.WordCount,
             minimumMatchedWords,
+            PhraseSimilaritySortContract.CanonicalKey(sort),
             page,
             pageSize,
             totals.AyahCount,

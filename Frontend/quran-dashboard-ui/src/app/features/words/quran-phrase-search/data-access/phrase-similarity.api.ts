@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 
 import { PhraseSimilaritySearchResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-search-response-api-response';
 import { environment } from '../../../../../environments/environment';
+import { PhraseSimilarityResultSort } from '../models/phrase-similarity.models';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
@@ -15,12 +16,14 @@ export class PhraseSimilarityApi {
   search(
     resolutionRef: string,
     minimumMatchedWords: number,
+    sort: PhraseSimilarityResultSort,
     page: number,
     pageSize: number,
   ): Observable<PhraseSimilaritySearchResponseApiResponse> {
     const params = new HttpParams()
       .set('resolutionRef', resolutionRef)
       .set('minimumMatchedWords', minimumMatchedWords)
+      .set('sort', sort)
       .set('page', page)
       .set('pageSize', pageSize);
     return this.cache.buildScoped(
@@ -28,6 +31,7 @@ export class PhraseSimilarityApi {
         'similarity-search',
         resolutionRef,
         minimumMatchedWords,
+        sort,
         page,
         pageSize,
       ),

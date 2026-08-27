@@ -10,6 +10,7 @@ import { PhraseQueryResolutionComponent } from '../../components/phrase-query-re
 import { PhraseSimilarityListComponent } from '../../components/phrase-similarity-list/phrase-similarity-list.component';
 import { PhraseResolutionViewState } from '../../models/phrase-query.models';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
+import { isPhraseSimilarityResultSort } from '../../models/phrase-similarity.models';
 import { PhraseSimilarityFacade } from '../../state/phrase-similarity.facade';
 import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold';
 
@@ -42,7 +43,7 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
   );
   protected readonly resolutionView = computed<PhraseResolutionViewState>(() => ({
     rawQuery: this.facade.draft(),
-    mode: this.state().route.mode,
+    mode: this.facade.draftMode(),
     status: this.state().resolutionStatus,
     candidates: this.state().candidates,
     selectedResolutionRef: this.state().route.resolution,
@@ -77,6 +78,12 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
     const parsed = Number(value);
     if (Number.isSafeInteger(parsed) && this.manualDifferences().includes(parsed)) {
       this.facade.setMaximumDifferences(parsed);
+    }
+  }
+
+  protected onSort(value: string): void {
+    if (isPhraseSimilarityResultSort(value)) {
+      this.facade.setSort(value);
     }
   }
 }

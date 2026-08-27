@@ -2,6 +2,7 @@ import { ParamMap, Params } from '@angular/router';
 
 import {
   DEFAULT_PHRASE_SIMILARITY_URL_STATE,
+  isPhraseSimilarityResultSort,
   ParsedPhraseSimilarityUrlState,
   PhraseSimilarityUrlState,
 } from '../models/phrase-similarity.models';
@@ -28,6 +29,12 @@ export function parsePhraseSimilarityUrlState(
     params.get('min'),
     DEFAULT_PHRASE_SIMILARITY_URL_STATE.min,
   );
+  const sortValue = params.get('sort');
+  const sort = isPhraseSimilarityResultSort(sortValue)
+    ? { value: sortValue, invalid: false }
+    : sortValue
+      ? { value: DEFAULT_PHRASE_SIMILARITY_URL_STATE.sort, invalid: true }
+      : { value: DEFAULT_PHRASE_SIMILARITY_URL_STATE.sort, invalid: false };
   const page = parsePositiveInteger(
     params.get('page') ?? params.get('matchPage'),
     DEFAULT_PHRASE_SIMILARITY_URL_STATE.page,
@@ -40,6 +47,7 @@ export function parsePhraseSimilarityUrlState(
     mode: mode.value,
     length: length.value,
     min: minimum.value,
+    sort: sort.value,
     page: page.value,
   };
   return {
@@ -49,6 +57,7 @@ export function parsePhraseSimilarityUrlState(
       mode.invalid ||
       length.invalid ||
       minimum.invalid ||
+      sort.invalid ||
       page.invalid ||
       resolution.invalid ||
       (state.resolution !== null && !state.q),
@@ -63,9 +72,9 @@ export function serializePhraseSimilarityUrlState(state: PhraseSimilarityUrlStat
     mode: state.mode,
     length: String(state.length),
     min: String(state.min),
+    sort: state.sort,
     page: String(state.page),
     source: null,
-    sort: null,
     groupPage: null,
     matchPage: null,
     anchor: null,
@@ -97,6 +106,7 @@ export function phraseSimilarityStateKey(state: PhraseSimilarityUrlState): strin
     state.mode,
     state.length,
     state.min,
+    state.sort,
     state.page,
   ].join('|');
 }

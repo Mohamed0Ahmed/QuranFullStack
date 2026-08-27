@@ -11,6 +11,7 @@ export interface PhraseSimilaritySearchResponse {
   page: number;
   pageSize: number;
   query: PhraseSimilarityPhraseDto;
+  sort: string;
   totalAyahCount: number;
   totalOccurrenceCount: number;
   wordCount: number;

@@ -21,6 +21,7 @@ public sealed class PhraseSearchSimilaritiesController(
     public async Task<ActionResult<ApiResponse<PhraseSimilaritySearchResponse>>> Get(
         [FromQuery] string? resolutionRef,
         [FromQuery] int? minimumMatchedWords,
+        [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -41,6 +42,7 @@ public sealed class PhraseSearchSimilaritiesController(
             new SearchPhraseSimilaritiesQuery(
                 resolutionRef,
                 minimumMatchedWords,
+                sort,
                 page,
                 pageSize),
             cancellationToken);

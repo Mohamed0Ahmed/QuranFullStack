@@ -6880,6 +6880,13 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "schema": {
@@ -18059,6 +18066,7 @@
           "page",
           "pageSize",
           "query",
+          "sort",
           "totalAyahCount",
           "totalOccurrenceCount",
           "wordCount"
@@ -18079,6 +18087,9 @@
           "minimumMatchedWords": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "type": "string"
           },
           "page": {
             "type": "integer",

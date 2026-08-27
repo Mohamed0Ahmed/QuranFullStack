@@ -41,6 +41,7 @@ export class PhraseSimilarityResultsLoader {
       .search(
         route.resolution!,
         minimumMatched,
+        route.sort,
         route.page,
         PHRASE_SIMILARITY_AYAH_PAGE_SIZE,
       )
@@ -53,6 +54,7 @@ export class PhraseSimilarityResultsLoader {
             response.data.mode !== route.mode ||
             response.data.wordCount !== route.length ||
             response.data.minimumMatchedWords !== minimumMatched ||
+            response.data.sort !== route.sort ||
             response.data.pageSize !== PHRASE_SIMILARITY_AYAH_PAGE_SIZE
           ) {
             return invalidResult('نتائج العبارة لا تطابق هوية خيارات الرابط الحالية.');
