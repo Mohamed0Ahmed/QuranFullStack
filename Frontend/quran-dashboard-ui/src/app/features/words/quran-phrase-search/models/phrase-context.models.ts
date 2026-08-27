@@ -36,8 +36,11 @@ export interface PhraseContextState {
   readonly groups: readonly PhraseFullContextGroupDto[];
   readonly groupsTotalCount: number;
   readonly groupsNextCursor: string | null;
+  readonly resultsStatus: PhraseLoadStatus;
   readonly occurrencesStatus: PhraseLoadStatus;
   readonly occurrences: readonly PhraseContextOccurrenceDto[];
+  readonly resultsPage: number;
+  readonly resultsPageSize: number;
   readonly occurrencesTotalCount: number;
   readonly occurrencesNextCursor: string | null;
   readonly selectedContextRef: string | null;
@@ -64,4 +67,4 @@ export const DEFAULT_PHRASE_CONTEXT_URL_STATE: PhraseContextUrlState = {
 };
 
 export const PHRASE_CONTEXT_BRANCH_PAGE_SIZE = 25;
-export const PHRASE_CONTEXT_RESULT_PAGE_SIZE = 1000;
+export const PHRASE_CONTEXT_RESULT_PAGE_SIZE = 200;

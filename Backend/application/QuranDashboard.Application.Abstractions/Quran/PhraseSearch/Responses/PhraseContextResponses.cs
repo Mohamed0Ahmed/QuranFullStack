@@ -52,6 +52,8 @@ public sealed record PhraseContextGroupsResponse(
 
 public sealed record PhraseContextResultsResponse(
     Guid ActiveBuildId,
+    int Page,
+    int PageSize,
     int TotalCount,
     IReadOnlyList<PhraseContextOccurrenceDto> Items);
 

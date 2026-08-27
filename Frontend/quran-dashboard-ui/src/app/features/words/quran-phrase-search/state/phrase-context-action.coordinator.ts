@@ -6,6 +6,7 @@ import { PhraseContextUrlState } from '../models/phrase-context.models';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import { PhraseContextRequestStatusStore, PhraseContextRequestTarget } from './phrase-context-request-status.store';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
+import { contextResultsRedirectPage } from './phrase-context-results-paging';
 import { phraseContextStateKey } from './phrase-context-url-sync';
 import { PhraseContextLoadResult, PhraseContextWorkspaceLoader } from './phrase-context-workspace.loader';
 import { phraseRequestFailure } from './phrase-request-failure';
@@ -46,9 +47,41 @@ export class PhraseContextActionCoordinator {
           }
           this.selection.appendGroups(result.groups);
           this.status.groups.set('success');
-          hooks.navigate({ ...route, contextsPage: route.contextsPage + 1 }, true);
         }),
         catchError((error: unknown) => this.fail(error, 'groups', epoch, routeKey, hooks)),
+      )
+      .subscribe();
+    this.gate.track(epoch, subscription);
+  }
+
+  loadResultsPage(route: PhraseContextUrlState, hooks: PhraseContextActionHooks): void {
+    this.status.results.set('refreshing');
+    const routeKey = phraseContextStateKey(route);
+    const epoch = this.gate.begin();
+    const subscription = this.loader
+      .loadResultsPage(route)
+      .pipe(
+        tap((result) => {
+          if (
+            !this.isCurrent(epoch, routeKey, hooks) ||
+            !this.accept(result, 'results', hooks) ||
+            result.kind !== 'results'
+          ) {
+            return;
+          }
+          const redirectPage = contextResultsRedirectPage(
+            route.contextsPage,
+            result.results.pageSize,
+            result.results.totalCount,
+          );
+          if (redirectPage !== null) {
+            hooks.navigate({ ...route, contextsPage: redirectPage }, true);
+            return;
+          }
+          this.selection.replaceResults(result.results);
+          this.status.results.set(result.results.totalCount === 0 ? 'empty' : 'success');
+        }),
+        catchError((error: unknown) => this.fail(error, 'results', epoch, routeKey, hooks)),
       )
       .subscribe();
     this.gate.track(epoch, subscription);

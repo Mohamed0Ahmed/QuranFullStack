@@ -108,10 +108,10 @@
             (followingMoreRequested)="loadMoreBranches('following')"
           />
 
-          @if (state().groupsStatus === 'empty') {
+          @if (state().resultsStatus === 'empty') {
             <qd-empty-state message="لا توجد آيات ضمن اختيارات الطرفين الحالية." />
           } @else if (
-            state().groupsStatus === 'error' || state().groupsStatus === 'unavailable'
+            state().resultsStatus === 'error' || state().resultsStatus === 'unavailable'
           ) {
             <qd-error-state
               [message]="state().errorMessage"
@@ -123,9 +123,19 @@
               <qd-phrase-context-occurrence-list
                 [items]="state().occurrences"
                 [totalCount]="state().occurrencesTotalCount"
+                [resultSetKey]="resultSetKey()"
+                [firstRowNumber]="resultFirstRowNumber()"
                 [previousHighlightWordCount]="branches.previousSelection.tokens.length"
                 [followingHighlightWordCount]="branches.followingSelection.tokens.length"
-                [busy]="workspaceInteractionBusy()"
+                [busy]="resultsBusy()"
+              />
+              <qd-pagination
+                [currentPage]="state().resultsPage"
+                [pageSize]="state().resultsPageSize"
+                [totalCount]="state().occurrencesTotalCount"
+                [disabled]="resultsBusy()"
+                ariaLabel="صفحات آيات السياق المطابقة"
+                (pageChange)="changeResultsPage($event)"
               />
             </section>
           }

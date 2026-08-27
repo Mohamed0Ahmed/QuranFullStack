@@ -80,9 +80,13 @@ export class PhraseContextApi {
     resolutionRef: string,
     previousRef: string | null,
     followingRef: string | null,
+    page: number,
     pageSize: number,
   ): Observable<PhraseContextResultsResponseApiResponse> {
-    let params = new HttpParams().set('resolutionRef', resolutionRef).set('pageSize', pageSize);
+    let params = new HttpParams()
+      .set('resolutionRef', resolutionRef)
+      .set('page', page)
+      .set('pageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
     return this.cache.buildScoped(
@@ -91,6 +95,7 @@ export class PhraseContextApi {
         resolutionRef,
         previousRef,
         followingRef,
+        page,
         pageSize,
       ),
       () =>

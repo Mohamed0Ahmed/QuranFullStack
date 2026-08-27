@@ -21,7 +21,7 @@
   </ng-template>
 
   <ng-template #rowTemplate let-row let-index="index">
-    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ index + 1 }}</div>
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
     <div class="occurrence-table__cell occurrence-table__cell--location qd-explorer-table__cell" role="cell">
       <strong>{{ row.occurrence.surahNameArabic }}</strong>
       <span>آية {{ row.occurrence.ayahNumber }}</span>
@@ -45,7 +45,7 @@
 
   <ng-template #compactRowTemplate let-row let-index="index">
     <div class="occurrence-table__compact">
-      <span class="occurrence-table__compact-number">{{ index + 1 }}</span>
+      <span class="occurrence-table__compact-number">{{ rowNumber(index) }}</span>
       <strong>{{ row.occurrence.surahNameArabic }} · آية {{ row.occurrence.ayahNumber }}</strong>
       <a
         class="occurrence-table__ayah-link qd-interactive-surface"

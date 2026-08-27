@@ -31,6 +31,12 @@ interface PhraseContextBranchesSuccess {
   readonly branches: PhraseContextBranchesResponse;
 }
 
+interface PhraseContextResultsSuccess {
+  readonly kind: 'results';
+  readonly activeBuildId: string;
+  readonly results: PhraseContextResultsResponse;
+}
+
 interface PhraseContextGroupsSuccess {
   readonly kind: 'groups';
   readonly activeBuildId: string;
@@ -47,6 +53,7 @@ export type PhraseContextLoadResult =
   | PhraseContextLoadFailure
   | PhraseContextWorkspaceSuccess
   | PhraseContextBranchesSuccess
+  | PhraseContextResultsSuccess
   | PhraseContextGroupsSuccess
   | PhraseContextOccurrencesSuccess;
 
@@ -68,6 +75,7 @@ export class PhraseContextWorkspaceLoader {
         route.resolution!,
         route.before,
         route.after,
+        route.contextsPage,
         PHRASE_CONTEXT_RESULT_PAGE_SIZE,
       ),
     ]).pipe(
@@ -89,6 +97,28 @@ export class PhraseContextWorkspaceLoader {
         });
       }),
     );
+  }
+
+  loadResultsPage(route: PhraseContextUrlState): Observable<PhraseContextLoadResult> {
+    return this.api
+      .getResults(
+        route.resolution!,
+        route.before,
+        route.after,
+        route.contextsPage,
+        PHRASE_CONTEXT_RESULT_PAGE_SIZE,
+      )
+      .pipe(
+        map((response) =>
+          response.isSuccess && response.data
+            ? {
+                kind: 'results' as const,
+                activeBuildId: response.data.activeBuildId,
+                results: response.data,
+              }
+            : failureResult(response.errors, response.message),
+        ),
+      );
   }
 
   loadBranchPage(

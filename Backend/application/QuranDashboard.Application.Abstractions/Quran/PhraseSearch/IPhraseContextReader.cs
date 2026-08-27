@@ -16,6 +16,7 @@ public interface IPhraseContextReader
 
     Task<PhraseSearchReadResult<PhraseContextResultsResponse>> GetResultsAsync(
         PhraseContextSelection selection,
+        int page,
         int pageSize,
         CancellationToken cancellationToken);
 

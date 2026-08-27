@@ -5,5 +5,7 @@ import { PhraseContextOccurrenceDto } from '../models/phrase-context-occurrence-
 export interface PhraseContextResultsResponse {
   activeBuildId: string;
   items: Array<PhraseContextOccurrenceDto>;
+  page: number;
+  pageSize: number;
   totalCount: number;
 }

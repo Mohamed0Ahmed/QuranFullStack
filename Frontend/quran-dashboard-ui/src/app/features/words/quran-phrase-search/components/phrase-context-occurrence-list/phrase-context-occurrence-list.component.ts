@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  input,
+  viewChild,
+} from '@angular/core';
 
 import { PhraseContextOccurrenceDto } from '../../../../../core/api/generated/models/phrase-context-occurrence-dto';
 import { PhraseContextHighlightsDto } from '../../../../../core/api/generated/models/phrase-context-highlights-dto';
@@ -34,6 +41,8 @@ const COMPACT_ROW_HEIGHT = 104;
 export class PhraseContextOccurrenceListComponent {
   readonly items = input.required<readonly PhraseContextOccurrenceDto[]>();
   readonly totalCount = input.required<number>();
+  readonly resultSetKey = input.required<string>();
+  readonly firstRowNumber = input(1);
   readonly busy = input(false);
   readonly previousHighlightWordCount = input(0);
   readonly followingHighlightWordCount = input(0);
@@ -42,6 +51,9 @@ export class PhraseContextOccurrenceListComponent {
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly rowIdentity = (row: ContextOccurrenceRow): number =>
     row.occurrence.occurrenceId;
+  protected readonly rowNumber = (index: number): number => this.firstRowNumber() + index;
+  private readonly table = viewChild(QdDataTableComponent<ContextOccurrenceRow>);
+  private lastResultSetKey = '';
 
   protected readonly rows = computed<readonly ContextOccurrenceRow[]>(() =>
     this.items().map((occurrence) => {
@@ -69,4 +81,16 @@ export class PhraseContextOccurrenceListComponent {
       };
     }),
   );
+
+  constructor() {
+    effect(() => {
+      const resultSetKey = this.resultSetKey();
+      const table = this.table();
+      if (!table || resultSetKey === this.lastResultSetKey) {
+        return;
+      }
+      this.lastResultSetKey = resultSetKey;
+      table.scrollToTop();
+    });
+  }
 }

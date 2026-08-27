@@ -8,6 +8,7 @@ public sealed partial class EfPhraseContextReader
 {
     public async Task<PhraseSearchReadResult<PhraseContextResultsResponse>> GetResultsAsync(
         PhraseContextSelection selection,
+        int page,
         int pageSize,
         CancellationToken cancellationToken)
     {
@@ -23,7 +24,7 @@ public sealed partial class EfPhraseContextReader
             return new PhraseSearchReadResult<PhraseContextResultsResponse>.BuildChanged();
         }
 
-        var cacheKey = PhraseSearchCacheKeys.ContextResults(selection, pageSize);
+        var cacheKey = PhraseSearchCacheKeys.ContextResults(selection, page, pageSize);
         if (cache.TryGet(cacheKey, out PhraseContextResultsResponse cached))
         {
             await snapshot.CompleteAsync(cancellationToken);
@@ -38,10 +39,13 @@ public sealed partial class EfPhraseContextReader
             return new PhraseSearchReadResult<PhraseContextResultsResponse>.InvalidReference();
         }
 
+        var pageOffset = Math.Min((long)(page - 1) * pageSize, filtered.Count);
         var response = new PhraseContextResultsResponse(
             snapshot.ActiveBuildId,
+            page,
+            pageSize,
             filtered.Count,
-            filtered.Take(pageSize).Select(CreateContextOccurrence).ToList());
+            filtered.Skip((int)pageOffset).Take(pageSize).Select(CreateContextOccurrence).ToList());
         await snapshot.CompleteAsync(cancellationToken);
         cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));
         return new PhraseSearchReadResult<PhraseContextResultsResponse>.Success(response);

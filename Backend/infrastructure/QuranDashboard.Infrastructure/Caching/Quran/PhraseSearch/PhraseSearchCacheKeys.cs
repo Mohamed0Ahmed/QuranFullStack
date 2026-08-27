@@ -48,8 +48,9 @@ public static class PhraseSearchCacheKeys
 
     public static string ContextResults(
         PhraseContextSelection selection,
+        int page,
         int pageSize) =>
-        ContextKey(selection, "results", pageSize);
+        ContextKey(selection, "results", page, pageSize);
 
     public static string ContextOccurrences(
         PhraseFullContextReference context,

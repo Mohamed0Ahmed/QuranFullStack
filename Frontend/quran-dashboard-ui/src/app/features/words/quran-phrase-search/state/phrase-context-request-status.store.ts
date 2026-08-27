@@ -7,6 +7,7 @@ export type PhraseContextRequestTarget =
   | 'workspace'
   | 'branches'
   | 'groups'
+  | 'results'
   | 'occurrences';
 
 @Injectable()
@@ -14,6 +15,7 @@ export class PhraseContextRequestStatusStore {
   readonly capabilities = signal<PhraseLoadStatus>('idle');
   readonly branches = signal<PhraseLoadStatus>('idle');
   readonly groups = signal<PhraseLoadStatus>('idle');
+  readonly results = signal<PhraseLoadStatus>('idle');
   readonly occurrences = signal<PhraseLoadStatus>('idle');
   readonly errorMessage = signal('');
 
@@ -26,13 +28,17 @@ export class PhraseContextRequestStatusStore {
       this.groups.set(status);
       return;
     }
+    if (target === 'results') {
+      this.results.set(status);
+      return;
+    }
     if (target === 'occurrences') {
       this.occurrences.set(status);
       return;
     }
     this.branches.set(status);
     if (target === 'workspace') {
-      this.groups.set(status);
+      this.results.set(status);
     }
   }
 

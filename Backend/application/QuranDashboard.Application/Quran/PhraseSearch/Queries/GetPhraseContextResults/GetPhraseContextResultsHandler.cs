@@ -18,12 +18,14 @@ public sealed class GetPhraseContextResultsHandler(
             return new PhraseReadOutcome<PhraseContextResultsResponse>.Invalid(PhraseRequestInvalidKind.Reference);
         }
 
-        if (!PhraseContextRequestParser.TryResultPageSize(query.PageSize, out var pageSize))
+        var page = query.Page ?? PhraseSearchPaging.DefaultPage;
+        if (page < PhraseSearchPaging.DefaultPage
+            || !PhraseContextRequestParser.TryResultPageSize(query.PageSize, out var pageSize))
         {
             return new PhraseReadOutcome<PhraseContextResultsResponse>.Invalid(PhraseRequestInvalidKind.Paging);
         }
 
-        var result = await reader.GetResultsAsync(selection, pageSize, cancellationToken);
+        var result = await reader.GetResultsAsync(selection, page, pageSize, cancellationToken);
         return result switch
         {
             PhraseSearchReadResult<PhraseContextResultsResponse>.Success success =>

@@ -90,7 +90,7 @@ export function phraseContextStateKey(state: PhraseContextUrlState): string {
   ].join('|');
 }
 
-export function contextPageOnlyChanged(
+export function contextResultsPageOnlyChanged(
   current: PhraseContextUrlState,
   next: PhraseContextUrlState,
 ): boolean {

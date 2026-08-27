@@ -6419,6 +6419,14 @@
             }
           },
           {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
             "name": "pageSize",
             "in": "query",
             "schema": {
@@ -16668,6 +16676,8 @@
         "required": [
           "activeBuildId",
           "items",
+          "page",
+          "pageSize",
           "totalCount"
         ],
         "type": "object",
@@ -16675,6 +16685,14 @@
           "activeBuildId": {
             "type": "string",
             "format": "uuid"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "format": "int32"
           },
           "totalCount": {
             "type": "integer",

@@ -13,17 +13,23 @@
 .phrase-context-results {
   --qd-explorer-table-header-height: 2.75rem;
   --qd-explorer-table-body-height: 34rem;
+  --phrase-context-pagination-height: 6rem;
   --qd-explorer-table-card-height: calc(
     var(--qd-explorer-table-header-height) + var(--qd-explorer-table-body-height)
   );
 
+  display: grid;
+  grid-template-rows: var(--qd-explorer-table-card-height) var(--phrase-context-pagination-height);
+  gap: var(--qd-space-2);
   min-inline-size: 0;
-  block-size: var(--qd-explorer-table-card-height);
+  block-size: calc(
+    var(--qd-explorer-table-card-height) + var(--phrase-context-pagination-height) + var(--qd-space-2)
+  );
 }
 
 .phrase-context-results > qd-phrase-context-occurrence-list {
   display: block;
-  block-size: 100%;
+  block-size: var(--qd-explorer-table-card-height);
   min-block-size: 0;
 }
 

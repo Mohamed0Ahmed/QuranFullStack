@@ -18,10 +18,11 @@ import {
 import { PhraseTextMode } from '../models/phrase-repetitions.models';
 import {
   parsePhraseContextUrlState,
-  contextPageOnlyChanged,
+  contextResultsPageOnlyChanged,
   phraseContextStateKey,
 } from './phrase-context-url-sync';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
+import { contextResultsRedirectPage } from './phrase-context-results-paging';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import {
   PhraseContextActionCoordinator,
@@ -79,8 +80,11 @@ export class PhraseContextFacade {
     groups: this.selection.groups(),
     groupsTotalCount: this.selection.groupsTotalCount(),
     groupsNextCursor: this.selection.groupsNextCursor(),
+    resultsStatus: this.requestStatus.results(),
     occurrencesStatus: this.requestStatus.occurrences(),
     occurrences: this.selection.occurrences(),
+    resultsPage: this.selection.resultsPage(),
+    resultsPageSize: this.selection.resultsPageSize(),
     occurrencesTotalCount: this.selection.occurrencesTotalCount(),
     occurrencesNextCursor: this.selection.occurrencesNextCursor(),
     selectedContextRef: this.selection.selectedContextRef(),
@@ -255,6 +259,14 @@ export class PhraseContextFacade {
     );
   }
 
+  changeResultsPage(page: number): void {
+    const route = this._route();
+    if (page < 1 || page === route.contextsPage) {
+      return;
+    }
+    this.navigate({ ...route, contextsPage: page });
+  }
+
   loadMoreGroups(): void {
     const cursor = this.selection.groupsNextCursor();
     const route = this._route();
@@ -310,22 +322,23 @@ export class PhraseContextFacade {
     this.notice.dismiss();
   }
   private runRoute(parsed: ParsedPhraseContextUrlState): Observable<void> {
-    if (
+    const resultsPageChanged =
       !parsed.invalid &&
-      contextPageOnlyChanged(this._route(), parsed.state) &&
-      this.selection.groups().length > 0
-    ) {
-      this._route.set(parsed.state);
-      return of(undefined);
-    }
+      contextResultsPageOnlyChanged(this._route(), parsed.state) &&
+      this.selection.branches() !== null;
     this._route.set(parsed.state);
     this._routeInvalid.set(parsed.invalid);
     this.requestStatus.errorMessage.set('');
     if (parsed.invalid) {
       this.requestStatus.branches.set('invalid');
       this.requestStatus.groups.set('invalid');
+      this.requestStatus.results.set('invalid');
       this.requestStatus.errorMessage.set(INVALID_ROUTE_MESSAGE);
       return EMPTY;
+    }
+    if (resultsPageChanged) {
+      this.actions.loadResultsPage(parsed.state, this.actionHooks);
+      return of(undefined);
     }
     const capabilities = this._capabilities();
     if (capabilities) {
@@ -370,6 +383,7 @@ export class PhraseContextFacade {
       this.selection.clearAll();
       this.requestStatus.branches.set('idle');
       this.requestStatus.groups.set('idle');
+      this.requestStatus.results.set('idle');
       this.requestStatus.occurrences.set('idle');
       if (!route.q) {
         this.resolutionFlow.restoreIdle('', route.mode);
@@ -392,7 +406,7 @@ export class PhraseContextFacade {
       this.resolutionFlow.markLoading(route.q, route.resolution);
       this.selection.clearWorkspace();
       this.requestStatus.branches.set('loading');
-      this.requestStatus.groups.set('loading');
+      this.requestStatus.results.set('loading');
     }
     const routeKey = phraseContextStateKey(route);
     return this.workspaceLoader.loadWorkspace(route).pipe(
@@ -405,6 +419,15 @@ export class PhraseContextFacade {
         ) {
           return;
         }
+        const redirectPage = contextResultsRedirectPage(
+          route.contextsPage,
+          result.results.pageSize,
+          result.results.totalCount,
+        );
+        if (redirectPage !== null) {
+          this.navigate({ ...route, contextsPage: redirectPage }, true);
+          return;
+        }
         this.selection.replaceBranches(result.branches);
         this.selection.replaceResults(result.results);
         this.resolutionFlow.restoreFromBranches(
@@ -412,12 +435,9 @@ export class PhraseContextFacade {
           result.branches,
         );
         this.requestStatus.branches.set('success');
-        this.requestStatus.groups.set(
+        this.requestStatus.results.set(
           result.results.totalCount === 0 ? 'empty' : 'success',
         );
-        if (route.contextsPage !== 1) {
-          this.navigate({ ...route, contextsPage: 1 }, true);
-        }
       }),
       catchError((error: unknown) => this.applyRouteError(error, 'workspace', routeKey)),
       map(() => undefined),
@@ -498,7 +518,7 @@ export class PhraseContextFacade {
 
   private startWorkspaceRefresh(): void {
     this.requestStatus.branches.set('refreshing');
-    this.requestStatus.groups.set('refreshing');
+    this.requestStatus.results.set('refreshing');
   }
 
   private resetForBuildChange(activeBuildId: string | null): void {
@@ -508,6 +528,7 @@ export class PhraseContextFacade {
     this.notice.indexChanged();
     this.requestStatus.branches.set('stale');
     this.requestStatus.groups.set('stale');
+    this.requestStatus.results.set('stale');
     this.requestStatus.occurrences.set('stale');
     this.navigate(
       {
@@ -538,6 +559,7 @@ export class PhraseContextFacade {
     this.selection.clearAll();
     this.requestStatus.branches.set('idle');
     this.requestStatus.groups.set('idle');
+    this.requestStatus.results.set('idle');
     this.requestStatus.occurrences.set('idle');
     this.requestStatus.errorMessage.set('');
   }

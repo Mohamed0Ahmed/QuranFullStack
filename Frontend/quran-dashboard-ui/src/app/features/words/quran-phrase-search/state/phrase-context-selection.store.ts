@@ -6,7 +6,10 @@ import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/model
 import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response';
 import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import { PhraseFullContextGroupDto } from '../../../../core/api/generated/models/phrase-full-context-group-dto';
-import { PhraseContextFocusTarget } from '../models/phrase-context.models';
+import {
+  PHRASE_CONTEXT_RESULT_PAGE_SIZE,
+  PhraseContextFocusTarget,
+} from '../models/phrase-context.models';
 import { PhraseLongStateSessionStore } from './phrase-long-state-session.store';
 
 @Injectable()
@@ -24,6 +27,8 @@ export class PhraseContextSelectionStore {
   private readonly _groupsNextCursor = signal<string | null>(null);
   private readonly _selectedContextRef = signal<string | null>(null);
   private readonly _occurrences = signal<readonly PhraseContextOccurrenceDto[]>([]);
+  private readonly _resultsPage = signal(1);
+  private readonly _resultsPageSize = signal(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
   private readonly _occurrencesTotalCount = signal(0);
   private readonly _occurrencesNextCursor = signal<string | null>(null);
   private readonly _focusTarget = signal<PhraseContextFocusTarget | null>(
@@ -38,6 +43,8 @@ export class PhraseContextSelectionStore {
   readonly groupsNextCursor = this._groupsNextCursor.asReadonly();
   readonly selectedContextRef = this._selectedContextRef.asReadonly();
   readonly occurrences = this._occurrences.asReadonly();
+  readonly resultsPage = this._resultsPage.asReadonly();
+  readonly resultsPageSize = this._resultsPageSize.asReadonly();
   readonly occurrencesTotalCount = this._occurrencesTotalCount.asReadonly();
   readonly occurrencesNextCursor = this._occurrencesNextCursor.asReadonly();
   readonly focusTarget = this._focusTarget.asReadonly();
@@ -120,6 +127,8 @@ export class PhraseContextSelectionStore {
   replaceResults(response: PhraseContextResultsResponse): void {
     this._selectedContextRef.set(null);
     this._occurrences.set(response.items);
+    this._resultsPage.set(response.page);
+    this._resultsPageSize.set(response.pageSize);
     this._occurrencesTotalCount.set(response.totalCount);
     this._occurrencesNextCursor.set(null);
   }
@@ -147,6 +156,8 @@ export class PhraseContextSelectionStore {
   clearOccurrences(): void {
     this._selectedContextRef.set(null);
     this._occurrences.set([]);
+    this._resultsPage.set(1);
+    this._resultsPageSize.set(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
     this._occurrencesTotalCount.set(0);
     this._occurrencesNextCursor.set(null);
   }

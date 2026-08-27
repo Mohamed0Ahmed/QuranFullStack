@@ -15,6 +15,7 @@ import { ExplorerPanelSkeletonComponent } from '../../../../../shared/ui/explore
 import { QdEmptyStateComponent } from '../../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/error-state.component';
 import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.component';
+import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseContextExplorerComponent } from '../../components/phrase-context-explorer/phrase-context-explorer.component';
 import { PhraseContextOccurrenceListComponent } from '../../components/phrase-context-occurrence-list/phrase-context-occurrence-list.component';
@@ -36,6 +37,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdNoticeComponent,
+    PaginationComponent,
     QdRefreshingIndicatorComponent,
   ],
   templateUrl: './phrase-context-page.component.html',
@@ -58,10 +60,20 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     const state = this.state();
     return (
       state.branchesStatus === 'loading' ||
-      state.branchesStatus === 'refreshing' ||
-      state.groupsStatus === 'loading' ||
-      state.groupsStatus === 'refreshing'
+      state.branchesStatus === 'refreshing'
     );
+  });
+  protected readonly resultsBusy = computed(() => {
+    const status = this.state().resultsStatus;
+    return status === 'loading' || status === 'refreshing';
+  });
+  protected readonly resultFirstRowNumber = computed(() => {
+    const state = this.state();
+    return (state.resultsPage - 1) * state.resultsPageSize + 1;
+  });
+  protected readonly resultSetKey = computed(() => {
+    const route = this.state().route;
+    return [route.resolution, route.before, route.after, route.contextsPage].join('|');
   });
   protected readonly workspaceInteractionBusy = computed(
     () => this.workspaceBusy() || this.minimumWorkspaceBusy(),
@@ -71,7 +83,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     if (!state.branches || (state.branchesStatus !== 'success' && state.branchesStatus !== 'refreshing')) {
       return '';
     }
-    return `تم تحديث السياق، ${state.occurrencesTotalCount} موضعًا معروضًا في جدول الآيات`;
+    return `تم تحديث جدول الآيات، الصفحة ${state.resultsPage}، ${state.occurrences.length} من ${state.occurrencesTotalCount} موضعًا`;
   });
 
   constructor() {
@@ -124,6 +136,10 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     } else {
       this.facade.loadMoreFollowing();
     }
+  }
+
+  protected changeResultsPage(page: number): void {
+    this.facade.changeResultsPage(page);
   }
 
   private restoreFocus(pending: string, attempt: number): void {
