@@ -157,10 +157,6 @@ export class SelectedAyahSectionComponent {
     () => this.study()?.similaritySummary.mutashabihatGroupCount ?? null,
   );
 
-  protected readonly mutashabihatOccurrenceCount = computed<number | null>(
-    () => this.study()?.similaritySummary.mutashabihatOccurrenceCount ?? null,
-  );
-
   protected tabCount(tab: AyahStudyTab): number | null {
     if (this.loadState().isLoading || !this.study()) {
       return null;

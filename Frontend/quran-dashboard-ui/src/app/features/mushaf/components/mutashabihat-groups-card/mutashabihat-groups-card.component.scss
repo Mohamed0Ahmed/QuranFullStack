@@ -61,8 +61,10 @@
     list-style: none;
   }
 
-  // Occurrences compose the shared `qdAyahCard` frame (Feature 029, Change A); the
-  // selected state stays feature-owned as an accent hairline layered on that frame.
+  &__occurrence-panel[hidden] {
+    display: none;
+  }
+
   &__occurrence--selected {
     border-color: var(--qd-border-accent);
   }
@@ -132,14 +134,6 @@
     font-size: 0.8125rem;
   }
 
-  // N3 row 12: the loading placeholders reuse the real group / `qdAyahCard` frames
-  // and the real title / meta / text classes, so every padding, gap, hairline and
-  // line box comes from the loaded rules — never a parallel set of numbers. Each
-  // bar IS its line box (`auto` height around an `&nbsp;`), inheriting font-size and
-  // line-height from the very rule that sizes the loaded text, so restyling a loaded
-  // group moves the placeholder with it. Residual: multi-line phrases or ayah texts,
-  // and the expand toggle on groups above the preview count, still grow their group
-  // on settle (accepted — neither is knowable before the load).
   &__group--skeleton .qd-skeleton {
     --qd-skeleton-h: auto;
   }
@@ -154,7 +148,9 @@
     margin-inline: auto;
   }
 
-  &__occurrence-meta-skeleton {
-    --qd-skeleton-w: 10rem;
+  &__toggle-skeleton {
+    --qd-skeleton-w: 8rem;
+    align-self: center;
+    min-block-size: var(--qd-control-sm);
   }
 }
