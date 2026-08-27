@@ -34,6 +34,15 @@ public sealed class GetPhraseSimilarityGroupsHandler(IPhraseSimilarityReader rea
                 PhraseRequestInvalidKind.Threshold);
         }
 
+        var sortValue = string.IsNullOrWhiteSpace(query.Sort)
+            ? PhraseSimilaritySortKeys.Strength
+            : query.Sort;
+        if (!PhraseSimilaritySortContract.TryParse(sortValue, out var sort))
+        {
+            return new PhraseReadOutcome<PhraseSimilarityGroupsResponse>.Invalid(
+                PhraseRequestInvalidKind.Sort);
+        }
+
         if (!PhraseSimilarityRequestValidation.TryPaging(
                 query.Page,
                 query.PageSize,
@@ -48,6 +57,7 @@ public sealed class GetPhraseSimilarityGroupsHandler(IPhraseSimilarityReader rea
             mode,
             checked((short)wordCount),
             checked((short)threshold),
+            sort,
             page,
             pageSize,
             cancellationToken);

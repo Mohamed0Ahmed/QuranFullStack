@@ -18,5 +18,7 @@ public sealed record PhraseTextModeCapabilitiesDto(
     string Mode,
     IReadOnlyList<short> SupportedLengths,
     IReadOnlyList<short> RepeatedLengths,
+    IReadOnlyList<short> SimilarityLengths,
     short MaximumSupportedLength,
-    short MaximumRepeatedLength);
+    short MaximumRepeatedLength,
+    short MaximumSimilarityLength);

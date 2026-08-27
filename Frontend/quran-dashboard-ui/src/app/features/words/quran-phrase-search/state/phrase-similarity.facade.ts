@@ -4,55 +4,34 @@ import { EMPTY, Observable, Subscription, map, of, switchMap } from 'rxjs';
 import { catchError, distinctUntilChanged, tap } from 'rxjs/operators';
 
 import { PhraseResolutionCandidateDto } from '../../../../core/api/generated/models/phrase-resolution-candidate-dto';
-import { PhraseSimilarityGroupDto } from '../../../../core/api/generated/models/phrase-similarity-group-dto';
 import { PhraseResolutionApi } from '../data-access/phrase-resolution.api';
-import {
-  PHRASE_INDEX_UNAVAILABLE_MESSAGE,
-} from '../models/phrase-query.models';
+import { PHRASE_INDEX_UNAVAILABLE_MESSAGE } from '../models/phrase-query.models';
 import { PhraseLoadStatus, PhraseTextMode } from '../models/phrase-repetitions.models';
 import {
   DEFAULT_PHRASE_SIMILARITY_URL_STATE,
-  PHRASE_SIMILARITY_PAGE_SIZE,
   ParsedPhraseSimilarityUrlState,
-  PhraseSimilaritySource,
   PhraseSimilarityState,
   PhraseSimilarityUrlState,
 } from '../models/phrase-similarity.models';
 import { PhraseRouteNavigationCoordinator } from './phrase-route-navigation.coordinator';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import { PhraseNoticeStore } from './phrase-notice.store';
-import { encodePhraseQuery, phraseQueryByteLength } from './phrase-query-encoding';
 import { phraseEnvelopeFailure, phraseRequestFailure } from './phrase-request-failure';
-import { mapPhraseResolution } from './phrase-resolution-state';
+import { PhraseSimilarityQueryCoordinator, PhraseSimilarityQueryHooks } from './phrase-similarity-query.coordinator';
 import { PhraseSimilarityResolutionStore } from './phrase-similarity-resolution.store';
-import {
-  PhraseSimilarityResultsLoader,
-} from './phrase-similarity-results.loader';
-import {
-  PhraseSimilarityResultHooks,
-  PhraseSimilarityResultStore,
-} from './phrase-similarity-result.store';
-import {
-  parsePhraseSimilarityUrlState,
-  phraseSimilarityStateKey,
-} from './phrase-similarity-url-sync';
-import {
-  maximumDifferenceCount,
-  minimumMatchedWords,
-  percentForMaximumDifferences,
-} from './phrase-similarity-threshold';
-import {
-  supportedGlobalSimilarityOptions,
-  supportsSimilarityRoute,
-} from './phrase-similarity-route-options';
+import { PhraseSimilarityResultsLoader } from './phrase-similarity-results.loader';
+import { PhraseSimilarityResultHooks, PhraseSimilarityResultStore } from './phrase-similarity-result.store';
+import { parsePhraseSimilarityUrlState, phraseSimilarityStateKey } from './phrase-similarity-url-sync';
+import { maximumDifferenceCount, minimumMatchedWords, percentForMaximumDifferences } from './phrase-similarity-threshold';
+import { supportsSimilarityRoute } from './phrase-similarity-route-options';
 
 const INVALID_ROUTE_MESSAGE = 'رابط المتشابهات غير صالح أو يحتوي على خيارات غير متاحة.';
-const INVALID_QUERY_MESSAGE = 'اكتب عبارة من كلمتين على الأقل ولا تتجاوز 4 كيلوبايت.';
 
 @Injectable()
 export class PhraseSimilarityFacade {
   private readonly resultsLoader = inject(PhraseSimilarityResultsLoader);
-  private readonly resolutionApi = inject(PhraseResolutionApi);
+  private readonly capabilitiesApi = inject(PhraseResolutionApi);
+  private readonly query = inject(PhraseSimilarityQueryCoordinator);
   private readonly routeCoordinator = inject(PhraseRouteNavigationCoordinator);
   private readonly actionGate = inject(PhraseActionRequestGate);
   private readonly notice = inject(PhraseNoticeStore);
@@ -76,6 +55,15 @@ export class PhraseSimilarityFacade {
     navigate: (state, replaceUrl) => this.navigate(state, replaceUrl),
     setError: (message) => this._errorMessage.set(message),
   };
+  private readonly queryHooks: PhraseSimilarityQueryHooks = {
+    currentRoute: () => this._route(),
+    activeBuildId: () => this._capabilities()?.activeBuildId ?? null,
+    clearResults: () => this.cancelAndClearResults(),
+    setResultsIdle: () => this.results.status.set('idle'),
+    setError: (message) => this._errorMessage.set(message),
+    ensureBuild: (activeBuildId) => this.ensureBuild(activeBuildId),
+    navigate: (state) => this.navigate(state),
+  };
 
   readonly state = computed<PhraseSimilarityState>(() => ({
     route: this._route(),
@@ -85,10 +73,10 @@ export class PhraseSimilarityFacade {
     resolutionStatus: this.resolution.status(),
     candidates: this.resolution.candidates(),
     resultsStatus: this.results.status(),
-    groups: this.results.groups(),
-    matches: this.results.matches(),
-    totalCount: this.results.totalCount(),
-    selectedAnchor: this.results.selectedAnchor(),
+    ayahs: this.results.ayahs(),
+    totalAyahCount: this.results.totalAyahCount(),
+    totalOccurrenceCount: this.results.totalOccurrenceCount(),
+    queryPhrase: this.results.queryPhrase(),
     errorMessage: this._errorMessage(),
     notice: this.notice.message(),
     sessionOnly: this.notice.sessionOnly(),
@@ -125,35 +113,7 @@ export class PhraseSimilarityFacade {
   }
 
   setDraft(query: string): void {
-    if (!this.resolution.setDraft(query)) {
-      return;
-    }
-    this.actionGate.invalidate();
-    this._errorMessage.set('');
-    this.clearResultData();
-    this.results.status.set('idle');
-  }
-
-  setSource(source: PhraseSimilaritySource): void {
-    if (source === this._route().source) {
-      return;
-    }
-    this.cancelAndClearResults();
-    const global = supportedGlobalSimilarityOptions(
-      this._capabilities(),
-      this._route().mode,
-      this._route().length,
-      this._route().min,
-    );
-    this.navigate({
-      ...this._route(),
-      source,
-      q: source === 'manual' ? this.resolution.draft() : '',
-      resolution: null,
-      length: source === 'global' ? global.length : this._route().length,
-      min: source === 'global' ? global.minimum : this._route().min,
-      page: 1,
-    });
+    this.query.setDraft(query, this.queryHooks);
   }
 
   setMode(mode: PhraseTextMode): void {
@@ -163,14 +123,6 @@ export class PhraseSimilarityFacade {
     this.cancelAndClearResults();
     this.resolution.reset();
     this.navigate({ ...this._route(), mode, resolution: null, page: 1 });
-  }
-
-  setLength(length: number): void {
-    if (length === this._route().length) {
-      return;
-    }
-    this.cancelAndClearResults();
-    this.navigate({ ...this._route(), length, page: 1 });
   }
 
   setMinimumPercent(minimum: number): void {
@@ -194,85 +146,11 @@ export class PhraseSimilarityFacade {
   }
 
   submitQuery(): void {
-    const query = this.resolution.draft().trim();
-    this.cancelAndClearResults();
-    this.results.status.set('idle');
-    if (!query || phraseQueryByteLength(query) > 4096) {
-      this.resolution.fail('invalid');
-      this._errorMessage.set(INVALID_QUERY_MESSAGE);
-      return;
-    }
-    this.resolution.start();
-    this._errorMessage.set('');
-    const mode = this._route().mode;
-    const epoch = this.actionGate.begin();
-    const subscription = this.resolutionApi
-      .resolve(mode, encodePhraseQuery(query))
-      .pipe(
-        tap((response) => {
-          if (
-            this.actionGate.isCurrent(epoch) &&
-            this.resolution.draft().trim() === query &&
-            this._route().mode === mode
-          ) {
-            this.acceptResolution(query, mode, response);
-          }
-        }),
-        catchError((error: unknown) => {
-          if (!this.actionGate.isCurrent(epoch)) {
-            return of(undefined);
-          }
-          const failure = phraseRequestFailure(error);
-          this.resolution.fail(failure.status);
-          this._errorMessage.set(failure.message);
-          return of(undefined);
-        }),
-      )
-      .subscribe();
-    this.actionGate.track(epoch, subscription);
+    this.query.submit(this._route(), this.queryHooks);
   }
 
   selectCandidate(candidate: PhraseResolutionCandidateDto): void {
-    if (candidate.wordCount < 2) {
-      this.resolution.select(candidate);
-      this.resolution.fail('invalid');
-      this._errorMessage.set(INVALID_QUERY_MESSAGE);
-      return;
-    }
-    this.resolution.select(candidate);
-    this.navigate({
-      ...this._route(),
-      build: this._capabilities()?.activeBuildId ?? this._route().build,
-      source: 'manual',
-      q: this.resolution.draft(),
-      resolution: candidate.resolutionRef,
-      length: candidate.wordCount,
-      page: 1,
-    });
-  }
-
-  selectAnchor(group: PhraseSimilarityGroupDto): void {
-    this.results.selectAnchor(group);
-    const wasFirstPage = this._route().page === 1;
-    this.navigate({ ...this._route(), page: 1 }, true);
-    if (wasFirstPage) {
-      this.loadAnchorMatches(group, 1);
-    }
-  }
-
-  clearAnchor(): void {
-    this.results.clearAnchor();
-    const wasFirstPage = this._route().page === 1;
-    this.navigate({ ...this._route(), page: 1 });
-    if (wasFirstPage) {
-      const route = { ...this._route(), page: 1 };
-      this.results.loadAction(
-        route,
-        this.resultsLoader.loadGroups(route),
-        null,
-        this.resultHooks,
-      );
-    }
+    this.query.selectCandidate(candidate, this._route(), this.queryHooks);
   }
 
   retry(): void {
@@ -323,7 +201,7 @@ export class PhraseSimilarityFacade {
     }
     this._capabilitiesStatus.set('loading');
     const routeKey = phraseSimilarityStateKey(parsed.state);
-    return this.resolutionApi.getCapabilities().pipe(
+    return this.capabilitiesApi.getCapabilities().pipe(
       switchMap((response) => {
         if (routeKey !== phraseSimilarityStateKey(this._route())) {
           return EMPTY;
@@ -364,104 +242,28 @@ export class PhraseSimilarityFacade {
       this._errorMessage.set(INVALID_ROUTE_MESSAGE);
       return EMPTY;
     }
-    if (route.source === 'manual') {
-      if (!route.resolution) {
-        this.results.status.set('idle');
-        this.clearResultData();
-        if (!route.q) {
-          this.resolution.reset();
-          return of(undefined);
-        }
-        if (
-          this.resolution.draft() === route.q &&
-          this.resolution.status() !== 'idle' &&
-          this.resolution.status() !== 'loading'
-        ) {
-          return of(undefined);
-        }
-        return this.resolveRestoredQuery(route);
+    if (!route.resolution) {
+      this.results.status.set('idle');
+      this.clearResultData();
+      if (!route.q) {
+        this.resolution.reset();
+        return of(undefined);
       }
-      this.resolution.fail('resolved');
-      return this.results.load(
-        route,
-        this.resultsLoader.loadManual(route),
-        null,
-        this.resultHooks,
-      );
+      if (
+        this.resolution.draft() === route.q &&
+        this.resolution.status() !== 'idle' &&
+        this.resolution.status() !== 'loading'
+      ) {
+        return of(undefined);
+      }
+      return this.query.resolveRestored(route, this.queryHooks);
     }
-    const anchor = this.results.selectedAnchor();
-    return anchor
-      ? this.results.load(
-          route,
-          this.resultsLoader.loadMatches(route, anchor),
-          anchor.anchor.variantId,
-          this.resultHooks,
-        )
-      : this.results.load(
-          route,
-          this.resultsLoader.loadGroups(route),
-          null,
-          this.resultHooks,
-        );
-  }
-
-  private loadAnchorMatches(group: PhraseSimilarityGroupDto, page: number): void {
-    const route = { ...this._route(), page };
-    this.results.loadAction(
+    this.resolution.fail('resolved');
+    return this.results.load(
       route,
-      this.resultsLoader.loadMatches(route, group),
-      group.anchor.variantId,
+      this.resultsLoader.load(route),
       this.resultHooks,
     );
-  }
-
-  private acceptResolution(
-    query: string,
-    mode: PhraseTextMode,
-    response: import('../../../../core/api/generated/models/phrase-query-resolution-response-api-response').PhraseQueryResolutionResponseApiResponse,
-  ): void {
-    const mapped = mapPhraseResolution(query, mode, response);
-    this.resolution.accept(mapped);
-    this._errorMessage.set(mapped.state.message);
-    if (mapped.activeBuildId && !this.ensureBuild(mapped.activeBuildId)) {
-      return;
-    }
-    this.resolution.restoreDraft(query);
-    if (mapped.autoCandidate) {
-      this.selectCandidate(mapped.autoCandidate);
-    } else if (this._route().source === 'manual' && this._route().q !== query) {
-      this.navigate({
-        ...this._route(),
-        q: query,
-        resolution: null,
-        page: 1,
-      });
-    }
-  }
-
-  private resolveRestoredQuery(route: PhraseSimilarityUrlState): Observable<void> {
-    const routeKey = phraseSimilarityStateKey(route);
-    this.resolution.restoreDraft(route.q);
-    this.resolution.start();
-    return this.resolutionApi
-      .resolve(route.mode, encodePhraseQuery(route.q))
-      .pipe(
-        tap((response) => {
-          if (routeKey === phraseSimilarityStateKey(this._route())) {
-            this.acceptResolution(route.q, route.mode, response);
-          }
-        }),
-        catchError((error: unknown) => {
-          if (routeKey !== phraseSimilarityStateKey(this._route())) {
-            return of(undefined);
-          }
-          const failure = phraseRequestFailure(error);
-          this.resolution.fail(failure.status);
-          this._errorMessage.set(failure.message);
-          return of(undefined);
-        }),
-        map(() => undefined),
-      );
   }
 
   private cancelAndClearResults(): void {
@@ -507,7 +309,6 @@ export class PhraseSimilarityFacade {
       {
         ...DEFAULT_PHRASE_SIMILARITY_URL_STATE,
         build: activeBuildId,
-        source: this._route().source,
         q: this.resolution.draft(),
         mode: this._route().mode,
       },

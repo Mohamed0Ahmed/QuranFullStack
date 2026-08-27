@@ -18,6 +18,7 @@ public sealed class PhraseSearchSimilarityGroupsController(
         [FromQuery] string? mode,
         [FromQuery(Name = "length")] int? wordCount,
         [FromQuery] int? threshold,
+        [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -41,7 +42,7 @@ public sealed class PhraseSearchSimilarityGroupsController(
         }
 
         var outcome = await groupsHandler.HandleAsync(
-            new GetPhraseSimilarityGroupsQuery(mode, wordCount, threshold, page, pageSize),
+            new GetPhraseSimilarityGroupsQuery(mode, wordCount, threshold, sort, page, pageSize),
             cancellationToken);
         return outcome switch
         {

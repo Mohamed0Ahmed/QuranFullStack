@@ -1,129 +1,108 @@
-<section class="similarity-list" aria-labelledby="similarity-results-title">
-  <header class="similarity-list__header">
+<section class="similarity-ayahs" aria-labelledby="similarity-results-title">
+  <header class="similarity-ayahs__summary">
     <div>
-      <p>{{ selectedAnchor() ? 'جيران مباشرون' : source() === 'manual' ? 'نتائج العبارة' : 'مجموعات عالمية' }}</p>
-      <h2 id="similarity-results-title">
-        @if (selectedAnchor(); as selected) {
-          {{ selected.anchor.displayText }}
-        } @else {
-          {{ totalCount() }} نتيجة
-        }
-      </h2>
+      <p>نتائج العبارة</p>
+      <h2 id="similarity-results-title">{{ queryPhrase().displayText }}</h2>
     </div>
-    @if (selectedAnchor()) {
-      <button type="button" class="qd-btn qd-btn-secondary" (click)="anchorCleared.emit()">
-        العودة إلى المجموعات
-      </button>
-    }
+    <div class="similarity-ayahs__counts" aria-label="ملخص النتائج">
+      <strong>{{ totalAyahCount() }} آية</strong>
+      <span>{{ totalOccurrenceCount() }} موضعًا</span>
+    </div>
+    <div class="similarity-ayahs__legend" aria-label="مفتاح التلوين">
+      <span class="similarity-ayahs__legend-match">أخضر: موضع مطابق</span>
+      <span class="similarity-ayahs__legend-difference">أحمر: موضع مختلف</span>
+    </div>
   </header>
 
-  @if (groups().length > 0) {
-    <div qdResultList listVariant="master" [listLabel]="listLabel()">
-      @for (group of groups(); track group.anchor.variantId; let index = $index) {
-        <article
-          qdAyahCard
-          qdResultItem
-          [position]="position(index)"
-          [setSize]="totalCount()"
+  <qd-data-table
+    class="similarity-ayahs__table qd-explorer-table"
+    renderer="standard"
+    [rows]="rows()"
+    [rowId]="rowIdentity"
+    ariaLabel="جدول الآيات المطابقة والمتشابهة"
+    bodyAriaLabel="آيات العبارة المطابقة والمتشابهة"
+    [columnCount]="5"
+    [totalRowCount]="totalAyahCount()"
+    [state]="busy() ? 'refreshing' : 'ready'"
+    [rowHeight]="rowHeight"
+    [compactRowHeight]="compactRowHeight"
+    scrollStateKey="words.phrases.similarity-ayahs"
+    [style.--qd-explorer-table-columns]="'minmax(2.5rem, 0.2fr) minmax(7rem, 0.65fr) minmax(24rem, 3.6fr) minmax(7rem, 0.7fr) minmax(5rem, 0.45fr)'"
+  >
+    <ng-template #headerTemplate>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
+      <div class="similarity-ayahs__cell qd-explorer-table__header-cell" role="columnheader">السورة والآية</div>
+      <div class="similarity-ayahs__cell qd-explorer-table__header-cell" role="columnheader">نص الآية</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell" role="columnheader">التطابق</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell" role="columnheader">المواضع</div>
+    </ng-template>
+
+    <ng-template #rowTemplate let-row let-index="index">
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__location qd-explorer-table__cell" role="cell">
+        <strong>{{ row.ayah.surahNameArabic }}</strong>
+        <span>آية {{ row.ayah.ayahNumber }} · صفحة {{ row.ayah.pageFrom }}</span>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__ayah qd-explorer-table__cell" role="cell">
+        <a
+          class="similarity-ayahs__ayah-link qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
         >
-          <button
-            type="button"
-            class="similarity-list__group"
-            [disabled]="busy()"
-            [attr.aria-label]="
-              group.anchor.displayText + '، ' + group.neighborCount + ' تشابهات مباشرة'
-            "
-            (click)="anchorSelected.emit(group)"
-          >
-            <span class="similarity-list__group-head">
-              <strong>{{ group.anchor.displayText }}</strong>
-              <span>{{ group.neighborCount }} جارًا مباشرًا</span>
-            </span>
-            <span class="similarity-list__group-meta">
-              {{ group.anchor.occurrenceCount }} موضعًا · أفضل تطابق
-              {{ group.bestMatchedCount ?? 0 }}/{{ group.anchor.wordCount }}
-              @if (group.bestMatchPercent !== null) {
-                · {{ group.bestMatchPercent | number: '1.0-1' }}%
-              }
-            </span>
-            <qd-phrase-highlighted-ayah
-              [words]="group.representativeOccurrence.words"
-              [queryQuranWordIds]="group.representativeOccurrence.highlights.phraseQuranWordIds"
-            />
-          </button>
-        </article>
-      }
-    </div>
-  }
+          <qd-phrase-highlighted-ayah
+            roleScheme="similarity"
+            [compact]="true"
+            [words]="row.ayah.words"
+            [similarityHighlights]="row.ayah.highlights"
+          />
+        </a>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__score qd-explorer-table__cell" role="cell">
+        <strong [class.similarity-ayahs__score--exact]="row.ayah.minimumDifferenceCount === 0">
+          {{ row.ayah.bestMatchPercent | number: '1.0-1' }}%
+        </strong>
+        <span>{{ differenceLabel(row.ayah) }}</span>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__cell" role="cell">
+        {{ row.ayah.occurrenceCount }}
+      </div>
+    </ng-template>
 
-  @if (matches().length > 0) {
-    <div class="similarity-list__legend" aria-label="مفتاح تمييز التشابه">
-      <span class="similarity-list__key similarity-list__key--match">موضع مطابق، خط متصل</span>
-      <span class="similarity-list__key similarity-list__key--difference">موضع مختلف، إطار كامل</span>
-    </div>
-
-    <div qdResultList listVariant="quran-result" [listLabel]="listLabel()">
-      @for (match of matches(); track match.phrase.variantId; let index = $index) {
-        <article
-          qdAyahCard
-          qdResultItem
-          [position]="position(index)"
-          [setSize]="totalCount()"
-          class="similarity-list__match"
+    <ng-template #compactRowTemplate let-row let-index="index">
+      <article class="similarity-ayahs__compact">
+        <span class="similarity-ayahs__compact-number">{{ rowNumber(index) }}</span>
+        <div class="similarity-ayahs__compact-location">
+          <strong>{{ row.ayah.surahNameArabic }} · آية {{ row.ayah.ayahNumber }}</strong>
+          <span>صفحة {{ row.ayah.pageFrom }} · {{ row.ayah.occurrenceCount }} موضعًا</span>
+        </div>
+        <div class="similarity-ayahs__compact-score">
+          <strong>{{ row.ayah.bestMatchPercent | number: '1.0-1' }}%</strong>
+          <span>{{ differenceLabel(row.ayah) }}</span>
+        </div>
+        <a
+          class="similarity-ayahs__ayah-link qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
         >
-          <header class="similarity-list__match-head">
-            <div>
-              <strong>{{ match.phrase.displayText }}</strong>
-              <span>{{ match.phrase.occurrenceCount }} موضعًا في المصحف</span>
-            </div>
-            <span class="similarity-list__score">
-              {{ match.matchedCount }}/{{ match.phrase.wordCount }} ·
-              {{ match.matchPercent | number: '1.0-1' }}%
-            </span>
-          </header>
+          <qd-phrase-highlighted-ayah
+            roleScheme="similarity"
+            [compact]="true"
+            [words]="row.ayah.words"
+            [similarityHighlights]="row.ayah.highlights"
+          />
+        </a>
+      </article>
+    </ng-template>
 
-          <p class="similarity-list__positions">
-            المواضع المطابقة: {{ match.matchedPositions.join('، ') || 'لا توجد' }}.
-            المواضع المختلفة: {{ match.differingPositions.join('، ') || 'لا توجد' }}.
-          </p>
-
-          <div class="similarity-list__ayahs">
-            <a
-              class="similarity-list__ayah qd-interactive-surface"
-              [qdAyahOverlayLink]="target(match.anchorOccurrence)"
-              [attr.aria-label]="'فتح الآية المرجعية ' + match.anchorOccurrence.verseKey"
-            >
-              <span>العبارة المرجعية · {{ match.anchorOccurrence.surahNameArabic }} {{ match.anchorOccurrence.verseKey }}</span>
-              <qd-phrase-highlighted-ayah
-                roleScheme="similarity"
-                [words]="match.anchorOccurrence.words"
-                [similarityHighlights]="match.anchorOccurrence.highlights"
-              />
-            </a>
-            <a
-              class="similarity-list__ayah qd-interactive-surface"
-              [qdAyahOverlayLink]="target(match.comparedOccurrence)"
-              [attr.aria-label]="'فتح الآية المقارنة ' + match.comparedOccurrence.verseKey"
-            >
-              <span>العبارة المقارنة · {{ match.comparedOccurrence.surahNameArabic }} {{ match.comparedOccurrence.verseKey }}</span>
-              <qd-phrase-highlighted-ayah
-                roleScheme="similarity"
-                [words]="match.comparedOccurrence.words"
-                [similarityHighlights]="match.comparedOccurrence.highlights"
-              />
-            </a>
-          </div>
-        </article>
-      }
-    </div>
-  }
-
-  <qd-pagination
-    [currentPage]="page()"
-    [pageSize]="pageSize()"
-    [totalCount]="totalCount()"
-    [disabled]="busy()"
-    ariaLabel="صفحات نتائج التشابه"
-    (pageChange)="pageChange.emit($event)"
-  />
+    <ng-template #paginationTemplate>
+      <qd-pagination
+        [currentPage]="page()"
+        [pageSize]="pageSize"
+        [totalCount]="totalAyahCount()"
+        [disabled]="busy()"
+        ariaLabel="صفحات الآيات المطابقة والمتشابهة"
+        (pageChange)="pageChange.emit($event)"
+      />
+    </ng-template>
+  </qd-data-table>
 </section>

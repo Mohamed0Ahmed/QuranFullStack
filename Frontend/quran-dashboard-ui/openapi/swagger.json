@@ -7010,6 +7010,13 @@
             }
           },
           {
+            "name": "sort",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "in": "query",
             "schema": {
@@ -17478,11 +17485,88 @@
         },
         "additionalProperties": false
       },
+      "PhraseSimilarityAyahDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "bestMatchedCount",
+          "bestMatchPercent",
+          "highlights",
+          "minimumDifferenceCount",
+          "occurrenceCount",
+          "pageFrom",
+          "pageTo",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey",
+          "words"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bestMatchedCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "minimumDifferenceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bestMatchPercent": {
+            "type": "number",
+            "format": "double"
+          },
+          "occurrenceCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "words": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseAyahWordDto"
+            }
+          },
+          "highlights": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSimilarityHighlightsDto"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      },
       "PhraseSimilarityGroupDto": {
         "required": [
           "anchor",
           "bestMatchedCount",
           "bestMatchPercent",
+          "bestNeighbor",
           "neighborCount",
           "representativeOccurrence"
         ],
@@ -17509,10 +17593,18 @@
             "format": "double",
             "nullable": true
           },
+          "bestNeighbor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSimilarityPhraseDto"
+              }
+            ],
+            "nullable": true
+          },
           "representativeOccurrence": {
             "allOf": [
               {
-                "$ref": "#/components/schemas/PhraseSimilarityOccurrenceDto"
+                "$ref": "#/components/schemas/PhraseSimilarityOccurrencePreviewDto"
               }
             ]
           }
@@ -17526,6 +17618,7 @@
           "mode",
           "page",
           "pageSize",
+          "sort",
           "threshold",
           "totalCount",
           "wordCount"
@@ -17546,6 +17639,9 @@
           "threshold": {
             "type": "integer",
             "format": "int32"
+          },
+          "sort": {
+            "type": "string"
           },
           "page": {
             "type": "integer",
@@ -17636,7 +17732,6 @@
       },
       "PhraseSimilarityMatchDto": {
         "required": [
-          "anchorOccurrence",
           "comparedOccurrence",
           "differenceCount",
           "differingPositions",
@@ -17680,13 +17775,6 @@
               "format": "int32"
             }
           },
-          "anchorOccurrence": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/PhraseSimilarityOccurrenceDto"
-              }
-            ]
-          },
           "comparedOccurrence": {
             "allOf": [
               {
@@ -17701,6 +17789,7 @@
         "required": [
           "activeBuildId",
           "anchor",
+          "anchorOccurrence",
           "items",
           "page",
           "pageSize",
@@ -17733,6 +17822,13 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/PhraseSimilarityPhraseDto"
+              }
+            ]
+          },
+          "anchorOccurrence": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSimilarityOccurrenceDto"
               }
             ]
           },
@@ -17850,6 +17946,69 @@
         },
         "additionalProperties": false
       },
+      "PhraseSimilarityOccurrencePreviewDto": {
+        "required": [
+          "ayahId",
+          "ayahNumber",
+          "endWordNumber",
+          "occurrenceId",
+          "pageFrom",
+          "pageTo",
+          "phraseWords",
+          "startWordNumber",
+          "surahNameArabic",
+          "surahNumber",
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "occurrenceId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "surahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "surahNameArabic": {
+            "type": "string"
+          },
+          "ayahNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageFrom": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "pageTo": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "startWordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "endWordNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "phraseWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseAyahWordDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
       "PhraseSimilarityPhraseDto": {
         "required": [
           "ayahCount",
@@ -17900,7 +18059,8 @@
           "page",
           "pageSize",
           "query",
-          "totalCount",
+          "totalAyahCount",
+          "totalOccurrenceCount",
           "wordCount"
         ],
         "type": "object",
@@ -17928,9 +18088,13 @@
             "type": "integer",
             "format": "int32"
           },
-          "totalCount": {
+          "totalAyahCount": {
             "type": "integer",
             "format": "int32"
+          },
+          "totalOccurrenceCount": {
+            "type": "integer",
+            "format": "int64"
           },
           "query": {
             "allOf": [
@@ -17942,7 +18106,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/PhraseSimilarityMatchDto"
+              "$ref": "#/components/schemas/PhraseSimilarityAyahDto"
             }
           }
         },
@@ -17985,9 +18149,11 @@
       "PhraseTextModeCapabilitiesDto": {
         "required": [
           "maximumRepeatedLength",
+          "maximumSimilarityLength",
           "maximumSupportedLength",
           "mode",
           "repeatedLengths",
+          "similarityLengths",
           "supportedLengths"
         ],
         "type": "object",
@@ -18009,11 +18175,22 @@
               "format": "int32"
             }
           },
+          "similarityLengths": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
           "maximumSupportedLength": {
             "type": "integer",
             "format": "int32"
           },
           "maximumRepeatedLength": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximumSimilarityLength": {
             "type": "integer",
             "format": "int32"
           }

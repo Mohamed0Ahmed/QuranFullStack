@@ -8,6 +8,7 @@ export interface PhraseSimilarityGroupsResponse {
   mode: string;
   page: number;
   pageSize: number;
+  sort: string;
   threshold: number;
   totalCount: number;
   wordCount: number;

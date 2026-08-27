@@ -21,6 +21,7 @@ public enum PhraseRequestInvalidKind
     Cursor,
     Paging,
     Length,
+    Sort,
     Threshold,
     MinimumMatchedWords,
 }

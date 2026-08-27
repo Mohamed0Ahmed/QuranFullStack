@@ -45,7 +45,24 @@ public sealed class PhraseSimilarityOccurrenceHydrator(QuranDashboardDbContext d
             throw new InvalidDataException("PhraseSearch similarity variants do not have one first occurrence each.");
         }
 
-        var ayahIds = occurrenceRows.Select(row => row.AyahId).Distinct().ToList();
+        var wordsByAyah = await LoadAyahWordsAsync(
+            occurrenceRows.Select(row => row.AyahId).Distinct().ToList(),
+            cancellationToken);
+
+        return occurrenceRows.ToDictionary(
+            row => row.VariantId,
+            row => CreateSeed(row, wordsByAyah.GetValueOrDefault(row.AyahId, [])));
+    }
+
+    public async Task<IReadOnlyDictionary<int, IReadOnlyList<PhraseAyahWordDto>>> LoadAyahWordsAsync(
+        IReadOnlyList<int> ayahIds,
+        CancellationToken cancellationToken)
+    {
+        if (ayahIds.Count == 0)
+        {
+            return new Dictionary<int, IReadOnlyList<PhraseAyahWordDto>>();
+        }
+
         var wordRows = await db.QuranWords
             .AsNoTracking()
             .Where(word => ayahIds.Contains(word.AyahId) && !word.IsAyahMarker)
@@ -59,7 +76,7 @@ public sealed class PhraseSimilarityOccurrenceHydrator(QuranDashboardDbContext d
                 word.PageNumber,
                 word.TextUthmani))
             .ToListAsync(cancellationToken);
-        var wordsByAyah = wordRows
+        return wordRows
             .GroupBy(row => row.AyahId)
             .ToDictionary(
                 group => group.Key,
@@ -70,14 +87,35 @@ public sealed class PhraseSimilarityOccurrenceHydrator(QuranDashboardDbContext d
                         row.PageNumber,
                         row.TextUthmani))
                     .ToList());
-
-        return occurrenceRows.ToDictionary(
-            row => row.VariantId,
-            row => CreateSeed(row, wordsByAyah.GetValueOrDefault(row.AyahId, [])));
     }
 
     public PhraseSimilarityOccurrenceDto WithoutScore(PhraseSimilarityOccurrenceSeed occurrence) =>
         CreateOccurrence(occurrence, [], []);
+
+    public PhraseSimilarityOccurrencePreviewDto ToPreview(PhraseSimilarityOccurrenceSeed occurrence)
+    {
+        var phraseWords = occurrence.Words
+            .Where(word => word.WordNumber >= occurrence.StartWordNumber
+                && word.WordNumber <= occurrence.EndWordNumber)
+            .ToList();
+        if (phraseWords.Count != occurrence.PhraseQuranWordIds.Count)
+        {
+            throw new InvalidDataException("PhraseSearch similarity preview is not a contiguous Quran window.");
+        }
+
+        return new PhraseSimilarityOccurrencePreviewDto(
+            occurrence.OccurrenceId,
+            occurrence.AyahId,
+            occurrence.VerseKey,
+            occurrence.SurahNumber,
+            occurrence.SurahNameArabic,
+            occurrence.AyahNumber,
+            occurrence.PageFrom,
+            occurrence.PageTo,
+            occurrence.StartWordNumber,
+            occurrence.EndWordNumber,
+            phraseWords);
+    }
 
     public PhraseSimilarityOccurrenceDto ApplyScore(
         PhraseSimilarityOccurrenceSeed occurrence,

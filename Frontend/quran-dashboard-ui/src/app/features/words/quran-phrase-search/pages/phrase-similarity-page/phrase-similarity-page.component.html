@@ -1,10 +1,10 @@
 <section class="phrase-similarity-page" aria-labelledby="phrase-similarity-title">
-  <header class="phrase-similarity-page__heading">
+  <header class="phrase-similarity-page__hero">
     <div>
-      <p>التشابه الموضعي</p>
-      <h2 id="phrase-similarity-title">قارن العبارات كلمة بكلمة</h2>
+      <p>أدوات البحث اللفظي</p>
+      <h1 id="phrase-similarity-title">متشابهات العبارات القرآنية</h1>
+      <span>اكتب عبارة مرجعية، ثم قارن أقرب العبارات إليها كلمةً بكلمة.</span>
     </div>
-    <p>المقارنة بين عبارات متساوية الطول، وكل موضع إما مطابق أو مختلف داخل آية واحدة.</p>
   </header>
 
   <qd-notice
@@ -27,9 +27,7 @@
       (action)="facade.resetInvalidState()"
     />
   } @else if (!state().capabilities) {
-    @if (
-      state().capabilitiesStatus === 'error' || state().capabilitiesStatus === 'unavailable'
-    ) {
+    @if (state().capabilitiesStatus === 'error') {
       <qd-error-state
         [message]="state().errorMessage"
         actionLabel="إعادة المحاولة"
@@ -44,121 +42,48 @@
       />
     }
   } @else {
-    <div class="phrase-similarity-page__source" role="group" aria-label="مصدر استكشاف التشابه">
-      <button
-        type="button"
-        [class.phrase-similarity-page__source-active]="state().route.source === 'global'"
-        [attr.aria-pressed]="state().route.source === 'global'"
-        (click)="facade.setSource('global')"
-      >
-        المستكشف العام
-      </button>
-      <button
-        type="button"
-        [class.phrase-similarity-page__source-active]="state().route.source === 'manual'"
-        [attr.aria-pressed]="state().route.source === 'manual'"
-        (click)="facade.setSource('manual')"
-      >
-        عبارة يدوية
-      </button>
-    </div>
-
-    @if (state().route.source === 'manual') {
+    <section class="phrase-similarity-page__search" aria-label="البحث بعبارة مرجعية">
       <qd-phrase-query-resolution
         [state]="resolutionView()"
         [availableModes]="availableModes()"
+        [inlineControls]="true"
         label="العبارة المرجعية"
-        help="اكتب عبارة من كلمتين فأكثر ثم اضغط «بحث» أو Enter. لا يُرسل أي طلب أثناء الكتابة."
+        help="اكتب كلمتين أو أكثر، ثم اختر الصياغة القرآنية الدقيقة عند الحاجة."
         (draftChange)="facade.setDraft($event)"
         (modeChange)="facade.setMode($event)"
         (submitRequested)="facade.submitQuery()"
         (candidateSelected)="facade.selectCandidate($event)"
       />
-    }
-
-    <section class="phrase-similarity-page__controls" aria-label="ضوابط التشابه">
-      @if (state().route.source === 'global') {
-        <div class="phrase-similarity-page__field">
-          <span>نمط النص</span>
-          <qd-phrase-text-mode-toggle
-            [mode]="state().route.mode"
-            [availableModes]="availableModes()"
-            [disabled]="busy()"
-            (modeChange)="facade.setMode($event)"
-          />
-        </div>
-
-        <label class="phrase-similarity-page__field">
-          <span>طول العبارة</span>
-          <select
-            class="qd-select"
-            [value]="state().route.length"
-            [disabled]="busy()"
-            (change)="onLength($any($event.target).value)"
-          >
-            @for (length of globalLengths(); track length) {
-              <option [value]="length" [selected]="state().route.length === length">
-                {{ length }} كلمات
-              </option>
-            }
-          </select>
-        </label>
-      } @else {
-        <label class="phrase-similarity-page__field">
-          <span>عدد كلمات العبارة المحلولة</span>
-          <input class="qd-input" type="number" [value]="state().route.length" readonly />
-        </label>
-      }
-
-      <label class="phrase-similarity-page__field">
-        <span>الحد الأدنى للتطابق</span>
-        @if (state().route.source === 'global') {
-          <select
-            class="qd-select"
-            [value]="state().route.min"
-            [disabled]="busy()"
-            (change)="onMinimum($any($event.target).value)"
-          >
-            @for (threshold of thresholds(); track threshold) {
-              <option [value]="threshold" [selected]="state().route.min === threshold">
-                {{ threshold }}%
-              </option>
-            }
-          </select>
-        } @else {
-          <input
-            class="qd-input"
-            type="number"
-            min="50"
-            max="100"
-            step="any"
-            [value]="state().route.min"
-            [disabled]="busy()"
-            (change)="onMinimum($any($event.target).value)"
-          />
-        }
-      </label>
-
-      <label class="phrase-similarity-page__field">
-        <span>أقصى عدد اختلافات</span>
-        <input
-          class="qd-input"
-          type="number"
-          min="0"
-          [max]="maximumDifferencesAllowed()"
-          [value]="facade.maximumDifferences()"
-          [disabled]="busy() || state().route.source === 'global'"
-          (change)="onDifferences($any($event.target).value)"
-        />
-      </label>
-
-      <div class="phrase-similarity-page__rule">
-        <strong>{{ facade.minimumMatchedWords() }} كلمة مطابقة على الأقل</strong>
-        <span>
-          {{ state().route.length }} كلمة، {{ facade.maximumDifferences() }} اختلافات كحد أقصى.
-        </span>
-      </div>
     </section>
+
+    @if (state().route.resolution) {
+      <section class="phrase-similarity-page__controls" aria-label="ضوابط التشابه">
+        <label class="phrase-similarity-page__field">
+          <span>مدى المقارنة</span>
+          <select
+            class="qd-select"
+            [value]="facade.maximumDifferences()"
+            [disabled]="busy()"
+            (change)="onDifferences($any($event.target).value)"
+          >
+            @for (difference of manualDifferences(); track difference) {
+              <option [value]="difference">
+                {{ difference === 1 ? 'اختلاف واحد' : difference + ' اختلافات' }} كحد أقصى
+              </option>
+            }
+          </select>
+        </label>
+
+        <div class="phrase-similarity-page__rule">
+          <strong>{{ facade.minimumMatchedWords() }} كلمة متطابقة على الأقل</strong>
+          <span>
+            من أصل {{ state().route.length }}، مع
+            {{ facade.maximumDifferences() === 1 ? 'اختلاف واحد' : facade.maximumDifferences() + ' اختلافات' }}
+            كحد أقصى.
+          </span>
+        </div>
+      </section>
+    }
 
     <p class="qd-sr-only" role="status" aria-live="polite">{{ countAnnouncement() }}</p>
 
@@ -191,21 +116,27 @@
           (action)="facade.retry()"
         />
       } @else if (state().resultsStatus === 'empty') {
-        <qd-empty-state message="لا توجد عبارات تحقق حد التطابق الحالي. خفّض الحد أو غيّر الطول." />
-      } @else if (state().resultsStatus === 'idle' && state().route.source === 'manual') {
-        <qd-empty-state message="أرسل عبارة واختر تسلسلها الدقيق لبدء المقارنة الموضعية." />
-      } @else if (state().groups.length > 0 || state().matches.length > 0) {
+        <qd-empty-state message="لا توجد عبارات بهذه الدرجة. وسّع مدى الاختلاف أو جرّب عبارة أقصر." />
+      } @else if (state().resultsStatus === 'idle') {
+        <div class="phrase-similarity-page__onboarding">
+          <span aria-hidden="true">١</span>
+          <div>
+            <h2>ابدأ بعبارة قرآنية</h2>
+            <p>
+              سنحدد موضعها الدقيق أولًا، ثم نعرض العبارات القريبة منها في جدول واضح
+              يبيّن الكلمات المتطابقة والمختلفة.
+            </p>
+          </div>
+        </div>
+      } @else if (state().queryPhrase; as queryPhrase) {
         <qd-phrase-similarity-list
-          [source]="state().route.source"
-          [groups]="state().groups"
-          [matches]="state().matches"
-          [selectedAnchor]="state().selectedAnchor"
-          [totalCount]="state().totalCount"
+          [items]="state().ayahs"
+          [queryPhrase]="queryPhrase"
+          [totalAyahCount]="state().totalAyahCount"
+          [totalOccurrenceCount]="state().totalOccurrenceCount"
           [page]="state().route.page"
-          [pageSize]="25"
+          [resultSetKey]="state().route.resolution + '|' + state().route.min + '|' + state().route.page"
           [busy]="busy()"
-          (anchorSelected)="facade.selectAnchor($event)"
-          (anchorCleared)="facade.clearAnchor()"
           (pageChange)="facade.setPage($event)"
         />
       }

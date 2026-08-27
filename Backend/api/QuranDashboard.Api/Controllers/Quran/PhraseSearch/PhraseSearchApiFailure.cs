@@ -30,6 +30,9 @@ internal static class PhraseSearchApiFailure
         PhraseRequestInvalidKind.Length => Fail<T>(
             PhraseSearchApiMessages.InvalidLength,
             PhraseSearchErrorCodes.InvalidLength),
+        PhraseRequestInvalidKind.Sort => Fail<T>(
+            PhraseSearchApiMessages.InvalidSort,
+            PhraseSearchErrorCodes.InvalidSort),
         PhraseRequestInvalidKind.Threshold => Fail<T>(
             PhraseSearchApiMessages.InvalidSimilarityThreshold,
             PhraseSearchErrorCodes.InvalidSimilarityThreshold),

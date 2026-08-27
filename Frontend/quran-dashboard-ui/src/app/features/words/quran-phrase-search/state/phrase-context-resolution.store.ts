@@ -13,7 +13,7 @@ import {
   phraseResolutionFromBranches,
 } from './phrase-resolution-state';
 
-const INVALID_QUERY_MESSAGE = 'اكتب عبارة قرآنية لا تتجاوز 4 كيلوبايت ثم أرسلها.';
+const INVALID_QUERY_MESSAGE = 'اكتب عبارة قرآنية ثم أرسلها.';
 
 @Injectable()
 export class PhraseContextResolutionStore {

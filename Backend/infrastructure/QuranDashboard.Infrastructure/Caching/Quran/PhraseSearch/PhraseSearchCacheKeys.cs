@@ -75,9 +75,10 @@ public static class PhraseSearchCacheKeys
         PhraseTextMode mode,
         short wordCount,
         short threshold,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize) =>
-        $"phrase-search:{buildId:N}:similarity-groups:{(short)mode}:{wordCount}:{threshold}:p{page}:s{pageSize}";
+        $"phrase-search:{buildId:N}:similarity-groups:{(short)mode}:{wordCount}:{threshold}:{(short)sort}:p{page}:s{pageSize}";
 
     public static string SimilarityMatches(
         Guid buildId,

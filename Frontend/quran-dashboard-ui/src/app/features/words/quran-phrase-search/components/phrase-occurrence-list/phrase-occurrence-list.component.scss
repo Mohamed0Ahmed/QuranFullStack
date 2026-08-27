@@ -78,6 +78,7 @@
 .phrase-occurrences__list {
   display: grid;
   flex: 1 1 auto;
+  align-content: start;
   gap: var(--qd-space-1);
   min-block-size: 0;
   overflow-y: auto;

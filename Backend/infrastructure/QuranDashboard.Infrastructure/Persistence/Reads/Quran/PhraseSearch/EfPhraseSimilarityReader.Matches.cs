@@ -75,6 +75,11 @@ public sealed partial class EfPhraseSimilarityReader
             CalculateOffset(page, pageSize),
             pageSize,
             cancellationToken);
+        var matchPage = await CreateMatchPageAsync(
+            snapshot.ActiveBuildId,
+            group.Anchor,
+            rows,
+            cancellationToken);
         var response = new PhraseSimilarityMatchesResponse(
             snapshot.ActiveBuildId,
             threshold,
@@ -82,11 +87,8 @@ public sealed partial class EfPhraseSimilarityReader
             pageSize,
             group.NeighborCount,
             ToDto(group.Anchor),
-            await CreateMatchesAsync(
-                snapshot.ActiveBuildId,
-                group.Anchor,
-                rows,
-                cancellationToken));
+            matchPage.AnchorOccurrence,
+            matchPage.Items);
         await snapshot.CompleteAsync(cancellationToken);
         cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));
         return new PhraseSearchReadResult<PhraseSimilarityMatchesResponse>.Success(response);

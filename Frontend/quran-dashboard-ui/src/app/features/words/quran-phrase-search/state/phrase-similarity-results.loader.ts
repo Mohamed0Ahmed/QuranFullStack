@@ -1,12 +1,12 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 
-import { PhraseSimilarityGroupDto } from '../../../../core/api/generated/models/phrase-similarity-group-dto';
-import { PhraseSimilarityMatchDto } from '../../../../core/api/generated/models/phrase-similarity-match-dto';
+import { PhraseSimilarityAyahDto } from '../../../../core/api/generated/models/phrase-similarity-ayah-dto';
+import { PhraseSimilarityPhraseDto } from '../../../../core/api/generated/models/phrase-similarity-phrase-dto';
 import { lastPageNumber } from '../../../../shared/ui/pagination/pagination-range';
 import { PhraseSimilarityApi } from '../data-access/phrase-similarity.api';
 import {
-  PHRASE_SIMILARITY_PAGE_SIZE,
+  PHRASE_SIMILARITY_AYAH_PAGE_SIZE,
   PhraseSimilarityUrlState,
 } from '../models/phrase-similarity.models';
 import { PhraseRequestFailure, phraseEnvelopeFailure } from './phrase-request-failure';
@@ -15,10 +15,11 @@ import { minimumMatchedWords } from './phrase-similarity-threshold';
 export interface PhraseSimilarityLoadSuccess {
   readonly kind: 'success';
   readonly activeBuildId: string;
-  readonly groups: readonly PhraseSimilarityGroupDto[];
-  readonly matches: readonly PhraseSimilarityMatchDto[];
-  readonly totalCount: number;
+  readonly ayahs: readonly PhraseSimilarityAyahDto[];
+  readonly totalAyahCount: number;
+  readonly totalOccurrenceCount: number;
   readonly lastPage: number;
+  readonly queryPhrase: PhraseSimilarityPhraseDto;
 }
 
 export interface PhraseSimilarityLoadFailure {
@@ -34,10 +35,15 @@ export type PhraseSimilarityLoadResult =
 export class PhraseSimilarityResultsLoader {
   private readonly api = inject(PhraseSimilarityApi);
 
-  loadManual(route: PhraseSimilarityUrlState): Observable<PhraseSimilarityLoadResult> {
+  load(route: PhraseSimilarityUrlState): Observable<PhraseSimilarityLoadResult> {
     const minimumMatched = minimumMatchedWords(route.length, route.min);
     return this.api
-      .search(route.resolution!, minimumMatched, route.page, PHRASE_SIMILARITY_PAGE_SIZE)
+      .search(
+        route.resolution!,
+        minimumMatched,
+        route.page,
+        PHRASE_SIMILARITY_AYAH_PAGE_SIZE,
+      )
       .pipe(
         map((response) => {
           if (!response.isSuccess || !response.data) {
@@ -46,99 +52,26 @@ export class PhraseSimilarityResultsLoader {
           if (
             response.data.mode !== route.mode ||
             response.data.wordCount !== route.length ||
-            response.data.minimumMatchedWords !== minimumMatched
+            response.data.minimumMatchedWords !== minimumMatched ||
+            response.data.pageSize !== PHRASE_SIMILARITY_AYAH_PAGE_SIZE
           ) {
             return invalidResult('نتائج العبارة لا تطابق هوية خيارات الرابط الحالية.');
           }
-          return successResult(
-            response.data.activeBuildId,
-            [],
-            response.data.items,
-            response.data.totalCount,
-          );
+          return {
+            kind: 'success',
+            activeBuildId: response.data.activeBuildId,
+            ayahs: response.data.items,
+            totalAyahCount: response.data.totalAyahCount,
+            totalOccurrenceCount: response.data.totalOccurrenceCount,
+            lastPage: lastPageNumber(
+              PHRASE_SIMILARITY_AYAH_PAGE_SIZE,
+              response.data.totalAyahCount,
+            ),
+            queryPhrase: response.data.query,
+          };
         }),
       );
   }
-
-  loadGroups(route: PhraseSimilarityUrlState): Observable<PhraseSimilarityLoadResult> {
-    return this.api
-      .getGroups(
-        route.mode,
-        route.length,
-        route.min,
-        route.page,
-        PHRASE_SIMILARITY_PAGE_SIZE,
-      )
-      .pipe(
-        map((response) => {
-          if (!response.isSuccess || !response.data) {
-            return failureResult(response.errors, response.message);
-          }
-          if (
-            response.data.mode !== route.mode ||
-            response.data.wordCount !== route.length ||
-            response.data.threshold !== route.min
-          ) {
-            return invalidResult('نتائج المجموعات لا تطابق خيارات الرابط الحالية.');
-          }
-          return successResult(
-            response.data.activeBuildId,
-            response.data.items,
-            [],
-            response.data.totalCount,
-          );
-        }),
-      );
-  }
-
-  loadMatches(
-    route: PhraseSimilarityUrlState,
-    anchor: PhraseSimilarityGroupDto,
-  ): Observable<PhraseSimilarityLoadResult> {
-    return this.api
-      .getMatches(
-        route.build!,
-        anchor.anchor.variantId,
-        route.min,
-        route.page,
-        PHRASE_SIMILARITY_PAGE_SIZE,
-      )
-      .pipe(
-        map((response) => {
-          if (!response.isSuccess || !response.data) {
-            return failureResult(response.errors, response.message);
-          }
-          if (
-            response.data.anchor.variantId !== anchor.anchor.variantId ||
-            response.data.threshold !== route.min
-          ) {
-            return invalidResult('تعذر استعادة المجموعة المحددة بهذه الخيارات.');
-          }
-          return successResult(
-            response.data.activeBuildId,
-            [],
-            response.data.items,
-            response.data.totalCount,
-          );
-        }),
-      );
-  }
-}
-
-function successResult(
-  activeBuildId: string,
-  groups: readonly PhraseSimilarityGroupDto[],
-  matches: readonly PhraseSimilarityMatchDto[],
-  totalCount: number,
-): PhraseSimilarityLoadSuccess {
-  return {
-    kind: 'success',
-    activeBuildId,
-    groups,
-    matches,
-    totalCount,
-    lastPage: lastPageNumber(PHRASE_SIMILARITY_PAGE_SIZE, totalCount),
-  };
 }
 
 function failureResult(

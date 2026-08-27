@@ -45,9 +45,25 @@ public sealed partial class EfPhraseRepetitionsReader(
             .OrderBy(row => row.Mode)
             .ThenBy(row => row.WordCount)
             .ToList();
+        var similarityLengths = snapshot.SimilarityReady
+            ? await db.QuranPhraseSimilarityAnchorStats
+                .AsNoTracking()
+                .Where(stat => stat.BuildId == snapshot.ActiveBuildId && stat.NeighborCount > 0)
+                .Select(stat => new { stat.Mode, stat.WordCount })
+                .Distinct()
+                .OrderBy(row => row.Mode)
+                .ThenBy(row => row.WordCount)
+                .ToListAsync(cancellationToken)
+            : [];
 
         var modes = new[] { PhraseTextMode.Simple, PhraseTextMode.Tashkil }
-            .Select(mode => CreateModeCapabilities(mode, lengths))
+            .Select(mode => CreateModeCapabilities(
+                mode,
+                lengths,
+                similarityLengths
+                    .Where(row => row.Mode == mode)
+                    .Select(row => row.WordCount)
+                    .ToList()))
             .ToList();
 
         var response = new PhraseSearchCapabilitiesResponse(
@@ -324,7 +340,8 @@ public sealed partial class EfPhraseRepetitionsReader(
 
     private static PhraseTextModeCapabilitiesDto CreateModeCapabilities(
         PhraseTextMode mode,
-        IReadOnlyList<PhraseLengthRow> lengths)
+        IReadOnlyList<PhraseLengthRow> lengths,
+        IReadOnlyList<short> similarityLengths)
     {
         var modeLengths = lengths
             .Where(row => row.Mode == mode)
@@ -343,8 +360,10 @@ public sealed partial class EfPhraseRepetitionsReader(
             PhraseTextModeContract.CanonicalKey(mode),
             supported,
             repeated,
+            similarityLengths,
             supported.LastOrDefault(),
-            repeated.LastOrDefault());
+            repeated.LastOrDefault(),
+            similarityLengths.LastOrDefault());
     }
 
     private static IOrderedQueryable<QuranPhraseVariant> ApplySort(

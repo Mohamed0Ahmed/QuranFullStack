@@ -4,7 +4,6 @@
 import { PhraseSimilarityOccurrenceDto } from '../models/phrase-similarity-occurrence-dto';
 import { PhraseSimilarityPhraseDto } from '../models/phrase-similarity-phrase-dto';
 export interface PhraseSimilarityMatchDto {
-  anchorOccurrence: PhraseSimilarityOccurrenceDto;
   comparedOccurrence: PhraseSimilarityOccurrenceDto;
   differenceCount: number;
   differingPositions: Array<number>;

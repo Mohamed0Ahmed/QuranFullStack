@@ -38,7 +38,7 @@ public sealed partial class EfPhraseSimilarityReader(
             .SingleOrDefaultAsync(cancellationToken);
     }
 
-    private async Task<IReadOnlyList<PhraseSimilarityMatchDto>> CreateMatchesAsync(
+    private async Task<SimilarityMatchPage> CreateMatchPageAsync(
         Guid buildId,
         SimilarityVariantRow anchor,
         IReadOnlyList<SimilarityMatchRow> rows,
@@ -79,11 +79,12 @@ public sealed partial class EfPhraseSimilarityReader(
                 score.MatchPercent,
                 score.MatchedPositions,
                 score.DifferingPositions,
-                occurrenceHydrator.ApplyScore(anchorOccurrence, score),
                 occurrenceHydrator.ApplyScore(comparedOccurrence, score)));
         }
 
-        return items;
+        return new SimilarityMatchPage(
+            occurrenceHydrator.WithoutScore(anchorOccurrence),
+            items);
     }
 
     private static PhraseSimilarityPhraseDto ToDto(SimilarityVariantRow variant) => new(
@@ -110,4 +111,8 @@ public sealed partial class EfPhraseSimilarityReader(
     private sealed record SimilarityMatchRow(
         SimilarityVariantRow Variant,
         short StoredMatchedCount);
+
+    private sealed record SimilarityMatchPage(
+        PhraseSimilarityOccurrenceDto AnchorOccurrence,
+        IReadOnlyList<PhraseSimilarityMatchDto> Items);
 }

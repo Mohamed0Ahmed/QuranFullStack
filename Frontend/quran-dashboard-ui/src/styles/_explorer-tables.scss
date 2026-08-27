@@ -241,7 +241,9 @@ qd-data-table.qd-explorer-table .qd-data-table__row {
 .phrase-contexts-table .qd-data-table__header-row,
 .phrase-contexts-table .qd-data-table__row:not(.qd-data-table__row--compact),
 .phrase-context-occurrences-table .qd-data-table__header-row,
-.phrase-context-occurrences-table .qd-data-table__row:not(.qd-data-table__row--compact) {
+.phrase-context-occurrences-table .qd-data-table__row:not(.qd-data-table__row--compact),
+.similarity-ayahs__table .qd-data-table__header-row,
+.similarity-ayahs__table .qd-data-table__row:not(.qd-data-table__row--compact) {
   grid-template-columns: var(--qd-explorer-table-columns);
 }
 
@@ -249,6 +251,10 @@ qd-data-table.phrase-contexts-table .qd-data-table__body.qd-data-table__body--vi
 qd-data-table.phrase-context-occurrences-table .qd-data-table__body.qd-data-table__body--virtual {
   flex: 1 1 0;
   block-size: 0;
+}
+
+qd-data-table.similarity-ayahs__table .qd-data-table__body.qd-data-table__body--virtual {
+  block-size: var(--qd-explorer-table-body-height);
 }
 
 .word-types-table .qd-data-table__header-row,

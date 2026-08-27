@@ -7,15 +7,32 @@ public sealed record PhraseSimilaritySearchResponse(
     short MinimumMatchedWords,
     int Page,
     int PageSize,
-    int TotalCount,
+    int TotalAyahCount,
+    long TotalOccurrenceCount,
     PhraseSimilarityPhraseDto Query,
-    IReadOnlyList<PhraseSimilarityMatchDto> Items);
+    IReadOnlyList<PhraseSimilarityAyahDto> Items);
+
+public sealed record PhraseSimilarityAyahDto(
+    int AyahId,
+    string VerseKey,
+    short SurahNumber,
+    string SurahNameArabic,
+    short AyahNumber,
+    short PageFrom,
+    short PageTo,
+    short BestMatchedCount,
+    short MinimumDifferenceCount,
+    decimal BestMatchPercent,
+    int OccurrenceCount,
+    IReadOnlyList<PhraseAyahWordDto> Words,
+    PhraseSimilarityHighlightsDto Highlights);
 
 public sealed record PhraseSimilarityGroupsResponse(
     Guid ActiveBuildId,
     string Mode,
     short WordCount,
     short Threshold,
+    string Sort,
     int Page,
     int PageSize,
     int TotalCount,
@@ -28,6 +45,7 @@ public sealed record PhraseSimilarityMatchesResponse(
     int PageSize,
     int TotalCount,
     PhraseSimilarityPhraseDto Anchor,
+    PhraseSimilarityOccurrenceDto AnchorOccurrence,
     IReadOnlyList<PhraseSimilarityMatchDto> Items);
 
 public sealed record PhraseSimilarityGroupDto(
@@ -35,7 +53,8 @@ public sealed record PhraseSimilarityGroupDto(
     int NeighborCount,
     short? BestMatchedCount,
     decimal? BestMatchPercent,
-    PhraseSimilarityOccurrenceDto RepresentativeOccurrence);
+    PhraseSimilarityPhraseDto? BestNeighbor,
+    PhraseSimilarityOccurrencePreviewDto RepresentativeOccurrence);
 
 public sealed record PhraseSimilarityMatchDto(
     PhraseSimilarityPhraseDto Phrase,
@@ -44,7 +63,6 @@ public sealed record PhraseSimilarityMatchDto(
     decimal MatchPercent,
     IReadOnlyList<short> MatchedPositions,
     IReadOnlyList<short> DifferingPositions,
-    PhraseSimilarityOccurrenceDto AnchorOccurrence,
     PhraseSimilarityOccurrenceDto ComparedOccurrence);
 
 public sealed record PhraseSimilarityPhraseDto(
@@ -74,3 +92,16 @@ public sealed record PhraseSimilarityHighlightsDto(
     IReadOnlyList<int> PhraseQuranWordIds,
     IReadOnlyList<int> MatchedQuranWordIds,
     IReadOnlyList<int> DifferingQuranWordIds);
+
+public sealed record PhraseSimilarityOccurrencePreviewDto(
+    long OccurrenceId,
+    int AyahId,
+    string VerseKey,
+    short SurahNumber,
+    string SurahNameArabic,
+    short AyahNumber,
+    short PageFrom,
+    short PageTo,
+    short StartWordNumber,
+    short EndWordNumber,
+    IReadOnlyList<PhraseAyahWordDto> PhraseWords);

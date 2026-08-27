@@ -15,3 +15,7 @@ export function percentForMaximumDifferences(
   const exactBandMidpoint = ((matched - 0.5) * 100) / length;
   return Number(Math.max(50, exactBandMidpoint).toFixed(6));
 }
+
+export function manualDifferenceOptions(length: number): readonly number[] {
+  return Array.from({ length: Math.max(1, Math.floor(length / 2)) }, (_, index) => index + 1);
+}

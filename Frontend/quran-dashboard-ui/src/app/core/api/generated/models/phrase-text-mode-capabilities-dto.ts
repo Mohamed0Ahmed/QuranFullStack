@@ -3,8 +3,10 @@
 
 export interface PhraseTextModeCapabilitiesDto {
   maximumRepeatedLength: number;
+  maximumSimilarityLength: number;
   maximumSupportedLength: number;
   mode: string;
   repeatedLengths: Array<number>;
+  similarityLengths: Array<number>;
   supportedLengths: Array<number>;
 }

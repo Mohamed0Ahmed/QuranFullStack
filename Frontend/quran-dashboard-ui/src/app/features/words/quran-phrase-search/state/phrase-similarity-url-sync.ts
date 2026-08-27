@@ -3,7 +3,6 @@ import { ParamMap, Params } from '@angular/router';
 import {
   DEFAULT_PHRASE_SIMILARITY_URL_STATE,
   ParsedPhraseSimilarityUrlState,
-  PhraseSimilaritySource,
   PhraseSimilarityUrlState,
 } from '../models/phrase-similarity.models';
 import { isPhraseTextMode } from '../models/phrase-repetitions.models';
@@ -15,59 +14,61 @@ export function parsePhraseSimilarityUrlState(
   params: ParamMap,
 ): ParsedPhraseSimilarityUrlState {
   const build = parseBuild(params.get('build'));
-  const source = parseSource(params.get('source'));
   const modeValue = params.get('mode');
   const mode = isPhraseTextMode(modeValue)
     ? { value: modeValue, invalid: false }
     : modeValue
       ? { value: DEFAULT_PHRASE_SIMILARITY_URL_STATE.mode, invalid: true }
       : { value: DEFAULT_PHRASE_SIMILARITY_URL_STATE.mode, invalid: false };
-  const length = parsePositiveInteger(params.get('length'), 4);
-  const minimum = parsePositiveNumber(params.get('min'), 50);
-  const page = parsePositiveInteger(params.get('page'), 1);
+  const length = parsePositiveInteger(
+    params.get('length'),
+    DEFAULT_PHRASE_SIMILARITY_URL_STATE.length,
+  );
+  const minimum = parsePositiveNumber(
+    params.get('min'),
+    DEFAULT_PHRASE_SIMILARITY_URL_STATE.min,
+  );
+  const page = parsePositiveInteger(
+    params.get('page') ?? params.get('matchPage'),
+    DEFAULT_PHRASE_SIMILARITY_URL_STATE.page,
+  );
   const resolution = parseReference(params.get('resolution'));
-  const sortValue = params.get('sort');
-  const sortInvalid = sortValue !== null && sortValue !== 'relevance';
   const state: PhraseSimilarityUrlState = {
     build: build.value,
-    source: source.value,
     q: params.get('q') ?? '',
     resolution: resolution.value,
     mode: mode.value,
     length: length.value,
     min: minimum.value,
-    sort: 'relevance',
     page: page.value,
   };
-  const manualWithoutQuery = state.source === 'manual' && state.resolution !== null && !state.q;
-  const globalWithResolution = state.source === 'global' && state.resolution !== null;
   return {
     state,
     invalid:
       build.invalid ||
-      source.invalid ||
       mode.invalid ||
       length.invalid ||
       minimum.invalid ||
       page.invalid ||
       resolution.invalid ||
-      sortInvalid ||
-      manualWithoutQuery ||
-      globalWithResolution,
+      (state.resolution !== null && !state.q),
   };
 }
 
 export function serializePhraseSimilarityUrlState(state: PhraseSimilarityUrlState): Params {
   return {
     build: state.build,
-    source: state.source,
-    q: state.source === 'manual' && state.q ? state.q : null,
-    resolution: state.source === 'manual' ? state.resolution : null,
+    q: state.q || null,
+    resolution: state.resolution,
     mode: state.mode,
     length: String(state.length),
     min: String(state.min),
-    sort: state.sort,
     page: String(state.page),
+    source: null,
+    sort: null,
+    groupPage: null,
+    matchPage: null,
+    anchor: null,
   };
 }
 
@@ -91,13 +92,11 @@ export function safePhraseSimilarityUrlState(
 export function phraseSimilarityStateKey(state: PhraseSimilarityUrlState): string {
   return [
     state.build,
-    state.source,
     state.q,
     state.resolution,
     state.mode,
     state.length,
     state.min,
-    state.sort,
     state.page,
   ].join('|');
 }
@@ -118,15 +117,6 @@ function parseBuild(value: string | null): { value: string | null; invalid: bool
   return BUILD_ID_PATTERN.test(value)
     ? { value: value.toLowerCase(), invalid: false }
     : { value: null, invalid: true };
-}
-
-function parseSource(value: string | null): { value: PhraseSimilaritySource; invalid: boolean } {
-  if (!value) {
-    return { value: 'global', invalid: false };
-  }
-  return value === 'manual' || value === 'global'
-    ? { value, invalid: false }
-    : { value: 'global', invalid: true };
 }
 
 function parseReference(value: string | null): { value: string | null; invalid: boolean } {

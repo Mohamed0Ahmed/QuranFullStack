@@ -1,12 +1,11 @@
-import { Injectable, inject, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { Observable, map, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { PhraseSimilarityGroupDto } from '../../../../core/api/generated/models/phrase-similarity-group-dto';
-import { PhraseSimilarityMatchDto } from '../../../../core/api/generated/models/phrase-similarity-match-dto';
+import { PhraseSimilarityAyahDto } from '../../../../core/api/generated/models/phrase-similarity-ayah-dto';
+import { PhraseSimilarityPhraseDto } from '../../../../core/api/generated/models/phrase-similarity-phrase-dto';
 import { PhraseLoadStatus } from '../models/phrase-repetitions.models';
 import { PhraseSimilarityUrlState } from '../models/phrase-similarity.models';
-import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import { phraseRequestFailure } from './phrase-request-failure';
 import { PhraseSimilarityLoadResult } from './phrase-similarity-results.loader';
 import { phraseSimilarityStateKey } from './phrase-similarity-url-sync';
@@ -21,42 +20,29 @@ export interface PhraseSimilarityResultHooks {
 
 @Injectable()
 export class PhraseSimilarityResultStore {
-  private readonly gate = inject(PhraseActionRequestGate);
   readonly status = signal<PhraseLoadStatus>('idle');
-  readonly groups = signal<readonly PhraseSimilarityGroupDto[]>([]);
-  readonly matches = signal<readonly PhraseSimilarityMatchDto[]>([]);
-  readonly totalCount = signal(0);
-  readonly selectedAnchor = signal<PhraseSimilarityGroupDto | null>(null);
-
-  selectAnchor(group: PhraseSimilarityGroupDto): void {
-    this.selectedAnchor.set(group);
-    this.groups.set([]);
-  }
-
-  clearAnchor(): void {
-    this.selectedAnchor.set(null);
-    this.matches.set([]);
-  }
+  readonly ayahs = signal<readonly PhraseSimilarityAyahDto[]>([]);
+  readonly totalAyahCount = signal(0);
+  readonly totalOccurrenceCount = signal(0);
+  readonly queryPhrase = signal<PhraseSimilarityPhraseDto | null>(null);
 
   clear(): void {
-    this.selectedAnchor.set(null);
-    this.groups.set([]);
-    this.matches.set([]);
-    this.totalCount.set(0);
+    this.ayahs.set([]);
+    this.totalAyahCount.set(0);
+    this.totalOccurrenceCount.set(0);
+    this.queryPhrase.set(null);
   }
 
   load(
     route: PhraseSimilarityUrlState,
     request: Observable<PhraseSimilarityLoadResult>,
-    expectedAnchorVariantId: number | null,
     hooks: PhraseSimilarityResultHooks,
-    actionEpoch?: number,
   ): Observable<void> {
-    this.status.set(this.groups().length ? 'refreshing' : 'loading');
+    this.status.set(this.ayahs().length ? 'refreshing' : 'loading');
     const routeKey = phraseSimilarityStateKey(route);
     return request.pipe(
       tap((result) => {
-        if (!this.isCurrent(routeKey, expectedAnchorVariantId, hooks, actionEpoch)) {
+        if (routeKey !== phraseSimilarityStateKey(hooks.currentRoute())) {
           return;
         }
         if (result.kind === 'failure') {
@@ -75,13 +61,14 @@ export class PhraseSimilarityResultStore {
           hooks.navigate({ ...route, page: result.lastPage }, true);
           return;
         }
-        this.groups.set(result.groups);
-        this.matches.set(result.matches);
-        this.totalCount.set(result.totalCount);
-        this.status.set(result.totalCount === 0 ? 'empty' : 'success');
+        this.ayahs.set(result.ayahs);
+        this.totalAyahCount.set(result.totalAyahCount);
+        this.totalOccurrenceCount.set(result.totalOccurrenceCount);
+        this.queryPhrase.set(result.queryPhrase);
+        this.status.set(result.totalAyahCount === 0 ? 'empty' : 'success');
       }),
       catchError((error: unknown) => {
-        if (!this.isCurrent(routeKey, expectedAnchorVariantId, hooks, actionEpoch)) {
+        if (routeKey !== phraseSimilarityStateKey(hooks.currentRoute())) {
           return of(undefined);
         }
         const failure = phraseRequestFailure(error);
@@ -94,36 +81,6 @@ export class PhraseSimilarityResultStore {
         return of(undefined);
       }),
       map(() => undefined),
-    );
-  }
-
-  loadAction(
-    route: PhraseSimilarityUrlState,
-    request: Observable<PhraseSimilarityLoadResult>,
-    expectedAnchorVariantId: number | null,
-    hooks: PhraseSimilarityResultHooks,
-  ): void {
-    const epoch = this.gate.begin();
-    const subscription = this.load(
-      route,
-      request,
-      expectedAnchorVariantId,
-      hooks,
-      epoch,
-    ).subscribe();
-    this.gate.track(epoch, subscription);
-  }
-
-  private isCurrent(
-    routeKey: string,
-    expectedAnchorVariantId: number | null,
-    hooks: PhraseSimilarityResultHooks,
-    actionEpoch?: number,
-  ): boolean {
-    return (
-      routeKey === phraseSimilarityStateKey(hooks.currentRoute()) &&
-      (this.selectedAnchor()?.anchor.variantId ?? null) === expectedAnchorVariantId &&
-      (actionEpoch === undefined || this.gate.isCurrent(actionEpoch))
     );
   }
 }

@@ -2,11 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
-import { PhraseSimilarityGroupsResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-groups-response-api-response';
-import { PhraseSimilarityMatchesResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-matches-response-api-response';
 import { PhraseSimilaritySearchResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-search-response-api-response';
 import { environment } from '../../../../../environments/environment';
-import { PhraseTextMode } from '../models/phrase-repetitions.models';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 
 @Injectable({ providedIn: 'root' })
@@ -42,54 +39,4 @@ export class PhraseSimilarityApi {
     );
   }
 
-  getGroups(
-    mode: PhraseTextMode,
-    length: number,
-    threshold: number,
-    page: number,
-    pageSize: number,
-  ): Observable<PhraseSimilarityGroupsResponseApiResponse> {
-    const params = new HttpParams()
-      .set('mode', mode)
-      .set('length', length)
-      .set('threshold', threshold)
-      .set('page', page)
-      .set('pageSize', pageSize);
-    return this.cache.buildScoped(
-      phraseSearchCacheKey('similarity-groups', mode, length, threshold, page, pageSize),
-      () =>
-        this.http.get<PhraseSimilarityGroupsResponseApiResponse>(
-          `${this.baseUrl}/similarity-groups`,
-          { params },
-        ),
-    );
-  }
-
-  getMatches(
-    buildId: string,
-    variantId: number,
-    threshold: number,
-    page: number,
-    pageSize: number,
-  ): Observable<PhraseSimilarityMatchesResponseApiResponse> {
-    const params = new HttpParams()
-      .set('threshold', threshold)
-      .set('page', page)
-      .set('pageSize', pageSize);
-    return this.cache.buildScoped(
-      phraseSearchCacheKey(
-        'similarity-matches',
-        buildId,
-        variantId,
-        threshold,
-        page,
-        pageSize,
-      ),
-      () =>
-        this.http.get<PhraseSimilarityMatchesResponseApiResponse>(
-          `${this.baseUrl}/similarity-groups/${encodeURIComponent(buildId)}/${variantId}/matches`,
-          { params },
-        ),
-    );
-  }
 }

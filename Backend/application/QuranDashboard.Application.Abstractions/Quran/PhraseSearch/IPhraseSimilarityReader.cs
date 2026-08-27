@@ -16,6 +16,7 @@ public interface IPhraseSimilarityReader
         PhraseTextMode mode,
         short wordCount,
         short threshold,
+        PhraseSimilaritySort sort,
         int page,
         int pageSize,
         CancellationToken cancellationToken);

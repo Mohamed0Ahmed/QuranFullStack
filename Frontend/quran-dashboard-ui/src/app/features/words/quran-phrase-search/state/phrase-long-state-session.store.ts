@@ -97,7 +97,6 @@ function sameSimilarityBase(
 ): boolean {
   return (
     stored.build === base.build &&
-    stored.source === base.source &&
     (base.q === '' || stored.q === base.q) &&
     stored.mode === base.mode
   );

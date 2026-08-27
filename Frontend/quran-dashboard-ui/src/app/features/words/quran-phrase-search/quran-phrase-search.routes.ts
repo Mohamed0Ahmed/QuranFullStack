@@ -20,6 +20,7 @@ import { PhraseNoticeStore } from './state/phrase-notice.store';
 import { PhraseContextActionCoordinator } from './state/phrase-context-action.coordinator';
 import { PhraseSimilarityResultStore } from './state/phrase-similarity-result.store';
 import { PhraseSimilarityResolutionStore } from './state/phrase-similarity-resolution.store';
+import { PhraseSimilarityQueryCoordinator } from './state/phrase-similarity-query.coordinator';
 
 const loadShell = () =>
   import('./pages/quran-phrase-search-shell/quran-phrase-search-shell.component').then(
@@ -79,6 +80,7 @@ export const QURAN_PHRASE_SEARCH_ROUTES: Routes = [
         loadComponent: loadSimilarityPage,
         providers: [
           PhraseSimilarityFacade,
+          PhraseSimilarityQueryCoordinator,
           PhraseSimilarityResultStore,
           PhraseSimilarityResolutionStore,
           PhraseSimilarityResultsLoader,

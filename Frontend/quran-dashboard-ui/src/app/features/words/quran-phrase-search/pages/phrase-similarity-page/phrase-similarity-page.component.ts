@@ -8,10 +8,10 @@ import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.compon
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
 import { PhraseSimilarityListComponent } from '../../components/phrase-similarity-list/phrase-similarity-list.component';
-import { PhraseTextModeToggleComponent } from '../../components/phrase-text-mode-toggle/phrase-text-mode-toggle.component';
 import { PhraseResolutionViewState } from '../../models/phrase-query.models';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
 import { PhraseSimilarityFacade } from '../../state/phrase-similarity.facade';
+import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold';
 
 @Component({
   selector: 'qd-phrase-similarity-page',
@@ -20,7 +20,6 @@ import { PhraseSimilarityFacade } from '../../state/phrase-similarity.facade';
     ExplorerPanelSkeletonComponent,
     PhraseQueryResolutionComponent,
     PhraseSimilarityListComponent,
-    PhraseTextModeToggleComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdNoticeComponent,
@@ -38,14 +37,8 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
   protected readonly availableModes = computed<readonly PhraseTextMode[]>(() =>
     (this.state().capabilities?.modes ?? []).map((item) => item.mode).filter(isPhraseTextMode),
   );
-  protected readonly globalLengths = computed<readonly number[]>(() =>
-    (
-      this.state().capabilities?.modes.find((item) => item.mode === this.state().route.mode)
-        ?.supportedLengths ?? []
-    ).filter((length) => length >= 4),
-  );
-  protected readonly thresholds = computed(
-    () => this.state().capabilities?.similarityThresholds ?? [50, 60, 70, 80, 90],
+  protected readonly manualDifferences = computed(() =>
+    manualDifferenceOptions(this.state().route.length),
   );
   protected readonly resolutionView = computed<PhraseResolutionViewState>(() => ({
     rawQuery: this.facade.draft(),
@@ -61,18 +54,15 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
         : '',
   }));
   protected readonly busy = computed(() => {
-    const state = this.state();
-    return state.resultsStatus === 'loading' || state.resultsStatus === 'refreshing';
+    const status = this.state().resultsStatus;
+    return status === 'loading' || status === 'refreshing';
   });
-  protected readonly maximumDifferencesAllowed = computed(() =>
-    Math.floor(this.state().route.length / 2),
-  );
   protected readonly countAnnouncement = computed(() => {
     const state = this.state();
     if (state.resultsStatus !== 'success' && state.resultsStatus !== 'empty') {
       return '';
     }
-    return `تم تحميل ${state.totalCount} نتيجة تشابه`;
+    return `تم تحميل ${state.totalAyahCount} آية في ${state.totalOccurrenceCount} موضعًا`;
   });
 
   ngOnInit(): void {
@@ -83,23 +73,9 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
     this.facade.unbindFromRoute();
   }
 
-  protected onLength(value: string): void {
-    const parsed = Number(value);
-    if (Number.isSafeInteger(parsed) && this.globalLengths().includes(parsed)) {
-      this.facade.setLength(parsed);
-    }
-  }
-
-  protected onMinimum(value: string): void {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed) && parsed >= 50 && parsed <= 100) {
-      this.facade.setMinimumPercent(parsed);
-    }
-  }
-
   protected onDifferences(value: string): void {
     const parsed = Number(value);
-    if (Number.isSafeInteger(parsed) && parsed >= 0) {
+    if (Number.isSafeInteger(parsed) && this.manualDifferences().includes(parsed)) {
       this.facade.setMaximumDifferences(parsed);
     }
   }
