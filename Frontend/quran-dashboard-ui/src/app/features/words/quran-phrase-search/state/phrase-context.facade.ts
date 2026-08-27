@@ -19,6 +19,7 @@ import { PhraseTextMode } from '../models/phrase-repetitions.models';
 import {
   parsePhraseContextUrlState,
   contextResultsPageOnlyChanged,
+  phraseContextBranchStateKey,
   phraseContextStateKey,
 } from './phrase-context-url-sync';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
@@ -131,25 +132,22 @@ export class PhraseContextFacade {
   }
 
   setMode(mode: PhraseTextMode): void {
-    if (!this.resolutionFlow.setMode(mode)) {
-      return;
-    }
-    this.selection.clearAll();
-    this.navigate({
-      ...this._route(),
-      mode,
-      resolution: null,
-      before: null,
-      after: null,
-      contextsPage: 1,
-    });
+    this.resolutionFlow.setMode(mode);
   }
 
   submitQuery(): void {
-    this.clearWorkspaceForNewSubmission();
-    const epoch = this.actionGate.begin();
+    const route = this._route();
     const submittedMode = this.resolutionFlow.mode();
     const submittedQuery = this.resolutionFlow.state().rawQuery.trim();
+    if (
+      route.resolution &&
+      route.mode === submittedMode &&
+      route.q.trim() === submittedQuery
+    ) {
+      return;
+    }
+    this.clearWorkspaceForNewSubmission();
+    const epoch = this.actionGate.begin();
     const subscription = this.resolutionFlow
       .resolve()
       .pipe(
@@ -428,7 +426,7 @@ export class PhraseContextFacade {
           this.navigate({ ...route, contextsPage: redirectPage }, true);
           return;
         }
-        this.selection.replaceBranches(result.branches);
+        this.selection.replaceBranches(result.branches, phraseContextBranchStateKey(route));
         this.selection.replaceResults(result.results);
         this.resolutionFlow.restoreFromBranches(
           this.resolutionFlow.state().rawQuery,

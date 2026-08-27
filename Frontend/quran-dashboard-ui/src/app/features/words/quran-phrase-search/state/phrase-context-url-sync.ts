@@ -90,6 +90,17 @@ export function phraseContextStateKey(state: PhraseContextUrlState): string {
   ].join('|');
 }
 
+export function phraseContextBranchStateKey(state: PhraseContextUrlState): string {
+  return [
+    state.build,
+    state.mode,
+    state.q,
+    state.resolution,
+    state.before,
+    state.after,
+  ].join('|');
+}
+
 export function contextResultsPageOnlyChanged(
   current: PhraseContextUrlState,
   next: PhraseContextUrlState,

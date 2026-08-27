@@ -12,16 +12,22 @@ import {
 } from '../models/phrase-context.models';
 import { PhraseLongStateSessionStore } from './phrase-long-state-session.store';
 
+type PhraseContextBranchOptions = PhraseContextBranchesResponse['previous']['options'];
+
+interface PhraseContextBranchSnapshot {
+  readonly branches: PhraseContextBranchesResponse;
+  readonly previousOptions: PhraseContextBranchOptions;
+  readonly followingOptions: PhraseContextBranchOptions;
+}
+
 @Injectable()
 export class PhraseContextSelectionStore {
   private readonly longState = inject(PhraseLongStateSessionStore);
+  private readonly branchSnapshots = new Map<string, PhraseContextBranchSnapshot>();
+  private activeBranchStateKey: string | null = null;
   private readonly _branches = signal<PhraseContextBranchesResponse | null>(null);
-  private readonly _previousOptions = signal<
-    PhraseContextBranchesResponse['previous']['options']
-  >([]);
-  private readonly _followingOptions = signal<
-    PhraseContextBranchesResponse['following']['options']
-  >([]);
+  private readonly _previousOptions = signal<PhraseContextBranchOptions>([]);
+  private readonly _followingOptions = signal<PhraseContextBranchOptions>([]);
   private readonly _groups = signal<readonly PhraseFullContextGroupDto[]>([]);
   private readonly _groupsTotalCount = signal(0);
   private readonly _groupsNextCursor = signal<string | null>(null);
@@ -60,38 +66,59 @@ export class PhraseContextSelectionStore {
     this.longState.clearFocusTarget();
   }
 
-  replaceBranches(response: PhraseContextBranchesResponse): void {
-    this._branches.set(response);
-    this._previousOptions.set(response.previous.options);
-    this._followingOptions.set(response.following.options);
+  replaceBranches(response: PhraseContextBranchesResponse, stateKey: string): void {
+    const snapshot = this.branchSnapshots.get(stateKey) ?? {
+      branches: response,
+      previousOptions: response.previous.options,
+      followingOptions: response.following.options,
+    };
+    this.branchSnapshots.set(stateKey, snapshot);
+    this.activeBranchStateKey = stateKey;
+    this.showBranchSnapshot(snapshot);
   }
 
-  appendPrevious(response: PhraseContextBranchesResponse): void {
-    const current = this._branches();
-    this._branches.set(
-      current
+  appendPrevious(response: PhraseContextBranchesResponse, stateKey: string): void {
+    const current = this.branchSnapshots.get(stateKey);
+    const snapshot: PhraseContextBranchSnapshot = {
+      branches: current
         ? {
             ...response,
-            following: current.following,
-            followingSelection: current.followingSelection,
+            following: current.branches.following,
+            followingSelection: current.branches.followingSelection,
           }
         : response,
-    );
-    this._previousOptions.update((items) => appendUniqueOptions(items, response.previous.options));
+      previousOptions: appendUniqueOptions(
+        current?.previousOptions ?? [],
+        response.previous.options,
+      ),
+      followingOptions: current?.followingOptions ?? response.following.options,
+    };
+    this.branchSnapshots.set(stateKey, snapshot);
+    if (this.activeBranchStateKey === stateKey) {
+      this.showBranchSnapshot(snapshot);
+    }
   }
 
-  appendFollowing(response: PhraseContextBranchesResponse): void {
-    const current = this._branches();
-    this._branches.set(
-      current
+  appendFollowing(response: PhraseContextBranchesResponse, stateKey: string): void {
+    const current = this.branchSnapshots.get(stateKey);
+    const snapshot: PhraseContextBranchSnapshot = {
+      branches: current
         ? {
             ...response,
-            previous: current.previous,
-            previousSelection: current.previousSelection,
+            previous: current.branches.previous,
+            previousSelection: current.branches.previousSelection,
           }
         : response,
-    );
-    this._followingOptions.update((items) => appendUniqueOptions(items, response.following.options));
+      previousOptions: current?.previousOptions ?? response.previous.options,
+      followingOptions: appendUniqueOptions(
+        current?.followingOptions ?? [],
+        response.following.options,
+      ),
+    };
+    this.branchSnapshots.set(stateKey, snapshot);
+    if (this.activeBranchStateKey === stateKey) {
+      this.showBranchSnapshot(snapshot);
+    }
   }
 
   replaceGroups(response: PhraseContextGroupsResponse): void {
@@ -140,10 +167,12 @@ export class PhraseContextSelectionStore {
   }
 
   clearAll(): void {
+    this.branchSnapshots.clear();
     this.clearWorkspace();
   }
 
   clearWorkspace(): void {
+    this.activeBranchStateKey = null;
     this._branches.set(null);
     this._previousOptions.set([]);
     this._followingOptions.set([]);
@@ -160,6 +189,12 @@ export class PhraseContextSelectionStore {
     this._resultsPageSize.set(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
     this._occurrencesTotalCount.set(0);
     this._occurrencesNextCursor.set(null);
+  }
+
+  private showBranchSnapshot(snapshot: PhraseContextBranchSnapshot): void {
+    this._branches.set(snapshot.branches);
+    this._previousOptions.set(snapshot.previousOptions);
+    this._followingOptions.set(snapshot.followingOptions);
   }
 }
 

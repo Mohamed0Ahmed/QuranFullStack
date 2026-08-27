@@ -7,7 +7,10 @@ import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import { PhraseContextRequestStatusStore, PhraseContextRequestTarget } from './phrase-context-request-status.store';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
 import { contextResultsRedirectPage } from './phrase-context-results-paging';
-import { phraseContextStateKey } from './phrase-context-url-sync';
+import {
+  phraseContextBranchStateKey,
+  phraseContextStateKey,
+} from './phrase-context-url-sync';
 import { PhraseContextLoadResult, PhraseContextWorkspaceLoader } from './phrase-context-workspace.loader';
 import { phraseRequestFailure } from './phrase-request-failure';
 
@@ -113,9 +116,9 @@ export class PhraseContextActionCoordinator {
             return;
           }
           if (side === 'previous') {
-            this.selection.appendPrevious(result.branches);
+            this.selection.appendPrevious(result.branches, phraseContextBranchStateKey(route));
           } else {
-            this.selection.appendFollowing(result.branches);
+            this.selection.appendFollowing(result.branches, phraseContextBranchStateKey(route));
           }
           this.status.branches.set('success');
         }),

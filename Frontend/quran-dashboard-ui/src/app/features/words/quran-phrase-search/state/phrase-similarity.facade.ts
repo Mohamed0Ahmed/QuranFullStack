@@ -156,8 +156,16 @@ export class PhraseSimilarityFacade {
   }
 
   submitQuery(): void {
+    const route = this._route();
+    if (
+      route.resolution &&
+      route.mode === this._draftMode() &&
+      route.q.trim() === this.resolution.draft().trim()
+    ) {
+      return;
+    }
     this.query.submit(
-      { ...this._route(), mode: this._draftMode() },
+      { ...route, mode: this._draftMode() },
       this.queryHooks,
     );
   }
