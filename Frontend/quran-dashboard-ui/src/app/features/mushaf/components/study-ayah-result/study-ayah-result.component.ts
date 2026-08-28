@@ -22,9 +22,12 @@ export class StudyAyahResultComponent {
   readonly navigateLabel = input.required<string>();
   readonly testIdKind = input.required<StudyAyahResultTestIdKind>();
   readonly selected = input(false);
+  readonly matchedWordFrom = input<number | null>(null);
+  readonly matchedWordTo = input<number | null>(null);
 
   readonly ayahNavigate = output<void>();
 
+  protected readonly textWords = computed(() => this.displayText().split(/\s+/u));
   protected readonly positionTestId = computed(() => `${this.testIdKind()}-index`);
   protected readonly referenceTestId = computed(() => `${this.testIdKind()}-reference`);
   protected readonly pageTestId = computed(() =>
@@ -36,4 +39,10 @@ export class StudyAyahResultComponent {
     () => `${this.testIdKind()}-selected-label`,
   );
   protected readonly textTestId = computed(() => `${this.testIdKind()}-text`);
+
+  protected isMatched(wordNumber: number): boolean {
+    const from = this.matchedWordFrom();
+    const to = this.matchedWordTo();
+    return from !== null && to !== null && wordNumber >= from && wordNumber <= to;
+  }
 }

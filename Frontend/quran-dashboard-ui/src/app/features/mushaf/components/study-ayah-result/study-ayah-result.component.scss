@@ -81,4 +81,10 @@
       outline-offset: var(--qd-focus-ring-offset);
     }
   }
+
+  &__word--matched {
+    background: var(--qd-success-tint);
+    color: var(--qd-success);
+    box-decoration-break: clone;
+  }
 }
