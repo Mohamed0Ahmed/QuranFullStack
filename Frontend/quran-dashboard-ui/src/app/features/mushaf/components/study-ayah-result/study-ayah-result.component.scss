@@ -10,7 +10,8 @@
   box-shadow: none;
 }
 
-:host(.study-ayah-result--selected) {
+:host(.study-ayah-result--selected),
+:host(.study-ayah-result--linking-selected) {
   border-color: var(--qd-border-accent);
 }
 
@@ -55,6 +56,15 @@
     font-size: 0.75rem;
     font-weight: 700;
     line-height: 1.4;
+  }
+
+  &__linking-selection {
+    display: inline-flex;
+    align-items: center;
+    min-inline-size: var(--qd-hit-target-min);
+    min-block-size: var(--qd-hit-target-min);
+    margin-inline-start: auto;
+    justify-content: center;
   }
 
   &__text {

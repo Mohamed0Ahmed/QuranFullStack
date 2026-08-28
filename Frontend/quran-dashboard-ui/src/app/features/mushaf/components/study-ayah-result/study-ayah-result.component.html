@@ -16,6 +16,18 @@
       الآية المحددة
     </span>
   }
+  @if (linkingSelectionEnabled() && linkingSelectionLabel()) {
+    <span class="study-ayah-result__linking-selection">
+      <input
+        class="qd-checkbox"
+        type="checkbox"
+        [checked]="linkingSelected()"
+        [attr.aria-label]="linkingSelectionLabel()"
+        [attr.data-testid]="testIdKind() + '-linking-selection'"
+        (change)="toggleLinkingSelection()"
+      />
+    </span>
+  }
 </header>
 
 <button

@@ -29,10 +29,50 @@
       }
     </ul>
   </div>
-} @else if (loadState().isEmpty || !similarAyahs() || similarAyahs()!.count === 0) {
+} @else if (
+  loadState().isEmpty ||
+  !similarAyahs() ||
+  similarAyahs()!.count === 0 ||
+  !hasAvailableRelatedAyahs()
+) {
   <qd-empty-state [message]="emptyMessage" testId="similar-ayahs-empty" />
 } @else {
   <div class="similar-ayahs-card__group qd-card">
+    @if (canUseLinking()) {
+      <div
+        class="similar-ayahs-card__selection-toolbar"
+        role="group"
+        aria-label="تحديد الآيات القريبة للربط"
+      >
+        <p
+          class="similar-ayahs-card__selection-summary"
+          role="status"
+          data-testid="similar-ayah-selection-count"
+        >
+          الآيات المحددة للربط: {{ selectedRelatedCount() }}
+        </p>
+        <div class="similar-ayahs-card__selection-controls">
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            [disabled]="allRelatedSelected()"
+            (click)="selectAllRelatedAyahs()"
+          >
+            تحديد الكل
+          </button>
+          <button
+            qdAction="tertiary"
+            size="sm"
+            type="button"
+            [disabled]="selectedRelatedCount() === 0"
+            (click)="clearRelatedAyahs()"
+          >
+            إلغاء تحديد الكل
+          </button>
+        </div>
+      </div>
+    }
     <ul
       qdResultList
       listVariant="quran-result"
@@ -50,10 +90,20 @@
           [pageNumber]="item.pageNumber"
           [displayText]="item.displayText"
           [navigateLabel]="item.navigateLabel"
+          [linkingSelectionEnabled]="canUseLinking()"
+          [linkingSelected]="item.linkingSelected"
+          [linkingSelectionLabel]="item.linkingSelectionLabel"
           testIdKind="similar-ayah"
           (ayahNavigate)="onAyahNavigate(item)"
+          (linkingSelectionToggle)="toggleRelatedAyah(item.targetVerseKey)"
         ></li>
       }
     </ul>
+    @if (linkingLaunch(); as launch) {
+      <qd-quran-source-linking-actions
+        class="similar-ayahs-card__linking-actions"
+        [launch]="launch"
+      />
+    }
   </div>
 }

@@ -159,6 +159,7 @@
               [similarAyahs]="similarAyahs()"
               [loadState]="similarAyahsLoadState()"
               [expectedItemCount]="similarAyahCount()"
+              [selectedAyah]="study()?.ayah ?? null"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
