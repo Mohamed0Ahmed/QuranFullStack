@@ -1,4 +1,3 @@
-import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, effect, input, output, viewChild } from '@angular/core';
 
 import { PhraseSimilarityAyahDto } from '../../../../../core/api/generated/models/phrase-similarity-ayah-dto';
@@ -15,17 +14,22 @@ import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phras
 
 interface SimilarityAyahRow {
   readonly ayah: PhraseSimilarityAyahDto;
+  readonly matchPercentLabel: string;
   readonly mushafTarget: DetailOverlayBaseTarget;
 }
 
 const ROW_HEIGHT = 112;
 const COMPACT_ROW_HEIGHT = 164;
+const matchPercentFormatter = new Intl.NumberFormat('en-US', {
+  minimumFractionDigits: 0,
+  maximumFractionDigits: 1,
+  useGrouping: false,
+});
 
 @Component({
   selector: 'qd-phrase-similarity-list',
   standalone: true,
   imports: [
-    DecimalPipe,
     DetailOverlayAyahLinkDirective,
     PaginationComponent,
     PhraseHighlightedAyahComponent,
@@ -51,7 +55,11 @@ export class PhraseSimilarityListComponent {
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly rowIdentity = (row: SimilarityAyahRow): number => row.ayah.ayahId;
   protected readonly rows = computed<readonly SimilarityAyahRow[]>(() =>
-    this.items().map((ayah) => ({ ayah, mushafTarget: target(ayah) })),
+    this.items().map((ayah) => ({
+      ayah,
+      matchPercentLabel: matchPercentFormatter.format(ayah.bestMatchPercent),
+      mushafTarget: target(ayah),
+    })),
   );
   private readonly table = viewChild(QdDataTableComponent<SimilarityAyahRow>);
   private lastResultSetKey = '';

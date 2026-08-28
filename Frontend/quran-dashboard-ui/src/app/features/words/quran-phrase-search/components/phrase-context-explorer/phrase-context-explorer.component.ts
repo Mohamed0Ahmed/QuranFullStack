@@ -24,6 +24,7 @@ export class PhraseContextExplorerComponent {
   readonly previousOptions = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly followingOptions = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly busy = input(false);
+  readonly navigationDisabled = input(false);
 
   readonly previousSelected = output<string>();
   readonly followingSelected = output<string>();

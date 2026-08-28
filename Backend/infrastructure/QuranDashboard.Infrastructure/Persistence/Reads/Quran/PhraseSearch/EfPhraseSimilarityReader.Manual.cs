@@ -48,19 +48,38 @@ public sealed partial class EfPhraseSimilarityReader
             return new PhraseSearchReadResult<PhraseSimilaritySearchResponse>.InvalidReference();
         }
 
-        var totals = await ReadSimilarityAyahTotalsAsync(
-            snapshot.ActiveBuildId,
-            anchor,
-            minimumMatchedWords,
-            cancellationToken);
-        var items = await ReadSimilarityAyahPageAsync(
-            snapshot.ActiveBuildId,
-            anchor,
-            minimumMatchedWords,
-            sort,
-            page,
-            pageSize,
-            cancellationToken);
+        SimilarityAyahTotals totals;
+        IReadOnlyList<PhraseSimilarityAyahDto> items;
+        if (anchor.WordCount < PhraseSimilarityContract.MinimumGlobalLength)
+        {
+            var loaded = await ReadManualSimilarityAyahsAsync(
+                snapshot.ActiveBuildId,
+                anchor,
+                minimumMatchedWords,
+                sort,
+                page,
+                pageSize,
+                cancellationToken);
+            totals = loaded.Totals;
+            items = loaded.Items;
+        }
+        else
+        {
+            totals = await ReadSimilarityAyahTotalsAsync(
+                snapshot.ActiveBuildId,
+                anchor,
+                minimumMatchedWords,
+                cancellationToken);
+            items = await ReadSimilarityAyahPageAsync(
+                snapshot.ActiveBuildId,
+                anchor,
+                minimumMatchedWords,
+                sort,
+                page,
+                pageSize,
+                cancellationToken);
+        }
+
         var response = new PhraseSimilaritySearchResponse(
             snapshot.ActiveBuildId,
             PhraseTextModeContract.CanonicalKey(anchor.Mode),

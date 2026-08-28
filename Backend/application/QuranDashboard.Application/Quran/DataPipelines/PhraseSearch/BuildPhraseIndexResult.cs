@@ -4,6 +4,7 @@ namespace QuranDashboard.Application.Quran.DataPipelines.PhraseSearch;
 
 public sealed record BuildPhraseIndexResult(
     bool Succeeded,
+    PhraseIndexBuildOutcome Outcome,
     int ExitCode,
     string Message,
     Guid BuildId,
@@ -12,7 +13,9 @@ public sealed record BuildPhraseIndexResult(
     string SourceFingerprint,
     long SourceRevision,
     Guid? PreviousBuildId,
-    Guid? ActiveBuildId)
+    Guid? ActiveBuildId,
+    bool ReportAvailable,
+    bool ReportLinked)
 {
     public const int SuccessExitCode = 0;
     public const int FailureExitCode = 1;

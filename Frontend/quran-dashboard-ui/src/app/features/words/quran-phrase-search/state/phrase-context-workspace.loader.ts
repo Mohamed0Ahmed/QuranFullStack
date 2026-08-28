@@ -2,8 +2,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
-import { PhraseContextGroupsResponse } from '../../../../core/api/generated/models/phrase-context-groups-response';
-import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response';
 import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import { PhraseContextApi } from '../data-access/phrase-context.api';
 import {
@@ -37,25 +35,11 @@ interface PhraseContextResultsSuccess {
   readonly results: PhraseContextResultsResponse;
 }
 
-interface PhraseContextGroupsSuccess {
-  readonly kind: 'groups';
-  readonly activeBuildId: string;
-  readonly groups: PhraseContextGroupsResponse;
-}
-
-interface PhraseContextOccurrencesSuccess {
-  readonly kind: 'occurrences';
-  readonly activeBuildId: string;
-  readonly occurrences: PhraseContextOccurrencesResponse;
-}
-
 export type PhraseContextLoadResult =
   | PhraseContextLoadFailure
   | PhraseContextWorkspaceSuccess
   | PhraseContextBranchesSuccess
-  | PhraseContextResultsSuccess
-  | PhraseContextGroupsSuccess
-  | PhraseContextOccurrencesSuccess;
+  | PhraseContextResultsSuccess;
 
 @Injectable()
 export class PhraseContextWorkspaceLoader {
@@ -146,48 +130,6 @@ export class PhraseContextWorkspaceLoader {
             : failureResult(response.errors, response.message),
         ),
       );
-  }
-
-  loadGroupsPage(
-    route: PhraseContextUrlState,
-    cursor: string,
-  ): Observable<PhraseContextLoadResult> {
-    return this.api
-      .getGroups(
-        route.resolution!,
-        route.before,
-        route.after,
-        cursor,
-        PHRASE_CONTEXT_RESULT_PAGE_SIZE,
-      )
-      .pipe(
-        map((response) =>
-          response.isSuccess && response.data
-            ? {
-                kind: 'groups' as const,
-                activeBuildId: response.data.activeBuildId,
-                groups: response.data,
-              }
-            : failureResult(response.errors, response.message),
-        ),
-      );
-  }
-
-  loadOccurrences(
-    contextRef: string,
-    cursor: string | null,
-  ): Observable<PhraseContextLoadResult> {
-    return this.api.getOccurrences(contextRef, cursor, PHRASE_CONTEXT_RESULT_PAGE_SIZE).pipe(
-      map((response) =>
-        response.isSuccess && response.data
-          ? {
-              kind: 'occurrences' as const,
-              activeBuildId: response.data.activeBuildId,
-              occurrences: response.data,
-            }
-          : failureResult(response.errors, response.message),
-      ),
-    );
   }
 }
 

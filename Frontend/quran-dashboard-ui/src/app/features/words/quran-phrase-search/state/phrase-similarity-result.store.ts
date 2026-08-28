@@ -12,14 +12,17 @@ import { phraseSimilarityStateKey } from './phrase-similarity-url-sync';
 
 export interface PhraseSimilarityResultHooks {
   readonly currentRoute: () => PhraseSimilarityUrlState;
+  readonly isCurrentQuery: (route: PhraseSimilarityUrlState) => boolean;
   readonly acceptBuild: (activeBuildId: string) => boolean;
-  readonly resetBuild: (activeBuildId: string | null) => void;
+  readonly resetBuild: () => void;
   readonly navigate: (state: PhraseSimilarityUrlState, replaceUrl: boolean) => void;
   readonly setError: (message: string) => void;
 }
 
 @Injectable()
 export class PhraseSimilarityResultStore {
+  private requestEpoch = 0;
+  private acceptedRouteKey: string | null = null;
   readonly status = signal<PhraseLoadStatus>('idle');
   readonly ayahs = signal<readonly PhraseSimilarityAyahDto[]>([]);
   readonly totalAyahCount = signal(0);
@@ -27,10 +30,20 @@ export class PhraseSimilarityResultStore {
   readonly queryPhrase = signal<PhraseSimilarityPhraseDto | null>(null);
 
   clear(): void {
+    this.requestEpoch += 1;
+    this.acceptedRouteKey = null;
     this.ayahs.set([]);
     this.totalAyahCount.set(0);
     this.totalOccurrenceCount.set(0);
     this.queryPhrase.set(null);
+  }
+
+  hasCompletedResultFor(route: PhraseSimilarityUrlState): boolean {
+    const status = this.status();
+    return (
+      (status === 'success' || status === 'empty') &&
+      this.acceptedRouteKey === phraseSimilarityStateKey(route)
+    );
   }
 
   load(
@@ -38,16 +51,24 @@ export class PhraseSimilarityResultStore {
     request: Observable<PhraseSimilarityLoadResult>,
     hooks: PhraseSimilarityResultHooks,
   ): Observable<void> {
+    if (!hooks.isCurrentQuery(route)) {
+      return of(undefined);
+    }
     this.status.set(this.ayahs().length ? 'refreshing' : 'loading');
     const routeKey = phraseSimilarityStateKey(route);
+    const requestEpoch = this.requestEpoch;
     return request.pipe(
       tap((result) => {
-        if (routeKey !== phraseSimilarityStateKey(hooks.currentRoute())) {
+        if (
+          requestEpoch !== this.requestEpoch ||
+          routeKey !== phraseSimilarityStateKey(hooks.currentRoute()) ||
+          !hooks.isCurrentQuery(route)
+        ) {
           return;
         }
         if (result.kind === 'failure') {
           if (result.failure.status === 'stale') {
-            hooks.resetBuild(null);
+            hooks.resetBuild();
           } else {
             this.status.set(result.failure.status);
             hooks.setError(result.failure.message);
@@ -65,15 +86,20 @@ export class PhraseSimilarityResultStore {
         this.totalAyahCount.set(result.totalAyahCount);
         this.totalOccurrenceCount.set(result.totalOccurrenceCount);
         this.queryPhrase.set(result.queryPhrase);
+        this.acceptedRouteKey = routeKey;
         this.status.set(result.totalAyahCount === 0 ? 'empty' : 'success');
       }),
       catchError((error: unknown) => {
-        if (routeKey !== phraseSimilarityStateKey(hooks.currentRoute())) {
+        if (
+          requestEpoch !== this.requestEpoch ||
+          routeKey !== phraseSimilarityStateKey(hooks.currentRoute()) ||
+          !hooks.isCurrentQuery(route)
+        ) {
           return of(undefined);
         }
         const failure = phraseRequestFailure(error);
         if (failure.status === 'stale') {
-          hooks.resetBuild(null);
+          hooks.resetBuild();
         } else {
           this.status.set(failure.status);
           hooks.setError(failure.message);

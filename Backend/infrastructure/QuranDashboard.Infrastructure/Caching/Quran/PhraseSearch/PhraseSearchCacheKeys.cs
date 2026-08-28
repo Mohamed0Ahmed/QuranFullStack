@@ -5,9 +5,6 @@ namespace QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 public static class PhraseSearchCacheKeys
 {
-    public static string Capabilities(Guid buildId) =>
-        $"phrase-search:{buildId:N}:capabilities";
-
     public static string Repetitions(
         Guid buildId,
         PhraseTextMode mode,

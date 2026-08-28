@@ -146,9 +146,6 @@ export class SelectedAyahSectionComponent {
     return `${this.instanceId}-panel-${tab}`;
   }
 
-  // The summary's counts are what the child cards reserve their loading geometry from, so an
-  // absent study must stay `null` ("unknown", fall back) and never collapse into a `0` the cards
-  // would read as "known empty" (Feature 030, N3 rows 11-12).
   protected readonly similarAyahCount = computed<number | null>(
     () => this.study()?.similaritySummary.similarAyahCount ?? null,
   );

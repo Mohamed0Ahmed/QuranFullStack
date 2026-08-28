@@ -3,18 +3,21 @@ using Microsoft.AspNetCore.RateLimiting;
 using QuranDashboard.Api.RateLimiting;
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Application.Quran.PhraseSearch;
+using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseSearchCapabilities;
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.SearchPhraseSimilarities;
 
 namespace QuranDashboard.Api.Controllers.Quran.PhraseSearch;
 
 [Route("api/quran/phrase-search/similarities/search")]
 public sealed class PhraseSearchSimilaritiesController(
-    SearchPhraseSimilaritiesHandler handler) : ControllerBase
+    SearchPhraseSimilaritiesHandler handler,
+    GetPhraseSearchCapabilitiesHandler capabilitiesHandler) : ControllerBase
 {
     [HttpGet]
     [EnableRateLimiting(PhraseSearchComputePolicy.Name)]
     [RequestTimeout(PhraseSearchComputePolicy.Name)]
     [ProducesResponseType(typeof(ApiResponse<PhraseSimilaritySearchResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ApiResponse<PhraseSimilaritySearchResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<PhraseSimilaritySearchResponse>), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ApiResponse<PhraseSimilaritySearchResponse>), StatusCodes.Status503ServiceUnavailable)]
@@ -38,6 +41,15 @@ public sealed class PhraseSearchSimilaritiesController(
                 PhraseRequestInvalidKind.Paging));
         }
 
+        if (await PhraseSearchConditionalGet.MatchesCurrentBuildAsync(
+            capabilitiesHandler,
+            Request,
+            Response,
+            cancellationToken))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         var outcome = await handler.HandleAsync(
             new SearchPhraseSimilaritiesQuery(
                 resolutionRef,
@@ -49,9 +61,14 @@ public sealed class PhraseSearchSimilaritiesController(
         return outcome switch
         {
             PhraseReadOutcome<PhraseSimilaritySearchResponse>.Success success =>
-                Ok(ApiResponse<PhraseSimilaritySearchResponse>.Ok(
-                    success.Response,
-                    PhraseSearchApiMessages.SimilaritiesLoaded)),
+                PhraseSearchConditionalGet.OkWithValidator(
+                    this,
+                    Request,
+                    Response,
+                    ApiResponse<PhraseSimilaritySearchResponse>.Ok(
+                        success.Response,
+                        PhraseSearchApiMessages.SimilaritiesLoaded),
+                    success.Response.ActiveBuildId),
             PhraseReadOutcome<PhraseSimilaritySearchResponse>.Invalid invalid =>
                 BadRequest(PhraseSearchApiFailure.Invalid<PhraseSimilaritySearchResponse>(invalid.Kind)),
             PhraseReadOutcome<PhraseSimilaritySearchResponse>.BuildChanged =>

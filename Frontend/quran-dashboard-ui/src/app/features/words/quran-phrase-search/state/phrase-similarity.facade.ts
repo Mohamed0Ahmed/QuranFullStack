@@ -47,14 +47,16 @@ export class PhraseSimilarityFacade {
     import('../../../../core/api/generated/models/phrase-search-capabilities-response').PhraseSearchCapabilitiesResponse | null
   >(null);
   private readonly _errorMessage = signal('');
+  private readonly _queryDraftPending = computed(() => !this.isCurrentQuery(this._route()));
 
   private route?: ActivatedRoute;
   private routeSub?: Subscription;
   private draftModePending = false;
   private readonly resultHooks: PhraseSimilarityResultHooks = {
     currentRoute: () => this._route(),
+    isCurrentQuery: (route) => this.isCurrentQuery(route),
     acceptBuild: (activeBuildId) => this.ensureBuild(activeBuildId),
-    resetBuild: (activeBuildId) => this.resetForBuildChange(activeBuildId),
+    resetBuild: () => this.resetForBuildChange(),
     navigate: (state, replaceUrl) => this.navigate(state, replaceUrl),
     setError: (message) => this._errorMessage.set(message),
   };
@@ -71,6 +73,7 @@ export class PhraseSimilarityFacade {
 
   readonly state = computed<PhraseSimilarityState>(() => ({
     route: this._route(),
+    queryDraftPending: this._queryDraftPending(),
     routeInvalid: this._routeInvalid(),
     capabilitiesStatus: this._capabilitiesStatus(),
     capabilities: this._capabilities(),
@@ -94,7 +97,6 @@ export class PhraseSimilarityFacade {
     this.routeCoordinator.bind(route);
     this.routeSub = route.queryParamMap
       .pipe(
-        tap(() => this.actionGate.invalidate()),
         map(parsePhraseSimilarityUrlState),
         map((parsed) => {
           const restored = this.routeCoordinator.restoreSimilarity(parsed);
@@ -104,6 +106,10 @@ export class PhraseSimilarityFacade {
         distinctUntilChanged(
           (a, b) => a.invalid === b.invalid && phraseSimilarityStateKey(a.state) === phraseSimilarityStateKey(b.state),
         ),
+        tap(() => {
+          this.actionGate.invalidate('query');
+          this.actionGate.invalidate('route');
+        }),
         switchMap((parsed) => this.runRoute(parsed)),
       )
       .subscribe();
@@ -125,12 +131,17 @@ export class PhraseSimilarityFacade {
     if (mode === this._draftMode()) {
       return;
     }
+    this.query.invalidate();
     this._draftMode.set(mode);
     this.draftModePending = mode !== this._route().mode;
+    this.cancelAndClearResults();
+    this.results.status.set('idle');
+    this.resolution.reset('idle');
+    this._errorMessage.set('');
   }
 
   setMinimumPercent(minimum: number): void {
-    if (minimum === this._route().min) {
+    if (this._queryDraftPending() || minimum === this._route().min) {
       return;
     }
     this.cancelAndClearResults();
@@ -138,19 +149,22 @@ export class PhraseSimilarityFacade {
   }
 
   setMaximumDifferences(maximumDifferences: number): void {
+    if (this._queryDraftPending()) {
+      return;
+    }
     this.setMinimumPercent(
       percentForMaximumDifferences(this._route().length, maximumDifferences),
     );
   }
 
   setSort(sort: PhraseSimilarityResultSort): void {
-    if (sort !== this._route().sort) {
+    if (!this._queryDraftPending() && sort !== this._route().sort) {
       this.navigate({ ...this._route(), sort, page: 1 });
     }
   }
 
   setPage(page: number): void {
-    if (page !== this._route().page) {
+    if (!this._queryDraftPending() && page !== this._route().page) {
       this.navigate({ ...this._route(), page });
     }
   }
@@ -162,6 +176,10 @@ export class PhraseSimilarityFacade {
       route.mode === this._draftMode() &&
       route.q.trim() === this.resolution.draft().trim()
     ) {
+      if (!this.results.hasCompletedResultFor(route)) {
+        this.clearResultData();
+        this.runRouteRequest({ state: route, invalid: false });
+      }
       return;
     }
     this.query.submit(
@@ -185,9 +203,8 @@ export class PhraseSimilarityFacade {
     ) {
       this._capabilities.set(null);
     }
-    const epoch = this.actionGate.begin();
-    const subscription = this.runRoute({ state: this._route(), invalid: false }).subscribe();
-    this.actionGate.track(epoch, subscription);
+    this.actionGate.invalidate();
+    this.runRouteRequest({ state: this._route(), invalid: false });
   }
 
   resetInvalidState(): void {
@@ -259,7 +276,7 @@ export class PhraseSimilarityFacade {
       return EMPTY;
     }
     if (!sameBuild(route.build, capabilities.activeBuildId)) {
-      this.resetForBuildChange(capabilities.activeBuildId);
+      this.resetForBuildChange();
       return EMPTY;
     }
     if (!supportsSimilarityRoute(this._capabilities(), route)) {
@@ -267,6 +284,10 @@ export class PhraseSimilarityFacade {
       this.results.status.set('invalid');
       this._errorMessage.set(INVALID_ROUTE_MESSAGE);
       return EMPTY;
+    }
+    if (!this.isCurrentQuery(route)) {
+      this.results.status.set('idle');
+      return of(undefined);
     }
     if (!route.resolution) {
       this.results.status.set('idle');
@@ -293,7 +314,6 @@ export class PhraseSimilarityFacade {
   }
 
   private cancelAndClearResults(): void {
-    this.actionGate.invalidate();
     this.clearResultData();
   }
 
@@ -307,7 +327,7 @@ export class PhraseSimilarityFacade {
     }
     const failure = phraseRequestFailure(error);
     if (failure.status === 'stale') {
-      this.resetForBuildChange(null);
+      this.resetForBuildChange();
     } else {
       this.results.status.set(failure.status);
       this._errorMessage.set(failure.message);
@@ -320,14 +340,17 @@ export class PhraseSimilarityFacade {
     if (expected && sameBuild(expected, activeBuildId)) {
       return true;
     }
-    this.resetForBuildChange(activeBuildId);
+    this.resetForBuildChange();
     return false;
   }
 
-  private resetForBuildChange(activeBuildId: string | null): void {
+  private resetForBuildChange(): void {
+    const query = this.resolution.draft();
     this.actionGate.invalidate();
+    this._capabilities.set(null);
+    this._capabilitiesStatus.set('idle');
     this.clearResultData();
-    this.resolution.reset('stale');
+    this.resolution.reset('idle');
     this.routeCoordinator.clearBuildScopedState();
     this.notice.indexChanged();
     this.results.status.set('stale');
@@ -336,8 +359,7 @@ export class PhraseSimilarityFacade {
     this.navigate(
       {
         ...DEFAULT_PHRASE_SIMILARITY_URL_STATE,
-        build: activeBuildId,
-        q: this.resolution.draft(),
+        q: query,
         mode: this._route().mode,
       },
       true,
@@ -350,12 +372,16 @@ export class PhraseSimilarityFacade {
       this._route(),
       replaceUrl,
       () => {
-        const epoch = this.actionGate.begin();
-        const subscription = this.runRoute({ state, invalid: false }).subscribe();
-        this.actionGate.track(epoch, subscription);
+        this.runRouteRequest({ state, invalid: false });
       },
     );
     this.notice.applyNavigation(outcome);
+  }
+
+  private runRouteRequest(parsed: ParsedPhraseSimilarityUrlState): void {
+    const epoch = this.actionGate.begin('route');
+    const subscription = this.runRoute(parsed).subscribe();
+    this.actionGate.track('route', epoch, subscription);
   }
 
   private syncDraftMode(mode: PhraseTextMode): void {
@@ -363,6 +389,13 @@ export class PhraseSimilarityFacade {
       this._draftMode.set(mode);
       this.draftModePending = false;
     }
+  }
+
+  private isCurrentQuery(route: PhraseSimilarityUrlState): boolean {
+    return (
+      this.resolution.draft().trim() === route.q.trim() &&
+      this._draftMode() === route.mode
+    );
   }
 }
 

@@ -18,6 +18,9 @@ internal static class PhraseSearchApiFailure
         PhraseRequestInvalidKind.QueryTooLong => Fail<T>(
             PhraseSearchApiMessages.QueryTooLong,
             PhraseSearchErrorCodes.QueryTooLong),
+        PhraseRequestInvalidKind.QueryTooComplex => Fail<T>(
+            PhraseSearchApiMessages.QueryTooComplex,
+            PhraseSearchErrorCodes.QueryTooComplex),
         PhraseRequestInvalidKind.Reference => Fail<T>(
             PhraseSearchApiMessages.InvalidReference,
             PhraseSearchErrorCodes.InvalidReference),

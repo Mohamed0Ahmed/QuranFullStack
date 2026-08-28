@@ -112,6 +112,9 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectBranch(side: 'previous' | 'following', selectionRef: string): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
     this.showWorkspaceBusy();
     if (side === 'previous') {
       this.facade.selectPrevious(selectionRef);
@@ -121,6 +124,9 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectPath(side: 'previous' | 'following', selectionRef: string | null): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
     this.showWorkspaceBusy();
     if (side === 'previous') {
       this.facade.selectPreviousPath(selectionRef);
@@ -130,6 +136,9 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   protected loadMoreBranches(side: 'previous' | 'following'): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
     this.showWorkspaceBusy();
     if (side === 'previous') {
       this.facade.loadMorePrevious();
@@ -139,6 +148,9 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
   }
 
   protected changeResultsPage(page: number): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
     this.facade.changeResultsPage(page);
   }
 

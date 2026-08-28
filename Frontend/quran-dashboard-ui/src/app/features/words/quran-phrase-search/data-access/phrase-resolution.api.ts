@@ -7,19 +7,16 @@ import { PhraseSearchCapabilitiesResponseApiResponse } from '../../../../core/ap
 import { environment } from '../../../../../environments/environment';
 import { PhraseTextMode } from '../models/phrase-repetitions.models';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
+import { phraseSearchConditionalHeaders } from './phrase-search-conditional-request';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PhraseResolutionApi {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search`;
 
   getCapabilities(): Observable<PhraseSearchCapabilitiesResponseApiResponse> {
-    return this.cache.capabilities(() =>
-      this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
-        `${this.baseUrl}/capabilities`,
-      ),
-    );
+    return this.cache.capabilities();
   }
 
   resolve(
@@ -29,10 +26,14 @@ export class PhraseResolutionApi {
     const params = new HttpParams().set('mode', mode).set('q64', encodedQuery);
     return this.cache.buildScoped(
       phraseSearchCacheKey('resolution', mode, encodedQuery),
-      () =>
+      (etag) =>
         this.http.get<PhraseQueryResolutionResponseApiResponse>(
           `${this.baseUrl}/query-resolutions`,
-          { params },
+          {
+            headers: phraseSearchConditionalHeaders(etag),
+            observe: 'response',
+            params,
+          },
         ),
     );
   }

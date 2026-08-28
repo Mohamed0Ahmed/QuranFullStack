@@ -28,9 +28,12 @@ public sealed class PhraseSourceSnapshotReader
                simple_word.word_key_imlaei_simple = word.word_key_imlaei_simple AS simple_link_consistent,
                btrim(translate(tashkil_word.text_uthmani, identity.ignored_tashkeel_marks, ''))
                  = btrim(translate(word.text_uthmani, identity.ignored_tashkeel_marks, '')) AS tashkil_link_consistent,
-               word.is_ayah_marker
+               word.is_ayah_marker,
+               owning_ayah.surah_number = word.surah_number AS surah_ownership_consistent
         FROM quran_words AS word
         CROSS JOIN display_word_identity AS identity
+        LEFT JOIN quran_ayahs AS owning_ayah
+          ON owning_ayah.id = word.ayah_id
         LEFT JOIN quran_words_unique_simple AS simple_word
           ON simple_word.id = word.unique_simple_word_id
         LEFT JOIN quran_words_unique_tashkeel AS tashkil_word
@@ -53,6 +56,7 @@ public sealed class PhraseSourceSnapshotReader
         var inconsistentLinks = 0;
         var emptyIdentities = 0;
         var markerRows = 0;
+        var surahOwnershipViolations = 0;
 
         await using (var command = new NpgsqlCommand(SourceTokensSql, connection, transaction))
         {
@@ -75,6 +79,7 @@ public sealed class PhraseSourceSnapshotReader
                 var simpleConsistent = !reader.IsDBNull(9) && reader.GetBoolean(9);
                 var tashkilConsistent = !reader.IsDBNull(10) && reader.GetBoolean(10);
                 var isAyahMarker = reader.GetBoolean(11);
+                var surahOwnershipConsistent = !reader.IsDBNull(12) && reader.GetBoolean(12);
 
                 if (simpleId <= 0 || tashkilId <= 0)
                 {
@@ -95,6 +100,11 @@ public sealed class PhraseSourceSnapshotReader
                 if (isAyahMarker)
                 {
                     markerRows++;
+                }
+
+                if (!surahOwnershipConsistent)
+                {
+                    surahOwnershipViolations++;
                 }
 
                 tokens.Add(new PhraseSourceToken(
@@ -130,6 +140,7 @@ public sealed class PhraseSourceSnapshotReader
             HardCheck("SOURCE-IDENTITY-CONSISTENCY", 0, inconsistentLinks),
             HardCheck("SOURCE-IDENTITIES-NONEMPTY", 0, emptyIdentities),
             HardCheck("SOURCE-SNAPSHOT-NO-MARKERS", 0, markerRows),
+            HardCheck("SOURCE-SURAH-OWNERSHIP", 0, surahOwnershipViolations),
             HardCheck("SOURCE-AYAH-WORD-CONTIGUITY", 0, sequenceViolations),
         };
 

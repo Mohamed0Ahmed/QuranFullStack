@@ -1,3 +1,5 @@
+@use '../../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   block-size: 100%;
@@ -131,4 +133,20 @@
   overflow-x: auto;
   border-block-start: var(--qd-hairline);
   padding-block-start: var(--qd-space-1);
+}
+
+@media (min-width: bp.$qd-bp-desktop-min) {
+  .phrase-occurrences > qd-pagination {
+    --qd-pagination-gap: var(--qd-s-2);
+    --qd-pagination-controls-gap: var(--qd-s-2);
+    --qd-pagination-pages-gap: var(--qd-s-2);
+    --qd-pagination-control-block-size: var(--qd-control-sm);
+    --qd-pagination-control-padding-block: 0;
+    --qd-pagination-control-font-size: var(--qd-type-meta);
+    --qd-pagination-nav-min-inline-size: 3.5rem;
+    --qd-pagination-nav-padding-inline: var(--qd-space-1);
+    --qd-pagination-page-min-inline-size: var(--qd-control-sm);
+    --qd-pagination-page-padding-inline: var(--qd-space-1);
+    --qd-pagination-compact-jump-inline-size: 3.25rem;
+  }
 }

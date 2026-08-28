@@ -9,10 +9,16 @@ interface CachedApiResponse {
   readonly expiresAt: number | null;
 }
 
+interface InFlightApiResponse {
+  readonly generation: number;
+  readonly request: Observable<ApiResponse<unknown>>;
+}
+
 export class ApiResponseCache {
   protected readonly maxEntries: number = DEFAULT_MAX_ENTRIES;
   private readonly cache = new Map<string, CachedApiResponse>();
-  private readonly inFlight = new Map<string, Observable<ApiResponse<unknown>>>();
+  private readonly inFlight = new Map<string, InFlightApiResponse>();
+  private generation = 0;
 
   getOrLoad<T, TResponse extends ApiResponse<T> = ApiResponse<T>>(
     key: string,
@@ -28,21 +34,35 @@ export class ApiResponseCache {
     }
 
     const pending = this.inFlight.get(key);
-    if (pending) {
-      return pending as Observable<TResponse>;
+    if (pending?.generation === this.generation) {
+      return pending.request as Observable<TResponse>;
     }
 
-    const request$ = loader().pipe(
+    const requestGeneration = this.generation;
+    let request$: Observable<TResponse>;
+    request$ = loader().pipe(
       tap((response) => {
-        if (response.isSuccess && response.data != null) {
+        if (
+          requestGeneration === this.generation &&
+          response.isSuccess &&
+          response.data != null
+        ) {
           this.store(key, response, maxAgeMs);
         }
       }),
-      finalize(() => this.inFlight.delete(key)),
+      finalize(() => {
+        const current = this.inFlight.get(key);
+        if (current?.request === request$) {
+          this.inFlight.delete(key);
+        }
+      }),
       shareReplay({ bufferSize: 1, refCount: true }),
     );
 
-    this.inFlight.set(key, request$ as Observable<ApiResponse<unknown>>);
+    this.inFlight.set(key, {
+      generation: requestGeneration,
+      request: request$ as Observable<ApiResponse<unknown>>,
+    });
     return request$;
   }
 
@@ -92,7 +112,9 @@ export class ApiResponseCache {
   }
 
   clear(): void {
+    this.generation += 1;
     this.cache.clear();
+    this.inFlight.clear();
   }
 
   private read(key: string): CachedApiResponse | null {

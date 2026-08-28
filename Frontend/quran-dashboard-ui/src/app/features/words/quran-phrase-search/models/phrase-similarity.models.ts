@@ -31,6 +31,7 @@ export interface ParsedPhraseSimilarityUrlState {
 
 export interface PhraseSimilarityState {
   readonly route: PhraseSimilarityUrlState;
+  readonly queryDraftPending: boolean;
   readonly routeInvalid: boolean;
   readonly capabilitiesStatus: PhraseLoadStatus;
   readonly capabilities: PhraseSearchCapabilitiesResponse | null;

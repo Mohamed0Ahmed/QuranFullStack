@@ -2,10 +2,12 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSe
 
 internal static class PhraseIndexBuildConstants
 {
-    internal const int FormatVersion = 1;
-    internal const string BuilderVersion = "phrase-index-v1";
+    internal const int FormatVersion = 2;
+    internal const string BuilderVersion = "phrase-index-v2";
+    internal const int SourceFingerprintVersion = 2;
+    internal const int ApprovedSourceFingerprintVersion = 2;
     internal const string ApprovedSourceFingerprint =
-        "8d9eedffe7b8a490f0e9b597a63229fbe91d3cd4a1bfd32d86d92801167fb075";
+        "6320611aa63d3ee757e4bc5a75fc19b5c5fd0e78a257be59e78aed7d5a145957";
     internal const int ExpectedReadableWords = 77_432;
     internal const int ExpectedAyahs = 6_236;
     internal const int ExpectedWindowsPerMode = 795_955;

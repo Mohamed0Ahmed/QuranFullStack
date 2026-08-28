@@ -26,24 +26,6 @@ public sealed partial class EfPhraseSimilarityReader
         )
         """;
 
-    private const string ManualAyahCandidatesSql = """
-        WITH candidate_variants AS (
-          SELECT variant.id AS variant_id,
-                 score.matched_count
-          FROM quran_phrase_variants AS variant
-          CROSS JOIN LATERAL (
-            SELECT COUNT(*) FILTER (
-                     WHERE variant.exact_token_ids[position] = @exact_token_ids[position]
-                   )::smallint AS matched_count
-            FROM generate_subscripts(variant.exact_token_ids, 1) AS position
-          ) AS score
-          WHERE variant.build_id = @build_id
-            AND variant.mode = @mode
-            AND variant.word_count = @word_count
-            AND score.matched_count >= @minimum_matched_words
-        )
-        """;
-
     private const string SimilarityAyahTotalsSql = """
         , candidate_occurrences AS (
           SELECT occurrence.ayah_id
@@ -192,19 +174,11 @@ public sealed partial class EfPhraseSimilarityReader
         SimilarityVariantRow anchor,
         short minimumMatchedWords)
     {
-        var manualScan = anchor.WordCount < PhraseSimilarityContract.MinimumGlobalLength;
         var command = CreateCommand(string.Concat(
-            manualScan ? ManualAyahCandidatesSql : DirectAyahCandidatesSql,
+            DirectAyahCandidatesSql,
             tailSql));
-        if (manualScan)
-        {
-            AddManualParameters(command, buildId, anchor, minimumMatchedWords);
-        }
-        else
-        {
-            AddNeighborParameters(command, buildId, anchor.Id, minimumMatchedWords);
-            command.Parameters.AddWithValue("word_count", NpgsqlDbType.Smallint, anchor.WordCount);
-        }
+        AddNeighborParameters(command, buildId, anchor.Id, minimumMatchedWords);
+        command.Parameters.AddWithValue("word_count", NpgsqlDbType.Smallint, anchor.WordCount);
 
         return command;
     }

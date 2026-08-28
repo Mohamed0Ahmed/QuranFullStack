@@ -13,6 +13,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
     private readonly PhraseIndexValidator validator;
     private readonly PhraseIndexActivator activator;
     private readonly PhraseIndexBuildFinalizer finalizer;
+    private readonly PhraseIndexPreActivationFailureFinalizer failureFinalizer;
 
     public EfPhraseIndexBuilder(
         QuranDashboardDbContext dbContext,
@@ -22,7 +23,8 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         PhraseSimilarityBuilder similarityBuilder,
         PhraseIndexValidator validator,
         PhraseIndexActivator activator,
-        PhraseIndexBuildFinalizer finalizer)
+        PhraseIndexBuildFinalizer finalizer,
+        PhraseIndexPreActivationFailureFinalizer failureFinalizer)
     {
         this.dbContext = dbContext;
         this.sourceStateCoordinator = sourceStateCoordinator;
@@ -32,6 +34,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         this.validator = validator;
         this.activator = activator;
         this.finalizer = finalizer;
+        this.failureFinalizer = failureFinalizer;
     }
 
     public async Task<PhraseIndexBuildExecution> BuildAsync(
@@ -43,11 +46,17 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         Directory.CreateDirectory(run.ReportDirectory);
         NpgsqlConnection? connection = null;
         var activated = false;
+        var activationOutcomeUnknown = false;
 
         try
         {
             connection = await OpenConnectionAsync(ct);
-            var bootstrap = await sourceStateCoordinator.BootstrapAsync(connection, ct);
+            run.CurrentStage = PhraseIndexBuildStage.BootstrapSource;
+            var bootstrap = await sourceStateCoordinator.BootstrapAsync(
+                connection,
+                PhraseIndexBuildConstants.ApprovedSourceFingerprint,
+                PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion,
+                ct);
             run.SourceRevision = bootstrap.State.SourceRevision;
             run.SourceFingerprint = bootstrap.ComputedFingerprint;
             run.Checks.AddRange(bootstrap.Source.Checks);
@@ -58,15 +67,49 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                     run,
                     PhraseIndexBuildOutcome.Failed,
                     "Phrase index source integrity checks failed.",
-                    "Failed",
-                    buildPersisted: false,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
+                    "Failed");
             }
 
+            var sourceApproved =
+                PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion
+                    == PhraseIndexBuildConstants.SourceFingerprintVersion
+                && string.Equals(
+                    PhraseIndexBuildConstants.ApprovedSourceFingerprint,
+                    bootstrap.ComputedFingerprint,
+                    StringComparison.Ordinal);
+            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                "SOURCE-APPROVAL",
+                "hard",
+                $"v{PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{PhraseIndexBuildConstants.ApprovedSourceFingerprint}",
+                $"v{PhraseIndexBuildConstants.SourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{bootstrap.ComputedFingerprint}",
+                sourceApproved));
+            if (!sourceApproved)
+            {
+                return await finalizer.FinishFailureAsync(
+                    connection,
+                    run,
+                    PhraseIndexBuildOutcome.SourceApprovalRequired,
+                    "Phrase index source fingerprint requires approval.",
+                    "SourceApprovalRequired");
+            }
+
+            run.CurrentStage = PhraseIndexBuildStage.PrepareBuild;
             await database.AcquireBuilderLockAsync(connection, ct);
             run.BuilderLockHeld = true;
+            var recoveredBuildCount = await database.RecoverAbandonedBuildsAsync(connection, ct);
+            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                "ABANDONED-BUILD-RECOVERY",
+                "hard",
+                "0 unresolved unreferenced building or validated builds",
+                $"0 unresolved; {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} recovered",
+                true));
+            if (recoveredBuildCount > 0)
+            {
+                run.Warnings.Add(
+                    $"Recovered {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} "
+                    + "abandoned phrase index build(s) before starting a new generation.");
+            }
+
             var snapshot = await database.ReadSourceSnapshotAsync(connection, ct);
             run.SourceRevision = snapshot.SourceRevision;
             run.SourceFingerprint = snapshot.SourceFingerprint;
@@ -89,11 +132,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                     run,
                     PhraseIndexBuildOutcome.Failed,
                     "Phrase index source snapshot is not compatible with source state.",
-                    "Failed",
-                    buildPersisted: false,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
+                    "Failed");
             }
 
             if (!force && await database.HasActiveBuildAsync(connection, ct))
@@ -103,11 +142,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                     run,
                     PhraseIndexBuildOutcome.Refused,
                     "An active phrase index already exists. Re-run with --force to build a replacement.",
-                    "Refused",
-                    buildPersisted: false,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
+                    "Refused");
             }
 
             run.DiskPreflight = await database.ReadDiskPreflightAsync(
@@ -142,42 +177,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                     run,
                     PhraseIndexBuildOutcome.Failed,
                     "Phrase index disk preflight failed.",
-                    "Failed",
-                    buildPersisted: true,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
-            }
-
-            if (!string.Equals(
-                    PhraseIndexBuildConstants.ApprovedSourceFingerprint,
-                    snapshot.SourceFingerprint,
-                    StringComparison.Ordinal))
-            {
-                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                    "SOURCE-APPROVAL",
-                    "hard",
-                    string.IsNullOrEmpty(PhraseIndexBuildConstants.ApprovedSourceFingerprint)
-                        ? "approved fingerprint"
-                        : PhraseIndexBuildConstants.ApprovedSourceFingerprint,
-                    snapshot.SourceFingerprint,
-                    false));
-                await database.MarkFailedAsync(
-                    connection,
-                    run.BuildId,
-                    "source-approval-required",
-                    "source-approval-required",
-                    ct);
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.SourceApprovalRequired,
-                    "Phrase index source fingerprint requires approval.",
-                    "SourceApprovalRequired",
-                    buildPersisted: true,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
+                    "Failed");
             }
 
             var staging = await StageAndValidateAsync(connection, snapshot, run, ct);
@@ -194,96 +194,112 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                     run,
                     PhraseIndexBuildOutcome.Failed,
                     "Phrase index hard checks failed.",
-                    "Failed",
-                    buildPersisted: true,
-                    persistedGeneration: false,
-                    exactReady: false,
-                    similarityReady: false);
+                    "Failed");
             }
 
+            run.CurrentStage = PhraseIndexBuildStage.ActivateBuild;
             var activation = await activator.ActivateAsync(
                 connection,
                 run.BuildId,
                 snapshot.SourceRevision,
                 snapshot.SourceFingerprint,
                 ct);
-            run.SourceRevisionAtActivation = activation.SourceRevisionAtActivation;
-            run.SourceFingerprintAtActivation = activation.SourceFingerprintAtActivation;
-            run.PreviousBuildId = activation.PreviousBuildId;
-            run.ActiveBuildId = activation.ActiveBuildId;
-
-            if (!activation.Activated)
+            if (!activation.OutcomeKnown)
             {
-                run.Errors.Add(activation.FailureReason);
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Failed,
-                    "Phrase index activation was rejected by the source fence.",
-                    "Failed",
-                    buildPersisted: true,
-                    persistedGeneration: true,
-                    exactReady: true,
-                    similarityReady: true);
+                activationOutcomeUnknown = true;
+                run.Errors.Add("activation-outcome-unresolved");
+                run.Warnings.Add(
+                    "Activation outcome could not be reconciled; the build was not marked failed or deleted.");
             }
+            else
+            {
+                run.SourceRevisionAtActivation = activation.SourceRevisionAtActivation;
+                run.SourceFingerprintAtActivation = activation.SourceFingerprintAtActivation;
+                run.PreviousBuildId = activation.PreviousBuildId;
+                run.ActiveBuildId = activation.ActiveBuildId;
 
-            activated = true;
+                if (!activation.Activated)
+                {
+                    run.Errors.Add(activation.FailureReason);
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index activation was rejected by the source fence.",
+                        "Failed");
+                }
+
+                if (activation.ReconciledAfterFailure)
+                {
+                    run.RecordActivationFinalizationFailure(
+                        "activation-acknowledgement-failed",
+                        "The database confirms this build is active after the activation acknowledgement failed.");
+                }
+
+                activated = true;
+            }
         }
         catch (OperationCanceledException)
         {
-            if (run.BuildPersisted && connection is not null)
-            {
-                await database.MarkFailedAsync(
-                    connection,
-                    run.BuildId,
-                    "cancelled",
-                    "build-cancelled",
-                    CancellationToken.None);
-            }
-
             run.Errors.Add("Build cancelled before activation.");
-            return await finalizer.FinishFailureAsync(
+            return await failureFinalizer.FinishAsync(
                 connection,
                 run,
                 PhraseIndexBuildOutcome.Cancelled,
                 "Phrase index build was cancelled; the prior active generation was retained.",
                 "Cancelled",
-                run.BuildPersisted,
-                persistedGeneration: false,
-                exactReady: false,
-                similarityReady: false);
+                "cancelled",
+                "build-cancelled");
         }
         catch (Exception ex)
         {
-            var failureDiagnostic = BuildFailureDiagnostic(ex);
-            if (run.BuildPersisted && connection is not null)
-            {
-                await database.MarkFailedAsync(
-                    connection,
-                    run.BuildId,
-                    "fail",
-                    failureDiagnostic,
-                    CancellationToken.None);
-            }
-
+            var failureDiagnostic = run.BuildFailureDiagnostic(ex);
             run.Errors.Add(failureDiagnostic);
-            return await finalizer.FinishFailureAsync(
+            return await failureFinalizer.FinishAsync(
                 connection,
                 run,
                 PhraseIndexBuildOutcome.Failed,
-                "Phrase index build failed. See the redacted report.",
+                "Phrase index build failed.",
                 "Failed",
-                run.BuildPersisted,
-                persistedGeneration: false,
-                exactReady: false,
-                similarityReady: false);
+                "fail",
+                failureDiagnostic);
         }
         finally
         {
-            if (run.BuilderLockHeld && connection is not null)
+            if (run.BuilderLockHeld
+                && connection is not null
+                && connection.State == ConnectionState.Open)
             {
-                await database.ReleaseBuilderLockAsync(connection);
+                try
+                {
+                    await database.ReleaseBuilderLockAsync(connection);
+                }
+                catch (Exception) when (activated)
+                {
+                    run.RecordActivationFinalizationFailure(
+                        "post-activation-lock-release-failed",
+                        "The build is active, but explicit builder-lock release failed; closing the connection releases session locks.");
+                }
+                catch (Exception) when (activationOutcomeUnknown)
+                {
+                    run.Errors.Add("activation-outcome-lock-release-failed");
+                }
+                catch (Exception)
+                {
+                    run.Errors.Add("builder-lock-release-failed");
+                }
             }
+        }
+
+        if (activationOutcomeUnknown)
+        {
+            if (connection is null)
+            {
+                throw new InvalidOperationException(
+                    "Phrase index activation outcome is unknown and no connection remains for finalization.");
+            }
+
+            return await finalizer.FinishActivationOutcomeUnknownAsync(connection, run);
         }
 
         if (!activated || connection is null)
@@ -300,6 +316,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         PhraseIndexBuildRun run,
         CancellationToken ct)
     {
+        run.CurrentStage = PhraseIndexBuildStage.StageExactIndex;
         await using var transaction = await connection.BeginTransactionAsync(ct);
         var exact = await exactStager.StageAsync(
             connection,
@@ -308,6 +325,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
             snapshot.Tokens,
             snapshot.MaximumAyahLength,
             ct);
+        run.CurrentStage = PhraseIndexBuildStage.BuildSimilarityIndex;
         var similarity = await similarityBuilder.BuildAsync(
             connection,
             transaction,
@@ -324,6 +342,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
             SimilarityAnchorStats = similarity.AnchorStatCount,
         };
 
+        run.CurrentStage = PhraseIndexBuildStage.ValidateStagedIndex;
         var validation = await validator.ValidateAsync(
             connection,
             transaction,
@@ -338,6 +357,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
             return validation;
         }
 
+        run.CurrentStage = PhraseIndexBuildStage.PersistStagedIndex;
         await database.MarkValidatedAsync(
             connection,
             transaction,
@@ -387,18 +407,4 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
 
         return npgsqlConnection;
     }
-
-    private static string BuildFailureDiagnostic(Exception exception) => exception switch
-    {
-        InvalidOperationException { InnerException: PostgresException postgresException } =>
-            $"{exception.Message} PostgreSQL {postgresException.SqlState}; position={postgresException.Position}.",
-        PostgresException postgresException =>
-            $"PostgreSQL {postgresException.SqlState}; position={postgresException.Position}; "
-            + $"constraint={postgresException.ConstraintName ?? "none"}",
-        InvalidOperationException => $"InvalidOperationException: {exception.Message}",
-        InvalidCastException => "InvalidCastException: database value type mismatch",
-        OverflowException => "OverflowException: numeric value exceeded its contract",
-        _ => $"{exception.GetType().Name}: build-failed",
-    };
-
 }

@@ -6,22 +6,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
 public sealed partial class EfPhraseSimilarityReader
 {
-    private const string DirectNeighborCountSql = """
-        SELECT (
-          SELECT COUNT(*)
-          FROM quran_phrase_similarity_edges
-          WHERE build_id = @build_id
-            AND left_variant_id = @anchor_variant_id
-            AND matched_count >= @minimum_matched_words
-        ) + (
-          SELECT COUNT(*)
-          FROM quran_phrase_similarity_edges
-          WHERE build_id = @build_id
-            AND right_variant_id = @anchor_variant_id
-            AND matched_count >= @minimum_matched_words
-        )
-        """;
-
     private const string DirectNeighborPageSql = """
         WITH direct_neighbors AS (
           (
@@ -62,17 +46,6 @@ public sealed partial class EfPhraseSimilarityReader
         OFFSET @offset
         LIMIT @page_size
         """;
-
-    private async Task<int> CountDirectNeighborsAsync(
-        Guid buildId,
-        long anchorVariantId,
-        short minimumMatchedWords,
-        CancellationToken cancellationToken)
-    {
-        await using var command = CreateCommand(DirectNeighborCountSql);
-        AddNeighborParameters(command, buildId, anchorVariantId, minimumMatchedWords);
-        return Convert.ToInt32(await command.ExecuteScalarAsync(cancellationToken), CultureInfo.InvariantCulture);
-    }
 
     private async Task<IReadOnlyList<SimilarityMatchRow>> ReadDirectNeighborsPageAsync(
         Guid buildId,

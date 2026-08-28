@@ -41,13 +41,25 @@ internal static class BuildPhraseIndexRunner
                 cancellation.Token);
             var output = result.Succeeded ? Console.Out : Console.Error;
             output.WriteLine(result.Message);
+            output.WriteLine($"outcome={result.Outcome}");
             output.WriteLine($"build_id={result.BuildId}");
+            output.WriteLine($"active_build_id={result.ActiveBuildId?.ToString() ?? "none"}");
             output.WriteLine($"source_revision={result.SourceRevision}");
             output.WriteLine($"source_fingerprint={result.SourceFingerprint}");
+            output.WriteLine($"report_available={result.ReportAvailable.ToString().ToLowerInvariant()}");
+            output.WriteLine($"report_linked={result.ReportLinked.ToString().ToLowerInvariant()}");
             output.WriteLine(
                 $"variants={result.Totals.Variants}, occurrences={result.Totals.Occurrences}, "
                 + $"edges={result.Totals.SimilarityEdges}, anchor_stats={result.Totals.SimilarityAnchorStats}");
-            VerbConsole.WriteReportPath(result.ReportDirectory);
+            if (result.ReportAvailable)
+            {
+                output.WriteLine($"Report written to: {result.ReportDirectory}");
+            }
+            else
+            {
+                output.WriteLine($"Report unavailable; target directory: {result.ReportDirectory}");
+            }
+
             return result.ExitCode;
         }
         finally

@@ -2,22 +2,40 @@ import { Injectable, inject } from '@angular/core';
 import { of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
-import { PhraseContextUrlState } from '../models/phrase-context.models';
-import { PhraseActionRequestGate } from './phrase-action-request-gate';
-import { PhraseContextRequestStatusStore, PhraseContextRequestTarget } from './phrase-context-request-status.store';
+import {
+  ParsedPhraseContextUrlState,
+  PhraseContextUrlState,
+} from '../models/phrase-context.models';
+import { PhraseLoadStatus } from '../models/phrase-repetitions.models';
+import {
+  PhraseActionRequestGate,
+  PhraseActionRequestTarget,
+} from './phrase-action-request-gate';
+import {
+  PhraseContextRequestStatusStore,
+  PhraseContextRequestTarget,
+} from './phrase-context-request-status.store';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
 import { contextResultsRedirectPage } from './phrase-context-results-paging';
 import {
   phraseContextBranchStateKey,
   phraseContextStateKey,
 } from './phrase-context-url-sync';
-import { PhraseContextLoadResult, PhraseContextWorkspaceLoader } from './phrase-context-workspace.loader';
+import {
+  PhraseContextLoadResult,
+  PhraseContextWorkspaceLoader,
+} from './phrase-context-workspace.loader';
 import { phraseRequestFailure } from './phrase-request-failure';
+
+type PhraseContextActionTarget = Extract<
+  PhraseActionRequestTarget,
+  'branches' | 'results'
+>;
 
 export interface PhraseContextActionHooks {
   readonly currentRoute: () => PhraseContextUrlState;
   readonly acceptBuild: (activeBuildId: string) => boolean;
-  readonly resetBuild: (activeBuildId: string | null) => void;
+  readonly resetBuild: () => void;
   readonly navigate: (state: PhraseContextUrlState, replaceUrl: boolean) => void;
 }
 
@@ -28,46 +46,37 @@ export class PhraseContextActionCoordinator {
   private readonly status = inject(PhraseContextRequestStatusStore);
   private readonly gate = inject(PhraseActionRequestGate);
 
-  loadMoreGroups(
-    route: PhraseContextUrlState,
-    cursor: string,
-    hooks: PhraseContextActionHooks,
+  cancelForRoute(
+    previous: PhraseContextUrlState,
+    parsed: ParsedPhraseContextUrlState,
   ): void {
-    this.status.groups.set('refreshing');
-    const routeKey = phraseContextStateKey(route);
-    const epoch = this.gate.begin();
-    const subscription = this.loader
-      .loadGroupsPage(route, cursor)
-      .pipe(
-        tap((result) => {
-          if (
-            !this.isCurrent(epoch, routeKey, hooks) ||
-            this.selection.groupsNextCursor() !== cursor ||
-            !this.accept(result, 'groups', hooks) ||
-            result.kind !== 'groups'
-          ) {
-            return;
-          }
-          this.selection.appendGroups(result.groups);
-          this.status.groups.set('success');
-        }),
-        catchError((error: unknown) => this.fail(error, 'groups', epoch, routeKey, hooks)),
-      )
-      .subscribe();
-    this.gate.track(epoch, subscription);
+    this.gate.invalidate('query');
+    this.gate.invalidate('route');
+    this.gate.invalidate('workspace');
+    if (
+      parsed.invalid ||
+      phraseContextBranchStateKey(previous) !== phraseContextBranchStateKey(parsed.state)
+    ) {
+      this.gate.invalidate('branches');
+      this.gate.invalidate('results');
+      return;
+    }
+    if (phraseContextStateKey(previous) !== phraseContextStateKey(parsed.state)) {
+      this.gate.invalidate('results');
+    }
   }
 
   loadResultsPage(route: PhraseContextUrlState, hooks: PhraseContextActionHooks): void {
-    this.status.results.set('refreshing');
+    const target = 'results';
     const routeKey = phraseContextStateKey(route);
-    const epoch = this.gate.begin();
+    const epoch = this.startRequest(target, 'refreshing');
     const subscription = this.loader
       .loadResultsPage(route)
       .pipe(
         tap((result) => {
           if (
-            !this.isCurrent(epoch, routeKey, hooks) ||
-            !this.accept(result, 'results', hooks) ||
+            !this.isCurrent(target, epoch, routeKey, hooks) ||
+            !this.accept(result, target, hooks) ||
             result.kind !== 'results'
           ) {
             return;
@@ -84,10 +93,10 @@ export class PhraseContextActionCoordinator {
           this.selection.replaceResults(result.results);
           this.status.results.set(result.results.totalCount === 0 ? 'empty' : 'success');
         }),
-        catchError((error: unknown) => this.fail(error, 'results', epoch, routeKey, hooks)),
+        catchError((error: unknown) => this.fail(error, target, epoch, routeKey, hooks)),
       )
       .subscribe();
-    this.gate.track(epoch, subscription);
+    this.gate.track(target, epoch, subscription);
   }
 
   loadBranchPage(
@@ -96,9 +105,9 @@ export class PhraseContextActionCoordinator {
     cursor: string,
     hooks: PhraseContextActionHooks,
   ): void {
-    this.status.branches.set('refreshing');
-    const routeKey = phraseContextStateKey(route);
-    const epoch = this.gate.begin();
+    const target = 'branches';
+    const routeKey = phraseContextBranchStateKey(route);
+    const epoch = this.startRequest(target, 'refreshing');
     const subscription = this.loader
       .loadBranchPage(route, side === 'previous' ? cursor : null, side === 'following' ? cursor : null)
       .pipe(
@@ -108,9 +117,9 @@ export class PhraseContextActionCoordinator {
               ? this.selection.branches()?.previous.nextCursor
               : this.selection.branches()?.following.nextCursor;
           if (
-            !this.isCurrent(epoch, routeKey, hooks) ||
+            !this.isCurrent(target, epoch, routeKey, hooks) ||
             activeCursor !== cursor ||
-            !this.accept(result, 'branches', hooks) ||
+            !this.accept(result, target, hooks) ||
             result.kind !== 'branches'
           ) {
             return;
@@ -122,46 +131,10 @@ export class PhraseContextActionCoordinator {
           }
           this.status.branches.set('success');
         }),
-        catchError((error: unknown) => this.fail(error, 'branches', epoch, routeKey, hooks)),
+        catchError((error: unknown) => this.fail(error, target, epoch, routeKey, hooks)),
       )
       .subscribe();
-    this.gate.track(epoch, subscription);
-  }
-
-  loadOccurrences(
-    route: PhraseContextUrlState,
-    contextRef: string,
-    cursor: string | null,
-    append: boolean,
-    hooks: PhraseContextActionHooks,
-  ): void {
-    this.status.occurrences.set(append ? 'refreshing' : 'loading');
-    const routeKey = phraseContextStateKey(route);
-    const epoch = this.gate.begin();
-    const subscription = this.loader
-      .loadOccurrences(contextRef, cursor)
-      .pipe(
-        tap((result) => {
-          if (
-            !this.isCurrent(epoch, routeKey, hooks, contextRef) ||
-            !this.accept(result, 'occurrences', hooks) ||
-            result.kind !== 'occurrences'
-          ) {
-            return;
-          }
-          if (append) {
-            this.selection.appendOccurrences(result.occurrences);
-          } else {
-            this.selection.replaceOccurrences(result.occurrences);
-          }
-          this.status.occurrences.set(result.occurrences.totalCount === 0 ? 'empty' : 'success');
-        }),
-        catchError((error: unknown) =>
-          this.fail(error, 'occurrences', epoch, routeKey, hooks, contextRef),
-        ),
-      )
-      .subscribe();
-    this.gate.track(epoch, subscription);
+    this.gate.track(target, epoch, subscription);
   }
 
   private accept(
@@ -171,7 +144,7 @@ export class PhraseContextActionCoordinator {
   ): boolean {
     if (result.kind === 'failure') {
       if (result.failure.status === 'stale') {
-        hooks.resetBuild(null);
+        hooks.resetBuild();
       } else {
         this.status.fail(target, result.failure.status, result.failure.message);
       }
@@ -182,18 +155,17 @@ export class PhraseContextActionCoordinator {
 
   private fail(
     error: unknown,
-    target: PhraseContextRequestTarget,
+    target: PhraseContextActionTarget,
     epoch: number,
     routeKey: string,
     hooks: PhraseContextActionHooks,
-    contextRef?: string,
   ) {
-    if (!this.isCurrent(epoch, routeKey, hooks, contextRef)) {
+    if (!this.isCurrent(target, epoch, routeKey, hooks)) {
       return of(undefined);
     }
     const failure = phraseRequestFailure(error);
     if (failure.status === 'stale') {
-      hooks.resetBuild(null);
+      hooks.resetBuild();
     } else {
       this.status.fail(target, failure.status, failure.message);
     }
@@ -201,15 +173,45 @@ export class PhraseContextActionCoordinator {
   }
 
   private isCurrent(
+    target: PhraseContextActionTarget,
     epoch: number,
     routeKey: string,
     hooks: PhraseContextActionHooks,
-    contextRef?: string,
   ): boolean {
     return (
-      this.gate.isCurrent(epoch) &&
-      routeKey === phraseContextStateKey(hooks.currentRoute()) &&
-      (contextRef === undefined || this.selection.selectedContextRef() === contextRef)
+      this.gate.isCurrent(target, epoch) &&
+      routeKey === this.routeKey(target, hooks.currentRoute())
     );
   }
+
+  private startRequest(
+    target: PhraseContextActionTarget,
+    busyStatus: Extract<PhraseLoadStatus, 'loading' | 'refreshing'>,
+  ): number {
+    let invalidatedStatus: PhraseLoadStatus = 'idle';
+    const epoch = this.gate.begin(target, () => this.status.set(target, invalidatedStatus));
+    invalidatedStatus = settledStatus(this.currentStatus(target));
+    this.status.set(target, busyStatus);
+    return epoch;
+  }
+
+  private currentStatus(target: PhraseContextActionTarget): PhraseLoadStatus {
+    if (target === 'results') {
+      return this.status.results();
+    }
+    return this.status.branches();
+  }
+
+  private routeKey(
+    target: PhraseContextActionTarget,
+    route: PhraseContextUrlState,
+  ): string {
+    return target === 'results'
+      ? phraseContextStateKey(route)
+      : phraseContextBranchStateKey(route);
+  }
+}
+
+function settledStatus(status: PhraseLoadStatus): PhraseLoadStatus {
+  return status === 'loading' || status === 'refreshing' ? 'idle' : status;
 }

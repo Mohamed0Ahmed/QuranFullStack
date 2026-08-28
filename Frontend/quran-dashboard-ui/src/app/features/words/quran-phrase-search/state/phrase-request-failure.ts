@@ -6,12 +6,13 @@ import { PhraseLoadStatus } from '../models/phrase-repetitions.models';
 export interface PhraseRequestFailure {
   readonly status: Extract<
     PhraseLoadStatus,
-    'invalid' | 'error' | 'stale' | 'unavailable'
+    'invalid' | 'error' | 'rate-limited' | 'stale' | 'unavailable'
   >;
   readonly message: string;
 }
 
 const DEFAULT_ERROR_MESSAGE = 'تعذر تحميل بيانات البحث الآن. حاول مرة أخرى.';
+const RATE_LIMIT_FALLBACK_MESSAGE = 'عدد كبير من الطلبات. حاول مرة أخرى بعد قليل.';
 
 export function phraseRequestFailure(error: unknown): PhraseRequestFailure {
   if (!(error instanceof HttpErrorResponse)) {
@@ -22,6 +23,16 @@ export function phraseRequestFailure(error: unknown): PhraseRequestFailure {
   const codes = body?.errors ?? [];
   const message = body?.message || DEFAULT_ERROR_MESSAGE;
 
+  if (error.status === HttpStatusCode.TooManyRequests) {
+    const retryAfterSeconds = parseRetryAfterSeconds(error.headers.get('Retry-After'));
+    return {
+      status: 'rate-limited',
+      message:
+        retryAfterSeconds === null
+          ? body?.message || RATE_LIMIT_FALLBACK_MESSAGE
+          : `عدد كبير من الطلبات. حاول مرة أخرى بعد ${retryAfterSeconds} ثانية.`,
+    };
+  }
   if (
     error.status === HttpStatusCode.ServiceUnavailable ||
     codes.includes('phrase_index_unavailable')
@@ -62,4 +73,14 @@ export function phraseEnvelopeFailure(
 
 function isApiResponse(value: unknown): value is ApiResponse<unknown> {
   return typeof value === 'object' && value !== null && 'isSuccess' in value;
+}
+
+function parseRetryAfterSeconds(value: string | null): number | null {
+  const normalized = value?.trim();
+  if (!normalized || !/^\d+$/.test(normalized)) {
+    return null;
+  }
+
+  const seconds = Number(normalized);
+  return Number.isSafeInteger(seconds) && seconds > 0 ? seconds : null;
 }

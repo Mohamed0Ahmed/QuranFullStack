@@ -16,4 +16,8 @@ public sealed record MasaqSearchWordsSourceSummary(
     string Schema,
     string Sha256,
     int WordCount,
-    int UniqueTextCount);
+    int UniqueTextCount)
+{
+    public const string ApprovedSha256 =
+        "c49838df2cc3e4c7a89ac5124321d6eeb324b7544b83175d62bfaa5234ba325a";
+}

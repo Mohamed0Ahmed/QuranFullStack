@@ -6,11 +6,16 @@ internal static class PhraseSourceFingerprint
     {
         using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         Span<byte> lengthPrefix = stackalloc byte[sizeof(int)];
+        Append(
+            hash,
+            $"phrase-source-v{PhraseIndexBuildConstants.SourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}",
+            lengthPrefix);
 
         foreach (var token in tokens)
         {
             Append(hash, token.Id.ToString(CultureInfo.InvariantCulture), lengthPrefix);
             Append(hash, token.AyahId.ToString(CultureInfo.InvariantCulture), lengthPrefix);
+            Append(hash, token.SurahNumber.ToString(CultureInfo.InvariantCulture), lengthPrefix);
             Append(hash, token.WordNumber.ToString(CultureInfo.InvariantCulture), lengthPrefix);
             Append(hash, token.TextUthmani, lengthPrefix);
             Append(hash, token.WordKeyImlaeiSimple, lengthPrefix);

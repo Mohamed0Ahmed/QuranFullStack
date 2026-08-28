@@ -2,6 +2,10 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSe
 
 public sealed class PhraseSourceStateCoordinator
 {
+    internal const string SourceApprovalRequiredReason = "source-approval-required";
+    internal const string SourceFingerprintChangedReason = "source-fingerprint-changed";
+    internal const string SourceIntegrityCheckFailedReason = "source-integrity-check-failed";
+
     private const string LockSourceMutationSql =
         "SELECT pg_advisory_xact_lock(@namespace, @key)";
 
@@ -26,6 +30,8 @@ public sealed class PhraseSourceStateCoordinator
 
     internal async Task<PhraseSourceBootstrapResult> BootstrapAsync(
         NpgsqlConnection connection,
+        string approvedFingerprint,
+        int approvedFingerprintVersion,
         CancellationToken ct)
     {
         await using var transaction = await connection.BeginTransactionAsync(ct);
@@ -35,11 +41,26 @@ public sealed class PhraseSourceStateCoordinator
 
         if (!source.Passed)
         {
-            await transaction.RollbackAsync(ct);
+            state = await InvalidateRejectedSourceAsync(
+                connection,
+                transaction,
+                state,
+                SourceIntegrityCheckFailedReason);
             return new PhraseSourceBootstrapResult(state, source, string.Empty);
         }
 
         var fingerprint = PhraseSourceFingerprint.Compute(source.Tokens);
+        if (approvedFingerprintVersion != PhraseIndexBuildConstants.SourceFingerprintVersion
+            || !string.Equals(approvedFingerprint, fingerprint, StringComparison.Ordinal))
+        {
+            state = await InvalidateRejectedSourceAsync(
+                connection,
+                transaction,
+                state,
+                SourceApprovalRequiredReason);
+            return new PhraseSourceBootstrapResult(state, source, fingerprint);
+        }
+
         if (state.SourceFingerprint is null)
         {
             await UpdateInitializedStateAsync(connection, transaction, state.SourceRevision + 1, fingerprint, ct);
@@ -57,9 +78,9 @@ public sealed class PhraseSourceStateCoordinator
                 connection,
                 transaction,
                 state.SourceRevision + 1,
-                fingerprint,
-                "source-fingerprint-changed",
-                ct);
+                approvedFingerprint: fingerprint,
+                reason: SourceFingerprintChangedReason,
+                ct: ct);
             state = state with
             {
                 SourceRevision = state.SourceRevision + 1,
@@ -67,7 +88,7 @@ public sealed class PhraseSourceStateCoordinator
                 ActiveBuildId = null,
                 PreviousBuildId = null,
                 IsStale = true,
-                StaleReason = "source-fingerprint-changed",
+                StaleReason = SourceFingerprintChangedReason,
             };
         }
 
@@ -190,10 +211,35 @@ public sealed class PhraseSourceStateCoordinator
             connection,
             transaction,
             state.SourceRevision + 1,
-            fingerprint,
-            "display-word-source-changed",
-            ct);
+            approvedFingerprint: fingerprint,
+            reason: "display-word-source-changed",
+            ct: ct);
         return source;
+    }
+
+    internal static async Task<PhraseSourceState> InvalidateRejectedSourceAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        PhraseSourceState state,
+        string reason)
+    {
+        var invalidatedRevision = state.SourceRevision + 1;
+        await InvalidateBuildPointersAsync(
+            connection,
+            transaction,
+            invalidatedRevision,
+            approvedFingerprint: null,
+            reason: reason,
+            ct: CancellationToken.None);
+        await transaction.CommitAsync(CancellationToken.None);
+        return state with
+        {
+            SourceRevision = invalidatedRevision,
+            ActiveBuildId = null,
+            PreviousBuildId = null,
+            IsStale = true,
+            StaleReason = reason,
+        };
     }
 
     private static Task UpdateInitializedStateAsync(
@@ -222,7 +268,7 @@ public sealed class PhraseSourceStateCoordinator
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         long revision,
-        string fingerprint,
+        string? approvedFingerprint,
         string reason,
         CancellationToken ct) => ExecuteAsync(
             connection,
@@ -230,7 +276,7 @@ public sealed class PhraseSourceStateCoordinator
             """
             UPDATE quran_phrase_index_state
             SET source_revision = @revision,
-                source_fingerprint = @fingerprint,
+                source_fingerprint = COALESCE(@approved_fingerprint, source_fingerprint),
                 active_build_id = NULL,
                 previous_build_id = NULL,
                 is_stale = true,
@@ -244,7 +290,10 @@ public sealed class PhraseSourceStateCoordinator
             """,
             ct,
             new NpgsqlParameter("revision", revision),
-            new NpgsqlParameter("fingerprint", fingerprint),
+            new NpgsqlParameter("approved_fingerprint", NpgsqlDbType.Text)
+            {
+                Value = approvedFingerprint is null ? DBNull.Value : approvedFingerprint,
+            },
             new NpgsqlParameter("reason", reason),
             new NpgsqlParameter("now", DateTimeOffset.UtcNow));
 

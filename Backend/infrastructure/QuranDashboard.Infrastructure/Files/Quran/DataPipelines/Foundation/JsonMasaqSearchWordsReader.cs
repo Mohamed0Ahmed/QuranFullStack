@@ -19,9 +19,18 @@ public sealed class JsonMasaqSearchWordsReader
             throw new FileNotFoundException("MASAQ search words source was not found.", filePath);
         }
 
-        var sha256 = await ComputeSha256Async(filePath, ct);
+        var sourceBytes = await File.ReadAllBytesAsync(filePath, ct);
+        var sha256 = Convert.ToHexStringLower(SHA256.HashData(sourceBytes));
+        if (!string.Equals(
+                sha256,
+                MasaqSearchWordsSourceSummary.ApprovedSha256,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidDataException(
+                $"MASAQ search words source digest is not approved: sha256={sha256}.");
+        }
 
-        await using var stream = File.OpenRead(filePath);
+        await using var stream = new MemoryStream(sourceBytes, writable: false);
         using var document = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
         var root = document.RootElement;
         var schema = ReadRequiredString(root, "schema");
@@ -140,12 +149,6 @@ public sealed class JsonMasaqSearchWordsReader
         return property.GetString()!;
     }
 
-    private static async Task<string> ComputeSha256Async(string filePath, CancellationToken ct)
-    {
-        await using var stream = File.OpenRead(filePath);
-        var hash = await SHA256.HashDataAsync(stream, ct);
-        return Convert.ToHexString(hash).ToLowerInvariant();
-    }
 }
 
 public sealed record MasaqSearchWordsSource(

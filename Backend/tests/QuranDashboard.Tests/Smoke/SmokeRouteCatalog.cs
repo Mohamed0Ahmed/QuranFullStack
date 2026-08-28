@@ -117,11 +117,12 @@ internal static class SmokeRouteCatalog
     // lemmas and stems list them the other way round.
     //
     // A Seeded expectation is given to the routes whose seeded answer follows from the artifact rather
-    // than from an ordinal. The data-bearing groups cover twelve routes: the unfiltered reads whose
+    // than from an ordinal. The data-bearing groups cover thirteen routes: the unfiltered reads whose
     // size is a whole table
     // (the four paged list reads, plus api/mushaf/surahs, which takes no key and whose collection length
-    // is quran_surahs); the three Mushaf reads addressed by a Quran-stable natural key (page 1, verse 1:1,
-    // word 1:1:1); and the four unique-word reads at id 1, whose id is deterministic by construction —
+    // is quran_surahs); the four Mushaf reads addressed by a Quran-stable natural key (page 1,
+    // verse 1:1 study and doors, and word 1:1:1); and the four unique-word reads at id 1, whose id is
+    // deterministic by construction —
     // migration DeterministicUniqueWordIds drops the
     // identity column, the configuration declares ValueGeneratedNever, and the id IS the quran_words.id of
     // the word's first mushaf occurrence, an equality DisplayWordsSql.CheckUnqIdDeterministicViolations
@@ -293,6 +294,7 @@ internal static class SmokeRouteCatalog
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyCollection("lines")),
         },
+        new("api/mushaf/pages/{pageNumber}/door-highlights", "/api/mushaf/pages/1/door-highlights", HttpStatusCode.OK),
         new("api/mushaf/surahs", "/api/mushaf/surahs", HttpStatusCode.OK)
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.CountedCollection("surahs", "quran_surahs")),
@@ -301,6 +303,10 @@ internal static class SmokeRouteCatalog
         new("api/mushaf/ayahs/{verseKey}/study", "/api/mushaf/ayahs/1:1/study", HttpStatusCode.NotFound)
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.EchoedKey("ayah", "verseKey", "1:1")),
+        },
+        new("api/mushaf/ayahs/{verseKey}/doors", "/api/mushaf/ayahs/1:1/doors", HttpStatusCode.NotFound)
+        {
+            Seeded = new(HttpStatusCode.OK),
         },
         new("api/mushaf/ayahs/{verseKey}/mutashabihat", "/api/mushaf/ayahs/1:1/mutashabihat", HttpStatusCode.NotFound),
         new("api/mushaf/ayahs/{verseKey}/similar-ayahs", "/api/mushaf/ayahs/1:1/similar-ayahs", HttpStatusCode.NotFound),
@@ -321,6 +327,11 @@ internal static class SmokeRouteCatalog
         new("api/linking/workspace/sources/{id:long}", "/api/linking/workspace/sources/1", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/{id:long}/types", "/api/linking/workspace/sources/1/types", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Patch,
             ParityOnly = true,
         },
         new("api/linking/workspace/sources/order", "/api/linking/workspace/sources/order", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)

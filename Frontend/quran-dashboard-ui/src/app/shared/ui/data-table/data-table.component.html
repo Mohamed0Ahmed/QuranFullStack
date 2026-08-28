@@ -61,7 +61,7 @@
           [attr.aria-posinset]="isCompact() ? index + 1 : null"
           [attr.aria-setsize]="isCompact() ? totalRowCount() : null"
           [attr.tabindex]="canSelect(row) ? 0 : null"
-          (click)="selectRow(row)"
+          (click)="selectRow($event, row)"
           (keydown)="onRowKeydown($event, row)"
         >
           @if (isCompact() && compactRowTemplate(); as compactRow) {
@@ -85,7 +85,7 @@
             [attr.aria-posinset]="index + 1"
             [attr.aria-setsize]="totalRowCount()"
             [attr.tabindex]="canSelect(row) ? 0 : null"
-            (click)="selectRow(row)"
+            (click)="selectRow($event, row)"
             (keydown)="onRowKeydown($event, row)"
           >
             @if (compactRowTemplate(); as compactRow) {
@@ -108,7 +108,7 @@
             [attr.aria-current]="isSelected(row) ? 'true' : null"
             [attr.data-row-id]="rowId()(row)"
             [attr.tabindex]="canSelect(row) ? 0 : null"
-            (click)="selectRow(row)"
+            (click)="selectRow($event, row)"
             (keydown)="onRowKeydown($event, row)"
           >
             @if (rowTemplate(); as rowTemplate) {

@@ -20,6 +20,7 @@ export class PhraseContextWebComponent {
   readonly selection = input.required<PhraseSelectedPathDto>();
   readonly options = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly busy = input(false);
+  readonly navigationDisabled = input(false);
 
   readonly optionSelected = output<string>();
   readonly pathSelected = output<string | null>();

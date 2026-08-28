@@ -50,7 +50,7 @@ internal static class PhraseQueryInputParser
             .Select(segment => PhraseSearchInputNormalizer.NormalizeSegment(segment, mode))
             .ToArray();
 
-        if (segments.Length == 0)
+        if (segments.Length == 0 || segments.Any(string.IsNullOrEmpty))
         {
             return new PhraseQueryParseResult.Failure(PhraseRequestInvalidKind.Query);
         }

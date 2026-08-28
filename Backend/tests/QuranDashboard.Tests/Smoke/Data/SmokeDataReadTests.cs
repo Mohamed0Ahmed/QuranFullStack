@@ -4,7 +4,7 @@ namespace QuranDashboard.Tests.Smoke.Data;
 
 // The other half of the two-status model: SmokeRoutePipelineTests proves each route answers its
 // DerivedStatus against an empty schema, and these prove the same routes answer their Seeded expectation
-// once the canonical dump is restored. Seven routes answer 404 there and 200 here, while every phrase
+// once the canonical dump is restored. Eight routes answer 404 there and 200 here, while every phrase
 // route remains unavailable because the canonical artifact deliberately excludes its derived data.
 // Those independent outcomes are why a seeded expectation is a second status rather than a payload
 // flag on the first.

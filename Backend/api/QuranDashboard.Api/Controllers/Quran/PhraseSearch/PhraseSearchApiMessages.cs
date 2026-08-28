@@ -21,6 +21,7 @@ internal static class PhraseSearchApiMessages
     internal const string InvalidQuery = "نص عبارة البحث غير صالح";
     internal const string InvalidQueryEncoding = "ترميز عبارة البحث غير صالح";
     internal const string QueryTooLong = "عبارة البحث أطول من الحد المسموح";
+    internal const string QueryTooComplex = "عبارة البحث تحتمل تحليلات أكثر من الحد المسموح";
     internal const string InvalidCursor = "مرجع متابعة النتائج غير صالح";
     internal const string InvalidSimilarityThreshold = "نسبة تشابه العبارات غير صالحة";
     internal const string InvalidMinimumMatchedWords = "الحد الأدنى للكلمات المتطابقة غير صالح";
@@ -41,6 +42,7 @@ internal static class PhraseSearchErrorCodes
     internal const string InvalidQuery = "phrase_query_invalid";
     internal const string InvalidQueryEncoding = "phrase_query_encoding_invalid";
     internal const string QueryTooLong = "phrase_query_too_long";
+    internal const string QueryTooComplex = "phrase_query_too_complex";
     internal const string InvalidCursor = "phrase_cursor_invalid";
     internal const string InvalidSimilarityThreshold = "phrase_similarity_threshold_invalid";
     internal const string InvalidMinimumMatchedWords = "phrase_minimum_matched_words_invalid";

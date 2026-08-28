@@ -25,6 +25,7 @@ public sealed class BuildPhraseIndexHandler
 
         return new BuildPhraseIndexResult(
             execution.Succeeded,
+            execution.Outcome,
             MapExitCode(execution.Outcome),
             execution.Message,
             execution.BuildId,
@@ -33,7 +34,9 @@ public sealed class BuildPhraseIndexHandler
             execution.SourceFingerprint,
             execution.SourceRevision,
             execution.PreviousBuildId,
-            execution.ActiveBuildId);
+            execution.ActiveBuildId,
+            execution.ReportAvailable,
+            execution.ReportLinked);
     }
 
     private static int MapExitCode(PhraseIndexBuildOutcome outcome) => outcome switch

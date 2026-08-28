@@ -18,6 +18,11 @@
   min-inline-size: max-content;
 }
 
+.qd-data-table__header-row,
+.qd-data-table__row:not(.qd-data-table__row--compact) {
+  grid-template-columns: var(--qd-data-table-columns);
+}
+
 .qd-data-table__body {
   flex: 1 1 auto;
   min-block-size: 0;
@@ -25,7 +30,8 @@
 }
 
 .qd-data-table__body--virtual {
-  block-size: 32rem;
+  flex: var(--qd-data-table-virtual-flex, 1 1 auto);
+  block-size: var(--qd-data-table-virtual-block-size, 32rem);
 }
 
 .qd-data-table__body--compact:not(.qd-data-table__body--virtual) {

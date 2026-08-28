@@ -60,8 +60,10 @@ internal sealed class PhraseIndexBuildReportWriter
         builder.AppendLine($"- Status: {report.Status}");
         builder.AppendLine($"- Outcome: {report.Outcome}");
         builder.AppendLine($"- Format / builder: {report.FormatVersion} / {report.BuilderVersion}");
-        builder.AppendLine($"- Persisted / active: {report.Persisted} / {report.Active}");
-        builder.AppendLine($"- Exact / similarity ready: {report.ExactReady} / {report.SimilarityReady}");
+        builder.AppendLine(
+            $"- Persisted / active: {FormatState(report.Persisted)} / {FormatState(report.Active)}");
+        builder.AppendLine(
+            $"- Exact / similarity ready: {FormatState(report.ExactReady)} / {FormatState(report.SimilarityReady)}");
         builder.AppendLine($"- Forced: {report.Forced}");
         builder.AppendLine($"- Started (UTC): {report.StartedAtUtc:u}");
         builder.AppendLine($"- Completed (UTC): {report.CompletedAtUtc:u}");
@@ -124,6 +126,8 @@ internal sealed class PhraseIndexBuildReportWriter
         AppendMessages(builder, "Errors", report.Errors);
         return builder.ToString();
     }
+
+    private static string FormatState(bool? state) => state?.ToString() ?? "unknown";
 
     private static void AppendMessages(
         StringBuilder builder,

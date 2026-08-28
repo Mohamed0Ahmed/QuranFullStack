@@ -3,13 +3,12 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { PhraseContextBranchesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-branches-response-api-response';
-import { PhraseContextGroupsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-groups-response-api-response';
-import { PhraseContextOccurrencesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response-api-response';
 import { PhraseContextResultsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-results-response-api-response';
 import { environment } from '../../../../../environments/environment';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
+import { phraseSearchConditionalHeaders } from './phrase-search-conditional-request';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PhraseContextApi {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(PhraseSearchCache);
@@ -41,38 +40,15 @@ export class PhraseContextApi {
         followingCursor,
         pageSize,
       ),
-      () =>
+      (etag) =>
         this.http.get<PhraseContextBranchesResponseApiResponse>(
           `${this.baseUrl}/branches`,
-          { params },
+          {
+            headers: phraseSearchConditionalHeaders(etag),
+            observe: 'response',
+            params,
+          },
         ),
-    );
-  }
-
-  getGroups(
-    resolutionRef: string,
-    previousRef: string | null,
-    followingRef: string | null,
-    cursor: string | null,
-    pageSize: number,
-  ): Observable<PhraseContextGroupsResponseApiResponse> {
-    let params = new HttpParams().set('resolutionRef', resolutionRef).set('pageSize', pageSize);
-    params = setOptional(params, 'previousRef', previousRef);
-    params = setOptional(params, 'followingRef', followingRef);
-    params = setOptional(params, 'cursor', cursor);
-    return this.cache.buildScoped(
-      phraseSearchCacheKey(
-        'context-groups',
-        resolutionRef,
-        previousRef,
-        followingRef,
-        cursor,
-        pageSize,
-      ),
-      () =>
-        this.http.get<PhraseContextGroupsResponseApiResponse>(`${this.baseUrl}/groups`, {
-          params,
-        }),
     );
   }
 
@@ -98,27 +74,12 @@ export class PhraseContextApi {
         page,
         pageSize,
       ),
-      () =>
+      (etag) =>
         this.http.get<PhraseContextResultsResponseApiResponse>(`${this.baseUrl}/results`, {
+          headers: phraseSearchConditionalHeaders(etag),
+          observe: 'response',
           params,
         }),
-    );
-  }
-
-  getOccurrences(
-    contextRef: string,
-    cursor: string | null,
-    pageSize: number,
-  ): Observable<PhraseContextOccurrencesResponseApiResponse> {
-    let params = new HttpParams().set('contextRef', contextRef).set('pageSize', pageSize);
-    params = setOptional(params, 'cursor', cursor);
-    return this.cache.buildScoped(
-      phraseSearchCacheKey('context-occurrences', contextRef, cursor, pageSize),
-      () =>
-        this.http.get<PhraseContextOccurrencesResponseApiResponse>(
-          `${this.baseUrl}/occurrences`,
-          { params },
-        ),
     );
   }
 }

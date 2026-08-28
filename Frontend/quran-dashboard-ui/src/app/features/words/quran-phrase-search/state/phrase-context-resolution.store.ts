@@ -15,6 +15,11 @@ import {
 
 const INVALID_QUERY_MESSAGE = 'اكتب عبارة قرآنية ثم أرسلها.';
 
+export interface PhraseResolutionRetryRequest {
+  readonly rawQuery: string;
+  readonly mode: PhraseTextMode;
+}
+
 @Injectable()
 export class PhraseContextResolutionStore {
   readonly mode = signal<PhraseTextMode>('simple');
@@ -77,6 +82,39 @@ export class PhraseContextResolutionStore {
     this.state.update((current) => ({ ...current, status, message }));
   }
 
+  prepareRetry(): PhraseResolutionRetryRequest | null {
+    const current = this.state();
+    if (
+      current.status !== 'error' &&
+      current.status !== 'rate-limited' &&
+      current.status !== 'stale' &&
+      current.status !== 'unavailable'
+    ) {
+      return null;
+    }
+    this.mode.set(current.mode);
+    this.state.set({
+      ...current,
+      status: 'idle',
+      candidates: [],
+      selectedResolutionRef: null,
+      message: '',
+    });
+    return { rawQuery: current.rawQuery, mode: current.mode };
+  }
+
+  reset(rawQuery: string, mode: PhraseTextMode): void {
+    this.mode.set(mode);
+    this.state.set({
+      rawQuery,
+      mode,
+      status: 'idle',
+      candidates: [],
+      selectedResolutionRef: null,
+      message: '',
+    });
+  }
+
   restoreIdle(rawQuery: string, mode: PhraseTextMode): void {
     this.mode.set(mode);
     this.state.update((current) => ({
@@ -88,10 +126,12 @@ export class PhraseContextResolutionStore {
     }));
   }
 
-  markLoading(rawQuery: string, resolutionRef: string): void {
+  markLoading(rawQuery: string, mode: PhraseTextMode, resolutionRef: string): void {
+    this.mode.set(mode);
     this.state.update((current) => ({
       ...current,
       rawQuery,
+      mode,
       selectedResolutionRef: resolutionRef,
       status: 'loading',
     }));

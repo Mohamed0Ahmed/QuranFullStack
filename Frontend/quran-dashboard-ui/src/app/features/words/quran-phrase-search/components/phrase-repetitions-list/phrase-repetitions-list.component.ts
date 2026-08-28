@@ -20,6 +20,10 @@ export class PhraseRepetitionsListComponent {
   private copiedTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly items = input.required<readonly PhraseRepetitionListItemDto[]>();
+  readonly activeBuildId = input.required<string>();
+  readonly mode = input.required<string>();
+  readonly wordCount = input.required<number>();
+  readonly sort = input.required<string>();
   readonly totalCount = input.required<number>();
   readonly page = input.required<number>();
   readonly pageSize = input.required<number>();
@@ -35,7 +39,15 @@ export class PhraseRepetitionsListComponent {
     () => this.items().find((item) => item.variantId === this.selectedVariantId()) ?? null,
   );
   protected readonly scrollStateKey = computed(
-    () => `words.table.phrase-repetitions.${this.page()}`,
+    () => [
+      'words.table.phrase-repetitions',
+      this.activeBuildId().toLowerCase(),
+      this.mode(),
+      this.wordCount(),
+      this.sort(),
+      this.pageSize(),
+      this.page(),
+    ].join('.'),
   );
   protected readonly rowIdentity = (item: PhraseRepetitionListItemDto): number => item.variantId;
   protected readonly sameRow = (

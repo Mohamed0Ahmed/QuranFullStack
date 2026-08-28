@@ -45,6 +45,7 @@ internal sealed class PhraseExactSourcePreparer
             ) FROM STDIN (FORMAT BINARY)
             """;
         await using var importer = await connection.BeginBinaryImportAsync(copySql, ct);
+        importer.Timeout = TimeSpan.FromSeconds(PhraseIndexBuildConstants.CommandTimeoutSeconds);
         foreach (var token in tokens)
         {
             await importer.StartRowAsync(ct);
@@ -74,6 +75,7 @@ internal sealed class PhraseExactSourcePreparer
             ) FROM STDIN (FORMAT BINARY)
             """;
         await using var importer = await connection.BeginBinaryImportAsync(copySql, ct);
+        importer.Timeout = TimeSpan.FromSeconds(PhraseIndexBuildConstants.CommandTimeoutSeconds);
         foreach (var token in tokens)
         {
             await importer.StartRowAsync(ct);

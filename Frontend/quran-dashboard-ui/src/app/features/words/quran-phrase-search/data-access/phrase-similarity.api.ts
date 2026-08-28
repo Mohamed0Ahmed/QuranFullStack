@@ -6,8 +6,9 @@ import { PhraseSimilaritySearchResponseApiResponse } from '../../../../core/api/
 import { environment } from '../../../../../environments/environment';
 import { PhraseSimilarityResultSort } from '../models/phrase-similarity.models';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
+import { phraseSearchConditionalHeaders } from './phrase-search-conditional-request';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PhraseSimilarityApi {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(PhraseSearchCache);
@@ -35,10 +36,14 @@ export class PhraseSimilarityApi {
         page,
         pageSize,
       ),
-      () =>
+      (etag) =>
         this.http.get<PhraseSimilaritySearchResponseApiResponse>(
           `${this.baseUrl}/similarities/search`,
-          { params },
+          {
+            headers: phraseSearchConditionalHeaders(etag),
+            observe: 'response',
+            params,
+          },
         ),
     );
   }

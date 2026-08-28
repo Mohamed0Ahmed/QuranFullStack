@@ -5,12 +5,16 @@ using QuranDashboard.Infrastructure.Caching.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 
-public sealed class EfPhraseQueryResolutionReader(
+public sealed partial class EfPhraseQueryResolutionReader(
     QuranDashboardDbContext db,
     IPhraseSearchReferenceCodec codec,
     PhraseSearchReadCache cache) : IPhraseQueryResolutionReader
 {
-    public async Task<PhraseSearchReadResult<PhraseQueryResolutionResponse>> ResolveAsync(
+    private readonly QuranDashboardDbContext db = db;
+    private readonly IPhraseSearchReferenceCodec codec = codec;
+    private readonly PhraseSearchReadCache cache = cache;
+
+    public async Task<PhraseQueryResolutionReadResult> ResolveAsync(
         PhraseTextMode mode,
         IReadOnlyList<string> normalizedSegments,
         CancellationToken cancellationToken)
@@ -18,7 +22,7 @@ public sealed class EfPhraseQueryResolutionReader(
         await using var snapshot = await PhraseSearchReadSnapshot.OpenAsync(db, cancellationToken);
         if (snapshot is null)
         {
-            return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Unavailable();
+            return new PhraseQueryResolutionReadResult.Unavailable();
         }
 
         var cacheKey = PhraseSearchCacheKeys.Resolution(
@@ -28,14 +32,21 @@ public sealed class EfPhraseQueryResolutionReader(
         if (cache.TryGet(cacheKey, out PhraseQueryResolutionResponse cached))
         {
             await snapshot.CompleteAsync(cancellationToken);
-            return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Success(cached);
+            return new PhraseQueryResolutionReadResult.Success(cached);
         }
 
-        var candidates = await ResolveCandidatesAsync(
+        var candidateSearch = await ResolveCandidatesAsync(
             snapshot.ActiveBuildId,
             mode,
             normalizedSegments,
             cancellationToken);
+        if (candidateSearch is ResolutionSearchResult.TooComplex)
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseQueryResolutionReadResult.TooComplex();
+        }
+
+        var candidates = ((ResolutionSearchResult.Found)candidateSearch).Candidates;
         var displayTokensByVariant = await LoadDisplayTokensAsync(
             candidates,
             mode,
@@ -69,67 +80,7 @@ public sealed class EfPhraseQueryResolutionReader(
             candidateDtos);
         await snapshot.CompleteAsync(cancellationToken);
         cache.Set(cacheKey, response);
-        return new PhraseSearchReadResult<PhraseQueryResolutionResponse>.Success(response);
-    }
-
-    private async Task<IReadOnlyList<ResolutionVariant>> ResolveCandidatesAsync(
-        Guid buildId,
-        PhraseTextMode mode,
-        IReadOnlyList<string> segments,
-        CancellationToken cancellationToken)
-    {
-        var maximumSearchTextLength = await db.QuranPhraseSearchTokens
-            .AsNoTracking()
-            .Where(token => token.BuildId == buildId && token.Mode == mode)
-            .MaxAsync(token => token.SearchText.Length, cancellationToken);
-        var possibleTexts = CreatePossibleTexts(segments, maximumSearchTextLength);
-        var tokenRows = await db.QuranPhraseSearchTokens
-            .AsNoTracking()
-            .Where(token => token.BuildId == buildId
-                && token.Mode == mode
-                && possibleTexts.Contains(token.SearchText))
-            .Select(token => new SearchTokenRow(token.Id, token.SearchText))
-            .ToListAsync(cancellationToken);
-        var tokensByText = tokenRows.ToDictionary(token => token.SearchText, StringComparer.Ordinal);
-        var tokenizations = CreateTokenizations(segments, tokensByText, maximumSearchTextLength);
-        var results = new Dictionary<string, ResolutionVariant>(StringComparer.Ordinal);
-
-        foreach (var costGroup in tokenizations.GroupBy(tokenization => tokenization.JoinedBoundaryCount))
-        {
-            foreach (var tokenization in costGroup)
-            {
-                var searchTokenIds = tokenization.SearchTokenIds;
-                var rows = await db.QuranPhraseVariants
-                    .AsNoTracking()
-                    .Where(variant => variant.BuildId == buildId
-                        && variant.Mode == mode
-                        && variant.WordCount == searchTokenIds.Length
-                        && variant.SearchTokenIds.SequenceEqual(searchTokenIds))
-                    .Select(variant => new ResolutionVariant(
-                        variant.Id,
-                        variant.WordCount,
-                        variant.ExactTokenIds,
-                        variant.DisplayText,
-                        variant.FirstQuranWordId))
-                    .ToListAsync(cancellationToken);
-
-                foreach (var row in rows)
-                {
-                    results.TryAdd(TokenKey(row.ExactTokenIds), row);
-                }
-            }
-
-            if (results.Count > 0)
-            {
-                break;
-            }
-        }
-
-        return results.Values
-            .OrderBy(candidate => candidate.WordCount)
-            .ThenBy(candidate => candidate.ExactTokenIds, IntSequenceComparer.Instance)
-            .Take(PhraseSearchQueryLimits.MaximumResolutionCandidates)
-            .ToList();
+        return new PhraseQueryResolutionReadResult.Success(response);
     }
 
     private async Task<IReadOnlyDictionary<long, IReadOnlyList<PhraseExactTokenDto>>> LoadDisplayTokensAsync(
@@ -200,76 +151,6 @@ public sealed class EfPhraseQueryResolutionReader(
         return result;
     }
 
-    private static IReadOnlySet<string> CreatePossibleTexts(
-        IReadOnlyList<string> segments,
-        int maximumLength)
-    {
-        var values = new HashSet<string>(StringComparer.Ordinal);
-        for (var start = 0; start < segments.Count; start++)
-        {
-            var builder = new StringBuilder();
-            for (var end = start; end < segments.Count; end++)
-            {
-                builder.Append(segments[end]);
-                if (builder.Length > maximumLength)
-                {
-                    break;
-                }
-
-                values.Add(builder.ToString());
-            }
-        }
-
-        return values;
-    }
-
-    private static IReadOnlyList<Tokenization> CreateTokenizations(
-        IReadOnlyList<string> segments,
-        IReadOnlyDictionary<string, SearchTokenRow> tokensByText,
-        int maximumLength)
-    {
-        var results = new List<Tokenization>();
-        var current = new List<int>();
-
-        void Visit(int start, int joinedBoundaryCount)
-        {
-            if (start == segments.Count)
-            {
-                results.Add(new Tokenization(joinedBoundaryCount, current.ToArray()));
-                return;
-            }
-
-            var builder = new StringBuilder();
-            for (var end = start; end < segments.Count; end++)
-            {
-                builder.Append(segments[end]);
-                if (builder.Length > maximumLength)
-                {
-                    break;
-                }
-
-                if (!tokensByText.TryGetValue(builder.ToString(), out var token))
-                {
-                    continue;
-                }
-
-                current.Add(checked((int)token.Id));
-                Visit(end + 1, joinedBoundaryCount + end - start);
-                current.RemoveAt(current.Count - 1);
-            }
-        }
-
-        Visit(0, 0);
-        return results
-            .OrderBy(result => result.JoinedBoundaryCount)
-            .ThenBy(result => result.SearchTokenIds, IntSequenceComparer.Instance)
-            .ToList();
-    }
-
-    private static string TokenKey(IReadOnlyList<int> values) => string.Join(',', values);
-
-    private sealed record SearchTokenRow(long Id, string SearchText);
-    private sealed record Tokenization(int JoinedBoundaryCount, int[] SearchTokenIds);
     private sealed record ResolutionVariant(
         long VariantId,
         short WordCount,
@@ -285,42 +166,4 @@ public sealed class EfPhraseQueryResolutionReader(
         short WordNumber,
         int? ExactTokenId,
         string TextUthmani);
-
-    private sealed class IntSequenceComparer : IComparer<IReadOnlyList<int>>, IComparer<int[]>
-    {
-        internal static IntSequenceComparer Instance { get; } = new();
-
-        public int Compare(IReadOnlyList<int>? left, IReadOnlyList<int>? right)
-        {
-            if (ReferenceEquals(left, right))
-            {
-                return 0;
-            }
-
-            if (left is null)
-            {
-                return -1;
-            }
-
-            if (right is null)
-            {
-                return 1;
-            }
-
-            for (var index = 0; index < Math.Min(left.Count, right.Count); index++)
-            {
-                var comparison = left[index].CompareTo(right[index]);
-                if (comparison != 0)
-                {
-                    return comparison;
-                }
-            }
-
-            return left.Count.CompareTo(right.Count);
-        }
-
-        public int Compare(int[]? left, int[]? right) => Compare(
-            (IReadOnlyList<int>?)left,
-            right);
-    }
 }

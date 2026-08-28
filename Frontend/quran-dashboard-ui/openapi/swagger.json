@@ -6088,6 +6088,9 @@
               }
             }
           },
+          "304": {
+            "description": "Not Modified"
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -6144,6 +6147,25 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PhraseContextBranchesResponseApiResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
                 }
               }
             }
@@ -6274,6 +6296,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6387,6 +6428,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6456,6 +6516,9 @@
               }
             }
           },
+          "304": {
+            "description": "Not Modified"
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -6515,6 +6578,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6561,6 +6643,9 @@
               }
             }
           },
+          "304": {
+            "description": "Not Modified"
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -6597,6 +6682,25 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PhraseQueryResolutionResponseApiResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
                 }
               }
             }
@@ -6669,6 +6773,9 @@
                 }
               }
             }
+          },
+          "304": {
+            "description": "Not Modified"
           },
           "400": {
             "description": "Bad Request",
@@ -6774,6 +6881,9 @@
                 }
               }
             }
+          },
+          "304": {
+            "description": "Not Modified"
           },
           "400": {
             "description": "Bad Request",
@@ -6924,6 +7034,9 @@
               }
             }
           },
+          "304": {
+            "description": "Not Modified"
+          },
           "400": {
             "description": "Bad Request",
             "content": {
@@ -6980,6 +7093,25 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PhraseSimilaritySearchResponseApiResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
                 }
               }
             }

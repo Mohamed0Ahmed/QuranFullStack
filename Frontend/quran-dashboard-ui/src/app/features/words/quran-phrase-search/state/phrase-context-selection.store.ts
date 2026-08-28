@@ -1,11 +1,8 @@
-import { Injectable, computed, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
-import { PhraseContextGroupsResponse } from '../../../../core/api/generated/models/phrase-context-groups-response';
 import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/models/phrase-context-occurrence-dto';
-import { PhraseContextOccurrencesResponse } from '../../../../core/api/generated/models/phrase-context-occurrences-response';
 import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
-import { PhraseFullContextGroupDto } from '../../../../core/api/generated/models/phrase-full-context-group-dto';
 import {
   PHRASE_CONTEXT_RESULT_PAGE_SIZE,
   PhraseContextFocusTarget,
@@ -24,37 +21,27 @@ interface PhraseContextBranchSnapshot {
 export class PhraseContextSelectionStore {
   private readonly longState = inject(PhraseLongStateSessionStore);
   private readonly branchSnapshots = new Map<string, PhraseContextBranchSnapshot>();
-  private activeBranchStateKey: string | null = null;
+  private readonly _activeBranchStateKey = signal<string | null>(null);
   private readonly _branches = signal<PhraseContextBranchesResponse | null>(null);
   private readonly _previousOptions = signal<PhraseContextBranchOptions>([]);
   private readonly _followingOptions = signal<PhraseContextBranchOptions>([]);
-  private readonly _groups = signal<readonly PhraseFullContextGroupDto[]>([]);
-  private readonly _groupsTotalCount = signal(0);
-  private readonly _groupsNextCursor = signal<string | null>(null);
-  private readonly _selectedContextRef = signal<string | null>(null);
   private readonly _occurrences = signal<readonly PhraseContextOccurrenceDto[]>([]);
   private readonly _resultsPage = signal(1);
   private readonly _resultsPageSize = signal(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
   private readonly _occurrencesTotalCount = signal(0);
-  private readonly _occurrencesNextCursor = signal<string | null>(null);
   private readonly _focusTarget = signal<PhraseContextFocusTarget | null>(
     this.longState.restoreFocusTarget(),
   );
 
   readonly branches = this._branches.asReadonly();
+  readonly activeBranchStateKey = this._activeBranchStateKey.asReadonly();
   readonly previousOptions = this._previousOptions.asReadonly();
   readonly followingOptions = this._followingOptions.asReadonly();
-  readonly groups = this._groups.asReadonly();
-  readonly groupsTotalCount = this._groupsTotalCount.asReadonly();
-  readonly groupsNextCursor = this._groupsNextCursor.asReadonly();
-  readonly selectedContextRef = this._selectedContextRef.asReadonly();
   readonly occurrences = this._occurrences.asReadonly();
   readonly resultsPage = this._resultsPage.asReadonly();
   readonly resultsPageSize = this._resultsPageSize.asReadonly();
   readonly occurrencesTotalCount = this._occurrencesTotalCount.asReadonly();
-  readonly occurrencesNextCursor = this._occurrencesNextCursor.asReadonly();
   readonly focusTarget = this._focusTarget.asReadonly();
-  readonly hasSelectedContext = computed(() => this._selectedContextRef() !== null);
 
   requestFocus(target: PhraseContextFocusTarget): void {
     this._focusTarget.set(target);
@@ -73,8 +60,8 @@ export class PhraseContextSelectionStore {
       followingOptions: response.following.options,
     };
     this.branchSnapshots.set(stateKey, snapshot);
-    this.activeBranchStateKey = stateKey;
     this.showBranchSnapshot(snapshot);
+    this._activeBranchStateKey.set(stateKey);
   }
 
   appendPrevious(response: PhraseContextBranchesResponse, stateKey: string): void {
@@ -94,7 +81,7 @@ export class PhraseContextSelectionStore {
       followingOptions: current?.followingOptions ?? response.following.options,
     };
     this.branchSnapshots.set(stateKey, snapshot);
-    if (this.activeBranchStateKey === stateKey) {
+    if (this._activeBranchStateKey() === stateKey) {
       this.showBranchSnapshot(snapshot);
     }
   }
@@ -116,54 +103,16 @@ export class PhraseContextSelectionStore {
       ),
     };
     this.branchSnapshots.set(stateKey, snapshot);
-    if (this.activeBranchStateKey === stateKey) {
+    if (this._activeBranchStateKey() === stateKey) {
       this.showBranchSnapshot(snapshot);
     }
   }
 
-  replaceGroups(response: PhraseContextGroupsResponse): void {
-    this._groups.set(response.items);
-    this._groupsTotalCount.set(response.totalCount);
-    this._groupsNextCursor.set(response.nextCursor);
-    this.clearOccurrences();
-  }
-
-  appendGroups(response: PhraseContextGroupsResponse): void {
-    this._groups.update((items) => appendUniqueGroups(items, response.items));
-    this._groupsTotalCount.set(response.totalCount);
-    this._groupsNextCursor.set(response.nextCursor);
-  }
-
-  selectContext(contextRef: string): void {
-    if (this._selectedContextRef() === contextRef) {
-      return;
-    }
-    this._selectedContextRef.set(contextRef);
-    this._occurrences.set([]);
-    this._occurrencesTotalCount.set(0);
-    this._occurrencesNextCursor.set(null);
-  }
-
-  replaceOccurrences(response: PhraseContextOccurrencesResponse): void {
-    this._selectedContextRef.set(response.context.contextRef);
-    this._occurrences.set(response.items);
-    this._occurrencesTotalCount.set(response.totalCount);
-    this._occurrencesNextCursor.set(response.nextCursor);
-  }
-
   replaceResults(response: PhraseContextResultsResponse): void {
-    this._selectedContextRef.set(null);
     this._occurrences.set(response.items);
     this._resultsPage.set(response.page);
     this._resultsPageSize.set(response.pageSize);
     this._occurrencesTotalCount.set(response.totalCount);
-    this._occurrencesNextCursor.set(null);
-  }
-
-  appendOccurrences(response: PhraseContextOccurrencesResponse): void {
-    this._occurrences.update((items) => appendUniqueOccurrences(items, response.items));
-    this._occurrencesTotalCount.set(response.totalCount);
-    this._occurrencesNextCursor.set(response.nextCursor);
   }
 
   clearAll(): void {
@@ -172,23 +121,18 @@ export class PhraseContextSelectionStore {
   }
 
   clearWorkspace(): void {
-    this.activeBranchStateKey = null;
     this._branches.set(null);
     this._previousOptions.set([]);
     this._followingOptions.set([]);
-    this._groups.set([]);
-    this._groupsTotalCount.set(0);
-    this._groupsNextCursor.set(null);
     this.clearOccurrences();
+    this._activeBranchStateKey.set(null);
   }
 
   clearOccurrences(): void {
-    this._selectedContextRef.set(null);
     this._occurrences.set([]);
     this._resultsPage.set(1);
     this._resultsPageSize.set(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
     this._occurrencesTotalCount.set(0);
-    this._occurrencesNextCursor.set(null);
   }
 
   private showBranchSnapshot(snapshot: PhraseContextBranchSnapshot): void {
@@ -204,20 +148,4 @@ function appendUniqueOptions<T extends { readonly selectionRef: string }>(
 ): T[] {
   const seen = new Set(current.map((item) => item.selectionRef));
   return [...current, ...incoming.filter((item) => !seen.has(item.selectionRef))];
-}
-
-function appendUniqueGroups(
-  current: readonly PhraseFullContextGroupDto[],
-  incoming: readonly PhraseFullContextGroupDto[],
-): PhraseFullContextGroupDto[] {
-  const seen = new Set(current.map((item) => item.contextRef));
-  return [...current, ...incoming.filter((item) => !seen.has(item.contextRef))];
-}
-
-function appendUniqueOccurrences(
-  current: readonly PhraseContextOccurrenceDto[],
-  incoming: readonly PhraseContextOccurrenceDto[],
-): PhraseContextOccurrenceDto[] {
-  const seen = new Set(current.map((item) => item.occurrenceId));
-  return [...current, ...incoming.filter((item) => !seen.has(item.occurrenceId))];
 }

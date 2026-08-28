@@ -11,19 +11,16 @@ import {
   PhraseTextMode,
 } from '../models/phrase-repetitions.models';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
+import { phraseSearchConditionalHeaders } from './phrase-search-conditional-request';
 
-@Injectable({ providedIn: 'root' })
+@Injectable()
 export class PhraseRepetitionsApi {
   private readonly http = inject(HttpClient);
   private readonly cache = inject(PhraseSearchCache);
   private readonly baseUrl = `${environment.apiBaseUrl}/api/quran/phrase-search`;
 
   getCapabilities(): Observable<PhraseSearchCapabilitiesResponseApiResponse> {
-    return this.cache.capabilities(() =>
-      this.http.get<PhraseSearchCapabilitiesResponseApiResponse>(
-        `${this.baseUrl}/capabilities`,
-      ),
-    );
+    return this.cache.capabilities();
   }
 
   getRepetitions(
@@ -42,10 +39,14 @@ export class PhraseRepetitionsApi {
 
     return this.cache.buildScoped(
       phraseSearchCacheKey('repetitions', mode, length, sort, page, pageSize),
-      () =>
+      (etag) =>
         this.http.get<PhraseRepetitionsPageResponseApiResponse>(
           `${this.baseUrl}/repetitions`,
-          { params },
+          {
+            headers: phraseSearchConditionalHeaders(etag),
+            observe: 'response',
+            params,
+          },
         ),
     );
   }
@@ -59,10 +60,14 @@ export class PhraseRepetitionsApi {
     const params = new HttpParams().set('page', page).set('pageSize', pageSize);
     return this.cache.buildScoped(
       phraseSearchCacheKey('repetition-occurrences', buildId, variantId, page, pageSize),
-      () =>
+      (etag) =>
         this.http.get<PhraseOccurrencePageResponseApiResponse>(
           `${this.baseUrl}/repetitions/${encodeURIComponent(buildId)}/${variantId}/occurrences`,
-          { params },
+          {
+            headers: phraseSearchConditionalHeaders(etag),
+            observe: 'response',
+            params,
+          },
         ),
     );
   }

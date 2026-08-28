@@ -17,5 +17,5 @@ export function percentForMaximumDifferences(
 }
 
 export function manualDifferenceOptions(length: number): readonly number[] {
-  return Array.from({ length: Math.max(1, Math.floor(length / 2)) }, (_, index) => index + 1);
+  return Array.from({ length: Math.floor(length / 2) + 1 }, (_, index) => index);
 }

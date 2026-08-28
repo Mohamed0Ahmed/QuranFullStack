@@ -25,11 +25,14 @@ public sealed class ResolvePhraseQueryHandler(IPhraseQueryResolutionReader reade
         var result = await reader.ResolveAsync(mode, segments, cancellationToken);
         return result switch
         {
-            PhraseSearchReadResult<PhraseQueryResolutionResponse>.Success success =>
+            PhraseQueryResolutionReadResult.Success success =>
                 new PhraseReadOutcome<PhraseQueryResolutionResponse>.Success(success.Value),
-            PhraseSearchReadResult<PhraseQueryResolutionResponse>.Unavailable =>
+            PhraseQueryResolutionReadResult.Unavailable =>
                 new PhraseReadOutcome<PhraseQueryResolutionResponse>.Unavailable(),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(PhraseSearchReadResult<PhraseQueryResolutionResponse>)} variant."),
+            PhraseQueryResolutionReadResult.TooComplex =>
+                new PhraseReadOutcome<PhraseQueryResolutionResponse>.Invalid(
+                    PhraseRequestInvalidKind.QueryTooComplex),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(PhraseQueryResolutionReadResult)} variant."),
         };
     }
 }

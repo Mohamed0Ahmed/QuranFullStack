@@ -1,6 +1,5 @@
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
 import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/models/phrase-context-occurrence-dto';
-import { PhraseFullContextGroupDto } from '../../../../core/api/generated/models/phrase-full-context-group-dto';
 import { PhraseSearchCapabilitiesResponse } from '../../../../core/api/generated/models/phrase-search-capabilities-response';
 
 import { PhraseLoadStatus, PhraseTextMode } from './phrase-repetitions.models';
@@ -24,6 +23,7 @@ export interface ParsedPhraseContextUrlState {
 export interface PhraseContextState {
   readonly route: PhraseContextUrlState;
   readonly routeInvalid: boolean;
+  readonly workspaceDraftFresh: boolean;
   readonly mode: PhraseTextMode;
   readonly capabilitiesStatus: PhraseLoadStatus;
   readonly capabilities: PhraseSearchCapabilitiesResponse | null;
@@ -32,18 +32,11 @@ export interface PhraseContextState {
   readonly branches: PhraseContextBranchesResponse | null;
   readonly previousOptions: PhraseContextBranchesResponse['previous']['options'];
   readonly followingOptions: PhraseContextBranchesResponse['following']['options'];
-  readonly groupsStatus: PhraseLoadStatus;
-  readonly groups: readonly PhraseFullContextGroupDto[];
-  readonly groupsTotalCount: number;
-  readonly groupsNextCursor: string | null;
   readonly resultsStatus: PhraseLoadStatus;
-  readonly occurrencesStatus: PhraseLoadStatus;
   readonly occurrences: readonly PhraseContextOccurrenceDto[];
   readonly resultsPage: number;
   readonly resultsPageSize: number;
   readonly occurrencesTotalCount: number;
-  readonly occurrencesNextCursor: string | null;
-  readonly selectedContextRef: string | null;
   readonly errorMessage: string;
   readonly notice: string;
   readonly sessionOnly: boolean;

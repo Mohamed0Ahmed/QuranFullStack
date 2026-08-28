@@ -19,13 +19,23 @@ public sealed class RollbackPhraseIndexHandler
         var execution = await rollback.RollbackAsync(ct);
         return new RollbackPhraseIndexResult(
             execution.Succeeded,
-            execution.Succeeded
-                ? RollbackPhraseIndexResult.SuccessExitCode
-                : RollbackPhraseIndexResult.FailureExitCode,
+            execution.Outcome,
+            execution.RetryDirective,
+            MapExitCode(execution.Outcome),
             execution.Message,
             execution.ActiveBuildId,
             execution.PreviousBuildId,
             execution.SourceRevision,
             execution.SourceFingerprint);
     }
+
+    private static int MapExitCode(PhraseIndexRollbackOutcome outcome) => outcome switch
+    {
+        PhraseIndexRollbackOutcome.Succeeded
+            or PhraseIndexRollbackOutcome.ReconciledAfterCommitFailure =>
+            RollbackPhraseIndexResult.SuccessExitCode,
+        PhraseIndexRollbackOutcome.RollbackOutcomeUnknown =>
+            RollbackPhraseIndexResult.OutcomeUnknownExitCode,
+        _ => RollbackPhraseIndexResult.FailureExitCode,
+    };
 }

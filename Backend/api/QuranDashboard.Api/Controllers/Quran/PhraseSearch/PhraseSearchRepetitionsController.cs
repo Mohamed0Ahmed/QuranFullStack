@@ -1,16 +1,19 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseRepetitionOccurrences;
 using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseRepetitions;
+using QuranDashboard.Application.Quran.PhraseSearch.Queries.GetPhraseSearchCapabilities;
 
 namespace QuranDashboard.Api.Controllers.Quran.PhraseSearch;
 
 [Route("api/quran/phrase-search/repetitions")]
 public sealed class PhraseSearchRepetitionsController(
     GetPhraseRepetitionsHandler repetitionsHandler,
-    GetPhraseRepetitionOccurrencesHandler occurrencesHandler) : ControllerBase
+    GetPhraseRepetitionOccurrencesHandler occurrencesHandler,
+    GetPhraseSearchCapabilitiesHandler capabilitiesHandler) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<PhraseRepetitionsPageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ApiResponse<PhraseRepetitionsPageResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<PhraseRepetitionsPageResponse>), StatusCodes.Status503ServiceUnavailable)]
     public async Task<ActionResult<ApiResponse<PhraseRepetitionsPageResponse>>> GetRepetitions(
@@ -35,6 +38,15 @@ public sealed class PhraseSearchRepetitionsController(
                 PhraseSearchErrorCodes.InvalidPaging));
         }
 
+        if (await PhraseSearchConditionalGet.MatchesCurrentBuildAsync(
+            capabilitiesHandler,
+            Request,
+            Response,
+            cancellationToken))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         var outcome = await repetitionsHandler.HandleAsync(
             new GetPhraseRepetitionsQuery(mode, wordCount, sort, page, pageSize),
             cancellationToken);
@@ -42,9 +54,14 @@ public sealed class PhraseSearchRepetitionsController(
         return outcome switch
         {
             GetPhraseRepetitionsOutcome.Success success =>
-                Ok(ApiResponse<PhraseRepetitionsPageResponse>.Ok(
-                    success.Response,
-                    PhraseSearchApiMessages.RepetitionsLoaded)),
+                PhraseSearchConditionalGet.OkWithValidator(
+                    this,
+                    Request,
+                    Response,
+                    ApiResponse<PhraseRepetitionsPageResponse>.Ok(
+                        success.Response,
+                        PhraseSearchApiMessages.RepetitionsLoaded),
+                    success.Response.ActiveBuildId),
             GetPhraseRepetitionsOutcome.InvalidMode =>
                 BadRequest(Failure<PhraseRepetitionsPageResponse>(
                     PhraseSearchApiMessages.InvalidMode,
@@ -73,6 +90,7 @@ public sealed class PhraseSearchRepetitionsController(
 
     [HttpGet("{buildId}/{variantId}/occurrences")]
     [ProducesResponseType(typeof(ApiResponse<PhraseOccurrencePageResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(typeof(ApiResponse<PhraseOccurrencePageResponse>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<PhraseOccurrencePageResponse>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<PhraseOccurrencePageResponse>), StatusCodes.Status409Conflict)]
@@ -98,6 +116,15 @@ public sealed class PhraseSearchRepetitionsController(
                 PhraseSearchErrorCodes.InvalidPaging));
         }
 
+        if (await PhraseSearchConditionalGet.MatchesCurrentBuildAsync(
+            capabilitiesHandler,
+            Request,
+            Response,
+            cancellationToken))
+        {
+            return StatusCode(StatusCodes.Status304NotModified);
+        }
+
         var outcome = await occurrencesHandler.HandleAsync(
             new GetPhraseRepetitionOccurrencesQuery(buildId, variantId, page, pageSize),
             cancellationToken);
@@ -105,9 +132,14 @@ public sealed class PhraseSearchRepetitionsController(
         return outcome switch
         {
             GetPhraseRepetitionOccurrencesOutcome.Success success =>
-                Ok(ApiResponse<PhraseOccurrencePageResponse>.Ok(
-                    success.Response,
-                    PhraseSearchApiMessages.OccurrencesLoaded)),
+                PhraseSearchConditionalGet.OkWithValidator(
+                    this,
+                    Request,
+                    Response,
+                    ApiResponse<PhraseOccurrencePageResponse>.Ok(
+                        success.Response,
+                        PhraseSearchApiMessages.OccurrencesLoaded),
+                    success.Response.ActiveBuildId),
             GetPhraseRepetitionOccurrencesOutcome.InvalidReference =>
                 BadRequest(Failure<PhraseOccurrencePageResponse>(
                     PhraseSearchApiMessages.InvalidReference,

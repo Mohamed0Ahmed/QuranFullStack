@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, map, of } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 
 import { PhraseQueryResolutionResponseApiResponse } from '../../../../core/api/generated/models/phrase-query-resolution-response-api-response';
@@ -10,6 +10,12 @@ import { PhraseSimilarityUrlState } from '../models/phrase-similarity.models';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
 import { encodePhraseQuery, phraseQueryByteLength } from './phrase-query-encoding';
 import { phraseRequestFailure } from './phrase-request-failure';
+import {
+  PhraseResolutionRequestIdentity,
+  createPhraseResolutionRequestIdentity,
+  isPhraseResolutionRequestCurrent,
+  normalizePhraseResolutionRequestDraft,
+} from './phrase-resolution-request-identity';
 import { mapPhraseResolution } from './phrase-resolution-state';
 import { PhraseSimilarityResolutionStore } from './phrase-similarity-resolution.store';
 import { percentForMaximumDifferences } from './phrase-similarity-threshold';
@@ -34,16 +40,22 @@ export class PhraseSimilarityQueryCoordinator {
   private readonly gate = inject(PhraseActionRequestGate);
   private readonly resolution = inject(PhraseSimilarityResolutionStore);
 
+  invalidate(): void {
+    this.gate.invalidate('query');
+  }
+
   setDraft(query: string, hooks: PhraseSimilarityQueryHooks): void {
     if (!this.resolution.setDraft(query)) {
       return;
     }
-    this.gate.invalidate();
+    this.gate.invalidate('query');
+    hooks.clearResults();
+    hooks.setResultsIdle();
     hooks.setError('');
   }
 
   submit(route: PhraseSimilarityUrlState, hooks: PhraseSimilarityQueryHooks): void {
-    const query = this.resolution.draft().trim();
+    const query = normalizePhraseResolutionRequestDraft(this.resolution.draft());
     hooks.clearResults();
     hooks.setResultsIdle();
     if (!query || phraseQueryByteLength(query) > 4096) {
@@ -54,21 +66,21 @@ export class PhraseSimilarityQueryCoordinator {
 
     this.resolution.start();
     hooks.setError('');
-    const epoch = this.gate.begin();
+    const identity = this.beginIdentity(
+      query,
+      route.mode,
+      phraseSimilarityStateKey(hooks.currentRoute()),
+    );
     const subscription = this.api
       .resolve(route.mode, encodePhraseQuery(query))
       .pipe(
         tap((response) => {
-          if (
-            this.gate.isCurrent(epoch) &&
-            this.resolution.draft().trim() === query &&
-            hooks.currentMode() === route.mode
-          ) {
+          if (this.isCurrent(identity, hooks)) {
             this.acceptResolution(query, route.mode, response, hooks);
           }
         }),
         catchError((error: unknown) => {
-          if (this.gate.isCurrent(epoch)) {
+          if (this.isCurrent(identity, hooks)) {
             const failure = phraseRequestFailure(error);
             this.resolution.fail(failure.status);
             hooks.setError(failure.message);
@@ -77,7 +89,7 @@ export class PhraseSimilarityQueryCoordinator {
         }),
       )
       .subscribe();
-    this.gate.track(epoch, subscription);
+    this.gate.track('query', identity.epoch, subscription);
   }
 
   selectCandidate(
@@ -110,21 +122,50 @@ export class PhraseSimilarityQueryCoordinator {
     const routeKey = phraseSimilarityStateKey(route);
     this.resolution.restoreDraft(route.q);
     this.resolution.start();
-    return this.api.resolve(route.mode, encodePhraseQuery(route.q)).pipe(
-      tap((response) => {
-        if (routeKey === phraseSimilarityStateKey(hooks.currentRoute())) {
-          this.acceptResolution(route.q, route.mode, response, hooks);
-        }
-      }),
-      catchError((error: unknown) => {
-        if (routeKey === phraseSimilarityStateKey(hooks.currentRoute())) {
-          const failure = phraseRequestFailure(error);
-          this.resolution.fail(failure.status);
-          hooks.setError(failure.message);
-        }
-        return of(undefined);
-      }),
-      map(() => undefined),
+    const identity = this.beginIdentity(route.q, route.mode, routeKey);
+    const subscription = this.api
+      .resolve(route.mode, encodePhraseQuery(route.q))
+      .pipe(
+        tap((response) => {
+          if (this.isCurrent(identity, hooks)) {
+            this.acceptResolution(route.q, route.mode, response, hooks);
+          }
+        }),
+        catchError((error: unknown) => {
+          if (this.isCurrent(identity, hooks)) {
+            const failure = phraseRequestFailure(error);
+            this.resolution.fail(failure.status);
+            hooks.setError(failure.message);
+          }
+          return of(undefined);
+        }),
+      )
+      .subscribe();
+    this.gate.track('query', identity.epoch, subscription);
+    return of(undefined);
+  }
+
+  private beginIdentity(
+    draft: string,
+    mode: PhraseTextMode,
+    routeKey: string,
+  ): PhraseResolutionRequestIdentity {
+    const epoch = this.gate.begin('query');
+    return createPhraseResolutionRequestIdentity(epoch, { draft, mode, routeKey });
+  }
+
+  private isCurrent(
+    identity: PhraseResolutionRequestIdentity,
+    hooks: PhraseSimilarityQueryHooks,
+  ): boolean {
+    return isPhraseResolutionRequestCurrent(
+      identity,
+      this.gate.isCurrent('query', identity.epoch),
+      {
+        draft: this.resolution.draft(),
+        mode: hooks.currentMode(),
+        routeKey: phraseSimilarityStateKey(hooks.currentRoute()),
+      },
     );
   }
 

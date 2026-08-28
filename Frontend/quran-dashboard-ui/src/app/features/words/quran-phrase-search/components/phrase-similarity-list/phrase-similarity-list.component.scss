@@ -80,6 +80,13 @@
 
 .similarity-ayahs__table {
   --qd-explorer-table-body-height: min(74vh, 40rem);
+  --qd-data-table-columns:
+    minmax(2.5rem, 0.2fr)
+    minmax(7rem, 0.65fr)
+    minmax(24rem, 3.6fr)
+    minmax(7rem, 0.7fr)
+    minmax(5rem, 0.45fr);
+  --qd-data-table-virtual-block-size: var(--qd-explorer-table-body-height);
 
   min-block-size: 34rem;
   min-inline-size: 0;

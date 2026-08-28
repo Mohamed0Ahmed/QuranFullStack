@@ -10,7 +10,7 @@
     <qd-error-state
       [message]="state().errorMessage"
       actionLabel="إعادة فحص جاهزية الفهرس"
-      (action)="facade.retry()"
+      (action)="facade.retryRoute()"
     />
   } @else if (state().routeInvalid) {
     <qd-error-state
@@ -20,12 +20,14 @@
     />
   } @else if (!state().capabilities) {
     @if (
-      state().capabilitiesStatus === 'error' || state().capabilitiesStatus === 'unavailable'
+      state().capabilitiesStatus === 'error' ||
+      state().capabilitiesStatus === 'rate-limited' ||
+      state().capabilitiesStatus === 'unavailable'
     ) {
       <qd-error-state
         [message]="state().errorMessage"
         actionLabel="إعادة المحاولة"
-        (action)="facade.retry()"
+        (action)="facade.retryRoute()"
       />
     } @else {
       <qd-panel-skeleton
@@ -55,13 +57,14 @@
       <qd-empty-state message="اختر أحد تسلسلات الكلمات الدقيقة أعلاه لمتابعة استكشاف السياق." />
     } @else if (
       state().resolution.status === 'error' ||
+      state().resolution.status === 'rate-limited' ||
       state().resolution.status === 'unavailable' ||
       state().resolution.status === 'stale'
     ) {
       <qd-error-state
         [message]="state().resolution.message || state().errorMessage"
         actionLabel="إعادة المحاولة"
-        (action)="facade.retry()"
+        (action)="facade.retryResolution()"
       />
     } @else if (state().route.resolution) {
       <div
@@ -85,6 +88,7 @@
           />
         } @else if (
           state().branchesStatus === 'error' ||
+          state().branchesStatus === 'rate-limited' ||
           state().branchesStatus === 'unavailable' ||
           state().branchesStatus === 'stale' ||
           state().branchesStatus === 'invalid'
@@ -92,7 +96,7 @@
           <qd-error-state
             [message]="state().errorMessage"
             actionLabel="إعادة المحاولة"
-            (action)="facade.retry()"
+            (action)="facade.retryRoute()"
           />
         } @else if (state().branches; as branches) {
           <qd-phrase-context-explorer
@@ -100,6 +104,7 @@
             [previousOptions]="state().previousOptions"
             [followingOptions]="state().followingOptions"
             [busy]="workspaceInteractionBusy()"
+            [navigationDisabled]="!state().workspaceDraftFresh"
             (previousSelected)="selectBranch('previous', $event)"
             (followingSelected)="selectBranch('following', $event)"
             (previousPathSelected)="selectPath('previous', $event)"
@@ -111,12 +116,14 @@
           @if (state().resultsStatus === 'empty') {
             <qd-empty-state message="لا توجد آيات ضمن اختيارات الطرفين الحالية." />
           } @else if (
-            state().resultsStatus === 'error' || state().resultsStatus === 'unavailable'
+            state().resultsStatus === 'error' ||
+            state().resultsStatus === 'rate-limited' ||
+            state().resultsStatus === 'unavailable'
           ) {
             <qd-error-state
               [message]="state().errorMessage"
               actionLabel="إعادة المحاولة"
-              (action)="facade.retry()"
+              (action)="facade.retryRoute()"
             />
           } @else if (state().occurrences.length > 0) {
             <section class="phrase-context-results" aria-label="آيات السياق المطابقة">
@@ -133,7 +140,7 @@
                 [currentPage]="state().resultsPage"
                 [pageSize]="state().resultsPageSize"
                 [totalCount]="state().occurrencesTotalCount"
-                [disabled]="resultsBusy()"
+                [disabled]="resultsBusy() || !state().workspaceDraftFresh"
                 ariaLabel="صفحات آيات السياق المطابقة"
                 (pageChange)="changeResultsPage($event)"
               />

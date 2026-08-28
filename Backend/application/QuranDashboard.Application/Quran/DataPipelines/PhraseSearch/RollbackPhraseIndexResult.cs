@@ -1,7 +1,11 @@
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.PhraseSearch;
+
 namespace QuranDashboard.Application.Quran.DataPipelines.PhraseSearch;
 
 public sealed record RollbackPhraseIndexResult(
     bool Succeeded,
+    PhraseIndexRollbackOutcome Outcome,
+    PhraseIndexRollbackRetryDirective RetryDirective,
     int ExitCode,
     string Message,
     Guid? ActiveBuildId,
@@ -11,4 +15,5 @@ public sealed record RollbackPhraseIndexResult(
 {
     public const int SuccessExitCode = 0;
     public const int FailureExitCode = 1;
+    public const int OutcomeUnknownExitCode = 2;
 }

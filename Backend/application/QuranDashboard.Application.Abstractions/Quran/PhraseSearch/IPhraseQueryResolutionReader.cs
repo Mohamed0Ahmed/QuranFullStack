@@ -5,8 +5,17 @@ namespace QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
 
 public interface IPhraseQueryResolutionReader
 {
-    Task<PhraseSearchReadResult<PhraseQueryResolutionResponse>> ResolveAsync(
+    Task<PhraseQueryResolutionReadResult> ResolveAsync(
         PhraseTextMode mode,
         IReadOnlyList<string> normalizedSegments,
         CancellationToken cancellationToken);
+}
+
+public abstract record PhraseQueryResolutionReadResult
+{
+    private PhraseQueryResolutionReadResult() { }
+
+    public sealed record Success(PhraseQueryResolutionResponse Value) : PhraseQueryResolutionReadResult;
+    public sealed record Unavailable : PhraseQueryResolutionReadResult;
+    public sealed record TooComplex : PhraseQueryResolutionReadResult;
 }

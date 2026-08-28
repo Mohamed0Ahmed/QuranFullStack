@@ -50,38 +50,59 @@ public sealed partial class EfPhraseContextReader
                 context.QueryExactTokenIds,
                 context.FollowingExactTokenIds,
                 true));
-        var loaded = await LoadPopulationAsync(snapshot, resolution, cancellationToken);
-        var filtered = ApplySelection(loaded.Occurrences, selection);
-        if (!loaded.QueryExists || filtered.Count == 0)
+        var variantId = await LoadVariantIdAsync(
+            snapshot.ActiveBuildId,
+            resolution,
+            cancellationToken);
+        if (variantId is null)
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseContextOccurrencesResponse>.InvalidReference();
         }
 
-        var pageItems = filtered
-            .Skip(paging.Offset)
-            .Take(paging.PageSize)
-            .Select(occurrence => CreateContextOccurrence(occurrence))
+        var loaded = await ReadOccurrencePageAsync(
+            snapshot.ActiveBuildId,
+            variantId.Value,
+            selection,
+            paging.Offset,
+            paging.PageSize,
+            cancellationToken);
+        var representativeRow = loaded.Representative;
+        if (loaded.TotalCount == 0 || representativeRow is null)
+        {
+            await snapshot.CompleteAsync(cancellationToken);
+            return new PhraseSearchReadResult<PhraseContextOccurrencesResponse>.InvalidReference();
+        }
+
+        var requestedRows = loaded.Items
+            .Append(representativeRow)
             .ToList();
-        var representative = filtered[0];
+        var occurrences = await LoadContextOccurrencesAsync(
+            requestedRows,
+            resolution,
+            cancellationToken);
+        var pageItems = loaded.Items
+            .Select(row => CreateContextOccurrence(occurrences[row.OccurrenceId]))
+            .ToList();
+        var representative = occurrences[representativeRow.OccurrenceId];
         var contextDto = new PhraseFullContextDto(
             codec.EncodeFullContext(context),
             PhraseTextModeContract.CanonicalKey(context.Mode),
             FullPathTokens(representative, PhraseContextSide.Previous),
             CreateResolvedQuery(resolution, representative).Tokens,
             FullPathTokens(representative, PhraseContextSide.Following),
-            filtered.Count);
+            loaded.TotalCount);
         var scope = codec.ComputeScope(context);
         var response = new PhraseContextOccurrencesResponse(
             snapshot.ActiveBuildId,
             contextDto,
-            filtered.Count,
+            loaded.TotalCount,
             CreateNextCursor(
                 snapshot.ActiveBuildId,
                 PhraseCursorKind.ContextOccurrences,
                 paging.Offset,
                 paging.PageSize,
-                filtered.Count,
+                loaded.TotalCount,
                 scope),
             pageItems);
         await snapshot.CompleteAsync(cancellationToken);

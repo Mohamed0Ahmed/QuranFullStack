@@ -114,7 +114,9 @@ internal sealed class PhraseSimilarityEdgeCopier
 
     private static async Task<NpgsqlBinaryImporter> BeginCopyAsync(
         NpgsqlConnection connection,
-        CancellationToken ct) => await connection.BeginBinaryImportAsync(
+        CancellationToken ct)
+    {
+        var importer = await connection.BeginBinaryImportAsync(
             """
             COPY quran_phrase_similarity_edges (
               build_id,
@@ -128,4 +130,7 @@ internal sealed class PhraseSimilarityEdgeCopier
             ) FROM STDIN (FORMAT BINARY)
             """,
             ct);
+        importer.Timeout = TimeSpan.FromSeconds(PhraseIndexBuildConstants.CommandTimeoutSeconds);
+        return importer;
+    }
 }

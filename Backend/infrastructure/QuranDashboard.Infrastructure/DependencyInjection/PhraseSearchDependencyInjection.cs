@@ -42,6 +42,7 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<PhraseIndexActivator>();
         services.AddScoped<PhraseIndexBuildReportWriter>();
         services.AddScoped<PhraseIndexBuildFinalizer>();
+        services.AddScoped<PhraseIndexPreActivationFailureFinalizer>();
         services.AddScoped<IPhraseIndexBuilder, EfPhraseIndexBuilder>();
         services.AddScoped<IPhraseIndexRollback, PhraseIndexRollbackService>();
         services.AddSingleton<PhraseSearchReadCache>();

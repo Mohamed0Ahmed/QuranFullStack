@@ -10,6 +10,7 @@ export type PhraseResolutionStatus =
   | 'unresolved'
   | 'invalid'
   | 'error'
+  | 'rate-limited'
   | 'stale'
   | 'unavailable';
 

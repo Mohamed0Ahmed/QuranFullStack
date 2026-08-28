@@ -27,7 +27,6 @@
     [rowHeight]="rowHeight"
     [compactRowHeight]="compactRowHeight"
     scrollStateKey="words.phrases.similarity-ayahs"
-    [style.--qd-explorer-table-columns]="'minmax(2.5rem, 0.2fr) minmax(7rem, 0.65fr) minmax(24rem, 3.6fr) minmax(7rem, 0.7fr) minmax(5rem, 0.45fr)'"
   >
     <ng-template #headerTemplate>
       <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
@@ -59,7 +58,7 @@
       </div>
       <div class="similarity-ayahs__cell similarity-ayahs__score qd-explorer-table__cell" role="cell">
         <strong [class.similarity-ayahs__score--exact]="row.ayah.minimumDifferenceCount === 0">
-          {{ row.ayah.bestMatchPercent | number: '1.0-1' }}%
+          {{ row.matchPercentLabel }}%
         </strong>
         <span>{{ differenceLabel(row.ayah) }}</span>
       </div>
@@ -76,7 +75,7 @@
           <span>صفحة {{ row.ayah.pageFrom }} · {{ row.ayah.occurrenceCount }} موضعًا</span>
         </div>
         <div class="similarity-ayahs__compact-score">
-          <strong>{{ row.ayah.bestMatchPercent | number: '1.0-1' }}%</strong>
+          <strong>{{ row.matchPercentLabel }}%</strong>
           <span>{{ differenceLabel(row.ayah) }}</span>
         </div>
         <a

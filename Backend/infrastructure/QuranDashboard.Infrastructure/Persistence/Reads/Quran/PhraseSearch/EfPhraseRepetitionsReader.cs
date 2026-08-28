@@ -10,80 +10,8 @@ public sealed partial class EfPhraseRepetitionsReader(
     QuranDashboardDbContext db,
     PhraseSearchReadCache cache) : IPhraseRepetitionsReader
 {
-    public async Task<PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>> GetCapabilitiesAsync(
-        CancellationToken cancellationToken)
-    {
-        await using var snapshot = await PhraseSearchReadSnapshot.OpenAsync(db, cancellationToken);
-        if (snapshot is null)
-        {
-            return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Unavailable();
-        }
-
-        var cacheKey = PhraseSearchCacheKeys.Capabilities(snapshot.ActiveBuildId);
-        if (cache.TryGet(cacheKey, out PhraseSearchCapabilitiesResponse cached))
-        {
-            await snapshot.CompleteAsync(cancellationToken);
-            return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Success(cached);
-        }
-
-        var lengthRows = await db.QuranPhraseVariants
-            .AsNoTracking()
-            .Where(variant => variant.BuildId == snapshot.ActiveBuildId)
-            .GroupBy(variant => new { variant.Mode, variant.WordCount })
-            .Select(group => new
-            {
-                group.Key.Mode,
-                group.Key.WordCount,
-                MaximumOccurrenceCount = group.Max(variant => variant.OccurrenceCount),
-            })
-            .ToListAsync(cancellationToken);
-        var lengths = lengthRows
-            .Select(row => new PhraseLengthRow(
-                row.Mode,
-                row.WordCount,
-                row.MaximumOccurrenceCount))
-            .OrderBy(row => row.Mode)
-            .ThenBy(row => row.WordCount)
-            .ToList();
-        var similarityLengths = snapshot.SimilarityReady
-            ? await db.QuranPhraseSimilarityAnchorStats
-                .AsNoTracking()
-                .Where(stat => stat.BuildId == snapshot.ActiveBuildId && stat.NeighborCount > 0)
-                .Select(stat => new { stat.Mode, stat.WordCount })
-                .Distinct()
-                .OrderBy(row => row.Mode)
-                .ThenBy(row => row.WordCount)
-                .ToListAsync(cancellationToken)
-            : [];
-
-        var modes = new[] { PhraseTextMode.Simple, PhraseTextMode.Tashkil }
-            .Select(mode => CreateModeCapabilities(
-                mode,
-                lengths,
-                similarityLengths
-                    .Where(row => row.Mode == mode)
-                    .Select(row => row.WordCount)
-                    .ToList()))
-            .ToList();
-
-        var response = new PhraseSearchCapabilitiesResponse(
-            snapshot.ActiveBuildId,
-            snapshot.ExactReady,
-            snapshot.SimilarityReady,
-            PhraseTextModeKeys.Simple,
-            PhraseSearchPaging.MinimumRepetitionLength,
-            PhraseRepetitionSortKeys.Occurrences,
-            PhraseSearchPaging.DefaultPageSize,
-            PhraseSearchPaging.MaximumPageSize,
-            PhraseSearchPaging.MaximumRepetitionPageSize,
-            PhraseSimilarityContract.Thresholds.Min(),
-            [.. PhraseSimilarityContract.Thresholds],
-            modes);
-
-        await snapshot.CompleteAsync(cancellationToken);
-        cache.Set(cacheKey, response);
-        return new PhraseSearchReadResult<PhraseSearchCapabilitiesResponse>.Success(response);
-    }
+    private readonly QuranDashboardDbContext db = db;
+    private readonly PhraseSearchReadCache cache = cache;
 
     public async Task<PhraseSearchReadResult<PhraseRepetitionsPageResponse>> GetRepetitionsAsync(
         PhraseTextMode mode,
@@ -338,34 +266,6 @@ public sealed partial class EfPhraseRepetitionsReader(
             new PhraseOccurrenceHighlightsDto(queryWordIds));
     }
 
-    private static PhraseTextModeCapabilitiesDto CreateModeCapabilities(
-        PhraseTextMode mode,
-        IReadOnlyList<PhraseLengthRow> lengths,
-        IReadOnlyList<short> similarityLengths)
-    {
-        var modeLengths = lengths
-            .Where(row => row.Mode == mode)
-            .OrderBy(row => row.WordCount)
-            .ToList();
-        var supported = modeLengths
-            .Select(row => row.WordCount)
-            .ToList();
-        var repeated = modeLengths
-            .Where(row => row.WordCount >= PhraseSearchPaging.MinimumRepetitionLength
-                && row.MaximumOccurrenceCount >= 2)
-            .Select(row => row.WordCount)
-            .ToList();
-
-        return new PhraseTextModeCapabilitiesDto(
-            PhraseTextModeContract.CanonicalKey(mode),
-            supported,
-            repeated,
-            similarityLengths,
-            supported.LastOrDefault(),
-            repeated.LastOrDefault(),
-            similarityLengths.LastOrDefault());
-    }
-
     private static IOrderedQueryable<QuranPhraseVariant> ApplySort(
         IQueryable<QuranPhraseVariant> variants,
         PhraseRepetitionSort sort) => sort switch
@@ -387,11 +287,6 @@ public sealed partial class EfPhraseRepetitionsReader(
         var offset = ((long)page - 1) * pageSize;
         return offset > int.MaxValue ? null : (int)offset;
     }
-
-    private sealed record PhraseLengthRow(
-        PhraseTextMode Mode,
-        short WordCount,
-        long MaximumOccurrenceCount);
 
     private sealed record PhraseVariantRow(
         long Id,

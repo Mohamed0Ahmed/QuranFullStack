@@ -37,6 +37,13 @@
           (action)="retry()"
         />
       }
+      @case ('rate-limited') {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="retry()"
+        />
+      }
       @default {
         <qd-panel-skeleton
           shape="rows"
@@ -47,7 +54,9 @@
       }
     }
   } @else if (
-    state().capabilitiesStatus === 'unavailable' || state().capabilitiesStatus === 'error'
+    state().capabilitiesStatus === 'unavailable' ||
+    state().capabilitiesStatus === 'error' ||
+    state().capabilitiesStatus === 'rate-limited'
   ) {
     <qd-error-state
       [message]="state().errorMessage"
@@ -118,7 +127,9 @@
           actionLabel="إعادة المحاولة"
           (action)="retry()"
         />
-      } @else if (state().listStatus === 'error') {
+      } @else if (
+        state().listStatus === 'error' || state().listStatus === 'rate-limited'
+      ) {
         <qd-error-state
           [message]="state().errorMessage"
           actionLabel="إعادة المحاولة"
@@ -151,7 +162,8 @@
             />
           } @else if (
             state().occurrencesStatus === 'unavailable' ||
-            state().occurrencesStatus === 'error'
+            state().occurrencesStatus === 'error' ||
+            state().occurrencesStatus === 'rate-limited'
           ) {
             <qd-error-state
               [message]="state().occurrencesErrorMessage"
@@ -188,6 +200,10 @@
           <section class="phrase-repetitions-page__master qd-explorer-layout__table" aria-label="جدول التكرارات">
             <qd-phrase-repetitions-list
               [items]="list.items"
+              [activeBuildId]="list.activeBuildId"
+              [mode]="list.mode"
+              [wordCount]="list.wordCount"
+              [sort]="list.sort"
               [totalCount]="list.totalCount"
               [page]="list.page"
               [pageSize]="list.pageSize"

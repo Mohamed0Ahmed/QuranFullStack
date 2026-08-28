@@ -44,7 +44,7 @@
         type="button"
         class="context-path__item context-path__item--root qd-chip qd-chip--pill"
         dir="rtl"
-        [disabled]="busy()"
+        [disabled]="busy() || navigationDisabled()"
         (click)="pathSelected.emit(null)"
       >
         العبارة الأصلية
@@ -79,7 +79,7 @@
               type="button"
               class="context-path__item qd-chip qd-chip--pill"
               dir="rtl"
-              [disabled]="busy()"
+              [disabled]="busy() || navigationDisabled()"
               [attr.aria-label]="'الرجوع إلى مستوى ' + step.displayText"
               (click)="pathSelected.emit(step.selectionRef)"
             >
@@ -124,7 +124,11 @@
                   type="button"
                   class="context-option"
                   [class.context-option--boundary]="option.boundaryKind !== null"
-                  [disabled]="busy() || option.selectionRef === selection().selectionRef"
+                  [disabled]="
+                    busy() ||
+                    navigationDisabled() ||
+                    option.selectionRef === selection().selectionRef
+                  "
                   [attr.aria-current]="
                     option.selectionRef === selection().selectionRef ? 'true' : null
                   "
@@ -163,7 +167,7 @@
       <button
         type="button"
         class="qd-btn qd-btn-secondary context-web__more"
-        [disabled]="busy()"
+        [disabled]="busy() || navigationDisabled()"
         (click)="moreRequested.emit()"
       >
         {{ side() === 'previous' ? 'عرض خيارات سابقة أخرى' : 'عرض خيارات لاحقة أخرى' }}

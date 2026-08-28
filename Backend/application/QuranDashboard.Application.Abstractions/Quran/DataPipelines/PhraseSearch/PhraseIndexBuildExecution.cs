@@ -9,7 +9,9 @@ public sealed record PhraseIndexBuildExecution(
     string SourceFingerprint,
     long SourceRevision,
     Guid? PreviousBuildId,
-    Guid? ActiveBuildId)
+    Guid? ActiveBuildId,
+    bool ReportAvailable,
+    bool ReportLinked)
 {
     public bool Succeeded => Outcome == PhraseIndexBuildOutcome.Succeeded;
 }

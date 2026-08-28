@@ -13,6 +13,7 @@ export type PhraseLoadStatus =
   | 'empty'
   | 'invalid'
   | 'error'
+  | 'rate-limited'
   | 'stale'
   | 'unavailable';
 

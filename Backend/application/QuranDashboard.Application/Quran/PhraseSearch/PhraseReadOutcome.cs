@@ -17,6 +17,7 @@ public enum PhraseRequestInvalidKind
     Query,
     QueryEncoding,
     QueryTooLong,
+    QueryTooComplex,
     Reference,
     Cursor,
     Paging,

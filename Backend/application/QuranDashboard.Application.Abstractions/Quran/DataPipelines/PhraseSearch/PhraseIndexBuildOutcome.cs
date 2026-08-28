@@ -7,4 +7,6 @@ public enum PhraseIndexBuildOutcome
     SourceApprovalRequired = 3,
     Failed = 4,
     Cancelled = 5,
+    ActivatedWithFinalizationFailure = 6,
+    ActivationOutcomeUnknown = 7,
 }
