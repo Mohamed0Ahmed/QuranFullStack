@@ -72,49 +72,18 @@
                 let i = $index
               ) {
                 <li
-                  qdAyahCard
-                  class="mutashabihat-groups-card__occurrence"
-                  [class.mutashabihat-groups-card__occurrence--selected]="occurrence.isSelectedAyah"
+                  qdStudyAyahResult
                   data-testid="mutashabihat-occurrence"
-                >
-                  <header class="mutashabihat-groups-card__occurrence-meta">
-                    <span
-                      class="mutashabihat-groups-card__occurrence-index"
-                      data-testid="mutashabihat-occurrence-index"
-                    >
-                      {{ i + 1 }}
-                    </span>
-                    <span
-                      class="mutashabihat-groups-card__occurrence-reference"
-                      data-testid="mutashabihat-occurrence-reference"
-                    >
-                      {{ occurrence.surahNameArabic }} — {{ occurrence.ayahNumber }}
-                    </span>
-                    <span class="mutashabihat-groups-card__occurrence-context">
-                      <span data-testid="mutashabihat-occurrence-page"
-                        >صفحة {{ occurrence.pageNumber }}</span
-                      >
-                    </span>
-                    @if (occurrence.isSelectedAyah) {
-                      <span
-                        class="mutashabihat-groups-card__selected-badge"
-                        data-testid="mutashabihat-occurrence-selected-label"
-                      >
-                        الآية المحددة
-                      </span>
-                    }
-                  </header>
-                  <button
-                    type="button"
-                    class="mutashabihat-groups-card__text mutashabihat-groups-card__text--navigable"
-                    dir="rtl"
-                    data-testid="mutashabihat-occurrence-text"
-                    [attr.aria-label]="occurrence.navigateLabel"
-                    (click)="onAyahNavigate(occurrence)"
-                  >
-                    {{ occurrence.displayText }}
-                  </button>
-                </li>
+                  [position]="i + 1"
+                  [surahNameArabic]="occurrence.surahNameArabic"
+                  [ayahNumber]="occurrence.ayahNumber"
+                  [pageNumber]="occurrence.pageNumber"
+                  [displayText]="occurrence.displayText"
+                  [navigateLabel]="occurrence.navigateLabel"
+                  testIdKind="mutashabihat-occurrence"
+                  [selected]="occurrence.isSelectedAyah"
+                  (ayahNavigate)="onAyahNavigate(occurrence)"
+                ></li>
               }
             </ul>
           }

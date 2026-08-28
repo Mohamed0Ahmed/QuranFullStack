@@ -39,19 +39,6 @@
     line-height: 1.5;
   }
 
-  &__selected-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--qd-radius-sm);
-    border: var(--qd-hairline);
-    background: var(--qd-surface);
-    color: var(--qd-text);
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.4;
-  }
-
   &__occurrences {
     display: flex;
     flex-direction: column;
@@ -63,70 +50,6 @@
 
   &__occurrence-panel[hidden] {
     display: none;
-  }
-
-  &__occurrence--selected {
-    border-color: var(--qd-border-accent);
-  }
-
-  &__occurrence-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--qd-space-2);
-    color: var(--qd-text-muted);
-    font-size: 0.8125rem;
-    line-height: 1.5;
-  }
-
-  &__occurrence-index {
-    flex-shrink: 0;
-    min-width: 1.25rem;
-    color: var(--qd-text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.4;
-  }
-
-  &__occurrence-reference {
-    color: var(--qd-text);
-    font-weight: 700;
-  }
-
-  &__occurrence-context {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--qd-space-2);
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__text {
-    margin: 0;
-    font-family: var(--qd-font-quran);
-    font-size: 0.9375rem;
-    line-height: 2;
-    color: var(--qd-text);
-    text-align: inherit;
-
-    &--navigable {
-      display: block;
-      width: 100%;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: var(--qd-radius-sm);
-
-      &:hover {
-        color: var(--qd-accent);
-      }
-
-      &:focus-visible {
-        outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
-        outline-offset: var(--qd-focus-ring-offset);
-      }
-    }
   }
 
   &__expand-toggle {

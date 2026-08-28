@@ -13,16 +13,13 @@ import {
   SimilarAyahsDto,
 } from '../../models/mushaf.models';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
+import { StudyAyahResultComponent } from '../study-ayah-result/study-ayah-result.component';
 
 type SimilarAyahDisplayItem = SimilarAyahItemDto & {
   displayText: string;
   navigateLabel: string;
 };
 
-// Loading placeholders reserve the incoming list's height so the tab body does not jump on
-// settle. expectedItemCount comes from the already-loaded similarity summary: null = unknown
-// (fall back to FALLBACK_PLACEHOLDER_COUNT), a known 0 reserves nothing. MAX caps shimmer for
-// very long lists, which still grow on settle (accepted).
 const FALLBACK_PLACEHOLDER_COUNT = 3;
 const MAX_PLACEHOLDER_COUNT = 8;
 
@@ -34,6 +31,7 @@ const MAX_PLACEHOLDER_COUNT = 8;
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdResultListDirective,
+    StudyAyahResultComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './similar-ayahs-card.component.html',
@@ -42,7 +40,6 @@ const MAX_PLACEHOLDER_COUNT = 8;
 export class SimilarAyahsCardComponent {
   readonly similarAyahs = input<SimilarAyahsDto | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  // null = unknown, 0 = known empty (see the placeholder constants above).
   readonly expectedItemCount = input<number | null>(null);
 
   readonly ayahNavigate = output<AyahNavigationTarget>();

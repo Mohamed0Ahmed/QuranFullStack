@@ -8,7 +8,6 @@ import {
 } from '@angular/core';
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
-import { AyahCardComponent } from '../../../../shared/ui/ayah-card/ayah-card.component';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdResultListDirective } from '../../../../shared/ui/result-list/result-list.directive';
@@ -22,6 +21,7 @@ import {
   ResourceLoadState,
 } from '../../models/mushaf.models';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
+import { StudyAyahResultComponent } from '../study-ayah-result/study-ayah-result.component';
 
 const FALLBACK_GROUP_PLACEHOLDER_COUNT = 2;
 const MAX_GROUP_PLACEHOLDER_COUNT = 4;
@@ -44,11 +44,11 @@ type MutashabihatGroupView = MutashabihatGroupDto & {
   selector: 'qd-mutashabihat-groups-card',
   standalone: true,
   imports: [
-    AyahCardComponent,
     QdActionDirective,
     QdEmptyStateComponent,
     QdErrorStateComponent,
     QdResultListDirective,
+    StudyAyahResultComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mutashabihat-groups-card.component.html',

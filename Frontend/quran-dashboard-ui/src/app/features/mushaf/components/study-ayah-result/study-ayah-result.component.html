@@ -1,0 +1,30 @@
+<header class="study-ayah-result__meta">
+  <span class="study-ayah-result__position" [attr.data-testid]="positionTestId()">
+    {{ position() }}
+  </span>
+  <span class="study-ayah-result__reference" [attr.data-testid]="referenceTestId()">
+    {{ surahNameArabic() }} — {{ ayahNumber() }}
+  </span>
+  <span class="study-ayah-result__page" [attr.data-testid]="pageTestId()">
+    صفحة {{ pageNumber() }}
+  </span>
+  @if (selected()) {
+    <span
+      class="study-ayah-result__selected-badge"
+      [attr.data-testid]="selectedLabelTestId()"
+    >
+      الآية المحددة
+    </span>
+  }
+</header>
+
+<button
+  type="button"
+  class="study-ayah-result__text"
+  dir="rtl"
+  [attr.data-testid]="textTestId()"
+  [attr.aria-label]="navigateLabel()"
+  (click)="ayahNavigate.emit()"
+>
+  {{ displayText() }}
+</button>
