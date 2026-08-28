@@ -36,6 +36,10 @@ public sealed class AddLinkingWorkspaceSourceHandler(
             OperationName,
             command.UserId,
             () => writer.AddSourceAsync(
-                command.UserId, command.Descriptor, command.WorkspaceVersion, cancellationToken));
+                command.UserId,
+                command.Descriptor,
+                command.InitialConfiguration,
+                command.WorkspaceVersion,
+                cancellationToken));
     }
 }

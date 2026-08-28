@@ -14557,6 +14557,7 @@
       },
       "LinkingSourceDescriptorBody": {
         "required": [
+          "contextKey",
           "kind",
           "label",
           "lemmaId",
@@ -14627,6 +14628,10 @@
             "items": {
               "$ref": "#/components/schemas/LinkingManualAyahBody"
             },
+            "nullable": true
+          },
+          "contextKey": {
+            "type": "string",
             "nullable": true
           }
         },
@@ -14871,6 +14876,7 @@
       "LinkingWorkspaceAddSourceBody": {
         "required": [
           "descriptor",
+          "initialConfiguration",
           "workspaceVersion"
         ],
         "type": "object",
@@ -14879,6 +14885,14 @@
             "allOf": [
               {
                 "$ref": "#/components/schemas/LinkingSourceDescriptorBody"
+              }
+            ],
+            "nullable": true
+          },
+          "initialConfiguration": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/LinkingWorkspaceInitialConfigurationBody"
               }
             ],
             "nullable": true
@@ -15149,6 +15163,54 @@
           },
           "body": {
             "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "LinkingWorkspaceInitialConfigurationBody": {
+        "required": [
+          "automaticWordMatchesEnabled",
+          "ayahOverrides",
+          "descriptions",
+          "inclusionMode",
+          "manualLinkShape",
+          "selectedWords"
+        ],
+        "type": "object",
+        "properties": {
+          "inclusionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahOverrides": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          },
+          "selectedWords": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingSelectedWordBody"
+            },
+            "nullable": true
+          },
+          "automaticWordMatchesEnabled": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "manualLinkShape": {
+            "type": "string",
+            "nullable": true
+          },
+          "descriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LinkingDescriptionBody"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -16027,9 +16089,11 @@
       },
       "MutashabihatOccurrenceDto": {
         "required": [
+          "ayahId",
           "ayahNumber",
           "isRepresentative",
           "isSelectedAyah",
+          "matchedQuranWordIds",
           "pageNumber",
           "phraseTextUthmani",
           "surahNameArabic",
@@ -16041,6 +16105,10 @@
         ],
         "type": "object",
         "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
           "verseKey": {
             "type": "string"
           },
@@ -16079,6 +16147,13 @@
           "phraseTextUthmani": {
             "type": "string",
             "nullable": true
+          },
+          "matchedQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
           }
         },
         "additionalProperties": false

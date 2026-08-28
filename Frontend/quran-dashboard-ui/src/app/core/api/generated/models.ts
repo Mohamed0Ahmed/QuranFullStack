@@ -159,6 +159,7 @@ export type { LinkingWorkspaceDeltaChangeResponse } from './models/linking-works
 export type { LinkingWorkspaceDeltaResponse } from './models/linking-workspace-delta-response';
 export type { LinkingWorkspaceDeltaResponseApiResponse } from './models/linking-workspace-delta-response-api-response';
 export type { LinkingWorkspaceDescriptionResponse } from './models/linking-workspace-description-response';
+export type { LinkingWorkspaceInitialConfigurationBody } from './models/linking-workspace-initial-configuration-body';
 export type { LinkingWorkspaceManualAyahResponse } from './models/linking-workspace-manual-ayah-response';
 export type { LinkingWorkspaceReorderBody } from './models/linking-workspace-reorder-body';
 export type { LinkingWorkspaceResponse } from './models/linking-workspace-response';

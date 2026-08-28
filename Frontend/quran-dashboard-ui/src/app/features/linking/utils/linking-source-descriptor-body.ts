@@ -12,6 +12,7 @@ export function toLinkingSourceDescriptorBody(
   source: LinkingSourceDescriptor,
 ): LinkingSourceDescriptorBody {
   const body: LinkingSourceDescriptorBody = {
+    contextKey: null,
     kind: source.kind,
     label: source.label,
     lemmaId: null,

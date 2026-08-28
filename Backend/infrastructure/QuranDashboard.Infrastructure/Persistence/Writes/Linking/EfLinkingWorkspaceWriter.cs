@@ -24,6 +24,7 @@ internal sealed partial class EfLinkingWorkspaceWriter(
     public async Task<LinkingWorkspaceDto> AddSourceAsync(
         int userId,
         LinkingSourceDescriptor descriptor,
+        LinkingWorkspaceConfigurationInput? initialConfiguration,
         uint? expectedWorkspaceVersion,
         CancellationToken cancellationToken)
     {
@@ -64,6 +65,19 @@ internal sealed partial class EfLinkingWorkspaceWriter(
         var existing = await FindEquivalentSourceAsync(workspace.Id, form, cancellationToken);
         if (existing is not null)
         {
+            if (initialConfiguration is not null)
+            {
+                var existingCompact = await ResolveCompactSourceAsync(
+                    descriptor,
+                    linkingDataRevision,
+                    cancellationToken);
+                _ = await PrepareInitialConfigurationAsync(
+                    descriptor,
+                    initialConfiguration,
+                    existingCompact,
+                    cancellationToken);
+            }
+
             existing.Label = form.Label;
             existing.UpdatedAtUtc = now;
             existing.UpdatedBy = userId;
@@ -85,13 +99,18 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                 LinkingLimits.MaxWorkspaceSources.ToString(CultureInfo.InvariantCulture)));
         }
 
-        var sourceIdentity = LinkingSourceIdentity.For(descriptor);
-        var compact = await sourceCache.GetOrLoadAsync(
-            LinkingSourceCacheKeys.For(descriptor.Kind, sourceIdentity, linkingDataRevision),
-            sourceIdentity,
-            token => efResolution.ResolveCompactAsync(descriptor, token),
+        var compact = await ResolveCompactSourceAsync(
+            descriptor,
+            linkingDataRevision,
             cancellationToken);
         var isManual = form.Kind == LinkingSourceKind.ManualMushafAyahs;
+        var preparedInitialConfiguration = initialConfiguration is null
+            ? null
+            : await PrepareInitialConfigurationAsync(
+                descriptor,
+                initialConfiguration,
+                compact,
+                cancellationToken);
 
         var source = new LinkingWorkspaceSource
         {
@@ -108,9 +127,12 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             UniqueSimpleWordId = form.UniqueSimpleWordId,
             UniqueTashkeelWordId = form.UniqueTashkeelWordId,
             WordTypeTashkeelWordId = form.WordTypeTashkeelWordId,
-            InclusionMode = LinkingInclusionMode.AllExcept,
-            AutomaticWordMatchesEnabled = isManual ? null : true,
-            ManualLinkShape = isManual ? LinkingManualLinkShape.Independent : null,
+            InclusionMode = preparedInitialConfiguration?.Configuration.InclusionMode
+                ?? LinkingInclusionMode.AllExcept,
+            AutomaticWordMatchesEnabled = preparedInitialConfiguration?.Configuration.AutomaticWordMatchesEnabled
+                ?? (isManual ? null : true),
+            ManualLinkShape = preparedInitialConfiguration?.Configuration.ManualLinkShape
+                ?? (isManual ? LinkingManualLinkShape.Independent : null),
             LastResolvedCount = compact.AyahCount,
             LastResolvedAtUtc = now,
             CreatedAtUtc = now,
@@ -126,8 +148,19 @@ internal sealed partial class EfLinkingWorkspaceWriter(
         if (descriptor is LinkingSourceDescriptor.ManualMushafAyahs manual)
         {
             await AddManualAyahsAsync(source.Id, manual, cancellationToken);
-            await SaveTranslatingWriteExceptionsAsync(cancellationToken);
         }
+
+        if (preparedInitialConfiguration is not null)
+        {
+            await ApplyInitialConfigurationAsync(
+                source.Id,
+                preparedInitialConfiguration,
+                userId,
+                now,
+                cancellationToken);
+        }
+
+        await SaveTranslatingWriteExceptionsAsync(cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
 
@@ -308,40 +341,6 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                 LinkingWorkspaceViolationCode.ReferenceUnknown,
                 field,
                 id.ToString(CultureInfo.InvariantCulture)));
-        }
-    }
-
-    private async Task AddManualAyahsAsync(
-        long sourceId,
-        LinkingSourceDescriptor.ManualMushafAyahs manual,
-        CancellationToken cancellationToken)
-    {
-        var verseKeys = manual.VerseKeys.Select(verseKey => verseKey.Value).ToList();
-
-        var ayahs = await db.QuranAyahs
-            .AsNoTracking()
-            .Where(ayah => verseKeys.Contains(ayah.VerseKey))
-            .Select(ayah => new { ayah.Id, ayah.VerseKey, ayah.PageFrom })
-            .ToListAsync(cancellationToken);
-
-        var ayahsByVerseKey = ayahs.ToDictionary(ayah => ayah.VerseKey, StringComparer.Ordinal);
-
-        var orderValue = 1;
-        foreach (var verseKey in verseKeys)
-        {
-            if (!ayahsByVerseKey.TryGetValue(verseKey, out var ayah))
-            {
-                throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                    LinkingWorkspaceViolationCode.AyahReferenceUnknown, "manualAyahs.verseKey", verseKey));
-            }
-
-            db.LinkingWorkspaceSourceManualAyahs.Add(new LinkingWorkspaceSourceManualAyah
-            {
-                WorkspaceSourceId = sourceId,
-                AyahId = ayah.Id,
-                OrderValue = orderValue++,
-                PageHint = ayah.PageFrom,
-            });
         }
     }
 

@@ -54,7 +54,7 @@ internal static class LinkingSourceDescriptorBodyMapper
             LinkingSourceKind.UniqueWord => TryMapUniqueWord(body, label, out descriptor, out violation),
             LinkingSourceKind.WordType => TryMapWordType(body.Selection, label, out descriptor, out violation),
             LinkingSourceKind.ManualMushafAyahs => TryMapManual(
-                body.ManualAyahs, label, out descriptor, out violation),
+                body.ManualAyahs, body.ContextKey, label, out descriptor, out violation),
             _ => Reject("kind", body.Kind, out violation),
         };
     }
@@ -135,6 +135,7 @@ internal static class LinkingSourceDescriptorBodyMapper
 
     private static bool TryMapManual(
         IReadOnlyList<LinkingManualAyahBody>? manualAyahs,
+        string? contextKey,
         string label,
         out LinkingSourceDescriptor descriptor,
         out LinkingDescriptorViolation violation)
@@ -163,7 +164,18 @@ internal static class LinkingSourceDescriptorBodyMapper
             verseKeys.Add(new VerseKey(rawVerseKey!));
         }
 
-        descriptor = new LinkingSourceDescriptor.ManualMushafAyahs(verseKeys, label);
+        if (!LinkingSourceDescriptor.ManualMushafAyahs.TryNormalizeContextKey(
+                contextKey,
+                out var normalizedContextKey))
+        {
+            violation = LinkingBodyViolations.Malformed("contextKey", contextKey);
+            return false;
+        }
+
+        descriptor = new LinkingSourceDescriptor.ManualMushafAyahs(
+            verseKeys,
+            label,
+            normalizedContextKey);
         return true;
     }
 

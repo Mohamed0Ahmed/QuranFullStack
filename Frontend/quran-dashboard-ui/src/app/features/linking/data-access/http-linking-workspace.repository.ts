@@ -41,6 +41,7 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
     return this.request(
       this.http.post<ApiResponse<LinkingWorkspaceResponse>>(`${this.baseUrl}/sources`, {
         descriptor: toLinkingSourceDescriptorBody(descriptor),
+        initialConfiguration: null,
         workspaceVersion,
       }),
     );
