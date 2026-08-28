@@ -216,6 +216,7 @@ export class ManualMushafSelectionStore {
     return {
       kind: 'manual-mushaf-ayahs',
       label: LINKING_LABELS.mushafSelectionSource,
+      contextKey: null,
       manualAyahs: this.entries()
         .map((entry) => entry.metadata?.reference ?? null)
         .filter((reference): reference is LinkingManualMushafAyahReference => reference !== null),

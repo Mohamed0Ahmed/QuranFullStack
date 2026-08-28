@@ -4,7 +4,9 @@ import { manualMushafVerseKeys } from './manual-link-shape';
 export function linkingSourceKey(source: LinkingSourceDescriptor): string {
   switch (source.kind) {
     case 'manual-mushaf-ayahs':
-      return joinKey(source.kind, ...manualMushafVerseKeys(source));
+      return source.contextKey === null
+        ? joinKey(source.kind, ...manualMushafVerseKeys(source))
+        : joinKey(source.kind, 'context', source.contextKey, ...manualMushafVerseKeys(source));
     case 'unique-word':
       return joinKey(source.kind, source.mode, source.wordId, ...source.typeCodes);
     case 'root':

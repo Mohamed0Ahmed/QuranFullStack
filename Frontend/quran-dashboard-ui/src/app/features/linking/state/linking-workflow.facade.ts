@@ -1,7 +1,7 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
 import { DetailOverlayHistoryService } from '../../../core/navigation/detail-overlay/detail-overlay-history.service';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceLaunch, LinkingSourceLaunchInput, toLinkingSourceLaunch } from '../models/linking-source-launch.models';
 import {
   LinkingCopyCallbacks,
   LinkingOperationSourceDraft,
@@ -46,7 +46,7 @@ export class LinkingWorkflowFacade {
   private readonly sourcePages = inject(LinkingSourcePagesFacade);
   private readonly completion = inject(LinkingWorkflowCompletionController);
   private readonly stateSignal = signal<LinkingWorkflowState>(INITIAL_LINKING_WORKFLOW);
-  private readonly pendingSourceSignal = signal<LinkingSourceDescriptor | null>(null);
+  private readonly pendingSourceSignal = signal<LinkingSourceLaunch | null>(null);
   private restoreOverlayFocus = false;
   readonly state = this.stateSignal.asReadonly();
   readonly step = computed(() => this.stateSignal().step);
@@ -120,12 +120,12 @@ export class LinkingWorkflowFacade {
     });
   }
 
-  startFromSource(source: LinkingSourceDescriptor): boolean {
+  startFromSource(source: LinkingSourceLaunchInput): boolean {
     if (!this.access.canUseLinking()) {
       return false;
     }
     if (this.overlay.isOpen()) {
-      this.pendingSourceSignal.set(source);
+      this.pendingSourceSignal.set(toLinkingSourceLaunch(source));
       this.overlay.close();
       return true;
     }
@@ -134,7 +134,7 @@ export class LinkingWorkflowFacade {
     }
     const generation = this.stateSignal().operationGeneration + 1;
     this.completion.clearCopyCallbacks();
-    this.inlineSource.start(source, generation);
+    this.inlineSource.start(toLinkingSourceLaunch(source), generation);
     this.stateSignal.set({
       ...INITIAL_LINKING_WORKFLOW,
       origin: 'source',

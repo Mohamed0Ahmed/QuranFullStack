@@ -61,6 +61,7 @@ function toOperationDraft(group: CopySourceGroup, sourceLabel: string): LinkingO
     descriptor: {
       kind: 'manual-mushaf-ayahs',
       label: sourceLabel,
+      contextKey: null,
       manualAyahs: ayahs.map((ayah) => ({
         verseKey: ayah.verseKey,
         pageNumber: ayah.pageFrom,
