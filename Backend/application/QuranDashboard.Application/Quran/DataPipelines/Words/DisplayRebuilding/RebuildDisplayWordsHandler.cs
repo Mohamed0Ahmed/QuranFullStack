@@ -32,9 +32,14 @@ public sealed class RebuildDisplayWordsHandler
             var reportDir = ResolveReportOutDir(command);
             await reportWriter.WriteAsync(result, reportDir, ct);
 
-            return string.Equals(result.Verdict, "pass", StringComparison.Ordinal)
-                ? RebuildDisplayWordsResult.Success(result.Totals, reportDir)
-                : RebuildDisplayWordsResult.Failure(
+            if (string.Equals(result.Verdict, "pass", StringComparison.Ordinal))
+            {
+                return result.Warnings.Count == 0
+                    ? RebuildDisplayWordsResult.Success(result.Totals, reportDir)
+                    : RebuildDisplayWordsResult.SuccessWithWarnings(result.Totals, reportDir);
+            }
+
+            return RebuildDisplayWordsResult.Failure(
                     result.Errors.Count > 0
                         ? result.Errors[0]
                         : "Display words rebuild validation failed.",

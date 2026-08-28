@@ -42,7 +42,10 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             || await dbContext.QuranWords.AnyAsync(ct);
     }
 
-    public async Task WriteAsync(AssembledQuranData data, bool force, CancellationToken ct)
+    public async Task<QuranImportWriteResult> WriteAsync(
+        AssembledQuranData data,
+        bool force,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(data);
         var connection = dbContext.Database.GetDbConnection();
@@ -98,6 +101,14 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             await transaction.RollbackAsync(ct);
             throw;
         }
+
+        var cleanup = await phraseSourceStateCoordinator.CleanupUnreferencedGenerationsAsync(
+            npgsqlConnection,
+            CancellationToken.None);
+        return cleanup.Succeeded
+            ? QuranImportWriteResult.Completed
+            : QuranImportWriteResult.WithCleanupWarning(
+                cleanup.Warning ?? PhraseIndexGenerationCleanup.PendingWarning);
     }
 
     private static async Task CopySurahsAsync(

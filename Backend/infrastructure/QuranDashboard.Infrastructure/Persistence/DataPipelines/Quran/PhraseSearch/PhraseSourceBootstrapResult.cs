@@ -3,4 +3,5 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSe
 internal sealed record PhraseSourceBootstrapResult(
     PhraseSourceState State,
     PhraseSourceReadResult Source,
-    string ComputedFingerprint);
+    string ComputedFingerprint,
+    string? CleanupWarning);

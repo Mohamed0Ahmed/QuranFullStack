@@ -4,6 +4,7 @@ public interface ITranslationImportReportBuilder
 {
     TranslationImportReport BuildValidationFailure(
         string sourcePath,
+        string profile,
         TranslationSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -13,6 +14,7 @@ public interface ITranslationImportReportBuilder
 
     TranslationImportReport BuildRefusal(
         string sourcePath,
+        string profile,
         TranslationSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -20,6 +22,7 @@ public interface ITranslationImportReportBuilder
 
     TranslationImportReport BuildCandidateSuccess(
         string sourcePath,
+        string profile,
         TranslationSourceData source,
         bool forced,
         DateTimeOffset runAtUtc,

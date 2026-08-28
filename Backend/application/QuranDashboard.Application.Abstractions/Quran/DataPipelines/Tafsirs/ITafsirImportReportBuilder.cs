@@ -4,6 +4,7 @@ public interface ITafsirImportReportBuilder
 {
     TafsirImportReport BuildValidationFailure(
         string sourcePath,
+        string profile,
         TafsirSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -13,6 +14,7 @@ public interface ITafsirImportReportBuilder
 
     TafsirImportReport BuildRefusal(
         string sourcePath,
+        string profile,
         TafsirSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -20,6 +22,7 @@ public interface ITafsirImportReportBuilder
 
     TafsirImportReport BuildCandidateSuccess(
         string sourcePath,
+        string profile,
         TafsirSourceData source,
         bool forced,
         DateTimeOffset runAtUtc,

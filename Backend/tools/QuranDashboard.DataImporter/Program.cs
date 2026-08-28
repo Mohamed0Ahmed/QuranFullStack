@@ -1,6 +1,7 @@
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Application;
+using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.DataImporter.Import.VerbRunners;
 using QuranDashboard.Infrastructure;
@@ -35,7 +36,8 @@ internal static class Program
             "import-full-i3rab" => await ImportFullI3rabRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "generate-i3rab" => await GenerateI3rabRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "build-phrase-index" => await BuildPhraseIndexRunner.RunAsync(verbArgs, createHost, PrintUsage),
-            "rollback-phrase-index" => await RollbackPhraseIndexRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "export-abwab-snapshot" => await ExportAbwabSnapshotRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "import-abwab-snapshot" => await ImportAbwabSnapshotRunner.RunAsync(verbArgs, createHost, PrintUsage),
             _ => UnknownVerb(verb)
         };
     }
@@ -64,8 +66,15 @@ internal static class Program
             {
                 services.AddApplication();
                 services.AddInfrastructure(context.Configuration);
+                services.AddScoped<ICurrentUser, UnavailableCurrentUser>();
             })
             .Build();
+    }
+
+    private sealed class UnavailableCurrentUser : ICurrentUser
+    {
+        public AuthenticatedInteractiveIdentity Identity => throw new InvalidOperationException(
+            "The DataImporter has no authenticated interactive user context.");
     }
 
     private static void PrintUsage()
@@ -83,9 +92,9 @@ internal static class Program
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-mutashabihat [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter import-tafsirs [--source <path>] [--report-out <path>] [--force]");
+            "  QuranDashboard.DataImporter import-tafsirs [--profile <curated-10|full>] [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter import-translations [--source <path>] [--report-out <path>] [--force]");
+            "  QuranDashboard.DataImporter import-translations [--profile <curated-10|full>] [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-navigation-metadata [--source <path>] [--report-out <path>] [--force]");
         Console.Error.WriteLine(
@@ -93,8 +102,10 @@ internal static class Program
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter generate-i3rab [--report-out <path>] [--force]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter build-phrase-index [--report-out <path>] [--force]");
+            "  QuranDashboard.DataImporter build-phrase-index [--report-out <path>]");
         Console.Error.WriteLine(
-            "  QuranDashboard.DataImporter rollback-phrase-index");
+            "  QuranDashboard.DataImporter export-abwab-snapshot [--output-dir <path>]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-abwab-snapshot --source <snapshot-v4.json> [--report-out <path>] [--allow-remote --yes]");
     }
 }

@@ -17,7 +17,6 @@ internal static class PhraseSearchDependencyInjection
         services.AddOptions<PhraseIndexOptions>()
             .Bind(configuration.GetSection(PhraseIndexOptions.SectionName))
             .Validate(options => options.RequestTimeoutSeconds > 0)
-            .Validate(options => options.CleanupGraceMinutes > 0)
             .Validate(options => options.FailedBuildRetentionDays > 0)
             .Validate(options => options.DiskSafetyBytes > 0)
             .Validate(options => options.VerifiedDatabaseFreeBytes is null or > 0)
@@ -25,8 +24,7 @@ internal static class PhraseSearchDependencyInjection
                 || string.Equals(
                     options.DatabaseStorageProofContract,
                     PhraseIndexOptions.OperatorStorageProofContract,
-                    StringComparison.Ordinal))
-            .Validate(options => options.CleanupGraceMinutes * 60 > options.RequestTimeoutSeconds);
+                    StringComparison.Ordinal));
         services.AddScoped<PhraseSourceSnapshotReader>();
         services.AddScoped<PhraseSourceStateCoordinator>();
         services.AddScoped<PhraseDatabaseStoragePreflight>();
@@ -39,12 +37,12 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<PhraseSimilarityEdgeCopier>();
         services.AddScoped<PhraseSimilarityBuilder>();
         services.AddScoped<PhraseIndexValidator>();
+        services.AddScoped<PhraseIndexGenerationVerifier>();
         services.AddScoped<PhraseIndexActivator>();
         services.AddScoped<PhraseIndexBuildReportWriter>();
         services.AddScoped<PhraseIndexBuildFinalizer>();
         services.AddScoped<PhraseIndexPreActivationFailureFinalizer>();
         services.AddScoped<IPhraseIndexBuilder, EfPhraseIndexBuilder>();
-        services.AddScoped<IPhraseIndexRollback, PhraseIndexRollbackService>();
         services.AddSingleton<PhraseSearchReadCache>();
         services.AddSingleton<IPhraseSearchReferenceCodec, PhraseSearchReferenceCodec>();
         services.AddScoped<IPhraseRepetitionsReader, EfPhraseRepetitionsReader>();

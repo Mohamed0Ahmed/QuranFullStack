@@ -136,27 +136,18 @@ internal sealed class PhraseIndexBuildFinalizer
         NpgsqlConnection connection,
         PhraseIndexBuildRun run)
     {
-        var cleanupSucceeded = true;
         try
         {
-            await database.CleanupEligibleSupersededBuildsAsync(
+            await database.CleanupExpiredFailedBuildAuditsAsync(
                 connection,
                 CancellationToken.None);
         }
         catch (Exception)
         {
-            cleanupSucceeded = false;
             run.RecordActivationFinalizationFailure(
-                "post-activation-cleanup-failed",
-                "Eligible superseded-build cleanup failed after activation; active and previous builds were retained.");
+                "post-activation-failure-audit-cleanup-failed",
+                "The build is active, but expired failed-build audits could not be cleaned up.");
         }
-
-        run.Checks.Add(new PhraseBuildCheck(
-            "POST-ACTIVATION-CLEANUP",
-            "operational",
-            "completed",
-            cleanupSucceeded ? "completed" : "failed",
-            cleanupSucceeded));
 
         var outcome = run.ActivationFinalizationFailed
             ? PhraseIndexBuildOutcome.ActivatedWithFinalizationFailure
@@ -334,7 +325,6 @@ internal sealed class PhraseIndexBuildFinalizer
             PhraseIndexBuildConstants.BuilderVersion,
             status,
             outcome.ToString(),
-            run.Force,
             persistedGeneration,
             active,
             exactReady,
@@ -347,7 +337,6 @@ internal sealed class PhraseIndexBuildFinalizer
             run.SourceFingerprint,
             run.SourceRevisionAtActivation,
             run.SourceFingerprintAtActivation,
-            run.PreviousBuildId,
             run.ActiveBuildId,
             run.Totals,
             run.DiskPreflight,
@@ -370,7 +359,6 @@ internal sealed class PhraseIndexBuildFinalizer
             run.Totals,
             run.SourceFingerprint,
             run.SourceRevision,
-            run.PreviousBuildId,
             run.ActiveBuildId,
             reportAvailable,
             reportLinked);

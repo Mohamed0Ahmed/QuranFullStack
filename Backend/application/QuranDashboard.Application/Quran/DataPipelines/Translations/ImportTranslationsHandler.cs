@@ -1,4 +1,5 @@
 using System.Text.Json;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Application.Quran.DataPipelines.Translations;
@@ -26,6 +27,13 @@ public sealed class ImportTranslationsHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.SourcePath);
+        if (!QuranImportProfiles.IsSupported(command.Profile))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(command.Profile),
+                command.Profile,
+                "Unsupported translation import profile.");
+        }
 
         var sourcePath = Path.GetFullPath(command.SourcePath);
         var expectedCounts = command.ExpectedCounts ?? TranslationInvariants.Production;
@@ -86,6 +94,7 @@ public sealed class ImportTranslationsHandler
                 {
                     var report = reportBuilder.BuildCandidateSuccess(
                         sourcePath,
+                        command.Profile,
                         source,
                         command.Force,
                         candidateResult.RunAtUtc,
@@ -119,6 +128,7 @@ public sealed class ImportTranslationsHandler
         {
             var failureReport = reportBuilder.BuildValidationFailure(
                 sourcePath,
+                command.Profile,
                 source,
                 command.Force,
                 result.RunAtUtc,
@@ -154,6 +164,7 @@ public sealed class ImportTranslationsHandler
     {
         var report = reportBuilder.BuildRefusal(
             sourcePath,
+            command.Profile,
             source,
             command.Force,
             DateTimeOffset.UtcNow,
@@ -179,6 +190,7 @@ public sealed class ImportTranslationsHandler
     {
         var report = reportBuilder.BuildValidationFailure(
             sourcePath,
+            command.Profile,
             source: null,
             command.Force,
             DateTimeOffset.UtcNow,

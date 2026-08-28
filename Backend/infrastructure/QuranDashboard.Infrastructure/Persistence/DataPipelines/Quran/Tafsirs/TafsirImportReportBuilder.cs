@@ -6,6 +6,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
 {
     public TafsirImportReport BuildValidationFailure(
         string sourcePath,
+        string profile,
         TafsirSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -15,6 +16,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
     {
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TafsirImportConstants.FailVerdict,
@@ -28,6 +30,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
 
     public TafsirImportReport BuildRefusal(
         string sourcePath,
+        string profile,
         TafsirSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -35,6 +38,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
     {
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TafsirImportConstants.FailVerdict,
@@ -48,6 +52,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
 
     public TafsirImportReport BuildCandidateSuccess(
         string sourcePath,
+        string profile,
         TafsirSourceData source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -62,6 +67,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
 
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TafsirImportConstants.PassVerdict,
@@ -75,6 +81,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
 
     private static TafsirImportReport Build(
         string sourcePath,
+        string profile,
         TafsirSourceData? source,
         DateTimeOffset runAtUtc,
         string verdict,
@@ -97,6 +104,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
             verdict,
             persisted,
             forced,
+            profile,
             sourcePath,
             totals,
             sourceSummaries,
@@ -199,6 +207,10 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
         var excluded = source.ExcludedSources.Count;
         var arabic = source.Sources.Count(row => row.LanguageCode == "ar");
         var nonArabic = approved - arabic;
+        var languages = source.Sources
+            .Select(row => row.LanguageCode)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
         var ayahsPerSource = expected.AyahsPerSource.ToString(CultureInfo.InvariantCulture);
 
         static TafsirCheckResult Hard(string id, string expectedText, string observedText) =>
@@ -223,6 +235,9 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
             Hard(TafsirInvariants.CheckNonArabicSourceCount,
                 expected.NonArabicSources.ToString(CultureInfo.InvariantCulture),
                 nonArabic.ToString(CultureInfo.InvariantCulture)),
+            Hard(TafsirInvariants.CheckLanguageCount,
+                $"declared=distinct={expected.Languages.ToString(CultureInfo.InvariantCulture)}",
+                $"declared={expected.Languages.ToString(CultureInfo.InvariantCulture)}, distinct={languages.ToString(CultureInfo.InvariantCulture)}"),
             Hard(TafsirInvariants.CheckSourceSet,
                 "sources/ exactly matches manifest approved package files", "exact match"),
             Hard(TafsirInvariants.CheckSourceHash,

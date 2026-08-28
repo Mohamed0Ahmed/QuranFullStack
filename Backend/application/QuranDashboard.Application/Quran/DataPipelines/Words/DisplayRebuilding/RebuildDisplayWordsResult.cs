@@ -16,6 +16,16 @@ public sealed record RebuildDisplayWordsResult(
     public static RebuildDisplayWordsResult Success(DisplayWordsTotals totals, string reportOutDir) =>
         new(true, SuccessExitCode, "Display words rebuild completed successfully.", totals, reportOutDir);
 
+    public static RebuildDisplayWordsResult SuccessWithWarnings(
+        DisplayWordsTotals totals,
+        string reportOutDir) =>
+        new(
+            true,
+            SuccessExitCode,
+            "Display words rebuild completed and persisted successfully with warnings; see the report.",
+            totals,
+            reportOutDir);
+
     public static RebuildDisplayWordsResult Refused(string message) =>
         new(false, RefusedExitCode, message, null, null);
 

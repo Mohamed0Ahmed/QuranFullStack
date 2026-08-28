@@ -168,19 +168,33 @@ internal sealed class PhraseIndexBuildDatabase
             state.SourceFingerprint ?? string.Empty,
             fingerprint,
             state.ActiveBuildId,
-            state.PreviousBuildId,
             source.Tokens,
             source.AyahCount,
             source.MaximumAyahLength,
             source.Checks);
     }
 
-    internal async Task<bool> HasActiveBuildAsync(
+    internal async Task<bool> HasDataGenerationAsync(
         NpgsqlConnection connection,
         CancellationToken ct)
     {
         await using var command = new NpgsqlCommand(
-            "SELECT active_build_id IS NOT NULL FROM quran_phrase_index_state WHERE id = 1",
+            """
+            SELECT state.active_build_id IS NOT NULL
+                OR state.previous_build_id IS NOT NULL
+                OR EXISTS (
+                  SELECT 1
+                  FROM quran_phrase_index_builds
+                  WHERE status <> 5
+                )
+                OR EXISTS (SELECT 1 FROM quran_phrase_search_tokens LIMIT 1)
+                OR EXISTS (SELECT 1 FROM quran_phrase_variants LIMIT 1)
+                OR EXISTS (SELECT 1 FROM quran_phrase_occurrences LIMIT 1)
+                OR EXISTS (SELECT 1 FROM quran_phrase_similarity_edges LIMIT 1)
+                OR EXISTS (SELECT 1 FROM quran_phrase_similarity_anchor_stats LIMIT 1)
+            FROM quran_phrase_index_state AS state
+            WHERE state.id = 1
+            """,
             connection)
         {
             CommandTimeout = PhraseIndexBuildConstants.CommandTimeoutSeconds,
@@ -241,7 +255,7 @@ internal sealed class PhraseIndexBuildDatabase
         NpgsqlTransaction transaction,
         Guid buildId,
         PhraseIndexBuildTotals totals,
-        CancellationToken ct) => ExecuteAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
             transaction,
             """
@@ -257,8 +271,10 @@ internal sealed class PhraseIndexBuildDatabase
                 similarity_anchor_stat_count = @anchor_stats,
                 validation_verdict = 'pass'
             WHERE id = @build_id
+              AND status = 1
             """,
             ct,
+            "Phrase index build validation",
             new NpgsqlParameter("now", DateTimeOffset.UtcNow),
             new NpgsqlParameter("search_tokens", totals.SearchTokens),
             new NpgsqlParameter("variants", totals.Variants),
@@ -272,8 +288,9 @@ internal sealed class PhraseIndexBuildDatabase
         Guid buildId,
         string verdict,
         string failureSummary,
-        CancellationToken ct) => ExecuteWithoutTransactionAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
+            transaction: null,
             """
             UPDATE quran_phrase_index_builds
             SET status = 5,
@@ -287,6 +304,7 @@ internal sealed class PhraseIndexBuildDatabase
               AND status <> 3
             """,
             ct,
+            "Phrase index build failure finalization",
             new NpgsqlParameter("now", DateTimeOffset.UtcNow),
             new NpgsqlParameter("verdict", verdict),
             new NpgsqlParameter("failure_summary", failureSummary),
@@ -296,10 +314,12 @@ internal sealed class PhraseIndexBuildDatabase
         NpgsqlConnection connection,
         Guid buildId,
         string reportDirectory,
-        CancellationToken ct) => ExecuteWithoutTransactionAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
+            transaction: null,
             "UPDATE quran_phrase_index_builds SET report_path = @path WHERE id = @build_id",
             ct,
+            "Phrase index report linkage",
             new NpgsqlParameter("path", reportDirectory),
             new NpgsqlParameter("build_id", buildId));
 
@@ -373,6 +393,13 @@ internal sealed class PhraseIndexBuildDatabase
                   AND state.active_build_id IS DISTINCT FROM build.id
                   AND state.previous_build_id IS DISTINCT FROM build.id
               );
+            """,
+            ct,
+            new NpgsqlParameter("build_id", buildId));
+        await ExecuteExactlyOneAsync(
+            connection,
+            transaction,
+            """
             UPDATE quran_phrase_index_builds
             SET exact_ready = false,
                 similarity_ready = false
@@ -386,32 +413,13 @@ internal sealed class PhraseIndexBuildDatabase
               );
             """,
             ct,
+            "Failed phrase index generation cleanup",
             new NpgsqlParameter("build_id", buildId));
 
         var state = await ReadGenerationStateAsync(connection, transaction, buildId, ct);
         await transaction.CommitAsync(ct);
         return state;
     }
-
-    internal Task CleanupEligibleSupersededBuildsAsync(
-        NpgsqlConnection connection,
-        CancellationToken ct) => ExecuteWithoutTransactionAsync(
-            connection,
-            """
-            DELETE FROM quran_phrase_index_builds AS build
-            WHERE build.status = 4
-              AND build.completed_at_utc < @cutoff
-              AND NOT EXISTS (
-                SELECT 1
-                FROM quran_phrase_index_state AS state
-                WHERE state.id = 1
-                  AND (state.active_build_id = build.id OR state.previous_build_id = build.id)
-              )
-            """,
-            ct,
-            new NpgsqlParameter(
-                "cutoff",
-                DateTimeOffset.UtcNow.AddMinutes(-options.CleanupGraceMinutes)));
 
     internal Task CleanupExpiredFailedBuildAuditsAsync(
         NpgsqlConnection connection,
@@ -420,7 +428,6 @@ internal sealed class PhraseIndexBuildDatabase
             """
             DELETE FROM quran_phrase_index_builds AS build
             WHERE build.status = 5
-              AND build.report_path IS NOT NULL
               AND build.completed_at_utc < @cutoff
               AND NOT EXISTS (
                 SELECT 1
@@ -490,7 +497,6 @@ internal sealed class PhraseIndexBuildDatabase
             SELECT source_revision,
                    source_fingerprint,
                    active_build_id,
-                   previous_build_id,
                    is_stale,
                    stale_reason
             FROM quran_phrase_index_state
@@ -511,9 +517,8 @@ internal sealed class PhraseIndexBuildDatabase
             reader.GetInt64(0),
             reader.IsDBNull(1) ? null : reader.GetString(1),
             reader.IsDBNull(2) ? null : reader.GetGuid(2),
-            reader.IsDBNull(3) ? null : reader.GetGuid(3),
-            reader.GetBoolean(4),
-            reader.IsDBNull(5) ? null : reader.GetString(5));
+            reader.GetBoolean(3),
+            reader.IsDBNull(4) ? null : reader.GetString(4));
     }
 
     private static Task ExecuteWithoutTransactionAsync(
@@ -526,6 +531,27 @@ internal sealed class PhraseIndexBuildDatabase
             sql,
             ct,
             parameters);
+
+    private static async Task ExecuteExactlyOneAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction? transaction,
+        string sql,
+        CancellationToken ct,
+        string operation,
+        params NpgsqlParameter[] parameters)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction)
+        {
+            CommandTimeout = PhraseIndexBuildConstants.CommandTimeoutSeconds,
+        };
+        command.Parameters.AddRange(parameters);
+        var affectedRows = await command.ExecuteNonQueryAsync(ct);
+        if (affectedRows != 1)
+        {
+            throw new InvalidOperationException(
+                $"{operation} affected {affectedRows.ToString(CultureInfo.InvariantCulture)} rows; expected exactly one.");
+        }
+    }
 
     private static async Task ExecuteAsync(
         NpgsqlConnection connection,

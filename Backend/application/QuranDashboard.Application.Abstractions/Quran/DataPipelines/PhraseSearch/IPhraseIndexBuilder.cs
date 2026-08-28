@@ -3,7 +3,6 @@ namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.PhraseSear
 public interface IPhraseIndexBuilder
 {
     Task<PhraseIndexBuildExecution> BuildAsync(
-        bool force,
         string reportRootDirectory,
         CancellationToken ct);
 }

@@ -7,5 +7,4 @@ internal sealed record PhraseIndexActivationResult(
     string FailureReason,
     long SourceRevisionAtActivation,
     string SourceFingerprintAtActivation,
-    Guid? PreviousBuildId,
     Guid? ActiveBuildId);

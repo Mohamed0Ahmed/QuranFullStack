@@ -22,6 +22,15 @@ internal static class BuildPhraseIndexRunner
             return BuildPhraseIndexResult.FailureExitCode;
         }
 
+        if (force)
+        {
+            Console.Error.WriteLine(
+                "build-phrase-index does not support --force or replacement builds. "
+                + "Full database reset is required before rebuilding an existing PhraseSearch generation.");
+            printUsage();
+            return BuildPhraseIndexResult.RefusedExitCode;
+        }
+
         reportOutDir ??= DataImporterDefaults.ResolveDefaultPhraseIndexReportDir();
         using var cancellation = new CancellationTokenSource();
         ConsoleCancelEventHandler cancelHandler = (_, eventArgs) =>
@@ -37,7 +46,7 @@ internal static class BuildPhraseIndexRunner
             await using var scope = host.Services.CreateAsyncScope();
             var handler = scope.ServiceProvider.GetRequiredService<BuildPhraseIndexHandler>();
             var result = await handler.HandleAsync(
-                new BuildPhraseIndexCommand(force, reportOutDir),
+                new BuildPhraseIndexCommand(reportOutDir),
                 cancellation.Token);
             var output = result.Succeeded ? Console.Out : Console.Error;
             output.WriteLine(result.Message);

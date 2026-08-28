@@ -1,3 +1,3 @@
 namespace QuranDashboard.Application.Quran.DataPipelines.PhraseSearch;
 
-public sealed record BuildPhraseIndexCommand(bool Force, string ReportRootDirectory);
+public sealed record BuildPhraseIndexCommand(string ReportRootDirectory);

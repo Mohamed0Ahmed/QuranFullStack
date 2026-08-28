@@ -6,14 +6,15 @@ public sealed class PhraseSourceStateCoordinator
     internal const string SourceFingerprintChangedReason = "source-fingerprint-changed";
     internal const string SourceIntegrityCheckFailedReason = "source-integrity-check-failed";
 
-    private const string LockSourceMutationSql =
-        "SELECT pg_advisory_xact_lock(@namespace, @key)";
+    private const string LockSourceMutationSql = """
+        SELECT pg_advisory_xact_lock(@namespace, @index_build_key);
+        SELECT pg_advisory_xact_lock(@namespace, @source_mutation_key)
+        """;
 
     private const string LockStateSql = """
         SELECT source_revision,
                source_fingerprint,
                active_build_id,
-               previous_build_id,
                is_stale,
                stale_reason
         FROM quran_phrase_index_state
@@ -46,7 +47,14 @@ public sealed class PhraseSourceStateCoordinator
                 transaction,
                 state,
                 SourceIntegrityCheckFailedReason);
-            return new PhraseSourceBootstrapResult(state, source, string.Empty);
+            var cleanup = await CleanupUnreferencedGenerationsAsync(
+                connection,
+                CancellationToken.None);
+            return new PhraseSourceBootstrapResult(
+                state,
+                source,
+                string.Empty,
+                cleanup.Warning);
         }
 
         var fingerprint = PhraseSourceFingerprint.Compute(source.Tokens);
@@ -58,7 +66,14 @@ public sealed class PhraseSourceStateCoordinator
                 transaction,
                 state,
                 SourceApprovalRequiredReason);
-            return new PhraseSourceBootstrapResult(state, source, fingerprint);
+            var cleanup = await CleanupUnreferencedGenerationsAsync(
+                connection,
+                CancellationToken.None);
+            return new PhraseSourceBootstrapResult(
+                state,
+                source,
+                fingerprint,
+                cleanup.Warning);
         }
 
         if (state.SourceFingerprint is null)
@@ -86,14 +101,20 @@ public sealed class PhraseSourceStateCoordinator
                 SourceRevision = state.SourceRevision + 1,
                 SourceFingerprint = fingerprint,
                 ActiveBuildId = null,
-                PreviousBuildId = null,
                 IsStale = true,
                 StaleReason = SourceFingerprintChangedReason,
             };
         }
 
         await transaction.CommitAsync(ct);
-        return new PhraseSourceBootstrapResult(state, source, fingerprint);
+        var completedCleanup = await CleanupUnreferencedGenerationsAsync(
+            connection,
+            CancellationToken.None);
+        return new PhraseSourceBootstrapResult(
+            state,
+            source,
+            fingerprint,
+            completedCleanup.Warning);
     }
 
     internal async Task LockSourceMutationAsync(
@@ -106,7 +127,8 @@ public sealed class PhraseSourceStateCoordinator
             CommandTimeout = PhraseIndexBuildConstants.CommandTimeoutSeconds,
         };
         command.Parameters.AddWithValue("namespace", PhraseSourceStateCoordinatorContract.AdvisoryLockNamespace);
-        command.Parameters.AddWithValue("key", PhraseSourceStateCoordinatorContract.SourceMutationLockKey);
+        command.Parameters.AddWithValue("index_build_key", PhraseSourceStateCoordinatorContract.IndexBuildLockKey);
+        command.Parameters.AddWithValue("source_mutation_key", PhraseSourceStateCoordinatorContract.SourceMutationLockKey);
         await command.ExecuteNonQueryAsync(ct);
     }
 
@@ -129,9 +151,8 @@ public sealed class PhraseSourceStateCoordinator
             reader.GetInt64(0),
             reader.IsDBNull(1) ? null : reader.GetString(1),
             reader.IsDBNull(2) ? null : reader.GetGuid(2),
-            reader.IsDBNull(3) ? null : reader.GetGuid(3),
-            reader.GetBoolean(4),
-            reader.IsDBNull(5) ? null : reader.GetString(5));
+            reader.GetBoolean(3),
+            reader.IsDBNull(4) ? null : reader.GetString(4));
     }
 
     internal async Task BeginFoundationResetAsync(
@@ -139,9 +160,9 @@ public sealed class PhraseSourceStateCoordinator
         NpgsqlTransaction transaction,
         CancellationToken ct)
     {
-        var state = await LockStateAsync(connection, transaction, ct);
+        await LockStateAsync(connection, transaction, ct);
 
-        await ExecuteAsync(
+        await ExecuteExactlyOneAsync(
             connection,
             transaction,
             """
@@ -151,22 +172,17 @@ public sealed class PhraseSourceStateCoordinator
                 is_stale = true,
                 stale_reason = 'foundation-import',
                 updated_at_utc = @now
-            WHERE id = 1;
-            DELETE FROM quran_phrase_index_builds;
+            WHERE id = 1
             """,
             ct,
+            "PhraseSearch foundation reset invalidation",
             new NpgsqlParameter("now", DateTimeOffset.UtcNow));
-
-        if (state.ActiveBuildId == state.PreviousBuildId && state.ActiveBuildId is not null)
-        {
-            throw new InvalidOperationException("PhraseSearch state contains identical active and previous builds.");
-        }
     }
 
     internal Task CompleteFoundationResetAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
-        CancellationToken ct) => ExecuteAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
             transaction,
             """
@@ -181,7 +197,14 @@ public sealed class PhraseSourceStateCoordinator
             WHERE id = 1
             """,
             ct,
+            "PhraseSearch foundation reset completion",
             new NpgsqlParameter("now", DateTimeOffset.UtcNow));
+
+    internal Task<PhraseIndexCleanupResult> CleanupUnreferencedGenerationsAsync(
+        NpgsqlConnection connection,
+        CancellationToken ct) => PhraseIndexGenerationCleanup.CleanupAfterSourceInvalidationAsync(
+            connection,
+            ct);
 
     internal async Task<PhraseSourceReadResult> RefreshAfterDisplayRebuildAsync(
         NpgsqlConnection connection,
@@ -217,7 +240,7 @@ public sealed class PhraseSourceStateCoordinator
         return source;
     }
 
-    internal static async Task<PhraseSourceState> InvalidateRejectedSourceAsync(
+    internal async Task<PhraseSourceState> InvalidateRejectedSourceAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         PhraseSourceState state,
@@ -236,7 +259,6 @@ public sealed class PhraseSourceStateCoordinator
         {
             SourceRevision = invalidatedRevision,
             ActiveBuildId = null,
-            PreviousBuildId = null,
             IsStale = true,
             StaleReason = reason,
         };
@@ -247,7 +269,7 @@ public sealed class PhraseSourceStateCoordinator
         NpgsqlTransaction transaction,
         long revision,
         string fingerprint,
-        CancellationToken ct) => ExecuteAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
             transaction,
             """
@@ -260,6 +282,7 @@ public sealed class PhraseSourceStateCoordinator
             WHERE id = 1
             """,
             ct,
+            "PhraseSearch source state initialization",
             new NpgsqlParameter("revision", revision),
             new NpgsqlParameter("fingerprint", fingerprint),
             new NpgsqlParameter("now", DateTimeOffset.UtcNow));
@@ -270,7 +293,7 @@ public sealed class PhraseSourceStateCoordinator
         long revision,
         string? approvedFingerprint,
         string reason,
-        CancellationToken ct) => ExecuteAsync(
+        CancellationToken ct) => ExecuteExactlyOneAsync(
             connection,
             transaction,
             """
@@ -282,13 +305,10 @@ public sealed class PhraseSourceStateCoordinator
                 is_stale = true,
                 stale_reason = @reason,
                 updated_at_utc = @now
-            WHERE id = 1;
-            UPDATE quran_phrase_index_builds
-            SET status = 4,
-                completed_at_utc = COALESCE(completed_at_utc, @now)
-            WHERE status IN (2, 3);
+            WHERE id = 1
             """,
             ct,
+            "PhraseSearch source invalidation",
             new NpgsqlParameter("revision", revision),
             new NpgsqlParameter("approved_fingerprint", NpgsqlDbType.Text)
             {
@@ -297,11 +317,12 @@ public sealed class PhraseSourceStateCoordinator
             new NpgsqlParameter("reason", reason),
             new NpgsqlParameter("now", DateTimeOffset.UtcNow));
 
-    private static async Task ExecuteAsync(
+    private static async Task ExecuteExactlyOneAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         string sql,
         CancellationToken ct,
+        string operation,
         params NpgsqlParameter[] parameters)
     {
         await using var command = new NpgsqlCommand(sql, connection, transaction)
@@ -309,6 +330,12 @@ public sealed class PhraseSourceStateCoordinator
             CommandTimeout = PhraseIndexBuildConstants.CommandTimeoutSeconds,
         };
         command.Parameters.AddRange(parameters);
-        await command.ExecuteNonQueryAsync(ct);
+        var affectedRows = await command.ExecuteNonQueryAsync(ct);
+        if (affectedRows != 1)
+        {
+            throw new InvalidOperationException(
+                $"{operation} affected {affectedRows.ToString(CultureInfo.InvariantCulture)} rows; expected exactly one.");
+        }
     }
+
 }

@@ -5,7 +5,6 @@ internal sealed record PhraseSourceSnapshot(
     string StoredSourceFingerprint,
     string SourceFingerprint,
     Guid? ActiveBuildId,
-    Guid? PreviousBuildId,
     IReadOnlyList<PhraseSourceToken> Tokens,
     int AyahCount,
     short MaximumAyahLength,

@@ -7,17 +7,15 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSe
 
 internal sealed class PhraseIndexBuildRun
 {
-    internal PhraseIndexBuildRun(Guid buildId, bool force, string reportRootDirectory)
+    internal PhraseIndexBuildRun(Guid buildId, string reportRootDirectory)
     {
         BuildId = buildId;
-        Force = force;
         ReportDirectory = Path.Combine(reportRootDirectory, buildId.ToString("D"));
         StartedAtUtc = DateTimeOffset.UtcNow;
         Stopwatch = Stopwatch.StartNew();
     }
 
     internal Guid BuildId { get; }
-    internal bool Force { get; }
     internal string ReportDirectory { get; }
     internal DateTimeOffset StartedAtUtc { get; }
     internal Stopwatch Stopwatch { get; }
@@ -27,7 +25,6 @@ internal sealed class PhraseIndexBuildRun
     internal string SourceFingerprint { get; set; } = string.Empty;
     internal long SourceRevisionAtActivation { get; set; }
     internal string SourceFingerprintAtActivation { get; set; } = string.Empty;
-    internal Guid? PreviousBuildId { get; set; }
     internal Guid? ActiveBuildId { get; set; }
     internal PhraseIndexBuildTotals Totals { get; set; } = PhraseIndexBuildTotals.Empty;
     internal PhraseDiskPreflight DiskPreflight { get; set; } = PhraseDiskPreflight.Unavailable;

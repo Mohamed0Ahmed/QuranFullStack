@@ -2,6 +2,13 @@ namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
 
 public static class TafsirInvariants
 {
+    public const int CuratedTenApprovedSources = 10;
+    public const int CuratedTenExcludedSources = 0;
+    public const int CuratedTenArabicSources = 5;
+    public const int CuratedTenNonArabicSources = 5;
+    public const int CuratedTenLanguageCount = 6;
+    public const int CuratedTenSourceAyahMappings = 62_360;
+
     public const int ExpectedApprovedSources = 84;
     public const int ExpectedExcludedSources = 9;
     public const int ExpectedArabicSources = 35;
@@ -9,6 +16,15 @@ public static class TafsirInvariants
     public const int ExpectedLanguageCount = 33;
     public const int ExpectedAyahsPerSource = 6_236;
     public const int ExpectedSourceAyahMappings = 523_824;
+
+    public static readonly TafsirExpectedCounts CuratedTen = new(
+        CuratedTenApprovedSources,
+        CuratedTenExcludedSources,
+        CuratedTenArabicSources,
+        CuratedTenNonArabicSources,
+        CuratedTenLanguageCount,
+        ExpectedAyahsPerSource,
+        CuratedTenSourceAyahMappings);
 
     public static readonly TafsirExpectedCounts Production = new(
         ExpectedApprovedSources,
@@ -34,6 +50,7 @@ public static class TafsirInvariants
     public const string CheckExcludedCount = "TAFSIR-EXCLUDED-COUNT";
     public const string CheckArabicSourceCount = "TAFSIR-ARABIC-SOURCE-COUNT";
     public const string CheckNonArabicSourceCount = "TAFSIR-NON-ARABIC-SOURCE-COUNT";
+    public const string CheckLanguageCount = "TAFSIR-LANGUAGE-COUNT";
     public const string CheckSourceSet = "TAFSIR-SOURCE-SET";
     public const string CheckSourceHash = "TAFSIR-SOURCE-HASH";
     public const string CheckNoExcludedSources = "TAFSIR-NO-EXCLUDED-SOURCES";

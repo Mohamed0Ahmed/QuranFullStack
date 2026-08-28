@@ -156,6 +156,7 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         }
 
         await using var transaction = await npgsqlConnection.BeginTransactionAsync(ct);
+        var committed = false;
 
         try
         {
@@ -221,13 +222,24 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
 
                 await revisionStore.IncrementAsync(npgsqlConnection, transaction, ct);
                 await transaction.CommitAsync(ct);
+                committed = true;
 
-                return verifier.BuildResult(
+                var cleanup = await phraseSourceStateCoordinator.CleanupUnreferencedGenerationsAsync(
+                    npgsqlConnection,
+                    CancellationToken.None);
+
+                var result = verifier.BuildResult(
                     runAtUtc,
                     force,
                     assessment,
                     persisted: true,
                     errors: []);
+                return cleanup.Warning is null
+                    ? result
+                    : result with
+                    {
+                        Warnings = result.Warnings.Append(cleanup.Warning).ToList(),
+                    };
             }
 
             await transaction.RollbackAsync(ct);
@@ -241,7 +253,11 @@ public sealed class SqlDisplayWordsRebuilder : IDisplayWordsRebuilder
         }
         catch
         {
-            await transaction.RollbackAsync(ct);
+            if (!committed)
+            {
+                await transaction.RollbackAsync(ct);
+            }
+
             throw;
         }
     }

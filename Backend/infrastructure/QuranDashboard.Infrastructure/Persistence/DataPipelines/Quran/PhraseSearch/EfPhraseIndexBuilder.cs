@@ -38,11 +38,10 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
     }
 
     public async Task<PhraseIndexBuildExecution> BuildAsync(
-        bool force,
         string reportRootDirectory,
         CancellationToken ct)
     {
-        var run = new PhraseIndexBuildRun(Guid.NewGuid(), force, reportRootDirectory);
+        var run = new PhraseIndexBuildRun(Guid.NewGuid(), reportRootDirectory);
         Directory.CreateDirectory(run.ReportDirectory);
         NpgsqlConnection? connection = null;
         var activated = false;
@@ -50,264 +49,296 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
 
         try
         {
-            connection = await OpenConnectionAsync(ct);
-            run.CurrentStage = PhraseIndexBuildStage.BootstrapSource;
-            var bootstrap = await sourceStateCoordinator.BootstrapAsync(
-                connection,
-                PhraseIndexBuildConstants.ApprovedSourceFingerprint,
-                PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion,
-                ct);
-            run.SourceRevision = bootstrap.State.SourceRevision;
-            run.SourceFingerprint = bootstrap.ComputedFingerprint;
-            run.Checks.AddRange(bootstrap.Source.Checks);
-            if (!bootstrap.Source.Passed)
+            try
             {
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Failed,
-                    "Phrase index source integrity checks failed.",
-                    "Failed");
-            }
-
-            var sourceApproved =
-                PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion
-                    == PhraseIndexBuildConstants.SourceFingerprintVersion
-                && string.Equals(
-                    PhraseIndexBuildConstants.ApprovedSourceFingerprint,
-                    bootstrap.ComputedFingerprint,
-                    StringComparison.Ordinal);
-            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                "SOURCE-APPROVAL",
-                "hard",
-                $"v{PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{PhraseIndexBuildConstants.ApprovedSourceFingerprint}",
-                $"v{PhraseIndexBuildConstants.SourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{bootstrap.ComputedFingerprint}",
-                sourceApproved));
-            if (!sourceApproved)
-            {
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.SourceApprovalRequired,
-                    "Phrase index source fingerprint requires approval.",
-                    "SourceApprovalRequired");
-            }
-
-            run.CurrentStage = PhraseIndexBuildStage.PrepareBuild;
-            await database.AcquireBuilderLockAsync(connection, ct);
-            run.BuilderLockHeld = true;
-            var recoveredBuildCount = await database.RecoverAbandonedBuildsAsync(connection, ct);
-            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                "ABANDONED-BUILD-RECOVERY",
-                "hard",
-                "0 unresolved unreferenced building or validated builds",
-                $"0 unresolved; {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} recovered",
-                true));
-            if (recoveredBuildCount > 0)
-            {
-                run.Warnings.Add(
-                    $"Recovered {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} "
-                    + "abandoned phrase index build(s) before starting a new generation.");
-            }
-
-            var snapshot = await database.ReadSourceSnapshotAsync(connection, ct);
-            run.SourceRevision = snapshot.SourceRevision;
-            run.SourceFingerprint = snapshot.SourceFingerprint;
-            run.ActiveBuildId = snapshot.ActiveBuildId;
-            run.PreviousBuildId = snapshot.PreviousBuildId;
-            MergeChecks(run.Checks, snapshot.Checks);
-            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                "SOURCE-STATE-FINGERPRINT",
-                "hard",
-                snapshot.StoredSourceFingerprint,
-                snapshot.SourceFingerprint,
-                string.Equals(
-                    snapshot.StoredSourceFingerprint,
-                    snapshot.SourceFingerprint,
-                    StringComparison.Ordinal)));
-            if (run.Checks.Any(check => check.Severity == "hard" && !check.Passed))
-            {
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Failed,
-                    "Phrase index source snapshot is not compatible with source state.",
-                    "Failed");
-            }
-
-            if (!force && await database.HasActiveBuildAsync(connection, ct))
-            {
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Refused,
-                    "An active phrase index already exists. Re-run with --force to build a replacement.",
-                    "Refused");
-            }
-
-            run.DiskPreflight = await database.ReadDiskPreflightAsync(
-                connection,
-                ct);
-            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                "DISK-STORAGE-PROOF",
-                "hard",
-                "verified database filesystem free bytes",
-                run.DiskPreflight.ProofKind,
-                run.DiskPreflight.ProofVerified));
-            AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                "DISK-PREFLIGHT",
-                "hard",
-                $">={run.DiskPreflight.RequiredFreeBytes.ToString(CultureInfo.InvariantCulture)}",
-                run.DiskPreflight.AvailableDatabaseFilesystemBytes.ToString(CultureInfo.InvariantCulture),
-                run.DiskPreflight.Passed));
-
-            await database.CreateBuildAsync(connection, run.BuildId, snapshot, run.StartedAtUtc, ct);
-            run.BuildPersisted = true;
-
-            if (!run.DiskPreflight.Passed)
-            {
-                await database.MarkFailedAsync(
-                    connection,
-                    run.BuildId,
-                    "fail",
-                    "disk-preflight-failed",
-                    ct);
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Failed,
-                    "Phrase index disk preflight failed.",
-                    "Failed");
-            }
-
-            var staging = await StageAndValidateAsync(connection, snapshot, run, ct);
-            if (!staging.Passed)
-            {
-                await database.MarkFailedAsync(
-                    connection,
-                    run.BuildId,
-                    "fail",
-                    "hard-check-failed",
-                    ct);
-                return await finalizer.FinishFailureAsync(
-                    connection,
-                    run,
-                    PhraseIndexBuildOutcome.Failed,
-                    "Phrase index hard checks failed.",
-                    "Failed");
-            }
-
-            run.CurrentStage = PhraseIndexBuildStage.ActivateBuild;
-            var activation = await activator.ActivateAsync(
-                connection,
-                run.BuildId,
-                snapshot.SourceRevision,
-                snapshot.SourceFingerprint,
-                ct);
-            if (!activation.OutcomeKnown)
-            {
-                activationOutcomeUnknown = true;
-                run.Errors.Add("activation-outcome-unresolved");
-                run.Warnings.Add(
-                    "Activation outcome could not be reconciled; the build was not marked failed or deleted.");
-            }
-            else
-            {
-                run.SourceRevisionAtActivation = activation.SourceRevisionAtActivation;
-                run.SourceFingerprintAtActivation = activation.SourceFingerprintAtActivation;
-                run.PreviousBuildId = activation.PreviousBuildId;
-                run.ActiveBuildId = activation.ActiveBuildId;
-
-                if (!activation.Activated)
+                connection = await OpenConnectionAsync(ct);
+                run.CurrentStage = PhraseIndexBuildStage.PrepareBuild;
+                await database.AcquireBuilderLockAsync(connection, ct);
+                run.BuilderLockHeld = true;
+                var recoveredBuildCount = await database.RecoverAbandonedBuildsAsync(connection, ct);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "ABANDONED-BUILD-RECOVERY",
+                    "hard",
+                    "0 unresolved unreferenced building or validated builds",
+                    $"0 unresolved; {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} recovered",
+                    true));
+                if (recoveredBuildCount > 0)
                 {
-                    run.Errors.Add(activation.FailureReason);
+                    run.Warnings.Add(
+                        $"Recovered {recoveredBuildCount.ToString(CultureInfo.InvariantCulture)} "
+                        + "abandoned phrase index build(s) before checking one-shot eligibility.");
+                }
+
+                var pendingGenerationCleanup = await sourceStateCoordinator.CleanupUnreferencedGenerationsAsync(
+                    connection,
+                    CancellationToken.None);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "UNREFERENCED-GENERATION-CLEANUP",
+                    "hard",
+                    "no unreferenced generation data",
+                    pendingGenerationCleanup.Succeeded ? "verified" : "cleanup pending",
+                    pendingGenerationCleanup.Succeeded));
+                if (!pendingGenerationCleanup.Succeeded)
+                {
+                    run.Warnings.Add(
+                        pendingGenerationCleanup.Warning ?? PhraseIndexGenerationCleanup.PendingWarning);
                     return await finalizer.FinishFailureAsync(
                         connection,
                         run,
                         PhraseIndexBuildOutcome.Failed,
-                        "Phrase index activation was rejected by the source fence.",
+                        "Phrase index generation cleanup remains pending; no new build was started. Retry the command.",
                         "Failed");
                 }
 
-                if (activation.ReconciledAfterFailure)
+                var hasDataGeneration = await database.HasDataGenerationAsync(connection, ct);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "ONE-SHOT-EMPTY-DATABASE",
+                    "hard",
+                    "no active, previous, non-failed, or data-bearing PhraseSearch generation",
+                    hasDataGeneration ? "existing generation" : "empty",
+                    !hasDataGeneration));
+                if (hasDataGeneration)
                 {
-                    run.RecordActivationFinalizationFailure(
-                        "activation-acknowledgement-failed",
-                        "The database confirms this build is active after the activation acknowledgement failed.");
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Refused,
+                        "Phrase index build refused: an active or data-bearing generation already exists. Full database reset is required before another build; metadata-only failed audits do not block retry.",
+                        "Refused");
                 }
 
-                activated = true;
+                run.CurrentStage = PhraseIndexBuildStage.BootstrapSource;
+                var bootstrap = await sourceStateCoordinator.BootstrapAsync(
+                    connection,
+                    PhraseIndexBuildConstants.ApprovedSourceFingerprint,
+                    PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion,
+                    ct);
+                run.SourceRevision = bootstrap.State.SourceRevision;
+                run.SourceFingerprint = bootstrap.ComputedFingerprint;
+                run.Checks.AddRange(bootstrap.Source.Checks);
+                if (bootstrap.CleanupWarning is not null)
+                {
+                    run.Warnings.Add(bootstrap.CleanupWarning);
+                }
+
+                if (!bootstrap.Source.Passed)
+                {
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index source integrity checks failed.",
+                        "Failed");
+                }
+
+                var sourceApproved =
+                    PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion
+                        == PhraseIndexBuildConstants.SourceFingerprintVersion
+                    && string.Equals(
+                        PhraseIndexBuildConstants.ApprovedSourceFingerprint,
+                        bootstrap.ComputedFingerprint,
+                        StringComparison.Ordinal);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "SOURCE-APPROVAL",
+                    "hard",
+                    $"v{PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{PhraseIndexBuildConstants.ApprovedSourceFingerprint}",
+                    $"v{PhraseIndexBuildConstants.SourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{bootstrap.ComputedFingerprint}",
+                    sourceApproved));
+                if (!sourceApproved)
+                {
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.SourceApprovalRequired,
+                        "Phrase index source fingerprint requires approval.",
+                        "SourceApprovalRequired");
+                }
+
+                if (bootstrap.CleanupWarning is not null)
+                {
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index cleanup remains pending after source-state work was committed; no new build was started. Retry the command.",
+                        "Failed");
+                }
+
+                var snapshot = await database.ReadSourceSnapshotAsync(connection, ct);
+                run.SourceRevision = snapshot.SourceRevision;
+                run.SourceFingerprint = snapshot.SourceFingerprint;
+                run.ActiveBuildId = snapshot.ActiveBuildId;
+                MergeChecks(run.Checks, snapshot.Checks);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "SOURCE-STATE-FINGERPRINT",
+                    "hard",
+                    snapshot.StoredSourceFingerprint,
+                    snapshot.SourceFingerprint,
+                    string.Equals(
+                        snapshot.StoredSourceFingerprint,
+                        snapshot.SourceFingerprint,
+                        StringComparison.Ordinal)));
+                if (run.Checks.Any(check => check.Severity == "hard" && !check.Passed))
+                {
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index source snapshot is not compatible with source state.",
+                        "Failed");
+                }
+
+                run.DiskPreflight = await database.ReadDiskPreflightAsync(
+                    connection,
+                    ct);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "DISK-STORAGE-PROOF",
+                    "hard",
+                    "verified database filesystem free bytes",
+                    run.DiskPreflight.ProofKind,
+                    run.DiskPreflight.ProofVerified));
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "DISK-PREFLIGHT",
+                    "hard",
+                    $">={run.DiskPreflight.RequiredFreeBytes.ToString(CultureInfo.InvariantCulture)}",
+                    run.DiskPreflight.AvailableDatabaseFilesystemBytes.ToString(CultureInfo.InvariantCulture),
+                    run.DiskPreflight.Passed));
+
+                await database.CreateBuildAsync(connection, run.BuildId, snapshot, run.StartedAtUtc, ct);
+                run.BuildPersisted = true;
+
+                if (!run.DiskPreflight.Passed)
+                {
+                    await database.MarkFailedAsync(
+                        connection,
+                        run.BuildId,
+                        "fail",
+                        "disk-preflight-failed",
+                        ct);
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index disk preflight failed.",
+                        "Failed");
+                }
+
+                var staging = await StageAndValidateAsync(connection, snapshot, run, ct);
+                if (!staging.Passed)
+                {
+                    await database.MarkFailedAsync(
+                        connection,
+                        run.BuildId,
+                        "fail",
+                        "hard-check-failed",
+                        ct);
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index hard checks failed.",
+                        "Failed");
+                }
+
+                run.CurrentStage = PhraseIndexBuildStage.ActivateBuild;
+                var activation = await activator.ActivateAsync(
+                    connection,
+                    run.BuildId,
+                    snapshot.SourceRevision,
+                    snapshot.SourceFingerprint,
+                    ct);
+                if (!activation.OutcomeKnown)
+                {
+                    activationOutcomeUnknown = true;
+                    run.Errors.Add("activation-outcome-unresolved");
+                    run.Warnings.Add(
+                        "Activation outcome could not be reconciled; the build was not marked failed or deleted.");
+                }
+                else
+                {
+                    run.SourceRevisionAtActivation = activation.SourceRevisionAtActivation;
+                    run.SourceFingerprintAtActivation = activation.SourceFingerprintAtActivation;
+                    run.ActiveBuildId = activation.ActiveBuildId;
+
+                    if (!activation.Activated)
+                    {
+                        run.Errors.Add(activation.FailureReason);
+                        return await finalizer.FinishFailureAsync(
+                            connection,
+                            run,
+                            PhraseIndexBuildOutcome.Failed,
+                            "Phrase index activation was rejected by the source fence.",
+                            "Failed");
+                    }
+
+                    AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                        "POST-ACTIVATION-SINGLE-GENERATION",
+                        "hard",
+                        "one active data generation, no previous build, metadata-only failed audits allowed",
+                        "verified",
+                        true));
+
+                    if (activation.ReconciledAfterFailure)
+                    {
+                        run.RecordActivationFinalizationFailure(
+                            "activation-acknowledgement-failed",
+                            "The database confirms this build is active after the activation acknowledgement failed.");
+                    }
+
+                    activated = true;
+                }
             }
-        }
-        catch (OperationCanceledException)
-        {
-            run.Errors.Add("Build cancelled before activation.");
-            return await failureFinalizer.FinishAsync(
-                connection,
-                run,
-                PhraseIndexBuildOutcome.Cancelled,
-                "Phrase index build was cancelled; the prior active generation was retained.",
-                "Cancelled",
-                "cancelled",
-                "build-cancelled");
-        }
-        catch (Exception ex)
-        {
-            var failureDiagnostic = run.BuildFailureDiagnostic(ex);
-            run.Errors.Add(failureDiagnostic);
-            return await failureFinalizer.FinishAsync(
-                connection,
-                run,
-                PhraseIndexBuildOutcome.Failed,
-                "Phrase index build failed.",
-                "Failed",
-                "fail",
-                failureDiagnostic);
+            catch (OperationCanceledException)
+            {
+                run.Errors.Add("Build cancelled before activation.");
+                return await failureFinalizer.FinishAsync(
+                    connection,
+                    run,
+                    PhraseIndexBuildOutcome.Cancelled,
+                    "Phrase index build was cancelled; attempt data was removed and no new generation was activated.",
+                    "Cancelled",
+                    "cancelled",
+                    "build-cancelled");
+            }
+            catch (Exception ex)
+            {
+                var failureDiagnostic = run.BuildFailureDiagnostic(ex);
+                run.Errors.Add(failureDiagnostic);
+                return await failureFinalizer.FinishAsync(
+                    connection,
+                    run,
+                    PhraseIndexBuildOutcome.Failed,
+                    "Phrase index build failed.",
+                    "Failed",
+                    "fail",
+                    failureDiagnostic);
+            }
+
+            if (activationOutcomeUnknown)
+            {
+                if (connection is null)
+                {
+                    throw new InvalidOperationException(
+                        "Phrase index activation outcome is unknown and no connection remains for finalization.");
+                }
+
+                return await finalizer.FinishActivationOutcomeUnknownAsync(connection, run);
+            }
+
+            if (!activated || connection is null)
+            {
+                throw new InvalidOperationException("Phrase index activation did not produce a finalizable build.");
+            }
+
+            return await finalizer.FinishActivatedAsync(connection, run);
         }
         finally
         {
-            if (run.BuilderLockHeld
-                && connection is not null
-                && connection.State == ConnectionState.Open)
-            {
-                try
-                {
-                    await database.ReleaseBuilderLockAsync(connection);
-                }
-                catch (Exception) when (activated)
-                {
-                    run.RecordActivationFinalizationFailure(
-                        "post-activation-lock-release-failed",
-                        "The build is active, but explicit builder-lock release failed; closing the connection releases session locks.");
-                }
-                catch (Exception) when (activationOutcomeUnknown)
-                {
-                    run.Errors.Add("activation-outcome-lock-release-failed");
-                }
-                catch (Exception)
-                {
-                    run.Errors.Add("builder-lock-release-failed");
-                }
-            }
+            await PhraseIndexBuilderLockRelease.ReleaseAsync(
+                database,
+                connection,
+                run);
         }
-
-        if (activationOutcomeUnknown)
-        {
-            if (connection is null)
-            {
-                throw new InvalidOperationException(
-                    "Phrase index activation outcome is unknown and no connection remains for finalization.");
-            }
-
-            return await finalizer.FinishActivationOutcomeUnknownAsync(connection, run);
-        }
-
-        if (!activated || connection is null)
-        {
-            throw new InvalidOperationException("Phrase index activation did not produce a finalizable build.");
-        }
-
-        return await finalizer.FinishActivatedAsync(connection, run);
     }
 
     private async Task<PhraseIndexValidationResult> StageAndValidateAsync(

@@ -6,6 +6,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 {
     public TranslationImportReport BuildValidationFailure(
         string sourcePath,
+        string profile,
         TranslationSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -19,6 +20,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TranslationImportConstants.FailVerdict,
@@ -33,6 +35,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
     public TranslationImportReport BuildRefusal(
         string sourcePath,
+        string profile,
         TranslationSourceData? source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -48,6 +51,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TranslationImportConstants.FailVerdict,
@@ -62,6 +66,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
     public TranslationImportReport BuildCandidateSuccess(
         string sourcePath,
+        string profile,
         TranslationSourceData source,
         bool forced,
         DateTimeOffset runAtUtc,
@@ -82,6 +87,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
         return Build(
             sourcePath,
+            profile,
             source,
             runAtUtc,
             TranslationImportConstants.PassVerdict,
@@ -96,6 +102,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
     private static TranslationImportReport Build(
         string sourcePath,
+        string profile,
         TranslationSourceData? source,
         DateTimeOffset runAtUtc,
         string verdict,
@@ -119,6 +126,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             verdict,
             persisted,
             forced,
+            profile,
             sourcePath,
             totals,
             sourceSummaries,

@@ -12,7 +12,6 @@ public sealed record BuildPhraseIndexResult(
     PhraseIndexBuildTotals Totals,
     string SourceFingerprint,
     long SourceRevision,
-    Guid? PreviousBuildId,
     Guid? ActiveBuildId,
     bool ReportAvailable,
     bool ReportLinked)

@@ -16,6 +16,13 @@ public sealed record ImportQuranFoundationResult(
     public static ImportQuranFoundationResult Success(ImportTotals totals) =>
         new(true, SuccessExitCode, "Import completed successfully.", totals);
 
+    public static ImportQuranFoundationResult SuccessWithCleanupWarning(ImportTotals totals) =>
+        new(
+            true,
+            SuccessExitCode,
+            "Import completed and persisted successfully, but PhraseSearch cleanup remains pending; see the import report.",
+            totals);
+
     public static ImportQuranFoundationResult Refused(string message) =>
         new(false, RefusedExitCode, message, null);
 

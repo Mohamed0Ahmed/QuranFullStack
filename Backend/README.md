@@ -59,34 +59,30 @@ TLS is terminated at Railway's edge; the container serves plain HTTP on `$PORT`
 (`app.UseHttpsRedirection()` no-ops with no HTTPS port configured). Railway healthcheck path:
 `/api/health` (liveness — returns `200` with per-check status in the body).
 
-### PhraseSearch build capacity
+### PhraseSearch one-shot build capacity
 
-PhraseSearch replacement builds are intentionally storage-heavy. The preflight computes required
-free space as one current database size for the staged generation, one current database size for
-WAL headroom, plus `PhraseSearch:DiskSafetyBytes` (4 GiB by default); the executable formula is in
-[`PhraseDatabaseStoragePreflight.cs:45`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/PhraseDatabaseStoragePreflight.cs#L45),
-and a build is created only after that hard check is recorded
-([`EfPhraseIndexBuilder.cs:113`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/EfPhraseIndexBuilder.cs#L113)).
+PhraseSearch permits one data generation only. A build is refused when an active, previous,
+non-failed, or child-data-bearing generation exists; rebuilding therefore requires a full database
+reset first. Metadata-only failed audits do not block a retry. There is no replacement build,
+blue/green overlap, A/B generation, or in-database rollback generation.
 
-The following is a **2026-08-26 local two-generation observation, not a capacity SLA or a remote
-measurement**:
+Before the sole build row is created, the storage preflight conservatively reserves one current
+database size as one-shot build working space, one current database size for WAL headroom, plus
+`PhraseSearch:DiskSafetyBytes` (4 GiB by default). This keeps the prior byte-safety margin without
+assuming that a second PhraseSearch generation exists. The executable formula is in
+[`PhraseDatabaseStoragePreflight.cs`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/PhraseDatabaseStoragePreflight.cs),
+and the empty-generation guard runs before source bootstrap or staging in
+[`EfPhraseIndexBuilder.cs`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/EfPhraseIndexBuilder.cs).
 
-| Measure | Observed value |
-|---|---:|
-| Steady database with active and previous generations | 5,016,975,039 bytes |
-| Required free space before the next replacement | 14,328,917,374 bytes |
-| Hard database-plus-free-space total | 19,345,892,413 bytes (19.35 GB / 18.02 GiB) |
-| Second forced build wall time | 8 minutes 54 seconds |
-| Second forced build peak RSS | 424,016 KiB |
-
-A decimal 20 GB volume is therefore only barely above the observed hard total. Use **25 GB or
-more** as the starting capacity class, then prove the deployed database filesystem's freshly
-available bytes and its WAL retention/archiving behavior immediately before a build. The remote
-preflight fails closed without the operator free-space proof contract; that proof does not inspect
-the provider's WAL policy for the operator. WAL LSN deltas are cumulative bytes generated during
-a run, not resident WAL bytes on disk, so they cannot be substituted for a resident-filesystem
-measurement. Build, forced replacement, report, cancellation, and rollback commands are retained
-in [`scripts/README.md`](scripts/README.md#phrase-search-index-operations).
+Prove the database filesystem's freshly available bytes and its WAL retention/archiving behavior
+immediately before the one-shot build. Every environment, including loopback, fails closed unless
+the operator supplies `PhraseSearch:VerifiedDatabaseFreeBytes` and sets
+`PhraseSearch:DatabaseStorageProofContract` to
+`operator-verified-database-filesystem-v1`; there is no automatic filesystem measurement. That
+proof does not inspect the provider's WAL policy for the operator. WAL LSN deltas are cumulative
+bytes generated during a run, not resident WAL bytes on disk, so they cannot replace a
+resident-filesystem measurement. Build, report, refusal, and cancellation operations are retained in
+[`scripts/README.md`](scripts/README.md#phrasesearch-index-operations).
 
 **One instance — a real constraint that nothing in the contract above enforces.** Railway runs a
 single instance of this container today, but that is a fact about the current deployment, not

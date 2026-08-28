@@ -9,8 +9,19 @@ internal static class ImportTafsirsRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)
     {
-        if (!ImportArguments.TryParse(
+        if (!DataImporterProfileArguments.TryExtract(
                 args,
+                out var profile,
+                out var importArgs,
+                out var profileError))
+        {
+            Console.Error.WriteLine(profileError);
+            printUsage();
+            return ImportTafsirsResult.FailureExitCode;
+        }
+
+        if (!ImportArguments.TryParse(
+                importArgs,
                 requireSource: false,
                 validateSourceExists: true,
                 out var sourcePath,
@@ -27,16 +38,22 @@ internal static class ImportTafsirsRunner
         await using var scope = host.Services.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportTafsirsHandler>();
 
-        sourcePath ??= DataImporterDefaults.ResolveDefaultTafsirSourcePath();
-        reportOutDir ??= DataImporterDefaults.ResolveDefaultTafsirReportDir();
+        sourcePath ??= DataImporterDefaults.ResolveDefaultTafsirSourcePath(profile);
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultTafsirReportDir(profile);
+        var expectedCounts = profile == DataImporterProfile.Full
+            ? TafsirInvariants.Production
+            : TafsirInvariants.CuratedTen;
 
         var result = await handler.HandleAsync(
             new ImportTafsirsCommand(
                 sourcePath,
                 force,
-                TafsirInvariants.Production,
-                reportOutDir),
+                expectedCounts,
+                reportOutDir,
+                DataImporterProfileArguments.GetValue(profile)),
             CancellationToken.None);
+
+        Console.WriteLine($"profile={DataImporterProfileArguments.GetValue(profile)}.");
 
         if (result.Succeeded)
         {

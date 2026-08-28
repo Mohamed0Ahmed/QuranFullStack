@@ -19,7 +19,6 @@ public sealed class BuildPhraseIndexHandler
         ArgumentException.ThrowIfNullOrWhiteSpace(command.ReportRootDirectory);
 
         var execution = await builder.BuildAsync(
-            command.Force,
             Path.GetFullPath(command.ReportRootDirectory),
             ct);
 
@@ -33,7 +32,6 @@ public sealed class BuildPhraseIndexHandler
             execution.Totals,
             execution.SourceFingerprint,
             execution.SourceRevision,
-            execution.PreviousBuildId,
             execution.ActiveBuildId,
             execution.ReportAvailable,
             execution.ReportLinked);

@@ -229,7 +229,7 @@ is `Authorization` (authorization contract gates), `Cli` (command-line contract 
   and singleton empty state row; `SmokeDataReadTests` verifies the manifest/restore exclusion and
   that all ten PhraseSearch routes answer `503` until the derived index is built. Regenerate with
   `Backend/scripts/create-smoke-dump --yes`; never hand-edit either file. The full backup,
-  count-preservation, build, and rollback runbook lives in `../../scripts/README.md`.
+  count-preservation and build runbook lives in `../../scripts/README.md`.
 
 ### Why `Smoke/Data/` runs postgres **18** while every other fixture runs **16**
 

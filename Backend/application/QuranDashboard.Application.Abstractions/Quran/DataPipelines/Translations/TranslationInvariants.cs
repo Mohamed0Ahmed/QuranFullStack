@@ -2,6 +2,13 @@ namespace QuranDashboard.Application.Abstractions.Quran.DataPipelines.Translatio
 
 public static class TranslationInvariants
 {
+    public const int CuratedTenApprovedSources = 10;
+    public const int CuratedTenSimpleSources = 9;
+    public const int CuratedTenWithFootnotesSources = 1;
+    public const int CuratedTenExcludedSources = 0;
+    public const int CuratedTenLanguageCount = 10;
+    public const int CuratedTenSourceAyahMappings = 62_360;
+
     public const int ExpectedApprovedSources = 167;
     public const int ExpectedSimpleSources = 129;
     public const int ExpectedWithFootnotesSources = 38;
@@ -9,6 +16,15 @@ public static class TranslationInvariants
     public const int ExpectedLanguageCount = 83;
     public const int ExpectedAyahsPerSource = 6_236;
     public const int ExpectedSourceAyahMappings = 1_041_412;
+
+    public static readonly TranslationExpectedCounts CuratedTen = new(
+        CuratedTenApprovedSources,
+        CuratedTenSimpleSources,
+        CuratedTenWithFootnotesSources,
+        CuratedTenExcludedSources,
+        CuratedTenLanguageCount,
+        ExpectedAyahsPerSource,
+        CuratedTenSourceAyahMappings);
 
     public static readonly TranslationExpectedCounts Production = new(
         ExpectedApprovedSources,

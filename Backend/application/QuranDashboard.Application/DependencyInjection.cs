@@ -151,7 +151,6 @@ public static class DependencyInjection
         services.AddScoped<ImportFullI3rabHandler>();
         services.AddScoped<GenerateI3rabHandler>();
         services.AddScoped<BuildPhraseIndexHandler>();
-        services.AddScoped<RollbackPhraseIndexHandler>();
         services.AddScoped<GetPhraseSearchCapabilitiesHandler>();
         services.AddScoped<GetPhraseRepetitionsHandler>();
         services.AddScoped<GetPhraseRepetitionOccurrencesHandler>();

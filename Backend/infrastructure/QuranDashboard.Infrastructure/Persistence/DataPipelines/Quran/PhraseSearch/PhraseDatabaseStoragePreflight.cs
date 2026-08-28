@@ -37,17 +37,17 @@ internal sealed class PhraseDatabaseStoragePreflight
         var databaseBytes = reader.GetInt64(0);
         var phraseBytes = reader.GetInt64(1);
         var storageProof = ResolveStorageProof();
-        var additionalGenerationBytes = databaseBytes;
+        var buildWorkingSpaceBytes = databaseBytes;
         var walHeadroomBytes = databaseBytes;
         var requiredBytes = checked(
-            additionalGenerationBytes
+            buildWorkingSpaceBytes
             + walHeadroomBytes
             + options.DiskSafetyBytes);
 
         return new PhraseDiskPreflight(
             databaseBytes,
             phraseBytes,
-            additionalGenerationBytes,
+            buildWorkingSpaceBytes,
             walHeadroomBytes,
             options.DiskSafetyBytes,
             storageProof.AvailableBytes,

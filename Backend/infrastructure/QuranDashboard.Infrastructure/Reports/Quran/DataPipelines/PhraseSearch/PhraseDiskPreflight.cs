@@ -3,7 +3,7 @@ namespace QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.PhraseSearch
 internal sealed record PhraseDiskPreflight(
     long DatabaseBytes,
     long ExistingPhraseIndexBytes,
-    long AdditionalGenerationBytes,
+    long BuildWorkingSpaceBytes,
     long WalHeadroomBytes,
     long SafetyMarginBytes,
     long AvailableDatabaseFilesystemBytes,

@@ -64,7 +64,6 @@ internal sealed class PhraseIndexBuildReportWriter
             $"- Persisted / active: {FormatState(report.Persisted)} / {FormatState(report.Active)}");
         builder.AppendLine(
             $"- Exact / similarity ready: {FormatState(report.ExactReady)} / {FormatState(report.SimilarityReady)}");
-        builder.AppendLine($"- Forced: {report.Forced}");
         builder.AppendLine($"- Started (UTC): {report.StartedAtUtc:u}");
         builder.AppendLine($"- Completed (UTC): {report.CompletedAtUtc:u}");
         builder.AppendLine($"- Duration: {report.DurationMilliseconds:N0} ms");
@@ -74,7 +73,6 @@ internal sealed class PhraseIndexBuildReportWriter
         builder.AppendLine();
         builder.AppendLine($"- Before: revision {report.SourceRevisionBefore}, `{report.SourceFingerprintBefore}`");
         builder.AppendLine($"- At activation: revision {report.SourceRevisionAtActivation}, `{report.SourceFingerprintAtActivation}`");
-        builder.AppendLine($"- Previous build: `{report.PreviousBuildId?.ToString() ?? "none"}`");
         builder.AppendLine($"- Active build: `{report.ActiveBuildId?.ToString() ?? "none"}`");
         builder.AppendLine();
         builder.AppendLine("## Totals");
@@ -89,8 +87,8 @@ internal sealed class PhraseIndexBuildReportWriter
         builder.AppendLine("## Disk preflight");
         builder.AppendLine();
         builder.AppendLine($"- Database: {report.DiskPreflight.DatabaseBytes:N0} bytes");
-        builder.AppendLine($"- Existing phrase generations: {report.DiskPreflight.ExistingPhraseIndexBytes:N0} bytes");
-        builder.AppendLine($"- Additional generation allowance: {report.DiskPreflight.AdditionalGenerationBytes:N0} bytes");
+        builder.AppendLine($"- Existing PhraseSearch storage: {report.DiskPreflight.ExistingPhraseIndexBytes:N0} bytes");
+        builder.AppendLine($"- One-shot build working-space allowance: {report.DiskPreflight.BuildWorkingSpaceBytes:N0} bytes");
         builder.AppendLine($"- WAL headroom: {report.DiskPreflight.WalHeadroomBytes:N0} bytes");
         builder.AppendLine($"- Safety margin: {report.DiskPreflight.SafetyMarginBytes:N0} bytes");
         builder.AppendLine($"- Database filesystem available: {report.DiskPreflight.AvailableDatabaseFilesystemBytes:N0} bytes");
