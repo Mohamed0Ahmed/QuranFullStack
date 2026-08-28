@@ -28,10 +28,50 @@
       </section>
     }
   </div>
-} @else if (loadState().isEmpty || !mutashabihat() || mutashabihat()!.groupCount === 0) {
+} @else if (
+  loadState().isEmpty ||
+  !mutashabihat() ||
+  mutashabihat()!.groupCount === 0 ||
+  !hasAvailableGroups()
+) {
   <qd-empty-state [message]="emptyMessage" testId="mutashabihat-empty" />
 } @else {
   <div class="mutashabihat-groups-card__groups" data-testid="mutashabihat-groups-list">
+    @if (canUseLinking()) {
+      <div
+        class="mutashabihat-groups-card__selection-toolbar qd-card"
+        role="group"
+        aria-label="تحديد مواضع المتشابهات للربط"
+      >
+        <p
+          class="mutashabihat-groups-card__selection-summary"
+          role="status"
+          data-testid="mutashabihat-selection-count"
+        >
+          المواضع المحددة للربط: {{ selectedOccurrenceCount() }}
+        </p>
+        <div class="mutashabihat-groups-card__selection-controls">
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            [disabled]="allOccurrencesSelected()"
+            (click)="selectAllOccurrences()"
+          >
+            تحديد الكل
+          </button>
+          <button
+            qdAction="tertiary"
+            size="sm"
+            type="button"
+            [disabled]="selectedOccurrenceCount() === 0"
+            (click)="clearOccurrences()"
+          >
+            إلغاء تحديد الكل
+          </button>
+        </div>
+      </div>
+    }
     @for (group of displayGroups(); track group.groupKey) {
       <section class="mutashabihat-groups-card__group qd-card" data-testid="mutashabihat-group">
         <header class="mutashabihat-groups-card__group-header">
@@ -47,6 +87,20 @@
               </span>
             }
           </h3>
+          @if (canUseLinking()) {
+            <span class="mutashabihat-groups-card__group-selection">
+              <input
+                class="qd-checkbox"
+                type="checkbox"
+                [checked]="group.allOccurrencesSelected"
+                [indeterminate]="group.isIndeterminate"
+                [attr.aria-checked]="group.isIndeterminate ? 'mixed' : group.allOccurrencesSelected"
+                [attr.aria-label]="group.selectionLabel"
+                [attr.data-testid]="'mutashabihat-group-selection-' + group.sourceGroupId"
+                (change)="toggleGroupSelection(group)"
+              />
+            </span>
+          }
           <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
             {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
             {{ group.distinctSurahCount }} سور
@@ -68,7 +122,7 @@
             >
               @for (
                 occurrence of group.visibleOccurrences;
-                track occurrence.verseKey + ':' + occurrence.wordFrom;
+                track occurrence.selectionKey;
                 let i = $index
               ) {
                 <li
@@ -84,7 +138,11 @@
                   [matchedWordTo]="occurrence.wordTo"
                   testIdKind="mutashabihat-occurrence"
                   [selected]="occurrence.isSelectedAyah"
+                  [linkingSelectionEnabled]="canUseLinking()"
+                  [linkingSelected]="occurrence.linkingSelected"
+                  [linkingSelectionLabel]="occurrence.linkingSelectionLabel"
                   (ayahNavigate)="onAyahNavigate(occurrence)"
+                  (linkingSelectionToggle)="toggleOccurrenceSelection(occurrence.selectionKey)"
                 ></li>
               }
             </ul>
@@ -112,4 +170,10 @@
       </section>
     }
   </div>
+  @if (linkingLaunch(); as launch) {
+    <qd-quran-source-linking-actions
+      class="mutashabihat-groups-card__linking-actions"
+      [launch]="launch"
+    />
+  }
 }

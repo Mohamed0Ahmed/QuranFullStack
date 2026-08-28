@@ -168,6 +168,7 @@
               [mutashabihat]="mutashabihat()"
               [loadState]="mutashabihatLoadState()"
               [expectedGroupCount]="mutashabihatGroupCount()"
+              [selectedAyah]="study()?.ayah ?? null"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
