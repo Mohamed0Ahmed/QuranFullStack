@@ -36,10 +36,20 @@
   }
 
   &__group-header {
+    display: grid;
+    grid-template-columns: var(--qd-hit-target-min) minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--qd-space-3);
+    text-align: center;
+  }
+
+  &__group-copy {
+    grid-column: 2;
+    grid-row: 1;
     display: flex;
+    min-inline-size: 0;
     flex-direction: column;
     gap: var(--qd-space-2);
-    text-align: center;
   }
 
   &__group-title {
@@ -52,9 +62,11 @@
   }
 
   &__group-selection {
+    grid-column: 1;
+    grid-row: 1;
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start;
+    justify-content: flex-start;
     min-inline-size: var(--qd-hit-target-min);
     min-block-size: var(--qd-hit-target-min);
   }
@@ -85,7 +97,11 @@
   }
 
   &__expand-toggle {
-    align-self: center;
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    inline-size: 8rem;
     font-size: 0.8125rem;
   }
 
@@ -109,8 +125,11 @@
   }
 
   &__toggle-skeleton {
+    grid-column: 3;
+    grid-row: 1;
     --qd-skeleton-w: 8rem;
-    align-self: center;
+    align-self: start;
+    justify-self: end;
     min-block-size: var(--qd-control-sm);
   }
 }

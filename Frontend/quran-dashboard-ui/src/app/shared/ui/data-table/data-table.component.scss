@@ -20,7 +20,7 @@
 
 .qd-data-table__header-row,
 .qd-data-table__row:not(.qd-data-table__row--compact) {
-  grid-template-columns: var(--qd-data-table-columns);
+  grid-template-columns: var(--qd-data-table-columns, var(--qd-explorer-table-columns));
 }
 
 .qd-data-table__body {

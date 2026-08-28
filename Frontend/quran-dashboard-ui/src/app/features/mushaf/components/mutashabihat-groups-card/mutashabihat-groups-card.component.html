@@ -16,15 +16,16 @@
     @for (group of loadingGroupPlaceholders(); track group) {
       <section class="mutashabihat-groups-card__group mutashabihat-groups-card__group--skeleton qd-card">
         <div class="mutashabihat-groups-card__group-header">
-          <div class="mutashabihat-groups-card__group-title">
-            <span class="qd-skeleton mutashabihat-groups-card__phrase-skeleton">&nbsp;</span>
+          <div class="mutashabihat-groups-card__group-copy">
+            <div class="mutashabihat-groups-card__group-title">
+              <span class="qd-skeleton mutashabihat-groups-card__phrase-skeleton">&nbsp;</span>
+            </div>
+            <p class="mutashabihat-groups-card__group-meta">
+              <span class="qd-skeleton mutashabihat-groups-card__group-meta-skeleton">&nbsp;</span>
+            </p>
           </div>
-          <p class="mutashabihat-groups-card__group-meta">
-            <span class="qd-skeleton mutashabihat-groups-card__group-meta-skeleton">&nbsp;</span>
-          </p>
+          <span class="qd-skeleton mutashabihat-groups-card__toggle-skeleton">&nbsp;</span>
         </div>
-
-        <span class="qd-skeleton mutashabihat-groups-card__toggle-skeleton">&nbsp;</span>
       </section>
     }
   </div>
@@ -75,18 +76,6 @@
     @for (group of displayGroups(); track group.groupKey) {
       <section class="mutashabihat-groups-card__group qd-card" data-testid="mutashabihat-group">
         <header class="mutashabihat-groups-card__group-header">
-          <h3 class="mutashabihat-groups-card__group-title" data-testid="mutashabihat-group-title">
-            @if (group.phraseTextUthmani) {
-              <span class="mutashabihat-groups-card__phrase" dir="rtl">{{
-                group.phraseTextUthmani
-              }}</span>
-            } @else {
-              <span class="mutashabihat-groups-card__phrase-range">
-                {{ group.wordRangeLabel }}
-                — {{ group.representativeVerseKey }}
-              </span>
-            }
-          </h3>
           @if (canUseLinking()) {
             <span class="mutashabihat-groups-card__group-selection">
               <input
@@ -101,10 +90,42 @@
               />
             </span>
           }
-          <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
-            {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
-            {{ group.distinctSurahCount }} سور
-          </p>
+          <div class="mutashabihat-groups-card__group-copy">
+            <h3 class="mutashabihat-groups-card__group-title" data-testid="mutashabihat-group-title">
+              @if (group.phraseTextUthmani) {
+                <span class="mutashabihat-groups-card__phrase" dir="rtl">{{
+                  group.phraseTextUthmani
+                }}</span>
+              } @else {
+                <span class="mutashabihat-groups-card__phrase-range">
+                  {{ group.wordRangeLabel }}
+                  — {{ group.representativeVerseKey }}
+                </span>
+              }
+            </h3>
+            <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
+              {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
+              {{ group.distinctSurahCount }} سور
+            </p>
+          </div>
+          @if (group.showExpandToggle) {
+            <button
+              type="button"
+              qdAction="secondary"
+              size="sm"
+              class="mutashabihat-groups-card__expand-toggle"
+              data-testid="mutashabihat-expand-toggle"
+              [attr.aria-expanded]="group.isExpanded"
+              [attr.aria-controls]="group.occurrenceListId"
+              (click)="toggleGroupExpanded(group.groupKey)"
+            >
+              @if (group.isExpanded) {
+                إخفاء الآيات
+              } @else {
+                عرض كل الآيات ({{ group.distinctAyahCount }})
+              }
+            </button>
+          }
         </header>
 
         <div
@@ -149,24 +170,6 @@
           }
         </div>
 
-        @if (group.showExpandToggle) {
-          <button
-            type="button"
-            qdAction="secondary"
-            size="sm"
-            class="mutashabihat-groups-card__expand-toggle"
-            data-testid="mutashabihat-expand-toggle"
-            [attr.aria-expanded]="group.isExpanded"
-            [attr.aria-controls]="group.occurrenceListId"
-            (click)="toggleGroupExpanded(group.groupKey)"
-          >
-            @if (group.isExpanded) {
-              إخفاء الآيات
-            } @else {
-              عرض كل الآيات ({{ group.distinctAyahCount }})
-            }
-          </button>
-        }
       </section>
     }
   </div>
