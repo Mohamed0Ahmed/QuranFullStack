@@ -49,8 +49,6 @@ export class PhraseSimilarityQueryCoordinator {
       return;
     }
     this.gate.invalidate('query');
-    hooks.clearResults();
-    hooks.setResultsIdle();
     hooks.setError('');
   }
 

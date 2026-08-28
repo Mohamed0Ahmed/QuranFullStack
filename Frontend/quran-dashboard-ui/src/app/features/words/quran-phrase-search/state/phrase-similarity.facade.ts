@@ -134,8 +134,6 @@ export class PhraseSimilarityFacade {
     this.query.invalidate();
     this._draftMode.set(mode);
     this.draftModePending = mode !== this._route().mode;
-    this.cancelAndClearResults();
-    this.results.status.set('idle');
     this.resolution.reset('idle');
     this._errorMessage.set('');
   }
