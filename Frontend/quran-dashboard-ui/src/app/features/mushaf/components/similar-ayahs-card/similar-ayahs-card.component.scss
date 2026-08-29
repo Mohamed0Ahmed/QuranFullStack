@@ -41,8 +41,17 @@
   }
 
   &__linking-actions {
-    padding-block-start: var(--qd-space-3);
-    border-block-start: var(--qd-hairline);
+    position: sticky;
+    z-index: 2;
+    inset-block-end: var(--qd-space-2);
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    margin-inline-end: auto;
+    padding: var(--qd-space-2);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-layer);
   }
 
   &__skeleton-meta {

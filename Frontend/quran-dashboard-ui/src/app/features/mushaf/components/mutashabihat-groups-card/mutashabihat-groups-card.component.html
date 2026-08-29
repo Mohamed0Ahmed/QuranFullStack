@@ -174,9 +174,8 @@
     }
   </div>
   @if (linkingLaunch(); as launch) {
-    <qd-quran-source-linking-actions
-      class="mutashabihat-groups-card__linking-actions"
-      [launch]="launch"
-    />
+    <div class="mutashabihat-groups-card__linking-actions">
+      <qd-quran-source-linking-actions [launch]="launch" />
+    </div>
   }
 }

@@ -100,10 +100,9 @@
       }
     </ul>
     @if (linkingLaunch(); as launch) {
-      <qd-quran-source-linking-actions
-        class="similar-ayahs-card__linking-actions"
-        [launch]="launch"
-      />
+      <div class="similar-ayahs-card__linking-actions">
+        <qd-quran-source-linking-actions [launch]="launch" />
+      </div>
     }
   </div>
 }
