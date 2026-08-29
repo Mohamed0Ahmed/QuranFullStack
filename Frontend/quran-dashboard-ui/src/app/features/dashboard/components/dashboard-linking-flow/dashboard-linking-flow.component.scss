@@ -1,0 +1,185 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.dashboard-linking {
+  padding-block: var(--qd-s-64);
+  border-block: var(--qd-hairline);
+  background: var(--qd-surface-quiet);
+}
+
+.dashboard-linking__header {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: end;
+  gap: var(--qd-space-6);
+}
+
+.dashboard-linking__eyebrow,
+.dashboard-linking__title,
+.dashboard-linking__description,
+.dashboard-linking__detail p {
+  margin: 0;
+}
+
+.dashboard-linking__eyebrow {
+  margin-block-end: var(--qd-space-2);
+  color: var(--qd-accent-text);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  font-weight: 600;
+}
+
+.dashboard-linking__title {
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h1);
+  line-height: var(--qd-type-h1-lh);
+  color: var(--qd-ink);
+  text-wrap: balance;
+}
+
+.dashboard-linking__description {
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
+}
+
+.dashboard-linking__flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(14rem, 0.55fr);
+  margin-block-start: var(--qd-s-48);
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-lg);
+  background: var(--qd-surface);
+  overflow: hidden;
+}
+
+.dashboard-linking__stages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: var(--qd-space-4);
+  list-style: none;
+}
+
+.dashboard-linking__stage {
+  position: relative;
+  display: flex;
+  inline-size: 100%;
+  min-block-size: 7rem;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-3);
+  border: 0;
+  border-block-end: 2px solid var(--qd-border);
+  background: transparent;
+  color: var(--qd-ink-muted);
+  text-align: start;
+  cursor: pointer;
+  transition: background-color var(--qd-t-state), border-color var(--qd-t-state),
+    color var(--qd-t-state), transform var(--qd-t-state);
+}
+
+.dashboard-linking__stage:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-ink);
+}
+
+.dashboard-linking__stage:active {
+  transform: translateY(1px);
+}
+
+.dashboard-linking__stage:focus-visible {
+  z-index: 1;
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.dashboard-linking__stage--active {
+  border-color: var(--qd-accent);
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.dashboard-linking__stage span {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  border: var(--qd-hairline-strong);
+  border-radius: 50%;
+  background: var(--qd-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-linking__stage strong {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  line-height: var(--qd-type-meta-lh);
+}
+
+.dashboard-linking__detail {
+  display: flex;
+  min-inline-size: 0;
+  min-block-size: 11rem;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-5);
+  border-inline-start: var(--qd-hairline);
+  background: var(--qd-accent-tint);
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+  line-height: var(--qd-type-body-lh);
+}
+
+.dashboard-linking__detail span {
+  color: var(--qd-accent-text);
+  font-size: var(--qd-type-caption);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-linking__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-3);
+  margin-block-start: var(--qd-space-5);
+}
+
+.dashboard-linking__actions .qd-btn {
+  min-block-size: var(--qd-hit-target-min);
+  text-decoration: none;
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .dashboard-linking__header,
+  .dashboard-linking__flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .dashboard-linking__detail {
+    border-block-start: var(--qd-hairline);
+    border-inline-start: 0;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .dashboard-linking {
+    padding-block: var(--qd-s-48);
+  }
+
+  .dashboard-linking__stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: var(--qd-space-2);
+  }
+
+  .dashboard-linking__stage {
+    min-block-size: 6.25rem;
+  }
+}

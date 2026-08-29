@@ -1,0 +1,191 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.dashboard-words {
+  padding-block: var(--qd-s-64);
+  border-block: var(--qd-hairline);
+  background: var(--qd-surface-quiet);
+}
+
+.dashboard-words__header {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  align-items: end;
+  gap: var(--qd-space-6);
+}
+
+.dashboard-words__eyebrow,
+.dashboard-words__title,
+.dashboard-words__description {
+  margin: 0;
+}
+
+.dashboard-words__eyebrow {
+  margin-block-end: var(--qd-space-2);
+  color: var(--qd-accent-text);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  font-weight: 600;
+}
+
+.dashboard-words__title {
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h1);
+  line-height: var(--qd-type-h1-lh);
+  color: var(--qd-ink);
+  text-wrap: balance;
+}
+
+.dashboard-words__description {
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
+}
+
+.dashboard-words__sequence {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: var(--qd-s-48) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-words__step {
+  position: relative;
+  min-inline-size: 0;
+}
+
+.dashboard-words__step:not(:last-child)::after {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: calc(-1 * var(--qd-space-2));
+  z-index: 1;
+  content: '←';
+  color: var(--qd-accent-text);
+  transform: translateY(-50%);
+}
+
+.dashboard-words__step-link {
+  display: flex;
+  align-items: center;
+  min-block-size: 7rem;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-4);
+  border-block: var(--qd-hairline-strong);
+  color: var(--qd-ink);
+  text-decoration: none;
+  transition: background-color var(--qd-t-state), border-color var(--qd-t-state);
+}
+
+.dashboard-words__step-link:hover {
+  border-color: var(--qd-accent-soft);
+  background: var(--qd-surface);
+}
+
+.dashboard-words__step-link:focus-visible,
+.dashboard-words__types:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.dashboard-words__number {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  inline-size: 2rem;
+  block-size: 2rem;
+  border-radius: 50%;
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-words__step-link span:last-child,
+.dashboard-words__types span:first-child {
+  display: flex;
+  min-inline-size: 0;
+  flex-direction: column;
+  gap: var(--qd-space-1);
+}
+
+.dashboard-words__step-link strong,
+.dashboard-words__types strong {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body-lg);
+}
+
+.dashboard-words__step-link small,
+.dashboard-words__types small {
+  color: var(--qd-ink-muted);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-caption);
+  line-height: var(--qd-type-caption-lh);
+}
+
+.dashboard-words__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-4);
+  margin-block-start: var(--qd-space-5);
+}
+
+.dashboard-words__actions .qd-btn {
+  min-block-size: var(--qd-hit-target-min);
+  text-decoration: none;
+}
+
+.dashboard-words__types {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: var(--qd-hit-target-min);
+  inline-size: min(100%, 24rem);
+  gap: var(--qd-space-4);
+  padding: var(--qd-space-3) var(--qd-space-4);
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  color: var(--qd-ink);
+  text-decoration: none;
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .dashboard-words__header {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--qd-space-4);
+  }
+
+  .dashboard-words__sequence {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--qd-space-3);
+  }
+
+  .dashboard-words__step:not(:last-child)::after {
+    content: none;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .dashboard-words {
+    padding-block: var(--qd-s-48);
+  }
+
+  .dashboard-words__sequence {
+    grid-template-columns: minmax(0, 1fr);
+    margin-block-start: var(--qd-space-6);
+  }
+
+  .dashboard-words__actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .dashboard-words__types {
+    inline-size: auto;
+  }
+}

@@ -1,0 +1,38 @@
+<section class="dashboard-words" aria-labelledby="dashboard-words-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading">
+    <div class="dashboard-words__header">
+      <div>
+        <p class="dashboard-words__eyebrow">الكلمات والجذور</p>
+        <h2 id="dashboard-words-title" class="dashboard-words__title">{{ content().heading }}</h2>
+      </div>
+      <p class="dashboard-words__description">{{ content().description }}</p>
+    </div>
+
+    <ol class="dashboard-words__sequence" aria-label="مسار بنية الكلمة">
+      @for (item of content().sequence; track item.route; let index = $index) {
+        <li class="dashboard-words__step">
+          <a class="dashboard-words__step-link" [routerLink]="item.route">
+            <span class="dashboard-words__number">{{ index + 1 }}</span>
+            <span>
+              <strong>{{ item.label }}</strong>
+              <small>{{ item.description }}</small>
+            </span>
+          </a>
+        </li>
+      }
+    </ol>
+
+    <div class="dashboard-words__actions">
+      <a class="qd-btn qd-btn-ghost" [routerLink]="content().overviewAction.route">
+        {{ content().overviewAction.label }}
+      </a>
+      <a class="dashboard-words__types" [routerLink]="content().typesAction.route">
+        <span>
+          <strong>{{ content().typesAction.label }}</strong>
+          <small>{{ content().typesAction.description }}</small>
+        </span>
+        <span aria-hidden="true">←</span>
+      </a>
+    </div>
+  </div>
+</section>

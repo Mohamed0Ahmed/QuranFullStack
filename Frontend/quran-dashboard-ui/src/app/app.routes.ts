@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { ownerGuard } from './core/auth/owner.guard';
+import { SHELL_LAYOUT_PAGE_SCROLL } from './core/layout/shell-layout.model';
 import { NAV_ITEMS } from './core/navigation/nav-items';
 import { CALLBACK_PATH, SETTINGS_ACCESS_ROUTE_PATH, navLabel } from './core/navigation/route-paths';
 
@@ -36,6 +37,7 @@ export const routes: Routes = [
           import('./features/dashboard/pages/dashboard-home/dashboard-home.component').then(
             (m) => m.DashboardHomeComponent,
           ),
+        data: { shellLayout: SHELL_LAYOUT_PAGE_SCROLL },
       },
       {
         path: 'mushaf',

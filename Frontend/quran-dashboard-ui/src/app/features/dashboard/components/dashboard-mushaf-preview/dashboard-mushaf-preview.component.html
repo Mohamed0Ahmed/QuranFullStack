@@ -1,0 +1,46 @@
+<section class="dashboard-study" aria-labelledby="dashboard-mushaf-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-study__layout">
+    <div class="dashboard-study__copy">
+      <p class="dashboard-study__eyebrow">المصحف</p>
+      <h2 id="dashboard-mushaf-title" class="dashboard-study__title">{{ content().heading }}</h2>
+      <p class="dashboard-study__description">{{ content().description }}</p>
+      <a class="qd-btn qd-btn-primary dashboard-study__action" [routerLink]="mushafTarget()">
+        {{ content().actionLabel }}
+      </a>
+    </div>
+
+    <div class="dashboard-study__preview" aria-label="معاينة دراسة الآية">
+      <div class="dashboard-study__page" aria-hidden="true">
+        <span class="dashboard-study__page-label">موضع الآية</span>
+        <span class="dashboard-study__line dashboard-study__line--long"></span>
+        <span class="dashboard-study__line dashboard-study__line--medium"></span>
+        <span class="dashboard-study__line dashboard-study__line--short"></span>
+      </div>
+
+      <div class="dashboard-study__tabs" role="tablist" aria-label="أدوات دراسة الآية">
+        @for (tab of content().tabs; track tab.key) {
+          <button
+            type="button"
+            class="dashboard-study__tab"
+            role="tab"
+            [class.dashboard-study__tab--active]="activeTab() === tab.key"
+            [attr.aria-selected]="activeTab() === tab.key"
+            aria-controls="dashboard-study-panel"
+            (click)="selectTab(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </div>
+
+      <div
+        class="dashboard-study__panel"
+        role="tabpanel"
+        id="dashboard-study-panel"
+      >
+        <span class="dashboard-study__panel-label">{{ selectedTab().label }}</span>
+        <p>{{ selectedTab().description }}</p>
+      </div>
+    </div>
+  </div>
+</section>
