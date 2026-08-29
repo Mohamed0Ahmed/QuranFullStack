@@ -1,0 +1,25 @@
+<section class="dashboard-entry" aria-labelledby="dashboard-entry-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-entry__layout">
+    <div class="dashboard-entry__heading-group">
+      <p>من الآية إلى الباب</p>
+      <h2 id="dashboard-entry-title">{{ heading() }}</h2>
+    </div>
+
+    <ol class="dashboard-entry__list">
+      @for (item of items(); track item.label; let index = $index) {
+        <li>
+          <a class="dashboard-entry__link" [routerLink]="item.target">
+            <span class="dashboard-entry__number">{{ index + 1 }}</span>
+            <span class="dashboard-entry__copy">
+              <strong>{{ item.label }}</strong>
+              @if (item.description) {
+                <small>{{ item.description }}</small>
+              }
+            </span>
+            <span class="dashboard-entry__arrow" aria-hidden="true">←</span>
+          </a>
+        </li>
+      }
+    </ol>
+  </div>
+</section>

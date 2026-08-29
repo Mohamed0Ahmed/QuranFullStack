@@ -1,0 +1,41 @@
+<section class="dashboard-abwab" aria-labelledby="dashboard-abwab-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-abwab__layout">
+    <div class="dashboard-abwab__tree" aria-label="معاينة بناء الأبواب">
+      <div class="dashboard-abwab__root">قسم المنهج</div>
+      <div class="dashboard-abwab__branch">
+        <button
+          type="button"
+          class="dashboard-abwab__branch-toggle"
+          [attr.aria-expanded]="expanded()"
+          aria-controls="dashboard-abwab-children"
+          (click)="toggleBranch()"
+        >
+          <span aria-hidden="true">{{ expanded() ? '−' : '+' }}</span>
+          <strong>{{ content().branchLabel }}</strong>
+        </button>
+
+        @if (expanded()) {
+          <ul id="dashboard-abwab-children" class="dashboard-abwab__children">
+            @for (label of content().childLabels; track label) {
+              <li>{{ label }}</li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+
+    <div class="dashboard-abwab__copy">
+      <p class="dashboard-abwab__eyebrow">الأبواب</p>
+      <h2 id="dashboard-abwab-title" class="dashboard-abwab__title">{{ content().heading }}</h2>
+      <p class="dashboard-abwab__description">{{ content().description }}</p>
+      <div class="dashboard-abwab__actions">
+        <a class="qd-btn qd-btn-primary" [routerLink]="content().abwabAction.route">
+          {{ content().abwabAction.label }}
+        </a>
+        <a class="qd-btn qd-btn-secondary" [routerLink]="content().templatesAction.route">
+          {{ content().templatesAction.label }}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
