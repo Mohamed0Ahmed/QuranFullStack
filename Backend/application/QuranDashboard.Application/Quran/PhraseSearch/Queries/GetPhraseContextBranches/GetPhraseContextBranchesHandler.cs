@@ -13,7 +13,13 @@ public sealed class GetPhraseContextBranchesHandler(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (!parser.TryParseSelection(query.Resolution, query.Previous, query.Following, out var selection)
+        if (!parser.TryParseSelection(
+                query.Resolution,
+                query.Previous,
+                query.Following,
+                query.PreviousAlternatives,
+                query.FollowingAlternatives,
+                out var selection)
             || selection is null)
         {
             return new PhraseReadOutcome<PhraseContextBranchesResponse>.Invalid(PhraseRequestInvalidKind.Reference);

@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  untracked,
+} from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
@@ -7,12 +16,17 @@ import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/erro
 import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
+import { PhraseSimilarityLinkingActionsComponent } from '../../components/phrase-similarity-linking-actions/phrase-similarity-linking-actions.component';
 import { PhraseSimilarityListComponent } from '../../components/phrase-similarity-list/phrase-similarity-list.component';
 import { PhraseResolutionViewState } from '../../models/phrase-query.models';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
 import { isPhraseSimilarityResultSort } from '../../models/phrase-similarity.models';
 import { PhraseSimilarityFacade } from '../../state/phrase-similarity.facade';
 import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold';
+import {
+  PhraseSimilarityAyahSelectionStore,
+  phraseSimilarityResultSetKey,
+} from '../../state/phrase-similarity-ayah-selection.store';
 
 @Component({
   selector: 'qd-phrase-similarity-page',
@@ -20,6 +34,7 @@ import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold
   imports: [
     ExplorerPanelSkeletonComponent,
     PhraseQueryResolutionComponent,
+    PhraseSimilarityLinkingActionsComponent,
     PhraseSimilarityListComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,
@@ -32,6 +47,7 @@ import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold
 })
 export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(PhraseSimilarityFacade);
+  protected readonly ayahSelection = inject(PhraseSimilarityAyahSelectionStore);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly state = this.facade.state;
@@ -65,6 +81,21 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
     }
     return `تم تحميل ${state.totalAyahCount} آية في ${state.totalOccurrenceCount} موضعًا`;
   });
+
+  constructor() {
+    effect(() => {
+      const state = this.state();
+      const resultSetKey = phraseSimilarityResultSetKey(
+        state.route.build,
+        state.route.resolution,
+        this.facade.minimumMatchedWords(),
+      );
+      untracked(() => {
+        this.ayahSelection.synchronizeResultSet(resultSetKey);
+        this.ayahSelection.setTotalAyahCount(state.totalAyahCount);
+      });
+    });
+  }
 
   ngOnInit(): void {
     this.facade.bindToRoute(this.route);

@@ -12,6 +12,7 @@ export const PHRASE_REPETITIONS_URL_KEYS = {
   build: 'build',
   mode: 'mode',
   length: 'length',
+  query: 'q',
   sort: 'sort',
   page: 'page',
   phrase: 'phrase',
@@ -36,6 +37,7 @@ export function parsePhraseRepetitionsUrlState(
     params.get(PHRASE_REPETITIONS_URL_KEYS.length),
     DEFAULT_PHRASE_REPETITIONS_URL_STATE.length,
   );
+  const query = params.get(PHRASE_REPETITIONS_URL_KEYS.query)?.trim() ?? '';
   const sortResult = parseSort(params.get(PHRASE_REPETITIONS_URL_KEYS.sort));
   const pageResult = parsePositiveInteger(
     params.get(PHRASE_REPETITIONS_URL_KEYS.page),
@@ -51,6 +53,7 @@ export function parsePhraseRepetitionsUrlState(
     build: buildResult.value,
     mode: modeResult.value,
     length: lengthResult.value,
+    query,
     sort: sortResult.value,
     page: pageResult.value,
     phrase: phraseResult.value,
@@ -80,6 +83,7 @@ export function serializePhraseRepetitionsUrlState(state: PhraseRepetitionsUrlSt
     [PHRASE_REPETITIONS_URL_KEYS.build]: state.build,
     [PHRASE_REPETITIONS_URL_KEYS.mode]: state.mode,
     [PHRASE_REPETITIONS_URL_KEYS.length]: String(state.length),
+    [PHRASE_REPETITIONS_URL_KEYS.query]: state.query || null,
     [PHRASE_REPETITIONS_URL_KEYS.sort]: state.sort,
     [PHRASE_REPETITIONS_URL_KEYS.page]: String(state.page),
     [PHRASE_REPETITIONS_URL_KEYS.phrase]:
@@ -98,6 +102,7 @@ export function phraseRepetitionsRouteStateKey(state: PhraseRepetitionsUrlState)
     state.build,
     state.mode,
     state.length,
+    state.query,
     state.sort,
     state.page,
     state.phrase,

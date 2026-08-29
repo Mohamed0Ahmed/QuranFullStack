@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject
 import { ActivatedRoute } from '@angular/router';
 
 import { ExplorerPanelSkeletonComponent } from '../../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
+import { QdActionDirective } from '../../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/error-state.component';
 import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.component';
@@ -37,6 +38,7 @@ import { PhraseRepetitionsFacade } from '../../state/phrase-repetitions.facade';
     QdNoticeComponent,
     QdModalShellComponent,
     QdRefreshingIndicatorComponent,
+    QdActionDirective,
   ],
   templateUrl: './phrase-repetitions-page.component.html',
   styleUrl: './phrase-repetitions-page.component.scss',
@@ -118,6 +120,17 @@ export class PhraseRepetitionsPageComponent implements OnInit, OnDestroy {
     if (isPhraseRepetitionSort(value)) {
       this.facade.setSort(value);
     }
+  }
+
+  protected submitSearch(event: Event, query: string): void {
+    event.preventDefault();
+    this.facade.setQuery(query);
+  }
+
+  protected clearSearch(input: HTMLInputElement): void {
+    input.value = '';
+    this.facade.setQuery('');
+    input.focus();
   }
 
   protected onPageChange(page: number): void {

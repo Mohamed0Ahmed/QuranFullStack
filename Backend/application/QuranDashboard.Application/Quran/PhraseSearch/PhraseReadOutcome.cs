@@ -25,4 +25,5 @@ public enum PhraseRequestInvalidKind
     Sort,
     Threshold,
     MinimumMatchedWords,
+    Selection,
 }

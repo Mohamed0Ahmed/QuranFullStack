@@ -33,6 +33,13 @@ public sealed partial class EfPhraseContextReader(
             tokens);
     }
 
+    private PhraseResolvedQueryDto CreateResolvedQuery(
+        PhraseResolutionReference resolution,
+        IReadOnlyDictionary<int, string> tokenTexts) => new(
+        codec.EncodeResolution(resolution),
+        PhraseTextModeContract.CanonicalKey(resolution.Mode),
+        CreateExactTokens(resolution.ExactTokenIds, tokenTexts));
+
     private PhraseSelectedPathDto CreateSelectedPath(
         PhraseResolutionReference resolution,
         PhrasePathReference? path,
@@ -59,6 +66,32 @@ public sealed partial class EfPhraseContextReader(
             tokens,
             CreateSelectedPathSteps(path, side, tokens));
     }
+
+    private PhraseSelectedPathDto CreateSelectedPath(
+        PhrasePathReference? path,
+        PhraseContextSide side,
+        IReadOnlyDictionary<int, string> tokenTexts)
+    {
+        if (path is null)
+        {
+            return new PhraseSelectedPathDto(null, false, [], []);
+        }
+
+        var tokens = CreateExactTokens(path.SelectedExactTokenIds, tokenTexts);
+        return new PhraseSelectedPathDto(
+            codec.EncodePath(path),
+            path.EndsAtBoundary,
+            tokens,
+            CreateSelectedPathSteps(path, side, tokens));
+    }
+
+    private static IReadOnlyList<PhraseExactTokenDto> CreateExactTokens(
+        IEnumerable<int> exactTokenIds,
+        IReadOnlyDictionary<int, string> tokenTexts) => exactTokenIds
+        .Select(exactTokenId => tokenTexts.TryGetValue(exactTokenId, out var textUthmani)
+            ? new PhraseExactTokenDto(exactTokenId, textUthmani)
+            : throw new InvalidDataException("PhraseSearch context token has no canonical display text."))
+        .ToList();
 
     private IReadOnlyList<PhraseSelectedPathStepDto> CreateSelectedPathSteps(
         PhrasePathReference path,

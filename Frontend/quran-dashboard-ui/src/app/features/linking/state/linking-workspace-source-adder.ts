@@ -1,13 +1,17 @@
 import { Injectable, inject } from '@angular/core';
 
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import {
+  LinkingSourceLaunch,
+  LinkingSourceLaunchInput,
+  toLinkingSourceLaunch,
+} from '../models/linking-source-launch.models';
 import { LinkingWorkspaceAddResult } from '../models/linking-workspace-add.models';
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { LinkingAddFeedbackStore } from './linking-add-feedback.store';
 
 type CanMutate = () => boolean;
 type HasSource = (sourceKey: string) => boolean;
-type EnqueueSource = (source: LinkingSourceDescriptor) => Promise<void>;
+type EnqueueSource = (launch: LinkingSourceLaunch) => Promise<void>;
 
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkspaceSourceAdder {
@@ -23,18 +27,20 @@ export class LinkingWorkspaceSourceAdder {
     this.enqueueSource = enqueueSource;
   }
 
-  add(source: LinkingSourceDescriptor): LinkingWorkspaceAddResult | null {
+  add(input: LinkingSourceLaunchInput): LinkingWorkspaceAddResult | null {
     if (!this.canMutate?.() || this.hasSource === null || this.enqueueSource === null) {
       return null;
     }
 
+    const launch = toLinkingSourceLaunch(input);
+    const { source } = launch;
     const sourceKey = linkingSourceKey(source);
     const alreadyPresent = this.hasSource(sourceKey) || this.pendingSourceKeys.has(sourceKey);
     const status = alreadyPresent ? 'already-present' : 'added';
 
     if (!alreadyPresent) {
       this.pendingSourceKeys.add(sourceKey);
-      void this.enqueueSource(source).finally(() => this.pendingSourceKeys.delete(sourceKey));
+      void this.enqueueSource(launch).finally(() => this.pendingSourceKeys.delete(sourceKey));
     }
 
     this.feedback.show(status, source.label);

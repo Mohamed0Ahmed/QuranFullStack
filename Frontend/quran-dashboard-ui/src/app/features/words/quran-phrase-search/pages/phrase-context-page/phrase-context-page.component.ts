@@ -18,11 +18,17 @@ import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.compon
 import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseContextExplorerComponent } from '../../components/phrase-context-explorer/phrase-context-explorer.component';
+import { PhraseContextLinkingActionsComponent } from '../../components/phrase-context-linking-actions/phrase-context-linking-actions.component';
 import { PhraseContextOccurrenceListComponent } from '../../components/phrase-context-occurrence-list/phrase-context-occurrence-list.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
 import { PhraseResolutionCandidateDto } from '../../../../../core/api/generated/models/phrase-resolution-candidate-dto';
-import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
+import {
+  PhraseLoadStatus,
+  PhraseTextMode,
+  isPhraseTextMode,
+} from '../../models/phrase-repetitions.models';
 import { PhraseContextFacade } from '../../state/phrase-context.facade';
+import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
 
 const MINIMUM_WORKSPACE_BUSY_MS = 300;
 
@@ -32,6 +38,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
   imports: [
     ExplorerPanelSkeletonComponent,
     PhraseContextExplorerComponent,
+    PhraseContextLinkingActionsComponent,
     PhraseContextOccurrenceListComponent,
     PhraseQueryResolutionComponent,
     QdEmptyStateComponent,
@@ -46,6 +53,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
 })
 export class PhraseContextPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(PhraseContextFacade);
+  protected readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -67,13 +75,26 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     const status = this.state().resultsStatus;
     return status === 'loading' || status === 'refreshing';
   });
+  protected readonly workspaceRequestFailed = computed(() =>
+    isRequestFailure(this.state().branchesStatus),
+  );
+  protected readonly resultsRequestFailed = computed(() =>
+    isRequestFailure(this.state().resultsStatus),
+  );
   protected readonly resultFirstRowNumber = computed(() => {
     const state = this.state();
     return (state.resultsPage - 1) * state.resultsPageSize + 1;
   });
   protected readonly resultSetKey = computed(() => {
     const route = this.state().route;
-    return [route.resolution, route.before, route.after, route.contextsPage].join('|');
+    return [
+      route.resolution,
+      route.before,
+      route.after,
+      route.previousAlternatives,
+      route.followingAlternatives,
+      route.contextsPage,
+    ].join('|');
   });
   protected readonly workspaceInteractionBusy = computed(
     () => this.workspaceBusy() || this.minimumWorkspaceBusy(),
@@ -83,7 +104,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     if (!state.branches || (state.branchesStatus !== 'success' && state.branchesStatus !== 'refreshing')) {
       return '';
     }
-    return `تم تحديث جدول الآيات، الصفحة ${state.resultsPage}، ${state.occurrences.length} من ${state.occurrencesTotalCount} موضعًا`;
+    return `تم تحديث جدول الآيات، الصفحة ${state.resultsPage}، ${state.ayahs.length} صفوف من ${state.totalAyahCount} آية في ${state.totalOccurrenceCount} موضعًا، والمحدد ${this.ayahSelection.selectedCount()} آية`;
   });
 
   constructor() {
@@ -147,11 +168,43 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     }
   }
 
+  protected toggleAlternative(
+    side: 'previous' | 'following',
+    alternativeRef: string | null,
+  ): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
+    this.showWorkspaceBusy();
+    if (side === 'previous') {
+      this.facade.togglePreviousAlternative(alternativeRef);
+    } else {
+      this.facade.toggleFollowingAlternative(alternativeRef);
+    }
+  }
+
+  protected clearAlternatives(side: 'previous' | 'following'): void {
+    if (!this.state().workspaceDraftFresh) {
+      return;
+    }
+    this.showWorkspaceBusy();
+    if (side === 'previous') {
+      this.facade.clearPreviousAlternatives();
+    } else {
+      this.facade.clearFollowingAlternatives();
+    }
+  }
+
   protected changeResultsPage(page: number): void {
     if (!this.state().workspaceDraftFresh) {
       return;
     }
     this.facade.changeResultsPage(page);
+  }
+
+  protected toggleAllAyahs(event: Event): void {
+    const checked = event.target instanceof HTMLInputElement && event.target.checked;
+    checked ? this.ayahSelection.selectAll() : this.ayahSelection.clearAll();
   }
 
   private restoreFocus(pending: string, attempt: number): void {
@@ -163,11 +216,18 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     const options = this.host.nativeElement.querySelectorAll<HTMLButtonElement>(
       `${scope} .context-option`,
     );
+    const alternativeFocus = pending.endsWith('-alternative');
     const target = pending.endsWith('more')
       ? (this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-web__more`) ??
         options.item(options.length - 1))
-      : (options.item(0) ??
-        this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-path__item`));
+      : alternativeFocus
+        ? (this.host.nativeElement.querySelector<HTMLButtonElement>(
+            `${scope} .context-alternative-action[data-alternative-selected="true"]`,
+          ) ?? this.host.nativeElement.querySelector<HTMLButtonElement>(
+            `${scope} .context-alternative-action`,
+          ))
+        : (options.item(0) ??
+          this.host.nativeElement.querySelector<HTMLButtonElement>(`${scope} .context-path__item`));
     if (!target || target.disabled) {
       this.retryFocus(pending, attempt);
       return;
@@ -212,4 +272,12 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
       this.workspaceBusyTimer = undefined;
     }
   }
+}
+
+function isRequestFailure(status: PhraseLoadStatus): boolean {
+  return status === 'error' ||
+    status === 'rate-limited' ||
+    status === 'unavailable' ||
+    status === 'stale' ||
+    status === 'invalid';
 }

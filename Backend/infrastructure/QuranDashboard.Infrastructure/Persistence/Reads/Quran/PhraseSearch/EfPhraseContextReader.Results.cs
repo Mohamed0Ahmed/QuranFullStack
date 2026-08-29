@@ -42,19 +42,13 @@ public sealed partial class EfPhraseContextReader
         }
 
         var pageOffset = (long)(page - 1) * pageSize;
-        var loaded = await ReadOccurrencePageAsync(
+        var loaded = await ReadAyahPageAsync(
             snapshot.ActiveBuildId,
             variantId.Value,
             selection,
             pageOffset,
             pageSize,
             cancellationToken);
-        if (loaded.TotalCount == 0)
-        {
-            await snapshot.CompleteAsync(cancellationToken);
-            return new PhraseSearchReadResult<PhraseContextResultsResponse>.InvalidReference();
-        }
-
         var occurrences = await LoadContextOccurrencesAsync(
             loaded.Items,
             selection.Resolution,
@@ -63,9 +57,14 @@ public sealed partial class EfPhraseContextReader
             snapshot.ActiveBuildId,
             page,
             pageSize,
-            loaded.TotalCount,
+            loaded.TotalAyahCount,
+            loaded.TotalAyahCount,
+            loaded.TotalOccurrenceCount,
             loaded.Items
-                .Select(row => CreateContextOccurrence(occurrences[row.OccurrenceId]))
+                .GroupBy(row => row.AyahId)
+                .Select(group => CreateContextAyah(
+                    group.Select(row => occurrences[row.OccurrenceId]).ToList(),
+                    selection))
                 .ToList());
         await snapshot.CompleteAsync(cancellationToken);
         cache.Set(cacheKey, response, PhraseSearchCacheKeys.PageWeight(pageSize));

@@ -2,6 +2,7 @@ import { Injectable, computed, inject, signal } from '@angular/core';
 
 import { LinkingOperationSourceDraft } from '../models/linking-operation-draft.models';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
+import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import { LinkingSourcePageRequest } from '../models/linking-page.models';
 import {
   LinkingSourceDescriptor,
@@ -78,9 +79,9 @@ export class LinkingInlineSourceWorkflowController {
     this.stateSignal().draft?.manualLinkShape === 'grouped' && this.selectedCount() > 1,
   );
 
-  start(source: LinkingSourceDescriptor, operationGeneration: number): void {
+  start(launch: LinkingSourceLaunch, operationGeneration: number): void {
     this.stateSignal.set({
-      draft: createInlineLinkingDraft(source),
+      draft: createInlineLinkingDraft(launch),
       totalAyahCount: 0,
       displayedAyahCount: 0,
       viewTypeCode: null,

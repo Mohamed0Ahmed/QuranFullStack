@@ -10,7 +10,7 @@
   --context-web-hairline: var(--qd-accent-soft);
 
   display: grid;
-  grid-template-rows: 6rem var(--qd-control-md) minmax(0, 1fr) var(--qd-control-md);
+  grid-template-rows: 6rem auto minmax(0, 1fr) var(--qd-control-md);
   gap: var(--qd-space-2);
   block-size: 100%;
   min-inline-size: 0;
@@ -69,7 +69,12 @@
   font-size: var(--qd-type-meta);
 }
 
-.context-web__summary strong { color: var(--context-web-color); }
+.context-web__metric {
+  font-weight: 800;
+}
+
+.context-web__metric--words { color: var(--context-web-color); }
+
 .context-web__path {
   display: flex;
   align-items: center;
@@ -129,6 +134,10 @@
   text-align: center;
 }
 
+.context-options-table__action {
+  inline-size: 4rem;
+}
+
 .context-options-table__index {
   inline-size: 3.25rem;
   text-align: center;
@@ -156,10 +165,6 @@
   text-align: start;
 }
 
-.context-option:disabled {
-  cursor: wait;
-}
-
 .context-option--boundary {
   font-family: var(--qd-font-ui);
   font-size: var(--qd-type-caption);
@@ -174,15 +179,13 @@
 .context-web__footer {
   display: grid;
   place-items: center;
-  min-block-size: var(--qd-control-md);
 }
 
 .context-web__end { padding: var(--qd-space-4); color: var(--qd-ink-muted); text-align: center; }
-.context-web__more { justify-self: center; }
 
 @media (max-width: 767px) {
   .context-web {
-    grid-template-rows: 9rem var(--qd-control-md) minmax(0, 1fr) var(--qd-control-md);
+    grid-template-rows: 9rem auto minmax(0, 1fr) var(--qd-control-md);
   }
 
   .context-web__hub {
@@ -195,4 +198,9 @@
   .context-options-table__count {
     inline-size: 6rem;
   }
+
+  .context-options-table__action {
+    inline-size: 3.25rem;
+  }
+
 }

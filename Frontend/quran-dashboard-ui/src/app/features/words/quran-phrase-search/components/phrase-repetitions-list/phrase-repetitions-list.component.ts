@@ -23,6 +23,7 @@ export class PhraseRepetitionsListComponent {
   readonly activeBuildId = input.required<string>();
   readonly mode = input.required<string>();
   readonly wordCount = input.required<number>();
+  readonly query = input.required<string>();
   readonly sort = input.required<string>();
   readonly totalCount = input.required<number>();
   readonly page = input.required<number>();
@@ -44,6 +45,7 @@ export class PhraseRepetitionsListComponent {
       this.activeBuildId().toLowerCase(),
       this.mode(),
       this.wordCount(),
+      this.query(),
       this.sort(),
       this.pageSize(),
       this.page(),

@@ -5,9 +5,11 @@ import { catchError } from 'rxjs/operators';
 
 import { environment } from '../../../../environments/environment';
 import { LinkingWorkspaceResponse } from '../../../core/api/generated/models/linking-workspace-response';
+import { LinkingWorkspaceInitialConfigurationBody } from '../../../core/api/generated/models/linking-workspace-initial-configuration-body';
 import { LinkingWorkspaceSourceResponse } from '../../../core/api/generated/models/linking-workspace-source-response';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
+import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
   LinkingSelection,
@@ -35,12 +37,13 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
   }
 
   addSource(
-    descriptor: LinkingSourceDescriptor,
+    launch: LinkingSourceLaunch,
     workspaceVersion: number | null,
   ): Observable<LinkingWorkspaceSnapshot> {
     return this.request(
       this.http.post<ApiResponse<LinkingWorkspaceResponse>>(`${this.baseUrl}/sources`, {
-        descriptor: toLinkingSourceDescriptorBody(descriptor),
+        descriptor: toLinkingSourceDescriptorBody(launch.source),
+        initialConfiguration: toInitialConfigurationBody(launch.initialConfiguration),
         workspaceVersion,
       }),
     );
@@ -100,6 +103,22 @@ export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepositor
       catchError((error: unknown) => throwError(() => toWorkspaceError(error))),
     );
   }
+}
+
+function toInitialConfigurationBody(
+  configuration: LinkingSourceLaunch['initialConfiguration'],
+): LinkingWorkspaceInitialConfigurationBody | null {
+  if (configuration === null) {
+    return null;
+  }
+  return {
+    inclusionMode: configuration.inclusionMode === 'all-except' ? 'all_except' : 'only',
+    ayahOverrides: [...configuration.ayahOverrideIds],
+    selectedWords: configuration.selectedWords.map((word) => ({ ...word })),
+    automaticWordMatchesEnabled: configuration.automaticWordMatchesEnabled,
+    manualLinkShape: configuration.manualLinkShape,
+    descriptions: [],
+  };
 }
 
 function versionParams(workspaceVersion: number | null): HttpParams {

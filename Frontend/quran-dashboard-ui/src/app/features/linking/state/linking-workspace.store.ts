@@ -5,7 +5,7 @@ import { CurrentUserStore } from '../../../core/auth/current-user.store';
 import { HttpLinkingWorkspaceRepository } from '../data-access/http-linking-workspace.repository';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceLaunchInput } from '../models/linking-source-launch.models';
 import {
   LinkingRemovedWorkspaceItem,
   LinkingWorkspaceItem,
@@ -78,7 +78,7 @@ export class LinkingWorkspaceStore {
     this.sourceAdder.connect(
       () => this.canMutate(),
       (sourceKey) => this.findItem(sourceKey) !== null,
-      (source) => this.enqueue((version) => this.repository.addSource(source, version)),
+      (launch) => this.enqueue((version) => this.repository.addSource(launch, version)),
     );
     this.sync.connect({
       isCurrentActor: (actorSub, actorGeneration) => this.isCurrentActor(actorSub, actorGeneration),
@@ -163,7 +163,7 @@ export class LinkingWorkspaceStore {
     );
   }
 
-  addSource(source: LinkingSourceDescriptor): LinkingWorkspaceAddResult | null { return this.sourceAdder.add(source); }
+  addSource(source: LinkingSourceLaunchInput): LinkingWorkspaceAddResult | null { return this.sourceAdder.add(source); }
 
   checkSource(sourceKey: string): void {
     if (!this.canMutate() || this.findItem(sourceKey) === null) {

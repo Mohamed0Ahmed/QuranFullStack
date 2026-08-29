@@ -20,6 +20,11 @@ public interface IPhraseContextReader
         int pageSize,
         CancellationToken cancellationToken);
 
+    Task<PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>> GetLinkingSelectionAsync(
+        PhraseContextSelection selection,
+        PhraseContextLinkingSelection ayahSelection,
+        CancellationToken cancellationToken);
+
     Task<PhraseSearchReadResult<PhraseContextOccurrencesResponse>> GetOccurrencesAsync(
         PhraseFullContextReference context,
         PhraseCursorPage paging,

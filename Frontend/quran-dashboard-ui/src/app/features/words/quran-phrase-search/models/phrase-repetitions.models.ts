@@ -21,6 +21,7 @@ export interface PhraseRepetitionsUrlState {
   readonly build: string | null;
   readonly mode: PhraseTextMode;
   readonly length: number;
+  readonly query: string;
   readonly sort: PhraseRepetitionSort;
   readonly page: number;
   readonly phrase: number | null;
@@ -50,6 +51,7 @@ export const DEFAULT_PHRASE_REPETITIONS_URL_STATE: PhraseRepetitionsUrlState = {
   build: null,
   mode: 'simple',
   length: 2,
+  query: '',
   sort: 'occurrences',
   page: 1,
   phrase: null,
@@ -57,7 +59,6 @@ export const DEFAULT_PHRASE_REPETITIONS_URL_STATE: PhraseRepetitionsUrlState = {
 };
 
 export const PHRASE_REPETITIONS_PAGE_SIZE = 1000;
-export const PHRASE_OCCURRENCES_PAGE_SIZE = 25;
 
 export const PHRASE_REPETITION_SORT_OPTIONS: readonly {
   readonly value: PhraseRepetitionSort;

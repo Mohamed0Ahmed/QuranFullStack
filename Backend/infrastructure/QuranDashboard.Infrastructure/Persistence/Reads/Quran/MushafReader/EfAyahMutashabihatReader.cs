@@ -80,7 +80,11 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
             .AsNoTracking()
             .Where(word => ayahIds.Contains(word.AyahId) && !word.IsAyahMarker)
             .OrderBy(word => word.WordNumber)
-            .Select(word => new MutashabihatWordRow(word.AyahId, word.WordNumber, word.TextUthmani))
+            .Select(word => new MutashabihatWordRow(
+                word.Id,
+                word.AyahId,
+                word.WordNumber,
+                word.TextUthmani))
             .ToListAsync(ct);
 
         return words
@@ -148,6 +152,7 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         var ayah = ayahs[occurrence.AyahId];
 
         return new MutashabihatOccurrenceDto(
+            occurrence.AyahId,
             ayah.VerseKey,
             ayah.SurahNumber,
             ayah.Surah.NameArabic,
@@ -158,7 +163,8 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
             occurrence.AyahId == selectedAyahId,
             occurrence.IsRepresentative,
             ayah.TextUthmani,
-            DerivePhraseText(wordsByAyah, occurrence.AyahId, occurrence.WordFrom, occurrence.WordTo));
+            DerivePhraseText(wordsByAyah, occurrence.AyahId, occurrence.WordFrom, occurrence.WordTo),
+            MatchedQuranWordIds(wordsByAyah, occurrence.AyahId, occurrence.WordFrom, occurrence.WordTo));
     }
 
     private static string? DerivePhraseText(
@@ -185,7 +191,29 @@ public sealed class EfAyahMutashabihatReader(QuranDashboardDbContext db) : IAyah
         return string.Join(' ', selectedWords.Select(word => word.TextUthmani));
     }
 
+    private static IReadOnlyList<int> MatchedQuranWordIds(
+        IReadOnlyDictionary<int, IReadOnlyList<MutashabihatWordRow>> wordsByAyah,
+        int ayahId,
+        int wordFrom,
+        int wordTo)
+    {
+        if (!wordsByAyah.TryGetValue(ayahId, out var words))
+        {
+            return [];
+        }
+
+        var expectedCount = wordTo - wordFrom + 1;
+        var selectedWords = words
+            .Where(word => word.WordNumber >= wordFrom && word.WordNumber <= wordTo)
+            .ToList();
+
+        return selectedWords.Count == expectedCount
+            ? [.. selectedWords.Select(word => word.Id)]
+            : [];
+    }
+
     private sealed record MutashabihatWordRow(
+        int Id,
         int AyahId,
         int WordNumber,
         string TextUthmani);

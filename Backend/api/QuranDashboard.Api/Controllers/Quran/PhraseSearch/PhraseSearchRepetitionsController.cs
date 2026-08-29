@@ -19,6 +19,7 @@ public sealed class PhraseSearchRepetitionsController(
     public async Task<ActionResult<ApiResponse<PhraseRepetitionsPageResponse>>> GetRepetitions(
         [FromQuery] string? mode,
         [FromQuery(Name = "length")] int? wordCount,
+        [FromQuery] string? q64,
         [FromQuery] string? sort,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
@@ -48,7 +49,7 @@ public sealed class PhraseSearchRepetitionsController(
         }
 
         var outcome = await repetitionsHandler.HandleAsync(
-            new GetPhraseRepetitionsQuery(mode, wordCount, sort, page, pageSize),
+            new GetPhraseRepetitionsQuery(mode, wordCount, q64, sort, page, pageSize),
             cancellationToken);
 
         return outcome switch
@@ -70,6 +71,8 @@ public sealed class PhraseSearchRepetitionsController(
                 BadRequest(Failure<PhraseRepetitionsPageResponse>(
                     PhraseSearchApiMessages.InvalidLength,
                     PhraseSearchErrorCodes.InvalidLength)),
+            GetPhraseRepetitionsOutcome.InvalidQuery invalid =>
+                BadRequest(PhraseSearchApiFailure.Invalid<PhraseRepetitionsPageResponse>(invalid.Kind)),
             GetPhraseRepetitionsOutcome.InvalidSort =>
                 BadRequest(Failure<PhraseRepetitionsPageResponse>(
                     PhraseSearchApiMessages.InvalidSort,

@@ -26,6 +26,7 @@ export class PhraseRepetitionsApi {
   getRepetitions(
     mode: PhraseTextMode,
     length: number,
+    encodedQuery: string | null,
     sort: PhraseRepetitionSort,
     page: number,
     pageSize: number,
@@ -36,16 +37,17 @@ export class PhraseRepetitionsApi {
       .set('sort', sort)
       .set('page', page)
       .set('pageSize', pageSize);
+    const requestParams = encodedQuery === null ? params : params.set('q64', encodedQuery);
 
     return this.cache.buildScoped(
-      phraseSearchCacheKey('repetitions', mode, length, sort, page, pageSize),
+      phraseSearchCacheKey('repetitions', mode, length, encodedQuery, sort, page, pageSize),
       (etag) =>
         this.http.get<PhraseRepetitionsPageResponseApiResponse>(
           `${this.baseUrl}/repetitions`,
           {
             headers: phraseSearchConditionalHeaders(etag),
             observe: 'response',
-            params,
+            params: requestParams,
           },
         ),
     );

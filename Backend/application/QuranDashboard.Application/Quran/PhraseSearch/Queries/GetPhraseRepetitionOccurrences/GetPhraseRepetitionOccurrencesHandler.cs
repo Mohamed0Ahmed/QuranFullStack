@@ -20,7 +20,7 @@ public sealed class GetPhraseRepetitionOccurrencesHandler(IPhraseRepetitionsRead
         var pageSize = query.PageSize ?? PhraseSearchPaging.DefaultPageSize;
         if (page < PhraseSearchPaging.DefaultPage
             || pageSize <= 0
-            || pageSize > PhraseSearchPaging.MaximumPageSize)
+            || pageSize > PhraseSearchPaging.MaximumRepetitionOccurrencePageSize)
         {
             return new GetPhraseRepetitionOccurrencesOutcome.InvalidPaging();
         }

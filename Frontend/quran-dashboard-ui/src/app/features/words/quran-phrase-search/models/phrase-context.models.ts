@@ -1,5 +1,5 @@
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
-import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/models/phrase-context-occurrence-dto';
+import { PhraseContextAyahDto } from '../../../../core/api/generated/models/phrase-context-ayah-dto';
 import { PhraseSearchCapabilitiesResponse } from '../../../../core/api/generated/models/phrase-search-capabilities-response';
 
 import { PhraseLoadStatus, PhraseTextMode } from './phrase-repetitions.models';
@@ -12,6 +12,8 @@ export interface PhraseContextUrlState {
   readonly resolution: string | null;
   readonly before: string | null;
   readonly after: string | null;
+  readonly previousAlternatives: string | null;
+  readonly followingAlternatives: string | null;
   readonly contextsPage: number;
 }
 
@@ -33,10 +35,11 @@ export interface PhraseContextState {
   readonly previousOptions: PhraseContextBranchesResponse['previous']['options'];
   readonly followingOptions: PhraseContextBranchesResponse['following']['options'];
   readonly resultsStatus: PhraseLoadStatus;
-  readonly occurrences: readonly PhraseContextOccurrenceDto[];
+  readonly ayahs: readonly PhraseContextAyahDto[];
   readonly resultsPage: number;
   readonly resultsPageSize: number;
-  readonly occurrencesTotalCount: number;
+  readonly totalAyahCount: number;
+  readonly totalOccurrenceCount: number;
   readonly errorMessage: string;
   readonly notice: string;
   readonly sessionOnly: boolean;
@@ -46,6 +49,8 @@ export interface PhraseContextState {
 export type PhraseContextFocusTarget =
   | 'previous'
   | 'following'
+  | 'previous-alternative'
+  | 'following-alternative'
   | 'previous-more'
   | 'following-more';
 
@@ -56,8 +61,10 @@ export const DEFAULT_PHRASE_CONTEXT_URL_STATE: PhraseContextUrlState = {
   resolution: null,
   before: null,
   after: null,
+  previousAlternatives: null,
+  followingAlternatives: null,
   contextsPage: 1,
 };
 
-export const PHRASE_CONTEXT_BRANCH_PAGE_SIZE = 25;
+export const PHRASE_CONTEXT_BRANCH_PAGE_SIZE = 50;
 export const PHRASE_CONTEXT_RESULT_PAGE_SIZE = 200;

@@ -25,6 +25,8 @@ public sealed class PhraseSearchContextResultsController(
         [FromQuery] string? resolutionRef,
         [FromQuery] string? previousRef,
         [FromQuery] string? followingRef,
+        [FromQuery] string? previousAlternativesRef,
+        [FromQuery] string? followingAlternativesRef,
         [FromQuery] int? page,
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
@@ -45,7 +47,14 @@ public sealed class PhraseSearchContextResultsController(
         }
 
         var outcome = await handler.HandleAsync(
-            new GetPhraseContextResultsQuery(resolutionRef, previousRef, followingRef, page, pageSize),
+            new GetPhraseContextResultsQuery(
+                resolutionRef,
+                previousRef,
+                followingRef,
+                previousAlternativesRef,
+                followingAlternativesRef,
+                page,
+                pageSize),
             cancellationToken);
         return outcome switch
         {

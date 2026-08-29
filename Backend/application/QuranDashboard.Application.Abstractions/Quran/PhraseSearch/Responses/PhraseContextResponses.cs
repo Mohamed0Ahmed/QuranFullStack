@@ -39,7 +39,9 @@ public sealed record PhraseContextBranchOptionDto(
     string DisplayText,
     string? BoundaryKind,
     long PassesThroughCount,
-    long SideEndsHereCount);
+    long SideEndsHereCount,
+    bool IsAlternativeSelected,
+    string? AlternativeToggleRef);
 
 public sealed record PhraseContextGroupsResponse(
     Guid ActiveBuildId,
@@ -55,7 +57,9 @@ public sealed record PhraseContextResultsResponse(
     int Page,
     int PageSize,
     int TotalCount,
-    IReadOnlyList<PhraseContextOccurrenceDto> Items);
+    int TotalAyahCount,
+    int TotalOccurrenceCount,
+    IReadOnlyList<PhraseContextAyahDto> Items);
 
 public sealed record PhraseFullContextGroupDto(
     string ContextRef,
@@ -94,6 +98,18 @@ public sealed record PhraseContextOccurrenceDto(
     short StartWordNumber,
     short EndWordNumber,
     IReadOnlyList<PhraseAyahWordDto> Words,
+    PhraseContextHighlightsDto Highlights);
+
+public sealed record PhraseContextAyahDto(
+    int AyahId,
+    string VerseKey,
+    short SurahNumber,
+    string SurahNameArabic,
+    short AyahNumber,
+    short PageFrom,
+    short PageTo,
+    IReadOnlyList<PhraseAyahWordDto> Words,
+    int OccurrenceCount,
     PhraseContextHighlightsDto Highlights);
 
 public sealed record PhraseContextHighlightsDto(

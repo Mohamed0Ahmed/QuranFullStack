@@ -1,0 +1,25 @@
+<section
+  class="alternative-group qd-card qd-card--mini qd-flex qd-items-center qd-justify-between qd-gap-2"
+  [attr.aria-label]="side() === 'previous' ? 'مجموعة الكلمات السابقة' : 'مجموعة الكلمات اللاحقة'"
+>
+  <div class="alternative-group__chips qd-flex qd-items-center qd-gap-2" role="list">
+    @for (option of options(); track option.exactTokenId) {
+      <span class="alternative-group__chip qd-chip qd-chip--static qd-is-selected" role="listitem">
+        {{ option.displayText }}
+      </span>
+    }
+  </div>
+  <button
+    type="button"
+    class="qd-btn qd-btn-secondary qd-flex-fixed"
+    [disabled]="disabled()"
+    [attr.aria-label]="
+      side() === 'previous'
+        ? 'مسح كل الكلمات السابقة المختارة'
+        : 'مسح كل الكلمات اللاحقة المختارة'
+    "
+    (click)="cleared.emit()"
+  >
+    مسح الكل
+  </button>
+</section>

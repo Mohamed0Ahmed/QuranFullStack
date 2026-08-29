@@ -10,7 +10,6 @@ import { lastPageNumber } from '../../../../shared/ui/pagination/pagination-rang
 import { PhraseRepetitionsApi } from '../data-access/phrase-repetitions.api';
 import {
   DEFAULT_PHRASE_REPETITIONS_URL_STATE,
-  PHRASE_OCCURRENCES_PAGE_SIZE,
   PHRASE_REPETITIONS_PAGE_SIZE,
   ParsedPhraseRepetitionsUrlState,
   PhraseLoadStatus,
@@ -33,6 +32,7 @@ import {
   phraseRepetitionsRouteStateKey,
   serializePhraseRepetitionsUrlState,
 } from './phrase-repetitions-url-sync';
+import { encodePhraseQuery } from './phrase-query-encoding';
 
 const INVALID_URL_MESSAGE = 'رابط البحث غير صالح أو يحتوي على خيارات غير متاحة.';
 const INDEX_CHANGED_MESSAGE = 'تغير فهرس البحث، أعد اختيار النتيجة';
@@ -136,6 +136,15 @@ export class PhraseRepetitionsFacade {
     }
     this.startListTransition();
     this.navigate(updatePhraseListRoute(this._route(), this.currentBuildId(), { sort }));
+  }
+
+  setQuery(rawQuery: string): void {
+    const query = normalizeSearchQuery(rawQuery);
+    if (query === this._route().query) {
+      return;
+    }
+    this.startListTransition();
+    this.navigate(updatePhraseListRoute(this._route(), this.currentBuildId(), { query }));
   }
 
   setPage(page: number): void {
@@ -257,13 +266,21 @@ export class PhraseRepetitionsFacade {
       this.resetForBuildChange(capabilities.activeBuildId, true);
       return EMPTY;
     }
-    return forkJoin([this.loadRepetitions(route), this.loadOccurrences(route)]).pipe(
-      map(() => undefined),
-    );
+    return forkJoin([
+      this.loadRepetitions(route),
+      this.loadOccurrences(route, capabilities.maximumRepetitionOccurrencePageSize),
+    ]).pipe(map(() => undefined));
   }
 
   private loadRepetitions(route: PhraseRepetitionsUrlState): Observable<void> {
-    const requestKey = [route.build, route.mode, route.length, route.sort, route.page].join('|');
+    const requestKey = [
+      route.build,
+      route.mode,
+      route.length,
+      route.query,
+      route.sort,
+      route.page,
+    ].join('|');
     if (
       requestKey === this.listRequestKey &&
       (this._listStatus() === 'success' || this._listStatus() === 'empty')
@@ -276,6 +293,7 @@ export class PhraseRepetitionsFacade {
       .getRepetitions(
         route.mode,
         route.length,
+        route.query ? encodePhraseQuery(route.query) : null,
         route.sort,
         route.page,
         PHRASE_REPETITIONS_PAGE_SIZE,
@@ -326,7 +344,10 @@ export class PhraseRepetitionsFacade {
       );
   }
 
-  private loadOccurrences(route: PhraseRepetitionsUrlState): Observable<void> {
+  private loadOccurrences(
+    route: PhraseRepetitionsUrlState,
+    pageSize: number,
+  ): Observable<void> {
     if (route.phrase === null || route.build === null) {
       this.occurrencesRequestKey = null;
       this._occurrences.set(null);
@@ -334,7 +355,7 @@ export class PhraseRepetitionsFacade {
       return of(undefined);
     }
 
-    const requestKey = [route.build, route.phrase, route.occPage].join('|');
+    const requestKey = [route.build, route.phrase, route.occPage, pageSize].join('|');
     if (
       requestKey === this.occurrencesRequestKey &&
       (this._occurrencesStatus() === 'success' || this._occurrencesStatus() === 'empty')
@@ -348,7 +369,7 @@ export class PhraseRepetitionsFacade {
         route.build,
         route.phrase,
         route.occPage,
-        PHRASE_OCCURRENCES_PAGE_SIZE,
+        pageSize,
       )
       .pipe(
         tap((response) => {
@@ -494,6 +515,11 @@ function sameOccurrenceIdentity(
     previous.build === current.build &&
     previous.phrase === current.phrase &&
     previous.mode === current.mode &&
-    previous.length === current.length
+    previous.length === current.length &&
+    previous.query === current.query
   );
+}
+
+function normalizeSearchQuery(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
 }

@@ -12,6 +12,7 @@ export function toLinkingSourceDescriptorBody(
   source: LinkingSourceDescriptor,
 ): LinkingSourceDescriptorBody {
   const body: LinkingSourceDescriptorBody = {
+    contextKey: null,
     kind: source.kind,
     label: source.label,
     lemmaId: null,
@@ -29,6 +30,7 @@ export function toLinkingSourceDescriptorBody(
     case 'manual-mushaf-ayahs':
       return {
         ...body,
+        contextKey: source.contextKey,
         manualAyahs: manualMushafVerseKeys(source).map((verseKey) => ({ verseKey })),
       };
     case 'unique-word':
@@ -59,7 +61,7 @@ function toDescriptorCandidate(
   const label = body.label;
   switch (body.kind) {
     case 'manual-mushaf-ayahs':
-      return { kind: body.kind, label, manualAyahs };
+      return { kind: body.kind, label, manualAyahs, contextKey: body.contextKey };
     case 'unique-word':
       return {
         kind: body.kind,

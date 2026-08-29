@@ -126,6 +126,8 @@ export class PhraseContextQueryCoordinator {
       resolution: null,
       before: null,
       after: null,
+      previousAlternatives: null,
+      followingAlternatives: null,
       contextsPage: 1,
     });
   }

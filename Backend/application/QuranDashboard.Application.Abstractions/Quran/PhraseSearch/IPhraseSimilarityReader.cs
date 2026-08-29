@@ -13,6 +13,12 @@ public interface IPhraseSimilarityReader
         int pageSize,
         CancellationToken cancellationToken);
 
+    Task<PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>> GetLinkingSelectionAsync(
+        PhraseResolutionReference resolution,
+        short minimumMatchedWords,
+        PhraseSimilarityLinkingSelection selection,
+        CancellationToken cancellationToken);
+
     Task<PhraseSearchReadResult<PhraseSimilarityGroupsResponse>> GetGroupsAsync(
         PhraseTextMode mode,
         short wordCount,

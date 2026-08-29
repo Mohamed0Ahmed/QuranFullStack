@@ -4,6 +4,7 @@
 import { LinkingManualAyahBody } from '../models/linking-manual-ayah-body';
 import { LinkingWordTypeSelectionBody } from '../models/linking-word-type-selection-body';
 export interface LinkingSourceDescriptorBody {
+  contextKey: string | null;
   kind: string | null;
   label: string | null;
   lemmaId: number | null;

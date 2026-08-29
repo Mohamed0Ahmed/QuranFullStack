@@ -70,7 +70,10 @@
             (change)="onDifferences($any($event.target).value)"
           >
             @for (difference of manualDifferences(); track difference) {
-              <option [value]="difference">
+              <option
+                [value]="difference"
+                [selected]="difference === facade.maximumDifferences()"
+              >
                 {{ difference === 1 ? 'اختلاف واحد' : difference + ' اختلافات' }} كحد أقصى
               </option>
             }
@@ -146,6 +149,9 @@
           </div>
         </div>
       } @else if (state().queryPhrase; as queryPhrase) {
+        <qd-phrase-similarity-linking-actions
+          [disabled]="busy() || state().queryDraftPending || state().resultsStatus !== 'success'"
+        />
         <qd-phrase-similarity-list
           [items]="state().ayahs"
           [queryPhrase]="queryPhrase"

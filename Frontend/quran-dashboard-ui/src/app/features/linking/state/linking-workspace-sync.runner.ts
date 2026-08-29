@@ -7,6 +7,7 @@ import {
   LinkingWorkspaceStaleVersionError,
 } from '../data-access/linking-workspace.repository';
 import { LinkingDataStaleError } from '../models/linking-revision.models';
+import { createLinkingSourceLaunch } from '../models/linking-source-launch.models';
 import {
   LinkingRemovedWorkspaceItem,
   LinkingWorkspaceItem,
@@ -99,7 +100,10 @@ export class LinkingWorkspaceSyncRunner {
     this.enqueue(actorSub, actorGeneration, async (bindings) => {
       bindings.applySnapshot(
         await firstValueFrom(
-          this.repository.addSource(removed.item.source, bindings.workspaceVersion()),
+          this.repository.addSource(
+            createLinkingSourceLaunch(removed.item.source),
+            bindings.workspaceVersion(),
+          ),
         ),
       );
       await this.restoreConfiguration(bindings, removed);

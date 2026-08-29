@@ -108,6 +108,80 @@ internal sealed partial class PhraseSearchReferenceCodec
         }
     }
 
+    public string EncodeAlternative(PhraseContextAlternativeReference reference)
+    {
+        ArgumentNullException.ThrowIfNull(reference);
+        ValidateIdentity(reference.BuildId, reference.Mode, reference.QueryExactTokenIds);
+        ValidateTokens(reference.CommittedPathExactTokenIds, allowEmpty: true);
+        var alternativeTokenIds = CanonicalizeAlternativeTokenIds(reference.AlternativeExactTokenIds);
+        if (!Enum.IsDefined(reference.Side)
+            || reference.QueryExactTokenIds.Count + reference.CommittedPathExactTokenIds.Count
+                + alternativeTokenIds.Count
+                > PhraseSearchQueryLimits.MaximumResolvedTokens)
+        {
+            throw new ArgumentOutOfRangeException(nameof(reference));
+        }
+
+        return Encode(writer =>
+        {
+            writer.Write(FormatVersion);
+            writer.Write(AlternativeKind);
+            WriteGuid(writer, reference.BuildId);
+            writer.Write((byte)reference.Mode);
+            writer.Write((byte)reference.Side);
+            WriteTokenIds(writer, reference.QueryExactTokenIds);
+            WriteTokenIds(writer, reference.CommittedPathExactTokenIds);
+            WriteTokenIds(writer, alternativeTokenIds);
+        });
+    }
+
+    public bool TryDecodeAlternative(string? value, out PhraseContextAlternativeReference? reference)
+    {
+        reference = null;
+        if (!TryOpen(value, AlternativeKind, out var reader, out var stream))
+        {
+            return false;
+        }
+
+        using (reader)
+        using (stream)
+        {
+            try
+            {
+                var buildId = ReadGuid(reader);
+                var mode = ReadMode(reader);
+                var side = (PhraseContextSide)reader.ReadByte();
+                var query = ReadTokenIds(reader, PhraseSearchQueryLimits.MaximumResolvedTokens);
+                var committedPath = ReadTokenIds(
+                    reader,
+                    PhraseSearchQueryLimits.MaximumResolvedTokens,
+                    allowEmpty: true);
+                var alternatives = ReadTokenIds(reader, PhraseSearchQueryLimits.MaximumResolvedTokens);
+                if (!Enum.IsDefined(side)
+                    || query.Count + committedPath.Count + alternatives.Count
+                        > PhraseSearchQueryLimits.MaximumResolvedTokens
+                    || !IsCanonicalAlternativeTokenIds(alternatives)
+                    || !AtPayloadEnd(reader, stream))
+                {
+                    return false;
+                }
+
+                reference = new PhraseContextAlternativeReference(
+                    buildId,
+                    mode,
+                    side,
+                    query,
+                    committedPath,
+                    alternatives);
+                return true;
+            }
+            catch (Exception exception) when (exception is EndOfStreamException or InvalidDataException)
+            {
+                return false;
+            }
+        }
+    }
+
     public string EncodeFullContext(PhraseFullContextReference reference)
     {
         ValidateIdentity(reference.BuildId, reference.Mode, reference.QueryExactTokenIds);

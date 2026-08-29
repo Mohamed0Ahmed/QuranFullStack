@@ -84,19 +84,42 @@ export class PhraseContextActionCoordinator {
           const redirectPage = contextResultsRedirectPage(
             route.contextsPage,
             result.results.pageSize,
-            result.results.totalCount,
+            result.results.totalAyahCount,
           );
           if (redirectPage !== null) {
             hooks.navigate({ ...route, contextsPage: redirectPage }, true);
             return;
           }
           this.selection.replaceResults(result.results);
-          this.status.results.set(result.results.totalCount === 0 ? 'empty' : 'success');
+          this.status.results.set(result.results.totalAyahCount === 0 ? 'empty' : 'success');
         }),
         catchError((error: unknown) => this.fail(error, target, epoch, routeKey, hooks)),
       )
       .subscribe();
     this.gate.track(target, epoch, subscription);
+  }
+
+  updateAlternativeGroup(
+    route: PhraseContextUrlState,
+    side: 'previous' | 'following',
+    alternativeRef: string | null,
+    hooks: PhraseContextActionHooks,
+  ): void {
+    const currentRef = side === 'previous'
+      ? route.previousAlternatives
+      : route.followingAlternatives;
+    if (currentRef === alternativeRef) {
+      return;
+    }
+    this.selection.requestFocus(`${side}-alternative`);
+    this.status.branches.set('refreshing');
+    this.status.results.set('refreshing');
+    hooks.navigate({
+      ...route,
+      previousAlternatives: side === 'previous' ? alternativeRef : route.previousAlternatives,
+      followingAlternatives: side === 'following' ? alternativeRef : route.followingAlternatives,
+      contextsPage: 1,
+    }, false);
   }
 
   loadBranchPage(

@@ -9,4 +9,5 @@ public abstract record PhraseSearchReadResult<T>
     public sealed record BuildChanged : PhraseSearchReadResult<T>;
     public sealed record NotFound : PhraseSearchReadResult<T>;
     public sealed record InvalidReference : PhraseSearchReadResult<T>;
+    public sealed record InvalidSelection : PhraseSearchReadResult<T>;
 }

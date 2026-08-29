@@ -8,6 +8,8 @@ public interface IPhraseSearchReferenceCodec
     bool TryDecodeResolution(string? value, out PhraseResolutionReference? reference);
     string EncodePath(PhrasePathReference reference);
     bool TryDecodePath(string? value, out PhrasePathReference? reference);
+    string EncodeAlternative(PhraseContextAlternativeReference reference);
+    bool TryDecodeAlternative(string? value, out PhraseContextAlternativeReference? reference);
     string EncodeFullContext(PhraseFullContextReference reference);
     bool TryDecodeFullContext(string? value, out PhraseFullContextReference? reference);
     string EncodeCursor(PhraseCursorReference reference);
@@ -29,6 +31,14 @@ public sealed record PhrasePathReference(
     IReadOnlyList<int> SelectedExactTokenIds,
     bool EndsAtBoundary);
 
+public sealed record PhraseContextAlternativeReference(
+    Guid BuildId,
+    PhraseTextMode Mode,
+    PhraseContextSide Side,
+    IReadOnlyList<int> QueryExactTokenIds,
+    IReadOnlyList<int> CommittedPathExactTokenIds,
+    IReadOnlyList<int> AlternativeExactTokenIds);
+
 public sealed record PhraseFullContextReference(
     Guid BuildId,
     PhraseTextMode Mode,
@@ -45,7 +55,9 @@ public sealed record PhraseCursorReference(
 public sealed record PhraseContextSelection(
     PhraseResolutionReference Resolution,
     PhrasePathReference? Previous,
-    PhrasePathReference? Following);
+    PhrasePathReference? Following,
+    PhraseContextAlternativeReference? PreviousAlternatives = null,
+    PhraseContextAlternativeReference? FollowingAlternatives = null);
 
 public sealed record PhraseContextBranchPaging(
     int PreviousOffset,

@@ -10,6 +10,7 @@ export interface PhraseSearchCapabilitiesResponse {
   defaultRepetitionSort: string;
   exactReady: boolean;
   maximumPageSize: number;
+  maximumRepetitionOccurrencePageSize: number;
   maximumRepetitionPageSize: number;
   minimumSimilarityPercent: number;
   modes: Array<PhraseTextModeCapabilitiesDto>;

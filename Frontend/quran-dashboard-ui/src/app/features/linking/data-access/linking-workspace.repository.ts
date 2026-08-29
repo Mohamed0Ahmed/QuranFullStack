@@ -1,13 +1,13 @@
 import { Observable } from 'rxjs';
 
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import { LinkingWorkspaceSnapshot } from '../models/linking-workspace.models';
 export { LinkingDataStaleError } from '../models/linking-revision.models';
 
 export interface LinkingWorkspaceRepository {
   load(): Observable<LinkingWorkspaceSnapshot>;
   addSource(
-    descriptor: LinkingSourceDescriptor,
+    launch: LinkingSourceLaunch,
     workspaceVersion: number | null,
   ): Observable<LinkingWorkspaceSnapshot>;
   removeSource(sourceId: number, workspaceVersion: number | null): Observable<LinkingWorkspaceSnapshot>;

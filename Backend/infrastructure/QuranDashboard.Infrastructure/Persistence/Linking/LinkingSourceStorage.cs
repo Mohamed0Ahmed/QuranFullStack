@@ -76,7 +76,9 @@ internal static class LinkingSourceStorage
             LinkingSourceKind.WordType => new LinkingSourceDescriptor.WordType(
                 DecodeWordTypeSelection(source, scope), source.Label),
             LinkingSourceKind.ManualMushafAyahs => new LinkingSourceDescriptor.ManualMushafAyahs(
-                manualVerseKeys.Select(verseKey => new VerseKey(verseKey)), source.Label),
+                manualVerseKeys.Select(verseKey => new VerseKey(verseKey)),
+                source.Label,
+                scope.ContextKey),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(source), source.SourceKind, "Unknown linking source kind."),
         };
@@ -165,6 +167,10 @@ internal static class LinkingSourceStorage
             {
                 WordType = WordTypeScopeOf(source.Selection),
             },
+            LinkingSourceDescriptor.ManualMushafAyahs source => new LinkingSourceScopeDocument
+            {
+                ContextKey = source.ContextKey,
+            },
             _ => new LinkingSourceScopeDocument(),
         };
 
@@ -220,6 +226,8 @@ internal static class LinkingSourceStorage
         public string? TypeCode { get; init; }
 
         public IReadOnlyList<string>? TypeCodes { get; init; }
+
+        public string? ContextKey { get; init; }
 
         public LinkingWordTypeScopeDocument? WordType { get; init; }
     }

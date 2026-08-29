@@ -11,6 +11,9 @@ type StudyAyahResultTestIdKind = 'similar-ayah' | 'mutashabihat-occurrence';
   host: {
     class: 'study-ayah-result',
     '[class.study-ayah-result--selected]': 'selected()',
+    '[class.study-ayah-result--linking-selectable]': 'linkingSelectionEnabled()',
+    '[class.study-ayah-result--linking-selected]': 'linkingSelected()',
+    '(click)': 'onCardClick($event)',
   },
 })
 export class StudyAyahResultComponent {
@@ -22,9 +25,16 @@ export class StudyAyahResultComponent {
   readonly navigateLabel = input.required<string>();
   readonly testIdKind = input.required<StudyAyahResultTestIdKind>();
   readonly selected = input(false);
+  readonly linkingSelectionEnabled = input(false);
+  readonly linkingSelected = input(false);
+  readonly linkingSelectionLabel = input<string | null>(null);
+  readonly matchedWordFrom = input<number | null>(null);
+  readonly matchedWordTo = input<number | null>(null);
 
   readonly ayahNavigate = output<void>();
+  readonly linkingSelectionToggle = output<void>();
 
+  protected readonly textWords = computed(() => this.displayText().split(/\s+/u));
   protected readonly positionTestId = computed(() => `${this.testIdKind()}-index`);
   protected readonly referenceTestId = computed(() => `${this.testIdKind()}-reference`);
   protected readonly pageTestId = computed(() =>
@@ -36,4 +46,26 @@ export class StudyAyahResultComponent {
     () => `${this.testIdKind()}-selected-label`,
   );
   protected readonly textTestId = computed(() => `${this.testIdKind()}-text`);
+
+  protected isMatched(wordNumber: number): boolean {
+    const from = this.matchedWordFrom();
+    const to = this.matchedWordTo();
+    return from !== null && to !== null && wordNumber >= from && wordNumber <= to;
+  }
+
+  protected toggleLinkingSelection(): void {
+    this.linkingSelectionToggle.emit();
+  }
+
+  protected onCardClick(event: MouseEvent): void {
+    if (!this.linkingSelectionEnabled() || isNestedInteraction(event.target)) {
+      return;
+    }
+
+    this.toggleLinkingSelection();
+  }
+}
+
+function isNestedInteraction(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('button, input, a') !== null;
 }

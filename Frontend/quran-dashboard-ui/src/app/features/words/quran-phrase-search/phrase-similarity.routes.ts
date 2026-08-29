@@ -7,6 +7,8 @@ import { PhraseLongStateSessionStore } from './state/phrase-long-state-session.s
 import { PhraseNoticeStore } from './state/phrase-notice.store';
 import { PhraseRouteNavigationCoordinator } from './state/phrase-route-navigation.coordinator';
 import { PhraseSimilarityQueryCoordinator } from './state/phrase-similarity-query.coordinator';
+import { PhraseSimilarityAyahSelectionStore } from './state/phrase-similarity-ayah-selection.store';
+import { PhraseSimilarityLinkingCoordinator } from './state/phrase-similarity-linking.coordinator';
 import { PhraseSimilarityResolutionStore } from './state/phrase-similarity-resolution.store';
 import { PhraseSimilarityResultStore } from './state/phrase-similarity-result.store';
 import { PhraseSimilarityResultsLoader } from './state/phrase-similarity-results.loader';
@@ -23,6 +25,8 @@ export const PHRASE_SIMILARITY_ROUTES: Routes = [
       PhraseResolutionApi,
       PhraseSimilarityApi,
       PhraseSimilarityFacade,
+      PhraseSimilarityAyahSelectionStore,
+      PhraseSimilarityLinkingCoordinator,
       PhraseSimilarityQueryCoordinator,
       PhraseSimilarityResultStore,
       PhraseSimilarityResolutionStore,

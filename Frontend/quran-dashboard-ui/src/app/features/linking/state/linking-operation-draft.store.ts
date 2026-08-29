@@ -7,7 +7,7 @@ import {
   LinkingOperationDraft,
   LinkingOperationSourceDraft,
 } from '../models/linking-operation-draft.models';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import { LinkingWorkspaceItem } from '../models/linking-workspace.models';
 import { toLinkingSourceDescriptorBody } from '../utils/linking-source-descriptor-body';
 
@@ -94,7 +94,8 @@ export class LinkingOperationDraftStore {
   }
 }
 
-export function createInlineLinkingDraft(source: LinkingSourceDescriptor): LinkingOperationSourceDraft {
+export function createInlineLinkingDraft(launch: LinkingSourceLaunch): LinkingOperationSourceDraft {
+  const { initialConfiguration, source } = launch;
   const manual = source.kind === 'manual-mushaf-ayahs';
   return {
     sourceKey: `inline:${crypto.randomUUID()}`,
@@ -103,12 +104,46 @@ export function createInlineLinkingDraft(source: LinkingSourceDescriptor): Linki
     linkingDataRevision: 0,
     descriptor: source,
     label: source.label,
-    selection: { mode: 'all-except', ayahIds: [] },
-    selectedWordIdsByAyahId: {},
-    descriptions: [],
-    automaticWordMatchesEnabled: manual ? null : true,
-    manualLinkShape: manual ? 'independent' : null,
+    selection: initialConfiguration === null
+      ? { mode: 'all-except', ayahIds: [] }
+      : initialSelection(initialConfiguration),
+    selectedWordIdsByAyahId: initialConfiguration === null
+      ? {}
+      : initialSelectedWordIds(initialConfiguration.selectedWords),
+    descriptions: initialConfiguration === null ? [] : [...initialConfiguration.descriptions],
+    automaticWordMatchesEnabled: initialConfiguration === null
+      ? manual ? null : true
+      : initialConfiguration.automaticWordMatchesEnabled,
+    manualLinkShape: initialConfiguration === null
+      ? manual ? 'independent' : null
+      : initialConfiguration.manualLinkShape,
   };
+}
+
+function initialSelection(
+  configuration: NonNullable<LinkingSourceLaunch['initialConfiguration']>,
+): LinkingAyahIdSelection {
+  return {
+    mode: configuration.inclusionMode,
+    ayahIds: [...new Set(configuration.ayahOverrideIds)].sort((left, right) => left - right),
+  };
+}
+
+function initialSelectedWordIds(
+  selectedWords: NonNullable<LinkingSourceLaunch['initialConfiguration']>['selectedWords'],
+): Readonly<Record<number, readonly number[]>> {
+  const wordIdsByAyahId = new Map<number, Set<number>>();
+  for (const selectedWord of selectedWords) {
+    const wordIds = wordIdsByAyahId.get(selectedWord.ayahId) ?? new Set<number>();
+    wordIds.add(selectedWord.quranWordId);
+    wordIdsByAyahId.set(selectedWord.ayahId, wordIds);
+  }
+  return Object.fromEntries(
+    [...wordIdsByAyahId].map(([ayahId, wordIds]) => [
+      ayahId,
+      [...wordIds].sort((left, right) => left - right),
+    ]),
+  );
 }
 
 export function toInlinePreparedSource(

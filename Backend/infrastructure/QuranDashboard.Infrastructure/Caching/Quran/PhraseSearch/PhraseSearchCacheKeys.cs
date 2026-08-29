@@ -9,10 +9,16 @@ public static class PhraseSearchCacheKeys
         Guid buildId,
         PhraseTextMode mode,
         short wordCount,
+        IReadOnlyList<string> searchTerms,
         PhraseRepetitionSort sort,
         int page,
-        int pageSize) =>
-        $"phrase-search:{buildId:N}:repetitions:{(short)mode}:{wordCount}:{(short)sort}:p{page}:s{pageSize}";
+        int pageSize)
+    {
+        var searchKey = searchTerms.Count == 0
+            ? "all"
+            : Hash(searchTerms.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        return $"phrase-search:{buildId:N}:repetitions:{(short)mode}:{wordCount}:q{searchKey}:{(short)sort}:p{page}:s{pageSize}";
+    }
 
     public static string RepetitionOccurrences(
         Guid buildId,
@@ -99,7 +105,9 @@ public static class PhraseSearchCacheKeys
     private static IEnumerable<string> SelectionParts(PhraseContextSelection selection) =>
         ResolutionParts(selection.Resolution)
             .Concat(PathParts(selection.Previous))
-            .Concat(PathParts(selection.Following));
+            .Concat(PathParts(selection.Following))
+            .Concat(AlternativeParts(selection.PreviousAlternatives))
+            .Concat(AlternativeParts(selection.FollowingAlternatives));
 
     private static IEnumerable<string> ContextParts(PhraseFullContextReference context) =>
         new[]
@@ -127,6 +135,18 @@ public static class PhraseSearchCacheKeys
             Join(path.QueryExactTokenIds),
             Join(path.SelectedExactTokenIds),
             path.EndsAtBoundary ? "boundary" : "open",
+        ];
+
+    private static IEnumerable<string> AlternativeParts(PhraseContextAlternativeReference? alternatives) => alternatives is null
+        ? ["none"]
+        :
+        [
+            alternatives.BuildId.ToString("N", CultureInfo.InvariantCulture),
+            ((short)alternatives.Mode).ToString(CultureInfo.InvariantCulture),
+            ((short)alternatives.Side).ToString(CultureInfo.InvariantCulture),
+            Join(alternatives.QueryExactTokenIds),
+            Join(alternatives.CommittedPathExactTokenIds),
+            Join(alternatives.AlternativeExactTokenIds.Order().Distinct()),
         ];
 
     private static string Join(IEnumerable<int> values) => string.Join(',', values);

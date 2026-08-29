@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .mutashabihat-groups-card {
   &__groups {
     display: flex;
@@ -11,11 +13,43 @@
     gap: var(--qd-space-3);
   }
 
-  &__group-header {
+  &__selection-toolbar {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+  }
+
+  &__selection-summary {
+    margin: 0;
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  &__selection-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--qd-space-2);
+  }
+
+  &__group-header {
+    display: grid;
+    grid-template-columns: var(--qd-hit-target-min) minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--qd-space-3);
+    text-align: center;
+  }
+
+  &__group-copy {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    min-inline-size: 0;
     flex-direction: column;
     gap: var(--qd-space-2);
-    text-align: center;
   }
 
   &__group-title {
@@ -25,6 +59,16 @@
     font-weight: 700;
     line-height: 2;
     color: var(--qd-text);
+  }
+
+  &__group-selection {
+    grid-column: 1;
+    grid-row: 1;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-inline-size: var(--qd-hit-target-min);
+    min-block-size: var(--qd-hit-target-min);
   }
 
   &__phrase {
@@ -53,8 +97,27 @@
   }
 
   &__expand-toggle {
-    align-self: center;
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    inline-size: 8rem;
     font-size: 0.8125rem;
+  }
+
+  &__linking-actions {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: var(--qd-space-2);
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    margin-block-start: var(--qd-space-4);
+    margin-inline-end: auto;
+    padding: var(--qd-space-2);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-layer);
   }
 
   &__group--skeleton .qd-skeleton {
@@ -72,8 +135,21 @@
   }
 
   &__toggle-skeleton {
+    grid-column: 3;
+    grid-row: 1;
     --qd-skeleton-w: 8rem;
-    align-self: center;
+    align-self: start;
+    justify-self: end;
     min-block-size: var(--qd-control-sm);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .mutashabihat-groups-card__selection-controls {
+    inline-size: 100%;
+  }
+
+  .mutashabihat-groups-card__selection-controls .qd-action {
+    flex: 1 1 auto;
   }
 }

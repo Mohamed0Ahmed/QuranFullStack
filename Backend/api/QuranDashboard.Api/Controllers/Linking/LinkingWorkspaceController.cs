@@ -53,10 +53,26 @@ public sealed class LinkingWorkspaceController(
                 ApiMessages.LinkingDescriptorViolationMessage(violation)));
         }
 
+        LinkingWorkspaceConfigurationInput? initialConfiguration = null;
+        if (body!.InitialConfiguration is not null
+            && !LinkingWorkspaceConfigurationBodyMapper.TryMapInitial(
+                body.InitialConfiguration,
+                descriptor.Label,
+                out initialConfiguration,
+                out violation))
+        {
+            return BadRequest(ApiResponse<LinkingWorkspaceResponse>.Fail(
+                ApiMessages.LinkingDescriptorViolationMessage(violation)));
+        }
+
         var userId = await ResolveUserIdAsync();
 
         var outcome = await addHandler.HandleAsync(
-            new AddLinkingWorkspaceSourceCommand(userId, descriptor, body!.WorkspaceVersion),
+            new AddLinkingWorkspaceSourceCommand(
+                userId,
+                descriptor,
+                initialConfiguration,
+                body.WorkspaceVersion),
             cancellationToken);
 
         return Respond(outcome, ApiMessages.LinkingWorkspaceSourceAdded);

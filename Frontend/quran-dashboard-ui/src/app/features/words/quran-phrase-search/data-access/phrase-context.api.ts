@@ -3,7 +3,9 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { PhraseContextBranchesResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-branches-response-api-response';
+import { PhraseContextLinkingSelectionResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-linking-selection-response-api-response';
 import { PhraseContextResultsResponseApiResponse } from '../../../../core/api/generated/models/phrase-context-results-response-api-response';
+import { PhraseSearchContextLinkingSelectionBody } from '../../../../core/api/generated/models/phrase-search-context-linking-selection-body';
 import { environment } from '../../../../../environments/environment';
 import { PhraseSearchCache, phraseSearchCacheKey } from '../state/phrase-search-cache';
 import { phraseSearchConditionalHeaders } from './phrase-search-conditional-request';
@@ -18,6 +20,8 @@ export class PhraseContextApi {
     resolutionRef: string,
     previousRef: string | null,
     followingRef: string | null,
+    previousAlternativesRef: string | null,
+    followingAlternativesRef: string | null,
     previousCursor: string | null,
     followingCursor: string | null,
     pageSize: number,
@@ -28,6 +32,8 @@ export class PhraseContextApi {
       .set('followingPageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'previousAlternativesRef', previousAlternativesRef);
+    params = setOptional(params, 'followingAlternativesRef', followingAlternativesRef);
     params = setOptional(params, 'previousCursor', previousCursor);
     params = setOptional(params, 'followingCursor', followingCursor);
     return this.cache.buildScoped(
@@ -36,6 +42,8 @@ export class PhraseContextApi {
         resolutionRef,
         previousRef,
         followingRef,
+        previousAlternativesRef,
+        followingAlternativesRef,
         previousCursor,
         followingCursor,
         pageSize,
@@ -56,6 +64,8 @@ export class PhraseContextApi {
     resolutionRef: string,
     previousRef: string | null,
     followingRef: string | null,
+    previousAlternativesRef: string | null,
+    followingAlternativesRef: string | null,
     page: number,
     pageSize: number,
   ): Observable<PhraseContextResultsResponseApiResponse> {
@@ -65,12 +75,16 @@ export class PhraseContextApi {
       .set('pageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'previousAlternativesRef', previousAlternativesRef);
+    params = setOptional(params, 'followingAlternativesRef', followingAlternativesRef);
     return this.cache.buildScoped(
       phraseSearchCacheKey(
         'context-results',
         resolutionRef,
         previousRef,
         followingRef,
+        previousAlternativesRef,
+        followingAlternativesRef,
         page,
         pageSize,
       ),
@@ -80,6 +94,15 @@ export class PhraseContextApi {
           observe: 'response',
           params,
         }),
+    );
+  }
+
+  resolveLinkingSelection(
+    request: PhraseSearchContextLinkingSelectionBody,
+  ): Observable<PhraseContextLinkingSelectionResponseApiResponse> {
+    return this.http.post<PhraseContextLinkingSelectionResponseApiResponse>(
+      `${this.baseUrl}/linking-selection`,
+      request,
     );
   }
 }

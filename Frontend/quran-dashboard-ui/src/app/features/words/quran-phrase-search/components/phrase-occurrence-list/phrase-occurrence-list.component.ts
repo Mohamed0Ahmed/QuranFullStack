@@ -13,6 +13,8 @@ import {
   QdResultListDirective,
 } from '../../../../../shared/ui/result-list/result-list.directive';
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
+import { QuranSourceLinkingActionsComponent } from '../../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
+import { createPhraseRepetitionLinkingLaunch } from '../../utils/phrase-repetition-linking-source';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
 interface PhraseOccurrenceRow {
@@ -28,6 +30,7 @@ interface PhraseOccurrenceRow {
     DetailOverlayAyahLinkDirective,
     PaginationComponent,
     PhraseHighlightedAyahComponent,
+    QuranSourceLinkingActionsComponent,
     QdResultItemDirective,
     QdResultListDirective,
   ],
@@ -55,6 +58,9 @@ export class PhraseOccurrenceListComponent {
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
       };
     }),
+  );
+  protected readonly linkingLaunch = computed(() =>
+    createPhraseRepetitionLinkingLaunch(this.response()),
   );
 
   protected position(index: number): number {

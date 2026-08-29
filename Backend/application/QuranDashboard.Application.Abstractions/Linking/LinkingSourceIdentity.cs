@@ -30,7 +30,7 @@ public static class LinkingSourceIdentity
                 DimensionIdentity(source.Kind, source.StemId, source.TypeCodes),
             LinkingSourceDescriptor.WordType source => WordTypeIdentity(source),
             LinkingSourceDescriptor.ManualMushafAyahs source =>
-                Join([KindToken(source.Kind), .. source.VerseKeys.Select(verseKey => verseKey.Value)]),
+                ManualMushafAyahsIdentity(source),
             _ => throw new ArgumentOutOfRangeException(
                 nameof(descriptor),
                 descriptor.Kind,
@@ -76,6 +76,16 @@ public static class LinkingSourceIdentity
                 "Unknown word type selection kind."),
         };
     }
+
+    private static string ManualMushafAyahsIdentity(LinkingSourceDescriptor.ManualMushafAyahs source) =>
+        source.ContextKey is null
+            ? Join([KindToken(source.Kind), .. source.VerseKeys.Select(verseKey => verseKey.Value)])
+            : Join([
+                KindToken(source.Kind),
+                "context",
+                source.ContextKey,
+                .. source.VerseKeys.Select(verseKey => verseKey.Value),
+            ]);
 
     private static string DimensionIdentity(
         LinkingSourceKind kind,
