@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, effect, input, output, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  viewChild,
+} from '@angular/core';
 
 import { PhraseSimilarityAyahDto } from '../../../../../core/api/generated/models/phrase-similarity-ayah-dto';
 import { PhraseSimilarityPhraseDto } from '../../../../../core/api/generated/models/phrase-similarity-phrase-dto';
@@ -10,6 +19,7 @@ import { QdDataTableComponent } from '../../../../../shared/ui/data-table/data-t
 import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
 import { PHRASE_SIMILARITY_AYAH_PAGE_SIZE } from '../../models/phrase-similarity.models';
+import { PhraseSimilarityAyahSelectionStore } from '../../state/phrase-similarity-ayah-selection.store';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
 interface SimilarityAyahRow {
@@ -40,6 +50,8 @@ const matchPercentFormatter = new Intl.NumberFormat('en-US', {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseSimilarityListComponent {
+  protected readonly selection = inject(PhraseSimilarityAyahSelectionStore);
+
   readonly items = input.required<readonly PhraseSimilarityAyahDto[]>();
   readonly queryPhrase = input.required<PhraseSimilarityPhraseDto>();
   readonly totalAyahCount = input.required<number>();
@@ -54,6 +66,8 @@ export class PhraseSimilarityListComponent {
   protected readonly rowHeight = ROW_HEIGHT;
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly rowIdentity = (row: SimilarityAyahRow): number => row.ayah.ayahId;
+  protected readonly isRowSelected = (row: SimilarityAyahRow): boolean =>
+    this.selection.isSelected(row.ayah.ayahId);
   protected readonly rows = computed<readonly SimilarityAyahRow[]>(() =>
     this.items().map((ayah) => ({
       ayah,
@@ -88,6 +102,24 @@ export class PhraseSimilarityListComponent {
       ? 'اختلاف واحد'
       : `${ayah.minimumDifferenceCount} اختلافات`;
   }
+
+  protected toggleAll(event: Event): void {
+    const checked = checkboxValue(event);
+    checked ? this.selection.selectAll() : this.selection.clearAll();
+  }
+
+  protected toggleAyah(event: Event, ayahId: number): void {
+    this.selection.setSelected(ayahId, checkboxValue(event));
+  }
+
+  protected toggleRow(row: SimilarityAyahRow): void {
+    const ayahId = row.ayah.ayahId;
+    this.selection.setSelected(ayahId, !this.selection.isSelected(ayahId));
+  }
+}
+
+function checkboxValue(event: Event): boolean {
+  return event.target instanceof HTMLInputElement && event.target.checked;
 }
 
 function target(ayah: PhraseSimilarityAyahDto): DetailOverlayBaseTarget {

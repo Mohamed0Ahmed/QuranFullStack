@@ -1,3 +1,5 @@
+@use '../../../../../../styles/breakpoints' as bp;
+
 :host {
   display: block;
   min-inline-size: 0;
@@ -38,12 +40,24 @@
 
 .similarity-ayahs__counts {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--qd-space-1);
 }
 
 .similarity-ayahs__counts strong {
   color: var(--qd-green-text);
+}
+
+.similarity-ayahs__selected-count {
+  color: var(--qd-green-text) !important;
+}
+
+.similarity-ayahs__compact-select-all {
+  grid-column: 1 / -1;
+  inline-size: fit-content;
+  color: var(--qd-ink-muted);
+  cursor: pointer;
 }
 
 .similarity-ayahs__counts span,
@@ -81,6 +95,7 @@
 .similarity-ayahs__table {
   --qd-explorer-table-body-height: min(74vh, 40rem);
   --qd-data-table-columns:
+    minmax(2.75rem, 0.24fr)
     minmax(2.5rem, 0.2fr)
     minmax(7rem, 0.65fr)
     minmax(24rem, 3.6fr)
@@ -103,6 +118,16 @@
   font-size: var(--qd-type-meta);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.similarity-ayahs__cell--selection {
+  justify-content: center;
+  padding-inline: var(--qd-space-1);
+}
+
+.similarity-ayahs__cell.qd-explorer-table__cell:not(.similarity-ayahs__ayah),
+.similarity-ayahs__compact {
+  cursor: pointer;
 }
 
 .similarity-ayahs__location,
@@ -152,7 +177,7 @@
 
 .similarity-ayahs__compact {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
   gap: var(--qd-space-1) var(--qd-space-2);
   align-content: center;
   min-block-size: 100%;
@@ -176,4 +201,10 @@
 
 .similarity-ayahs__compact .similarity-ayahs__ayah-link {
   grid-column: 1 / -1;
+}
+
+@media (min-width: bp.$qd-bp-medium-min) {
+  .similarity-ayahs__compact-select-all {
+    display: none;
+  }
 }
