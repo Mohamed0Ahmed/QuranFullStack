@@ -1,0 +1,177 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.dashboard-study {
+  padding-block: var(--qd-s-64);
+  background: var(--qd-bg-page);
+}
+
+.dashboard-study__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.84fr) minmax(0, 1.16fr);
+  align-items: center;
+  gap: clamp(var(--qd-space-6), 6vw, var(--qd-s-64));
+}
+
+.dashboard-study__copy,
+.dashboard-study__preview {
+  min-inline-size: 0;
+}
+
+.dashboard-study__copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--qd-space-4);
+}
+
+.dashboard-study__eyebrow,
+.dashboard-study__title,
+.dashboard-study__description,
+.dashboard-study__panel p {
+  margin: 0;
+}
+
+.dashboard-study__eyebrow,
+.dashboard-study__panel-label {
+  color: var(--qd-accent-text);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  font-weight: 600;
+}
+
+.dashboard-study__title {
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h1);
+  line-height: var(--qd-type-h1-lh);
+  color: var(--qd-ink);
+  text-wrap: balance;
+}
+
+.dashboard-study__description {
+  max-inline-size: 58ch;
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body-lg);
+  line-height: var(--qd-type-body-lg-lh);
+}
+
+.dashboard-study__action {
+  min-block-size: var(--qd-hit-target-min);
+  margin-block-start: var(--qd-space-2);
+  text-decoration: none;
+}
+
+.dashboard-study__preview {
+  padding: var(--qd-space-4);
+  border: var(--qd-hairline-strong);
+  border-radius: var(--qd-radius-lg);
+  background: var(--qd-surface);
+}
+
+.dashboard-study__page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--qd-space-3);
+  min-block-size: 10.5rem;
+  padding: var(--qd-space-5);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-ayah-card-bg);
+}
+
+.dashboard-study__page-label {
+  align-self: flex-start;
+  color: var(--qd-ink-muted);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-caption);
+}
+
+.dashboard-study__line {
+  display: block;
+  block-size: 0.75rem;
+  border-radius: var(--qd-radius-pill);
+  background: color-mix(in oklch, var(--qd-ink) 18%, transparent);
+}
+
+.dashboard-study__line--long {
+  inline-size: 92%;
+}
+
+.dashboard-study__line--medium {
+  inline-size: 74%;
+}
+
+.dashboard-study__line--short {
+  inline-size: 48%;
+  background: color-mix(in oklch, var(--qd-accent) 34%, transparent);
+}
+
+.dashboard-study__tabs {
+  display: flex;
+  gap: var(--qd-space-1);
+  margin-block: var(--qd-space-3);
+  overflow-x: auto;
+}
+
+.dashboard-study__tab {
+  flex: 1 0 auto;
+  min-block-size: var(--qd-hit-target-min);
+  padding-inline: var(--qd-space-3);
+  border: 0;
+  border-radius: var(--qd-radius-sm);
+  background: transparent;
+  color: var(--qd-ink-muted);
+  font: 500 var(--qd-type-meta) / var(--qd-type-meta-lh) var(--qd-font-ui);
+  cursor: pointer;
+  transition: background-color var(--qd-t-state), color var(--qd-t-state);
+}
+
+.dashboard-study__tab:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-ink);
+}
+
+.dashboard-study__tab:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.dashboard-study__tab--active {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.dashboard-study__panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-block-size: 7.5rem;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-4);
+  border-block-start: var(--qd-hairline);
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+  line-height: var(--qd-type-body-lh);
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .dashboard-study__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .dashboard-study {
+    padding-block: var(--qd-s-48);
+  }
+
+  .dashboard-study__preview,
+  .dashboard-study__page {
+    padding: var(--qd-space-3);
+  }
+}

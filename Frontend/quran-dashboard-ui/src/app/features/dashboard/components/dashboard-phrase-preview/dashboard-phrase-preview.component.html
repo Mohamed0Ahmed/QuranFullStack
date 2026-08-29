@@ -1,0 +1,48 @@
+<section class="dashboard-phrases" aria-labelledby="dashboard-phrases-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-phrases__layout">
+    <div class="dashboard-phrases__copy">
+      <p class="dashboard-phrases__eyebrow">البحث في القرآن</p>
+      <h2 id="dashboard-phrases-title" class="dashboard-phrases__title">
+        {{ content().heading }}
+      </h2>
+      <p class="dashboard-phrases__description">{{ content().description }}</p>
+    </div>
+
+    <div class="dashboard-phrases__explorer">
+      <div class="dashboard-phrases__tabs" role="tablist" aria-label="أدوات البحث في العبارات">
+        @for (tab of content().tabs; track tab.key) {
+          <button
+            type="button"
+            class="dashboard-phrases__tab"
+            role="tab"
+            [class.dashboard-phrases__tab--active]="activeTab() === tab.key"
+            [attr.aria-selected]="activeTab() === tab.key"
+            aria-controls="dashboard-phrase-panel"
+            (click)="selectTab(tab.key)"
+          >
+            {{ tab.label }}
+          </button>
+        }
+      </div>
+
+      <div
+        class="dashboard-phrases__panel"
+        role="tabpanel"
+        id="dashboard-phrase-panel"
+      >
+        <div class="dashboard-phrases__tokens" aria-label="مراحل الأداة">
+          @for (token of selectedTab().tokens; track $index; let last = $last) {
+            <span>{{ token }}</span>
+            @if (!last) {
+              <b aria-hidden="true">+</b>
+            }
+          }
+        </div>
+        <p>{{ selectedTab().description }}</p>
+        <a class="qd-btn qd-btn-primary" [routerLink]="selectedTab().route">
+          افتح {{ selectedTab().label }}
+        </a>
+      </div>
+    </div>
+  </div>
+</section>

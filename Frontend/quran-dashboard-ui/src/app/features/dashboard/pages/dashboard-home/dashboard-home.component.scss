@@ -1,47 +1,47 @@
-@use '../../../../../styles/breakpoints' as bp;
-
-.dashboard-card {
+:host {
   display: block;
-  text-decoration: none;
+  overflow-x: clip;
 }
 
-@media (min-width: bp.$qd-bp-wide-min) {
-  .dashboard-cards {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
-
-  .dashboard-cards > * {
-    grid-column: span 2;
-  }
-
-  .dashboard-cards > :nth-child(n + 4) {
-    grid-column: span 3;
-  }
+:host-context([data-theme='dark']) {
+  --qd-ink-body: var(--qd-text);
+  --qd-neutral-tint: var(--qd-surface);
 }
 
-.app-meta,
-.app-meta-skeleton,
-.app-meta-error {
-  margin-block-start: var(--qd-space-2);
-}
+.dashboard-section-motion {
+  --dashboard-section-offset-x: 0;
+  --dashboard-section-offset-y: 2rem;
 
-.app-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--qd-space-2);
-}
-
-$badge-line-font-size: 0.75rem;
-$badge-line-height: 1.4;
-$badge-line-border-width: 1px;
-
-.app-meta-skeleton {
-  --qd-skeleton-h: calc(
-    2 * var(--qd-space-1) + #{$badge-line-font-size} * #{$badge-line-height} +
-      2 * #{$badge-line-border-width}
+  display: block;
+  scroll-margin-block-start: calc(var(--qd-navbar-block-size) + var(--qd-control-lg) + var(--qd-space-4));
+  opacity: 0;
+  transform: translate(
+    var(--dashboard-section-offset-x),
+    var(--dashboard-section-offset-y)
   );
+  transition: opacity 320ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.app-meta-error {
-  display: block;
+.dashboard-section-motion--from-inline-start {
+  --dashboard-section-offset-x: 2.5rem;
+  --dashboard-section-offset-y: 0;
+}
+
+.dashboard-section-motion--from-inline-end {
+  --dashboard-section-offset-x: -2.5rem;
+  --dashboard-section-offset-y: 0;
+}
+
+.dashboard-section-motion--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-section-motion {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }

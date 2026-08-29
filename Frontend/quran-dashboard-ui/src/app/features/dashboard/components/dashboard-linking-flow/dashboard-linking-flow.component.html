@@ -1,0 +1,46 @@
+<section class="dashboard-linking" aria-labelledby="dashboard-linking-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading">
+    <div class="dashboard-linking__header">
+      <div>
+        <p class="dashboard-linking__eyebrow">الربط</p>
+        <h2 id="dashboard-linking-title" class="dashboard-linking__title">
+          {{ content().heading }}
+        </h2>
+      </div>
+      <p class="dashboard-linking__description">{{ content().description }}</p>
+    </div>
+
+    <div class="dashboard-linking__flow" aria-label="مراحل عملية الربط">
+      <ol class="dashboard-linking__stages">
+        @for (stage of content().stages; track stage.label; let index = $index) {
+          <li>
+            <button
+              type="button"
+              class="dashboard-linking__stage"
+              [class.dashboard-linking__stage--active]="activeStage() === index"
+              [attr.aria-pressed]="activeStage() === index"
+              (click)="selectStage(index)"
+            >
+              <span>{{ index + 1 }}</span>
+              <strong>{{ stage.label }}</strong>
+            </button>
+          </li>
+        }
+      </ol>
+
+      <div class="dashboard-linking__detail" role="status" aria-live="polite">
+        <span>{{ activeStage() + 1 }} / {{ content().stages.length }}</span>
+        <p>{{ content().stages[activeStage()].description }}</p>
+      </div>
+    </div>
+
+    <div class="dashboard-linking__actions">
+      <a class="qd-btn qd-btn-primary" [routerLink]="mushafTarget()">
+        {{ content().mushafActionLabel }}
+      </a>
+      <a class="qd-btn qd-btn-secondary" [routerLink]="content().similarityAction.route">
+        {{ content().similarityAction.label }}
+      </a>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,18 @@
+<section class="dashboard-resume" aria-labelledby="dashboard-resume-title">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-resume__inner">
+    <h2 id="dashboard-resume-title" class="dashboard-resume__title">تابع من حيث توقفت</h2>
+
+    <nav aria-label="مسارات العمل المحفوظة">
+      <ul class="dashboard-resume__list">
+        @for (item of items(); track item.label) {
+          <li>
+            <a class="dashboard-resume__link" [routerLink]="item.target">
+              <span>{{ item.label }}</span>
+              <span class="dashboard-resume__arrow" aria-hidden="true">←</span>
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
+  </div>
+</section>

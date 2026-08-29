@@ -1,67 +1,65 @@
-<div class="qd-page">
-  <div class="qd-page-shell qd-page-shell--capped-reading">
-    <div class="qd-page-header">
-      <h1 class="qd-page-title">مرحباً بك في المنهج القرآني</h1>
-      <p class="qd-page-header__description">
-        لوحة تحكم لتنظيم ومراجعة بيانات البحث القرآني وإعدادها للنشر.
-      </p>
+<qd-dashboard-hero
+  [content]="hero"
+  [mushafTarget]="mushafTarget"
+  (workflowSelect)="scrollToSection('mushaf')"
+/>
 
-      @switch (viewState) {
-        @case ('loading') {
-          <qd-skeleton-rows
-            class="app-meta-skeleton"
-            [count]="1"
-            rowTemplate="6rem 7.5rem 6rem"
-            loadingLabel="جارٍ تحميل بيانات التطبيق..."
-            data-testid="dashboard-app-meta-loading"
-          />
-        }
-        @case ('success') {
-          <div class="app-meta" role="status" aria-live="polite">
-            <span class="qd-badge">{{ appInfo?.appName }}</span>
-            <span class="qd-badge">الإصدار {{ appInfo?.version }}</span>
-            <span class="qd-badge">{{ appInfo?.environment }}</span>
-          </div>
-        }
-        @case ('error') {
-          <qd-error-state
-            class="app-meta-error"
-            severity="read"
-            testId="dashboard-app-meta-error"
-            actionTestId="dashboard-app-meta-retry"
-            actionLabel="إعادة المحاولة"
-            [message]="errorMessage"
-            (action)="retry()"
-          />
-        }
-      }
-    </div>
+<qd-dashboard-resume-strip [items]="resumeItems" />
 
-    <div class="qd-grid qd-grid--destinations dashboard-cards">
-      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/dashboard/mushaf']">
-        <h2 class="qd-card-title">المصحف والآيات</h2>
-        <p class="qd-text-muted">عرض صفحات المصحف والآيات الكريمة</p>
-      </a>
+<qd-dashboard-workflow-rail
+  [steps]="workflowSteps"
+  [activeStep]="activeSection()"
+  (sectionSelect)="scrollToSection($event)"
+/>
 
-      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/dashboard/words']">
-        <h2 class="qd-card-title">الكلمات والجذور</h2>
-        <p class="qd-text-muted">استكشاف كلمات القرآن وجذورها</p>
-      </a>
+<qd-dashboard-mushaf-preview
+  id="mushaf"
+  class="dashboard-section-motion"
+  [qdDashboardSectionObserver]="'mushaf'"
+  [content]="mushafContent"
+  [mushafTarget]="mushafTarget"
+  (sectionActive)="onSectionActive($event)"
+/>
 
-      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/tafsirs']">
-        <h2 class="qd-card-title">التفاسير</h2>
-        <p class="qd-text-muted">التفاسير المتصلة بالآيات</p>
-      </a>
+<qd-dashboard-word-structure
+  id="words"
+  class="dashboard-section-motion dashboard-section-motion--from-inline-start"
+  [qdDashboardSectionObserver]="'words'"
+  [content]="wordContent"
+  (sectionActive)="onSectionActive($event)"
+/>
 
-      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/abwab']">
-        <h2 class="qd-card-title">الأبواب</h2>
-        <p class="qd-text-muted">إدارة أبواب الدراسات القرآنية</p>
-      </a>
+<qd-dashboard-phrase-preview
+  id="phrases"
+  class="dashboard-section-motion dashboard-section-motion--from-inline-end"
+  [qdDashboardSectionObserver]="'phrases'"
+  [content]="phraseContent"
+  (sectionActive)="onSectionActive($event)"
+/>
 
-      <a class="qd-card qd-interactive-surface dashboard-card" [routerLink]="['/resources']">
-        <h2 class="qd-card-title">المصادر</h2>
-        <p class="qd-text-muted">المصادر والمراجع القرآنية</p>
-      </a>
-    </div>
-  </div>
-</div>
+<qd-dashboard-linking-flow
+  id="linking"
+  class="dashboard-section-motion"
+  [qdDashboardSectionObserver]="'linking'"
+  [content]="linkingContent"
+  [mushafTarget]="mushafTarget"
+  (sectionActive)="onSectionActive($event)"
+/>
+
+<qd-dashboard-abwab-preview
+  id="abwab"
+  class="dashboard-section-motion dashboard-section-motion--from-inline-start"
+  [qdDashboardSectionObserver]="'abwab'"
+  [content]="abwabContent"
+  [active]="activeSection() === 'abwab'"
+  (sectionActive)="onSectionActive($event)"
+/>
+
+<qd-dashboard-entry-section
+  id="entry"
+  class="dashboard-section-motion dashboard-section-motion--from-inline-end"
+  [qdDashboardSectionObserver]="'entry'"
+  [heading]="entryHeading"
+  [items]="entryItems"
+  (sectionActive)="onSectionActive($event)"
+/>

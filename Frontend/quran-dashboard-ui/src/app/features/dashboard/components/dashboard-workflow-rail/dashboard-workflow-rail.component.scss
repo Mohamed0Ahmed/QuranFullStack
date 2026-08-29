@@ -1,0 +1,96 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  position: sticky;
+  inset-block-start: var(--qd-navbar-block-size);
+  z-index: var(--qd-z-sticky);
+  display: block;
+}
+
+.dashboard-workflow {
+  border-block-end: var(--qd-hairline);
+  background: var(--qd-bg-chrome);
+}
+
+.dashboard-workflow__viewport {
+  overflow-x: auto;
+}
+
+.dashboard-workflow__list {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  min-inline-size: max-content;
+  margin: 0;
+  padding: var(--qd-space-2) 0;
+  list-style: none;
+}
+
+.dashboard-workflow__item {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-workflow__item:not(:last-child)::after {
+  content: '←';
+  padding-inline: var(--qd-space-2);
+  color: var(--qd-border-strong);
+}
+
+.dashboard-workflow__link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--qd-hit-target-min);
+  gap: var(--qd-space-2);
+  padding-inline: var(--qd-space-3);
+  border-radius: var(--qd-radius-pill);
+  color: var(--qd-ink-muted);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-meta);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color var(--qd-t-state), color var(--qd-t-state);
+}
+
+.dashboard-workflow__link:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-ink);
+}
+
+.dashboard-workflow__link:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.dashboard-workflow__link--active {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.dashboard-workflow__number {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: var(--qd-hairline);
+  border-radius: 50%;
+  background: var(--qd-surface);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .dashboard-workflow__list {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .dashboard-workflow__item:not(:last-child)::after {
+    padding-inline: var(--qd-space-1);
+  }
+
+  .dashboard-workflow__link {
+    padding-inline: var(--qd-space-2);
+  }
+}

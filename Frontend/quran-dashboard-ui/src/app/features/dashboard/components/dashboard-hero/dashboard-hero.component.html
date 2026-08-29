@@ -1,0 +1,59 @@
+<section class="dashboard-hero" [attr.id]="content().sectionKey" aria-labelledby="dashboard-home-title">
+  <picture class="dashboard-hero__picture" aria-hidden="true">
+    <source
+      type="image/avif"
+      srcset="
+        /assets/dashboard/hero/dashboard-hero-1280.avif 1280w,
+        /assets/dashboard/hero/dashboard-hero-1915.avif 1915w
+      "
+      sizes="100vw"
+    />
+    <source
+      type="image/webp"
+      srcset="
+        /assets/dashboard/hero/dashboard-hero-1280.webp 1280w,
+        /assets/dashboard/hero/dashboard-hero-1915.webp 1915w
+      "
+      sizes="100vw"
+    />
+    <img
+      class="dashboard-hero__image"
+      src="/assets/dashboard/hero/dashboard-hero-fallback.jpg"
+      width="1915"
+      height="821"
+      alt=""
+      decoding="async"
+      fetchpriority="high"
+    />
+  </picture>
+  <div class="dashboard-hero__wash" aria-hidden="true"></div>
+
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-hero__inner">
+    <div class="dashboard-hero__content">
+      <h1 id="dashboard-home-title" class="dashboard-hero__title">{{ content().title }}</h1>
+
+      <blockquote class="dashboard-hero__quotation">
+        <p class="dashboard-hero__ayah" dir="rtl">{{ content().ayah }}</p>
+      </blockquote>
+
+      <p class="dashboard-hero__description">{{ content().description }}</p>
+
+      <nav class="dashboard-hero__actions" aria-label="ابدأ العمل">
+        <a class="qd-btn qd-btn-primary dashboard-hero__action" [routerLink]="mushafTarget()">
+          {{ content().mushafActionLabel }}
+        </a>
+        <a
+          class="qd-btn qd-btn-secondary dashboard-hero__action"
+          [routerLink]="content().searchAction.route"
+        >
+          {{ content().searchAction.label }}
+        </a>
+      </nav>
+
+      <a class="dashboard-hero__workflow-link" href="#mushaf" (click)="selectWorkflow($event)">
+        {{ content().workflowActionLabel }}
+        <span aria-hidden="true">↓</span>
+      </a>
+    </div>
+  </div>
+</section>

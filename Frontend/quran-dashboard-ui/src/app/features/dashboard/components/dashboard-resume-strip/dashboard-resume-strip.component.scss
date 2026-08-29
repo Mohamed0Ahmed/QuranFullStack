@@ -1,0 +1,91 @@
+@use '../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+}
+
+.dashboard-resume {
+  border-block-end: var(--qd-hairline);
+  background: var(--qd-surface);
+}
+
+.dashboard-resume__inner {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.6fr) minmax(0, 2fr);
+  align-items: center;
+  gap: var(--qd-space-5);
+  padding-block: var(--qd-space-5);
+}
+
+.dashboard-resume__title {
+  margin: 0;
+  font-family: var(--qd-font-naskh);
+  font-size: var(--qd-type-h3);
+  line-height: var(--qd-type-h3-lh);
+  color: var(--qd-ink);
+}
+
+.dashboard-resume__list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dashboard-resume__list li + li {
+  border-inline-start: var(--qd-hairline);
+}
+
+.dashboard-resume__link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-block-size: var(--qd-hit-target-min);
+  gap: var(--qd-space-2);
+  padding-inline: var(--qd-space-4);
+  border-radius: var(--qd-radius-sm);
+  color: var(--qd-ink-body);
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-body);
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color var(--qd-t-state), color var(--qd-t-state);
+}
+
+.dashboard-resume__link:hover {
+  background: var(--qd-surface-hover);
+  color: var(--qd-accent-text);
+}
+
+.dashboard-resume__link:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.dashboard-resume__arrow {
+  color: var(--qd-accent-text);
+}
+
+@media (max-width: bp.$qd-bp-medium-max) {
+  .dashboard-resume__inner {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--qd-space-3);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .dashboard-resume__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--qd-space-2);
+  }
+
+  .dashboard-resume__list li + li {
+    border-inline-start: 0;
+  }
+
+  .dashboard-resume__link {
+    padding-inline: var(--qd-space-3);
+    background: var(--qd-surface-quiet);
+  }
+}

@@ -1,0 +1,20 @@
+<nav class="dashboard-workflow" aria-label="مسار العمل القرآني">
+  <div class="qd-page-shell qd-page-shell--capped-reading dashboard-workflow__viewport">
+    <ol class="dashboard-workflow__list">
+      @for (step of steps(); track step.key; let index = $index) {
+        <li class="dashboard-workflow__item">
+          <a
+            class="dashboard-workflow__link"
+            [class.dashboard-workflow__link--active]="activeStep() === step.key"
+            [attr.href]="'#' + step.key"
+            [attr.aria-current]="activeStep() === step.key ? 'step' : null"
+            (click)="selectSection($event, step.key)"
+          >
+            <span class="dashboard-workflow__number">{{ index + 1 }}</span>
+            <span>{{ step.label }}</span>
+          </a>
+        </li>
+      }
+    </ol>
+  </div>
+</nav>
