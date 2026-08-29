@@ -70,7 +70,10 @@
             (change)="onDifferences($any($event.target).value)"
           >
             @for (difference of manualDifferences(); track difference) {
-              <option [value]="difference">
+              <option
+                [value]="difference"
+                [selected]="difference === facade.maximumDifferences()"
+              >
                 {{ difference === 1 ? 'اختلاف واحد' : difference + ' اختلافات' }} كحد أقصى
               </option>
             }
