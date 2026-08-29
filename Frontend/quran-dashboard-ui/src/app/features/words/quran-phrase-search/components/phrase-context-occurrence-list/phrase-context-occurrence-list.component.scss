@@ -27,6 +27,11 @@
   padding-inline: var(--qd-space-2);
 }
 
+.occurrence-table__cell.qd-explorer-table__cell:not(.occurrence-table__cell--ayah),
+.occurrence-table__compact {
+  cursor: pointer;
+}
+
 .occurrence-table__cell--number {
   justify-content: center;
   color: var(--qd-ink-muted);

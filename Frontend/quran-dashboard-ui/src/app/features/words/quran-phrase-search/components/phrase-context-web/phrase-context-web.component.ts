@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { PhraseContextBranchOptionDto } from '../../../../../core/api/generated/models/phrase-context-branch-option-dto';
 import { PhraseContextSidePageDto } from '../../../../../core/api/generated/models/phrase-context-side-page-dto';
 import { PhraseSelectedPathDto } from '../../../../../core/api/generated/models/phrase-selected-path-dto';
-import { phraseOccurrenceLabel, phraseOptionLabel } from '../phrase-context-copy';
+import { phraseOccurrenceLabel, phraseWordLabel } from '../phrase-context-copy';
 import { PhraseContextAlternativeGroupComponent } from '../phrase-context-alternative-group/phrase-context-alternative-group.component';
 
 export type PhraseContextWebSide = 'previous' | 'following';
@@ -32,7 +32,7 @@ export class PhraseContextWebComponent {
   readonly moreRequested = output<void>();
 
   protected readonly occurrenceLabel = phraseOccurrenceLabel;
-  protected readonly optionLabel = phraseOptionLabel;
+  protected readonly wordLabel = phraseWordLabel;
   protected readonly pathSteps = computed(() => this.selection().steps ?? []);
   protected readonly selectedAlternatives = computed(() =>
     this.options().filter((option) => option.isAlternativeSelected),

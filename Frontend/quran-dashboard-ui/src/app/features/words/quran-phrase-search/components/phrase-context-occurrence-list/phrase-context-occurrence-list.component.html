@@ -10,7 +10,10 @@
   [state]="busy() ? 'refreshing' : 'ready'"
   [rowHeight]="rowHeight"
   [compactRowHeight]="compactRowHeight"
+  [selectable]="!busy()"
+  [selected]="isRowSelected"
   scrollStateKey="words.phrases.context-occurrences"
+  (rowSelected)="toggleRow($event)"
 >
   <ng-template #headerTemplate>
     <div class="occurrence-table__cell occurrence-table__cell--selection qd-explorer-table__header-cell" role="columnheader">

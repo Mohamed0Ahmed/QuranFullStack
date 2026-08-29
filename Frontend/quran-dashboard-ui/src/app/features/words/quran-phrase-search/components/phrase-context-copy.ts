@@ -17,19 +17,16 @@ export function phraseOccurrenceLabel(value: number): string {
   return `${value} موضع`;
 }
 
-export function phraseOptionLabel(value: number): string {
+export function phraseWordLabel(value: number): string {
   const category = arabicPluralRules.select(value);
   if (category === 'one') {
-    return 'خيار واحد';
+    return 'كلمة واحدة';
   }
   if (category === 'two') {
-    return 'خياران';
+    return 'كلمتان';
   }
   if (category === 'few') {
-    return `${value} خيارات`;
+    return `${value} كلمات`;
   }
-  if (category === 'many') {
-    return `${value} خيارًا`;
-  }
-  return `${value} خيار`;
+  return `${value} كلمة`;
 }

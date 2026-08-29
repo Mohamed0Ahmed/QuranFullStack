@@ -69,7 +69,12 @@
   font-size: var(--qd-type-meta);
 }
 
-.context-web__summary strong { color: var(--context-web-color); }
+.context-web__metric {
+  font-weight: 800;
+}
+
+.context-web__metric--words { color: var(--context-web-color); }
+
 .context-web__path {
   display: flex;
   align-items: center;

@@ -12,9 +12,17 @@
       </h3>
       <small>الخيارات الأقرب أولًا</small>
     </div>
-    <div class="context-web__summary">
-      <strong>{{ optionLabel(displayedOptionCount()) }}</strong>
-      <span>{{ occurrenceLabel(page().passesThroughCount) }}</span>
+    <div class="context-web__summary" aria-label="إحصائيات المستوى الحالي">
+      <strong
+        class="context-web__metric context-web__metric--words qd-chip qd-chip--static qd-chip--pill"
+      >
+        {{ wordLabel(displayedOptionCount()) }}
+      </strong>
+      <strong
+        class="context-web__metric qd-chip qd-chip--static qd-chip--pill"
+      >
+        {{ occurrenceLabel(page().passesThroughCount) }}
+      </strong>
       @if (page().sideEndsHereCount > 0) {
         <small>
           {{ side() === 'previous' ? 'عند بداية الآية' : 'عند نهاية الآية' }}:

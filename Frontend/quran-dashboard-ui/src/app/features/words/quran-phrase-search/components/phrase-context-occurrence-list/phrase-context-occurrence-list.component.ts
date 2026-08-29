@@ -53,6 +53,8 @@ export class PhraseContextOccurrenceListComponent {
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly rowIdentity = (row: ContextAyahRow): number =>
     row.ayah.ayahId;
+  protected readonly isRowSelected = (row: ContextAyahRow): boolean =>
+    this.selection.isSelected(row.ayah.ayahId);
   protected readonly rowNumber = (index: number): number => this.firstRowNumber() + index;
   private readonly table = viewChild(QdDataTableComponent<ContextAyahRow>);
   private lastResultSetKey = '';
@@ -92,6 +94,11 @@ export class PhraseContextOccurrenceListComponent {
 
   protected toggleAyah(event: Event, ayahId: number): void {
     this.selection.setSelected(ayahId, checkboxValue(event));
+  }
+
+  protected toggleRow(row: ContextAyahRow): void {
+    const ayahId = row.ayah.ayahId;
+    this.selection.setSelected(ayahId, !this.selection.isSelected(ayahId));
   }
 }
 
