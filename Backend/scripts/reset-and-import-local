@@ -1,0 +1,633 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+BACKEND_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd -P)"
+REPO_ROOT="$(cd "${BACKEND_ROOT}/.." && pwd -P)"
+DATA_IMPORTER_DLL="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
+ACCESS_ADMIN_DLL="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/net10.0/QuranDashboard.AccessAdmin.dll"
+INFRASTRUCTURE_PROJECT="${BACKEND_ROOT}/infrastructure/QuranDashboard.Infrastructure"
+API_PROJECT="${BACKEND_ROOT}/api/QuranDashboard.Api"
+API_DEVELOPMENT_SETTINGS="${API_PROJECT}/appsettings.Development.json"
+FOUNDATION_SOURCE="${REPO_ROOT}/resources/import-sources/quran-foundation"
+MASAQ_SOURCE="${REPO_ROOT}/resources/import-sources/masaq-corpus-aligned/masaq-search-words.dashboard-ready.json"
+PROOF_CONTRACT="operator-verified-database-filesystem-v1"
+
+usage() {
+  echo "Usage: ./scripts/reset-and-import-local --yes" >&2
+}
+
+if [[ $# -ne 1 || "$1" != "--yes" ]]; then
+  echo "ERROR: this command requires the exact destructive confirmation --yes." >&2
+  usage
+  exit 1
+fi
+
+fail_early() {
+  echo "ERROR: $*" >&2
+  exit 1
+}
+
+for command in dotnet psql jq sha256sum realpath awk sed date tee mktemp ln chmod tr cat sync flock grep rm env; do
+  command -v "${command}" >/dev/null 2>&1 || fail_early "required command '${command}' was not found."
+done
+
+CONNECTION_STRING="${ConnectionStrings__QuranDashboardDb:-}"
+[[ -n "${CONNECTION_STRING}" ]] \
+  || fail_early "set one explicit ConnectionStrings__QuranDashboardDb; user-secret fallback is forbidden."
+[[ "${CONNECTION_STRING}" != *$'\n'* && "${CONNECTION_STRING}" != *$'\r'* ]] \
+  || fail_early "the connection string must be one line."
+
+trim_value() {
+  local value="$1"
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  printf '%s' "${value}"
+}
+
+declare -A connection_values=()
+declare -A connection_seen=()
+IFS=';' read -r -a connection_pairs <<<"${CONNECTION_STRING}"
+for pair in "${connection_pairs[@]}"; do
+  pair="$(trim_value "${pair}")"
+  [[ -n "${pair}" ]] || continue
+  [[ "${pair}" == *=* ]] || fail_early "only Npgsql keyword connection strings are supported."
+  key="$(tr -d '[:space:]' <<<"${pair%%=*}" | tr '[:upper:]' '[:lower:]')"
+  value="$(trim_value "${pair#*=}")"
+  canonical_key=""
+  case "${key}" in
+    host | server) canonical_key="host" ;;
+    port) canonical_key="port" ;;
+    database | initialcatalog) canonical_key="database" ;;
+    username | userid) canonical_key="username" ;;
+    password) canonical_key="password" ;;
+    *) continue ;;
+  esac
+  [[ -z "${connection_seen[${canonical_key}]:-}" ]] \
+    || fail_early "duplicate connection key '${canonical_key}' is forbidden."
+  connection_seen["${canonical_key}"]=true
+  connection_values["${canonical_key}"]="${value}"
+done
+
+PGHOST="${connection_values[host]:-}"
+PGPORT="${connection_values[port]:-5432}"
+PGDATABASE="${connection_values[database]:-}"
+PGUSER="${connection_values[username]:-}"
+PGPASSWORD="${connection_values[password]:-}"
+[[ -n "${PGHOST}" && -n "${PGDATABASE}" && -n "${PGUSER}" ]] \
+  || fail_early "the explicit connection must include Host, Database, and Username/User ID."
+[[ "${PGPORT}" =~ ^[0-9]+$ ]] && (( PGPORT >= 1 && PGPORT <= 65535 )) \
+  || fail_early "the explicit connection Port is invalid."
+[[ "${PGHOST}" != *,* ]] || fail_early "multi-host connections are forbidden."
+case "${PGHOST}" in
+  localhost | 127.0.0.1 | ::1 | /*) ;;
+  *) fail_early "refusing non-loopback Host; this script has no remote override." ;;
+esac
+
+VERIFIED_FREE_BYTES="${PhraseSearch__VerifiedDatabaseFreeBytes:-}"
+STORAGE_PROOF="${PhraseSearch__DatabaseStorageProofContract:-}"
+[[ "${VERIFIED_FREE_BYTES}" =~ ^[1-9][0-9]*$ && ${#VERIFIED_FREE_BYTES} -le 18 ]] \
+  || fail_early "set PhraseSearch__VerifiedDatabaseFreeBytes to a verified positive integer."
+[[ "${STORAGE_PROOF}" == "${PROOF_CONTRACT}" ]] \
+  || fail_early "PhraseSearch__DatabaseStorageProofContract must equal ${PROOF_CONTRACT}."
+
+required_sources=(
+  "${FOUNDATION_SOURCE}"
+  "${REPO_ROOT}/resources/import-sources/quran-enriched-morphology"
+  "${REPO_ROOT}/resources/import-sources/mutashabihat"
+  "${REPO_ROOT}/resources/import-sources/quran-navigation-metadata"
+  "${REPO_ROOT}/resources/import-sources/quran-full-i3rab"
+  "${REPO_ROOT}/resources/import-sources/quran-tafsirs-neon-10"
+  "${REPO_ROOT}/resources/import-sources/quran-translations-neon-10"
+)
+for source_dir in "${required_sources[@]}"; do
+  [[ -d "${source_dir}" ]] || fail_early "required import source directory is missing: ${source_dir}"
+done
+[[ -f "${MASAQ_SOURCE}" ]] \
+  || fail_early "required MASAQ foundation sibling file is missing: ${MASAQ_SOURCE}"
+[[ -f "${API_DEVELOPMENT_SETTINGS}" ]] \
+  || fail_early "the local API development settings file is missing: ${API_DEVELOPMENT_SETTINGS}"
+
+mapfile -t owner_bootstrap_emails < <(
+  jq -r '
+    .OwnerBootstrap.Emails
+    | select(type == "array")
+    | .[]
+    | select(type == "string" and length > 0)
+  ' "${API_DEVELOPMENT_SETTINGS}"
+)
+[[ ${#owner_bootstrap_emails[@]} -gt 0 ]] \
+  || fail_early "the local API development settings must contain at least one OwnerBootstrap email."
+while IFS= read -r owner_variable; do
+  unset "${owner_variable}"
+done < <(compgen -A variable 'OwnerBootstrap__Emails__')
+for owner_index in "${!owner_bootstrap_emails[@]}"; do
+  export "OwnerBootstrap__Emails__${owner_index}=${owner_bootstrap_emails[${owner_index}]}"
+done
+
+export PGHOST PGPORT PGDATABASE PGUSER PGPASSWORD PGCONNECT_TIMEOUT=5
+export ConnectionStrings__QuranDashboardDb="${CONNECTION_STRING}"
+export DOTNET_ENVIRONMENT=Development
+export PhraseSearch__VerifiedDatabaseFreeBytes="${VERIFIED_FREE_BYTES}"
+export PhraseSearch__DatabaseStorageProofContract="${STORAGE_PROOF}"
+
+pg_query() {
+  psql --no-psqlrc --quiet --no-align --tuples-only -v ON_ERROR_STOP=1 --command "$1"
+}
+
+pg_admin_query() {
+  PGDATABASE=postgres psql --no-psqlrc --quiet --no-align --tuples-only \
+    -v ON_ERROR_STOP=1 --command "$1"
+}
+
+read_server_identity() {
+  pg_admin_query "
+    SELECT concat_ws(
+      E'\\t',
+      COALESCE(host(inet_server_addr()), 'unix'),
+      COALESCE(inet_server_port()::text, current_setting('port')),
+      (SELECT system_identifier::text FROM pg_control_system()));"
+}
+
+measure_database_size() {
+  local measured
+  if ! measured="$(pg_query 'SELECT pg_database_size(current_database());' 2>/dev/null)"; then
+    printf 'unavailable'
+    return
+  fi
+  measured="$(trim_value "${measured}")"
+  if [[ "${measured}" =~ ^[0-9]+$ ]]; then
+    printf '%s' "${measured}"
+  else
+    printf 'unavailable'
+  fi
+}
+
+initial_server_identity="$(read_server_identity)" \
+  || fail_early "could not verify the configured PostgreSQL endpoint."
+IFS=$'\t' read -r actual_server_address actual_server_port CLUSTER_SYSTEM_ID unexpected_identity \
+  <<<"${initial_server_identity}"
+[[ -n "${actual_server_address}" && "${actual_server_port}" =~ ^[0-9]+$ \
+  && "${CLUSTER_SYSTEM_ID}" =~ ^[0-9]+$ && -z "${unexpected_identity:-}" ]] \
+  || fail_early "the PostgreSQL endpoint identity proof was incomplete."
+case "${actual_server_address}" in
+  127.0.0.1 | ::1 | unix) ;;
+  *) fail_early "the actual PostgreSQL server address is not loopback; nothing was exported or dropped." ;;
+esac
+TARGET_SERVER_ID="${actual_server_address}"
+if [[ "${actual_server_address}" == "unix" ]]; then
+  socket_root="$(realpath -e "${PGHOST}")" \
+    || fail_early "the configured PostgreSQL Unix socket directory could not be canonicalized."
+  TARGET_SERVER_ID="unix:${socket_root}"
+fi
+TARGET_PORT_ID="$((10#${actual_server_port}))"
+TARGET_DATABASE_ID="${PGDATABASE}"
+
+RUN_STARTED_UTC="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+RUN_ID="$(date -u '+%Y%m%dT%H%M%SZ')-$$"
+RUN_ROOT="${REPO_ROOT}/resources/report/reset-and-import-local"
+RECOVERY_MARKER="${RUN_ROOT}/recovery.json"
+SAVED_SNAPSHOT_MARKER="${RUN_ROOT}/saved-abwab-snapshot.json"
+RUN_DIR="${RUN_ROOT}/${RUN_ID}"
+STAGE_DIR="${RUN_DIR}/stages"
+IMPORT_REPORT_DIR="${RUN_DIR}/import-reports"
+EXPORT_DIR="${RUN_DIR}/abwab-export"
+RUN_LOG="${RUN_DIR}/run.log"
+STAGE_REPORT="${RUN_DIR}/stages.tsv"
+RUN_REPORT="${RUN_DIR}/run-report.md"
+mkdir -p "${STAGE_DIR}" "${IMPORT_REPORT_DIR}" "${EXPORT_DIR}"
+: >"${RUN_LOG}"
+{
+  printf 'stage\tstarted_utc\tduration_seconds\texit_code\tmax_rss_kb'
+  printf '\tdatabase_size_before_bytes\tdatabase_size_after_bytes\tdatabase_size_delta_bytes\n'
+} >"${STAGE_REPORT}"
+
+RUN_STATUS="running"
+DB_SIZE_BEFORE="unavailable"
+DB_SIZE_AFTER="unavailable"
+SNAPSHOT_PATH="unavailable"
+SNAPSHOT_SHA256="unavailable"
+EXPORT_REPORT_JSON="unavailable"
+EXPORT_REPORT_MARKDOWN="unavailable"
+RECOVERY_REUSED="false"
+ABWAB_SELECTION=""
+
+log() {
+  printf '%s\n' "$*" | tee -a "${RUN_LOG}"
+}
+
+write_run_report() {
+  local completed_utc
+  completed_utc="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  {
+    printf '# Local Reset and Import Report\n\n'
+    printf -- '- Run ID: `%s`\n' "${RUN_ID}"
+    printf -- '- Status: `%s`\n' "${RUN_STATUS}"
+    printf -- '- Started (UTC): `%s`\n' "${RUN_STARTED_UTC}"
+    printf -- '- Completed (UTC): `%s`\n' "${completed_utc}"
+    printf -- '- Database size before: `%s` bytes\n' "${DB_SIZE_BEFORE}"
+    printf -- '- Database size after: `%s` bytes\n' "${DB_SIZE_AFTER}"
+    printf -- '- Abwab snapshot: `%s`\n' "${SNAPSHOT_PATH}"
+    printf -- '- Abwab SHA-256: `%s`\n' "${SNAPSHOT_SHA256}"
+    printf -- '- Abwab snapshot selection: `%s`\n' "${ABWAB_SELECTION:-unavailable}"
+    printf -- '- Recovery snapshot reused: `%s`\n' "${RECOVERY_REUSED}"
+    printf -- '- Tafsir profile: `curated-10`\n'
+    printf -- '- Translation profile: `curated-10`\n'
+    printf -- '- Linking data: `excluded; intentionally empty`\n'
+    printf -- '- Access identities/authentication data: `excluded; not restored`\n'
+    printf -- '- Access bootstrap: `permission catalogue sync only`\n'
+    printf '\nStage timings: `%s`\n' "${STAGE_REPORT}"
+    printf 'Run log: `%s`\n' "${RUN_LOG}"
+  } >"${RUN_REPORT}"
+}
+
+on_exit() {
+  local exit_code=$?
+  trap - EXIT
+  if [[ ${exit_code} -ne 0 && "${RUN_STATUS}" != "failed" ]]; then
+    RUN_STATUS="failed"
+  fi
+  write_run_report
+  if [[ ${exit_code} -ne 0 ]]; then
+    log "FAILED: workflow stopped; preserved Abwab evidence remains under ${RUN_ROOT}."
+  fi
+  exit "${exit_code}"
+}
+trap on_exit EXIT
+
+fail() {
+  RUN_STATUS="failed"
+  log "ERROR: $*"
+  exit 1
+}
+
+assert_local_target_identity() {
+  local current_identity current_address current_port current_cluster unexpected current_socket_root
+  current_identity="$(read_server_identity)" \
+    || fail "could not revalidate the local PostgreSQL target immediately before mutation."
+  IFS=$'\t' read -r current_address current_port current_cluster unexpected <<<"${current_identity}"
+  [[ -n "${current_address}" && "${current_port}" =~ ^[0-9]+$ \
+    && "${current_cluster}" =~ ^[0-9]+$ && -z "${unexpected:-}" ]] \
+    || fail "the immediate PostgreSQL target identity proof was incomplete."
+  case "${current_address}" in
+    127.0.0.1 | ::1 | unix) ;;
+    *) fail "the PostgreSQL target stopped resolving to a local endpoint before mutation." ;;
+  esac
+  [[ "${current_address}" == "${actual_server_address}" \
+    && "${current_port}" == "${actual_server_port}" \
+    && "${current_cluster}" == "${CLUSTER_SYSTEM_ID}" ]] \
+    || fail "the PostgreSQL endpoint or cluster changed before mutation."
+  if [[ "${current_address}" == "unix" ]]; then
+    current_socket_root="$(realpath -e "${PGHOST}")" \
+      || fail "the PostgreSQL Unix socket directory disappeared before mutation."
+    [[ "unix:${current_socket_root}" == "${TARGET_SERVER_ID}" ]] \
+      || fail "the PostgreSQL Unix socket target changed before mutation."
+  fi
+}
+
+run_stage_core() {
+  local database_touching="$1"
+  shift
+  local stage="$1"
+  shift
+  local stage_log="${STAGE_DIR}/${stage}.log"
+  local time_log="${STAGE_DIR}/${stage}.time"
+  local started_utc start_ns end_ns duration exit_code max_rss
+  local db_size_before db_size_after db_size_delta
+  started_utc="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+  db_size_before="unavailable"
+  db_size_after="unavailable"
+  db_size_delta="unavailable"
+  if [[ "${database_touching}" == "true" ]]; then
+    assert_local_target_identity
+    db_size_before="$(measure_database_size)"
+  fi
+  log "START ${stage}"
+  if [[ "${database_touching}" == "true" ]]; then
+    assert_local_target_identity
+  fi
+  start_ns="$(date '+%s%N')"
+  set +e
+  if [[ -x /usr/bin/time ]]; then
+    /usr/bin/time -v -o "${time_log}" "$@" >"${stage_log}" 2>&1
+    exit_code=$?
+    max_rss="$(awk -F: '/Maximum resident set size/ {gsub(/[[:space:]]/, "", $2); print $2}' "${time_log}")"
+  else
+    "$@" >"${stage_log}" 2>&1
+    exit_code=$?
+    max_rss="unavailable"
+  fi
+  set -e
+  if [[ "${database_touching}" == "true" ]]; then
+    assert_local_target_identity
+    db_size_after="$(measure_database_size)"
+  fi
+  if [[ "${db_size_before}" =~ ^[0-9]+$ && "${db_size_after}" =~ ^[0-9]+$ ]]; then
+    db_size_delta="$((db_size_after - db_size_before))"
+  fi
+  end_ns="$(date '+%s%N')"
+  duration="$(awk -v start="${start_ns}" -v end="${end_ns}" 'BEGIN { printf "%.3f", (end-start)/1000000000 }')"
+  [[ -n "${max_rss}" ]] || max_rss="unavailable"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "${stage}" "${started_utc}" "${duration}" "${exit_code}" "${max_rss}" \
+    "${db_size_before}" "${db_size_after}" "${db_size_delta}" >>"${STAGE_REPORT}"
+  {
+    printf '\n===== %s (exit=%s, duration=%ss, max_rss_kb=%s, db_before=%s, db_after=%s, db_delta=%s) =====\n' \
+      "${stage}" "${exit_code}" "${duration}" "${max_rss}" \
+      "${db_size_before}" "${db_size_after}" "${db_size_delta}"
+    cat "${stage_log}"
+  } >>"${RUN_LOG}"
+  if [[ ${exit_code} -ne 0 ]]; then
+    log "FAIL ${stage} exit=${exit_code}"
+    return "${exit_code}"
+  fi
+  log "PASS ${stage} duration=${duration}s"
+}
+
+run_stage() {
+  run_stage_core false "$@"
+}
+
+run_db_stage() {
+  run_stage_core true "$@"
+}
+
+extract_exact_output() {
+  local key="$1" file="$2"
+  local -a values=()
+  mapfile -t values < <(sed -n "s/^${key}=//p" "${file}")
+  [[ ${#values[@]} -eq 1 && -n "${values[0]}" ]] \
+    || fail "${file} must contain exactly one non-empty ${key}= output line."
+  printf '%s' "${values[0]}"
+}
+
+require_path_under() {
+  local path="$1" root="$2" resolved root_resolved
+  [[ -f "${path}" ]] || fail "required artifact was not written: ${path}"
+  resolved="$(realpath -e "${path}")"
+  root_resolved="$(realpath -e "${root}")"
+  [[ "${resolved}" == "${root_resolved}/"* ]] \
+    || fail "artifact escaped its unique run directory: ${path}"
+}
+
+cd "${BACKEND_ROOT}"
+source "${SCRIPT_DIR}/_preflight-sandbox.sh"
+preflight_check_stale_sandbox_assets "${BACKEND_ROOT}"
+exec 9>"${RUN_ROOT}/workflow.lock"
+flock -n 9 || fail "another local reset/import workflow is already running."
+if [[ -f "${RECOVERY_MARKER}" ]]; then
+  jq -e \
+    --arg server "${TARGET_SERVER_ID}" \
+    --arg port "${TARGET_PORT_ID}" \
+    --arg database "${TARGET_DATABASE_ID}" \
+    --arg cluster "${CLUSTER_SYSTEM_ID}" '
+      .markerVersion == 1 and
+      .recoveryTarget.server == $server and
+      .recoveryTarget.port == $port and
+      .recoveryTarget.database == $database and
+      .recoveryTarget.clusterSystemIdentifier == $cluster
+    ' "${RECOVERY_MARKER}" >/dev/null \
+    || fail "the interrupted-run recovery marker belongs to a different local database target."
+  ABWAB_SELECTION="recovery"
+  log "An interrupted-run recovery marker exists; it takes precedence without a new export prompt."
+else
+  [[ -t 0 ]] \
+    || fail "an interactive Abwab refresh choice is required; run this script from a TTY and answer yes or no."
+  printf 'Did Abwab data change since the last verified snapshot? Export a fresh v4 snapshot? [yes/no]: ' >&2
+  read -r refresh_answer || fail "no Abwab refresh choice was read; answer exactly yes or no."
+  case "${refresh_answer,,}" in
+    yes) ABWAB_SELECTION="export" ;;
+    no)
+      [[ -f "${SAVED_SNAPSHOT_MARKER}" ]] \
+        || fail "no saved verified Abwab v4 snapshot exists; rerun and answer yes."
+      ABWAB_SELECTION="saved"
+      ;;
+    *) fail "answer exactly yes or no; nothing was exported or dropped." ;;
+  esac
+fi
+
+log "Loopback PostgreSQL target verified. Run directory: ${RUN_DIR}"
+assert_local_target_identity
+set +e
+DB_SIZE_BEFORE="$(pg_query 'SELECT pg_database_size(current_database());')"
+size_before_exit=$?
+set -e
+if [[ ${size_before_exit} -ne 0 ]]; then
+  if [[ "${ABWAB_SELECTION}" == "recovery" || "${ABWAB_SELECTION}" == "saved" ]]; then
+    DB_SIZE_BEFORE="unavailable"
+    log "Pre-reset database size is unavailable; the verified preserved snapshot allows recovery to continue."
+  else
+    fail "could not read the pre-reset database size and no recovery marker exists."
+  fi
+fi
+
+run_stage build \
+  env -u ConnectionStrings__QuranDashboardDb -u PGPASSWORD -u PGHOST -u PGPORT \
+  -u PGDATABASE -u PGUSER \
+  dotnet build QuranDashboard.sln --configuration Debug --disable-build-servers -m:1 \
+  -p:BuildInParallel=false -v minimal \
+  || fail "backend solution build failed before export/reset."
+[[ -f "${DATA_IMPORTER_DLL}" ]] || fail "the solution build did not produce the DataImporter executable."
+[[ -f "${ACCESS_ADMIN_DLL}" ]] || fail "the solution build did not produce the AccessAdmin executable."
+
+DATA_IMPORTER=(dotnet "${DATA_IMPORTER_DLL}")
+if [[ "${ABWAB_SELECTION}" == "recovery" || "${ABWAB_SELECTION}" == "saved" ]]; then
+  selected_marker="${RECOVERY_MARKER}"
+  if [[ "${ABWAB_SELECTION}" == "saved" ]]; then
+    selected_marker="${SAVED_SNAPSHOT_MARKER}"
+  fi
+  jq -e '
+    .markerVersion == 1 and
+    .formatVersion == 4 and
+    (.snapshotPath | type) == "string" and (.snapshotPath | length) > 0 and
+    (.snapshotSha256 | type) == "string" and (.snapshotSha256 | test("^[0-9a-fA-F]{64}$")) and
+    (.reportJson | type) == "string" and (.reportJson | length) > 0 and
+    (.reportMarkdown | type) == "string" and (.reportMarkdown | length) > 0
+  ' "${selected_marker}" >/dev/null || fail "the selected Abwab snapshot marker is invalid."
+  SNAPSHOT_PATH="$(jq -r '.snapshotPath' "${selected_marker}")"
+  SNAPSHOT_SHA256="$(jq -r '.snapshotSha256' "${selected_marker}")"
+  EXPORT_REPORT_JSON="$(jq -r '.reportJson' "${selected_marker}")"
+  EXPORT_REPORT_MARKDOWN="$(jq -r '.reportMarkdown' "${selected_marker}")"
+  recovery_root="$(realpath -e "${RUN_ROOT}")"
+  snapshot_resolved="$(realpath -e "${SNAPSHOT_PATH}")" \
+    || fail "the recovery snapshot no longer exists."
+  checksum_resolved="$(realpath -e "${SNAPSHOT_PATH}.sha256")" \
+    || fail "the recovery checksum sidecar no longer exists."
+  report_resolved="$(realpath -e "${EXPORT_REPORT_JSON}")" \
+    || fail "the recovery export report no longer exists."
+  markdown_resolved="$(realpath -e "${EXPORT_REPORT_MARKDOWN}")" \
+    || fail "the recovery Markdown export report no longer exists."
+  [[ "${snapshot_resolved}" == "${recovery_root}/"* ]] \
+    || fail "the recovery marker snapshot escaped the local run root."
+  [[ "${checksum_resolved}" == "${recovery_root}/"* ]] \
+    || fail "the recovery marker checksum escaped the local run root."
+  [[ "${report_resolved}" == "${recovery_root}/"* ]] \
+    || fail "the recovery marker JSON report escaped the local run root."
+  [[ "${markdown_resolved}" == "${recovery_root}/"* ]] \
+    || fail "the recovery marker Markdown report escaped the local run root."
+  RECOVERY_REUSED="true"
+  log "Reusing a verified Abwab v4 snapshot; current Abwab data will not be exported."
+else
+  run_db_stage export-abwab \
+    "${DATA_IMPORTER[@]}" export-abwab-snapshot --output-dir "${EXPORT_DIR}" \
+    || fail "pre-reset Abwab export failed."
+
+  export_log="${STAGE_DIR}/export-abwab.log"
+  export_verdict="$(extract_exact_output verdict "${export_log}")"
+  SNAPSHOT_PATH="$(extract_exact_output snapshot "${export_log}")"
+  SNAPSHOT_SHA256="$(extract_exact_output sha256 "${export_log}")"
+  EXPORT_REPORT_JSON="$(extract_exact_output report_json "${export_log}")"
+  EXPORT_REPORT_MARKDOWN="$(extract_exact_output report_markdown "${export_log}")"
+  [[ "${export_verdict}" == "pass" ]] || fail "Abwab export verdict was not pass."
+  require_path_under "${SNAPSHOT_PATH}" "${EXPORT_DIR}"
+  require_path_under "${SNAPSHOT_PATH}.sha256" "${EXPORT_DIR}"
+  require_path_under "${EXPORT_REPORT_JSON}" "${EXPORT_DIR}"
+  require_path_under "${EXPORT_REPORT_MARKDOWN}" "${EXPORT_DIR}"
+fi
+
+[[ -f "${SNAPSHOT_PATH}" && -f "${SNAPSHOT_PATH}.sha256" \
+  && -f "${EXPORT_REPORT_JSON}" && -f "${EXPORT_REPORT_MARKDOWN}" ]] \
+  || fail "the selected Abwab recovery artifact set is incomplete."
+jq -e --arg snapshot "${SNAPSHOT_PATH}" --arg sha "${SNAPSHOT_SHA256}" '
+  .verdict == "pass" and .persisted == true and .formatVersion == 4 and
+  .snapshotPath == $snapshot and (.snapshotSha256 | ascii_downcase) == ($sha | ascii_downcase) and
+  (.counts.abwab_sections.total | type) == "number" and .counts.abwab_sections.total > 0 and
+  (.counts.abwab_doors.total | type) == "number" and .counts.abwab_doors.total > 0
+' "${EXPORT_REPORT_JSON}" >/dev/null || fail "Abwab export JSON report contract failed."
+grep -Fqx -- '- Verdict: `pass`' "${EXPORT_REPORT_MARKDOWN}" \
+  || fail "Abwab Markdown export report verdict is invalid."
+grep -Fqx -- '- Persisted: `true`' "${EXPORT_REPORT_MARKDOWN}" \
+  || fail "Abwab Markdown export report persisted truth is invalid."
+grep -Fqx -- '- Format: `quran-dashboard-abwab-snapshot` v4' "${EXPORT_REPORT_MARKDOWN}" \
+  || fail "Abwab Markdown export report format is invalid."
+grep -Fqx -- "- Snapshot: \`${SNAPSHOT_PATH}\`" "${EXPORT_REPORT_MARKDOWN}" \
+  || fail "Abwab Markdown export report snapshot path is invalid."
+grep -Fqx -- "- SHA-256: \`${SNAPSHOT_SHA256}\`" "${EXPORT_REPORT_MARKDOWN}" \
+  || fail "Abwab Markdown export report checksum is invalid."
+jq -e '.format == "quran-dashboard-abwab-snapshot" and .formatVersion == 4' \
+  "${SNAPSHOT_PATH}" >/dev/null || fail "Abwab snapshot is not format v4."
+actual_snapshot_sha="$(sha256sum "${SNAPSHOT_PATH}" | awk '{print $1}')"
+[[ "${actual_snapshot_sha,,}" == "${SNAPSHOT_SHA256,,}" ]] \
+  || fail "Abwab snapshot SHA-256 does not match the recovery contract."
+(
+  cd "$(dirname "${SNAPSHOT_PATH}")"
+  sha256sum --check "$(basename "${SNAPSHOT_PATH}").sha256"
+) >>"${RUN_LOG}" 2>&1 || fail "Abwab snapshot checksum sidecar verification failed."
+
+if [[ "${ABWAB_SELECTION}" == "export" ]]; then
+  marker_tmp="$(mktemp "${RUN_ROOT}/.saved-abwab.XXXXXX")"
+  jq -n \
+    --arg runId "${RUN_ID}" \
+    --arg snapshotPath "${SNAPSHOT_PATH}" \
+    --arg snapshotSha256 "${SNAPSHOT_SHA256}" \
+    --arg reportJson "${EXPORT_REPORT_JSON}" \
+    --arg reportMarkdown "${EXPORT_REPORT_MARKDOWN}" \
+    '{markerVersion: 1, formatVersion: 4, runId: $runId, snapshotPath: $snapshotPath,
+      snapshotSha256: $snapshotSha256, reportJson: $reportJson,
+      reportMarkdown: $reportMarkdown}' >"${marker_tmp}"
+  chmod 600 "${marker_tmp}"
+  sync -f "${marker_tmp}"
+  mv -f "${marker_tmp}" "${SAVED_SNAPSHOT_MARKER}"
+  sync -f "${RUN_ROOT}"
+fi
+
+if [[ "${ABWAB_SELECTION}" != "recovery" ]]; then
+  recovery_tmp="$(mktemp "${RUN_ROOT}/.recovery.XXXXXX")"
+  jq -n \
+    --arg runId "${RUN_ID}" \
+    --arg snapshotPath "${SNAPSHOT_PATH}" \
+    --arg snapshotSha256 "${SNAPSHOT_SHA256}" \
+    --arg reportJson "${EXPORT_REPORT_JSON}" \
+    --arg reportMarkdown "${EXPORT_REPORT_MARKDOWN}" \
+    --arg server "${TARGET_SERVER_ID}" \
+    --arg port "${TARGET_PORT_ID}" \
+    --arg database "${TARGET_DATABASE_ID}" \
+    --arg cluster "${CLUSTER_SYSTEM_ID}" \
+    '{markerVersion: 1, formatVersion: 4, runId: $runId,
+      snapshotPath: $snapshotPath, snapshotSha256: $snapshotSha256,
+      reportJson: $reportJson, reportMarkdown: $reportMarkdown,
+      recoveryTarget: {server: $server, port: $port, database: $database,
+        clusterSystemIdentifier: $cluster}}' >"${recovery_tmp}"
+  chmod 600 "${recovery_tmp}"
+  sync -f "${recovery_tmp}"
+  if ! ln "${recovery_tmp}" "${RECOVERY_MARKER}"; then
+    rm -f "${recovery_tmp}"
+    fail "could not atomically publish the interrupted-run Abwab recovery marker."
+  fi
+  rm -f "${recovery_tmp}" || fail "could not remove the temporary recovery marker."
+  sync -f "${RUN_ROOT}"
+fi
+
+EF_OPTIONS=(
+  --no-build
+  --project "${INFRASTRUCTURE_PROJECT}"
+  --startup-project "${API_PROJECT}"
+  --context QuranDashboardDbContext
+)
+run_db_stage drop-db dotnet ef database drop "${EF_OPTIONS[@]}" --force \
+  || fail "database drop failed; Abwab export remains preserved."
+run_db_stage update-db dotnet ef database update "${EF_OPTIONS[@]}" \
+  || fail "database migration failed; Abwab export remains preserved."
+
+run_db_stage import-abwab \
+  "${DATA_IMPORTER[@]}" import-abwab-snapshot --source "${SNAPSHOT_PATH}" \
+  --report-out "${IMPORT_REPORT_DIR}/abwab" \
+  || fail "Abwab v4 restore failed."
+
+abwab_import_log="${STAGE_DIR}/import-abwab.log"
+abwab_import_verdict="$(extract_exact_output verdict "${abwab_import_log}")"
+abwab_import_persisted="$(extract_exact_output persisted "${abwab_import_log}")"
+abwab_import_report="$(extract_exact_output report_json "${abwab_import_log}")"
+[[ "${abwab_import_verdict}" == "pass" && "${abwab_import_persisted}" == "true" ]] \
+  || fail "Abwab import output did not prove verdict=pass and persisted=true."
+require_path_under "${abwab_import_report}" "${IMPORT_REPORT_DIR}/abwab"
+jq -e '.verdict == "pass" and .persisted == "true" and .formatVersion == 4' \
+  "${abwab_import_report}" >/dev/null || fail "Abwab import report contract failed."
+
+run_db_stage access-catalogue-sync dotnet "${ACCESS_ADMIN_DLL}" catalogue sync \
+  || fail "fresh local permission catalogue sync failed."
+
+run_db_stage import-foundation \
+  "${DATA_IMPORTER[@]}" import-foundation --source "${FOUNDATION_SOURCE}" \
+  --report-out "${IMPORT_REPORT_DIR}/foundation" \
+  || fail "foundation import failed."
+run_db_stage rebuild-words \
+  "${DATA_IMPORTER[@]}" rebuild-words --report-out "${IMPORT_REPORT_DIR}/words" \
+  || fail "display-word rebuild failed."
+run_db_stage build-phrase-index \
+  "${DATA_IMPORTER[@]}" build-phrase-index \
+  --report-out "${IMPORT_REPORT_DIR}/phrase-search" \
+  || fail "one-shot PhraseSearch build failed."
+run_db_stage import-morphology-enriched \
+  "${DATA_IMPORTER[@]}" import-morphology --enriched \
+  --report-out "${IMPORT_REPORT_DIR}/morphology" \
+  || fail "enriched morphology import failed."
+run_db_stage generate-i3rab \
+  "${DATA_IMPORTER[@]}" generate-i3rab --report-out "${IMPORT_REPORT_DIR}/i3rab-simple" \
+  || fail "simple i3rab generation failed."
+run_db_stage import-mutashabihat \
+  "${DATA_IMPORTER[@]}" import-mutashabihat --report-out "${IMPORT_REPORT_DIR}/mutashabihat" \
+  || fail "Mutashabihat import failed."
+run_db_stage import-navigation \
+  "${DATA_IMPORTER[@]}" import-navigation-metadata --report-out "${IMPORT_REPORT_DIR}/navigation" \
+  || fail "navigation metadata import failed."
+run_db_stage import-full-i3rab \
+  "${DATA_IMPORTER[@]}" import-full-i3rab --report-out "${IMPORT_REPORT_DIR}/i3rab-full" \
+  || fail "full i3rab import failed."
+run_db_stage import-tafsirs-curated-10 \
+  "${DATA_IMPORTER[@]}" import-tafsirs --profile curated-10 \
+  --report-out "${IMPORT_REPORT_DIR}/tafsirs" \
+  || fail "curated-10 tafsir import failed."
+run_db_stage import-translations-curated-10 \
+  "${DATA_IMPORTER[@]}" import-translations --profile curated-10 \
+  --report-out "${IMPORT_REPORT_DIR}/translations" \
+  || fail "curated-10 translation import failed."
+
+assert_local_target_identity
+DB_SIZE_AFTER="$(pg_query 'SELECT pg_database_size(current_database());')" \
+  || fail "could not read the final database size."
+rm -f "${RECOVERY_MARKER}" || fail "workflow succeeded but the recovery marker could not be cleared."
+sync -f "${RUN_ROOT}"
+RUN_STATUS="pass"
+write_run_report
+log "PASS: local reset/import completed. Report: ${RUN_REPORT}"

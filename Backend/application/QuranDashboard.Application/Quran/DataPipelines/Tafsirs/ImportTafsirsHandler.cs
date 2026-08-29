@@ -1,3 +1,4 @@
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines;
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Tafsirs;
 
 namespace QuranDashboard.Application.Quran.DataPipelines.Tafsirs;
@@ -25,6 +26,13 @@ public sealed class ImportTafsirsHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentException.ThrowIfNullOrWhiteSpace(command.SourcePath);
+        if (!QuranImportProfiles.IsSupported(command.Profile))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(command.Profile),
+                command.Profile,
+                "Unsupported tafsir import profile.");
+        }
 
         var sourcePath = Path.GetFullPath(command.SourcePath);
         var expectedCounts = command.ExpectedCounts ?? TafsirInvariants.Production;
@@ -80,6 +88,7 @@ public sealed class ImportTafsirsHandler
                 {
                     var report = reportBuilder.BuildCandidateSuccess(
                         sourcePath,
+                        command.Profile,
                         source,
                         command.Force,
                         candidateResult.RunAtUtc,
@@ -113,6 +122,7 @@ public sealed class ImportTafsirsHandler
         {
             var failureReport = reportBuilder.BuildValidationFailure(
                 sourcePath,
+                command.Profile,
                 source,
                 command.Force,
                 result.RunAtUtc,
@@ -148,6 +158,7 @@ public sealed class ImportTafsirsHandler
     {
         var report = reportBuilder.BuildRefusal(
             sourcePath,
+            command.Profile,
             source,
             command.Force,
             DateTimeOffset.UtcNow,
@@ -173,6 +184,7 @@ public sealed class ImportTafsirsHandler
     {
         var report = reportBuilder.BuildValidationFailure(
             sourcePath,
+            command.Profile,
             source: null,
             command.Force,
             DateTimeOffset.UtcNow,

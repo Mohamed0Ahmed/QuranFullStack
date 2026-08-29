@@ -3318,6 +3318,482 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.ToTable("quran_sajdas", (string)null);
                 });
 
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexBuild", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset?>("ActivatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("activated_at_utc");
+
+                    b.Property<string>("BuilderVersion")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("builder_version");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_at_utc");
+
+                    b.Property<bool>("ExactReady")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exact_ready");
+
+                    b.Property<DateTimeOffset?>("FailedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("failed_at_utc");
+
+                    b.Property<string>("FailureSummary")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)")
+                        .HasColumnName("failure_summary");
+
+                    b.Property<int>("FormatVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("format_version");
+
+                    b.Property<long>("OccurrenceCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("occurrence_count");
+
+                    b.Property<string>("ReportPath")
+                        .HasMaxLength(1024)
+                        .HasColumnType("character varying(1024)")
+                        .HasColumnName("report_path");
+
+                    b.Property<long>("SearchTokenCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("search_token_count");
+
+                    b.Property<long>("SimilarityAnchorStatCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("similarity_anchor_stat_count");
+
+                    b.Property<long>("SimilarityEdgeCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("similarity_edge_count");
+
+                    b.Property<bool>("SimilarityReady")
+                        .HasColumnType("boolean")
+                        .HasColumnName("similarity_ready");
+
+                    b.Property<string>("SourceFingerprint")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("source_fingerprint");
+
+                    b.Property<long>("SourceRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_revision");
+
+                    b.Property<DateTimeOffset>("StartedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("started_at_utc");
+
+                    b.Property<short>("Status")
+                        .HasColumnType("smallint")
+                        .HasColumnName("status");
+
+                    b.Property<DateTimeOffset?>("ValidatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("validated_at_utc");
+
+                    b.Property<string>("ValidationVerdict")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("validation_verdict");
+
+                    b.Property<long>("VariantCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("variant_count");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Status")
+                        .IsUnique()
+                        .HasDatabaseName("ux_quran_phrase_index_builds_active")
+                        .HasFilter("status = 3");
+
+                    b.ToTable("quran_phrase_index_builds", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_active_readiness", "status <> 3 OR (exact_ready AND similarity_ready)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_format_version", "format_version > 0");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_source_fingerprint", "source_fingerprint ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_source_revision", "source_revision > 0");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_status", "status IN (1, 2, 3, 4, 5)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_builds_totals", "search_token_count >= 0 AND variant_count >= 0 AND occurrence_count >= 0 AND similarity_edge_count >= 0 AND similarity_anchor_stat_count >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexState", b =>
+                {
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ActiveBuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("active_build_id");
+
+                    b.Property<bool>("IsStale")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_stale");
+
+                    b.Property<Guid?>("PreviousBuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("previous_build_id");
+
+                    b.Property<string>("SourceFingerprint")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("source_fingerprint");
+
+                    b.Property<long>("SourceRevision")
+                        .HasColumnType("bigint")
+                        .HasColumnName("source_revision");
+
+                    b.Property<string>("StaleReason")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("stale_reason");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActiveBuildId");
+
+                    b.HasIndex("PreviousBuildId");
+
+                    b.ToTable("quran_phrase_index_state", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_index_state_distinct_builds", "active_build_id IS NULL OR previous_build_id IS NULL OR active_build_id <> previous_build_id");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_state_singleton", "id = 1");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_state_source_fingerprint", "source_fingerprint IS NULL OR source_fingerprint ~ '^[0-9a-f]{64}$'");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_state_source_revision", "source_revision >= 0");
+
+                            t.HasCheckConstraint("ck_quran_phrase_index_state_stale_reason", "is_stale OR stale_reason IS NULL");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = (short)1,
+                            IsStale = false,
+                            SourceRevision = 0L,
+                            UpdatedAtUtc = new DateTimeOffset(new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0))
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseOccurrence", b =>
+                {
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_id");
+
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AyahId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_id");
+
+                    b.Property<short>("EndWordNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("end_word_number");
+
+                    b.Property<int>("FirstQuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_quran_word_id");
+
+                    b.Property<int>("LastQuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("last_quran_word_id");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<short>("StartWordNumber")
+                        .HasColumnType("smallint")
+                        .HasColumnName("start_word_number");
+
+                    b.Property<long>("VariantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("variant_id");
+
+                    b.Property<short>("WordCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_count");
+
+                    b.HasKey("BuildId", "Id");
+
+                    b.HasIndex("AyahId");
+
+                    b.HasIndex("FirstQuranWordId");
+
+                    b.HasIndex("LastQuranWordId");
+
+                    b.HasIndex("BuildId", "AyahId", "StartWordNumber", "EndWordNumber");
+
+                    b.HasIndex("BuildId", "VariantId", "AyahId", "StartWordNumber")
+                        .IsUnique();
+
+                    b.HasIndex("BuildId", "VariantId", "Mode", "WordCount");
+
+                    b.ToTable("quran_phrase_occurrences", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_occurrences_mode", "mode IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_occurrences_word_count", "word_count > 0");
+
+                            t.HasCheckConstraint("ck_quran_phrase_occurrences_word_range", "start_word_number > 0 AND end_word_number - start_word_number + 1 = word_count");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSearchToken", b =>
+                {
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_id");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.PrimitiveCollection<int[]>("ExactTokenIds")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("exact_token_ids");
+
+                    b.Property<string>("SearchText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("search_text");
+
+                    b.HasKey("BuildId", "Mode", "Id");
+
+                    b.HasIndex("BuildId", "Mode", "SearchText")
+                        .IsUnique();
+
+                    b.ToTable("quran_phrase_search_tokens", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_search_tokens_exact_token_ids", "cardinality(exact_token_ids) > 0");
+
+                            t.HasCheckConstraint("ck_quran_phrase_search_tokens_mode", "mode IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_search_tokens_search_text", "btrim(search_text) <> ''");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSimilarityAnchorStat", b =>
+                {
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_id");
+
+                    b.Property<long>("VariantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("variant_id");
+
+                    b.Property<short>("Threshold")
+                        .HasColumnType("smallint")
+                        .HasColumnName("threshold");
+
+                    b.Property<short?>("BestMatchedCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("best_matched_count");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<int>("NeighborCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("neighbor_count");
+
+                    b.Property<short>("WordCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_count");
+
+                    b.HasKey("BuildId", "VariantId", "Threshold");
+
+                    b.HasIndex("BuildId", "VariantId", "Mode", "WordCount");
+
+                    b.HasIndex("BuildId", "Mode", "WordCount", "Threshold", "NeighborCount", "VariantId")
+                        .IsDescending(false, false, false, false, true, false);
+
+                    b.ToTable("quran_phrase_similarity_anchor_stats", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_anchor_stats_counts", "neighbor_count >= 0 AND (best_matched_count IS NULL OR (best_matched_count >= 0 AND best_matched_count <= word_count))");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_anchor_stats_mode", "mode IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_anchor_stats_threshold", "threshold IN (50, 60, 70, 80, 90)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_anchor_stats_word_count", "word_count >= 4");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSimilarityEdge", b =>
+                {
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_id");
+
+                    b.Property<long>("LeftVariantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("left_variant_id");
+
+                    b.Property<long>("RightVariantId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("right_variant_id");
+
+                    b.Property<short>("DifferenceCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("difference_count");
+
+                    b.PrimitiveCollection<short[]>("DifferencePositions")
+                        .IsRequired()
+                        .HasColumnType("smallint[]")
+                        .HasColumnName("difference_positions");
+
+                    b.Property<short>("MatchedCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("matched_count");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<short>("WordCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_count");
+
+                    b.HasKey("BuildId", "LeftVariantId", "RightVariantId");
+
+                    b.HasIndex("BuildId", "LeftVariantId", "MatchedCount", "RightVariantId")
+                        .IsDescending(false, false, true, false);
+
+                    b.HasIndex("BuildId", "LeftVariantId", "Mode", "WordCount");
+
+                    b.HasIndex("BuildId", "RightVariantId", "MatchedCount", "LeftVariantId")
+                        .IsDescending(false, false, true, false);
+
+                    b.HasIndex("BuildId", "RightVariantId", "Mode", "WordCount");
+
+                    b.ToTable("quran_phrase_similarity_edges", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_counts", "matched_count > 0 AND difference_count > 0 AND matched_count + difference_count = word_count");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_difference_positions", "cardinality(difference_positions) = difference_count AND 0 < ALL (difference_positions) AND word_count >= ALL (difference_positions)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_minimum_match", "matched_count * 2 >= word_count");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_mode", "mode IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_order", "left_variant_id < right_variant_id");
+
+                            t.HasCheckConstraint("ck_quran_phrase_similarity_edges_word_count", "word_count >= 4");
+                        });
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", b =>
+                {
+                    b.Property<Guid>("BuildId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("build_id");
+
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("id");
+
+                    b.Property<int>("AyahCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("ayah_count");
+
+                    b.Property<string>("DisplayText")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("display_text");
+
+                    b.PrimitiveCollection<int[]>("ExactTokenIds")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("exact_token_ids");
+
+                    b.Property<int>("FirstQuranWordId")
+                        .HasColumnType("integer")
+                        .HasColumnName("first_quran_word_id");
+
+                    b.Property<short>("Mode")
+                        .HasColumnType("smallint")
+                        .HasColumnName("mode");
+
+                    b.Property<long>("OccurrenceCount")
+                        .HasColumnType("bigint")
+                        .HasColumnName("occurrence_count");
+
+                    b.PrimitiveCollection<int[]>("SearchTokenIds")
+                        .IsRequired()
+                        .HasColumnType("integer[]")
+                        .HasColumnName("search_token_ids");
+
+                    b.Property<short>("SurahCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("surah_count");
+
+                    b.Property<short>("WordCount")
+                        .HasColumnType("smallint")
+                        .HasColumnName("word_count");
+
+                    b.HasKey("BuildId", "Id");
+
+                    b.HasIndex("FirstQuranWordId");
+
+                    b.HasIndex("BuildId", "Mode", "WordCount", "ExactTokenIds")
+                        .IsUnique();
+
+                    b.HasIndex("BuildId", "Mode", "WordCount", "SearchTokenIds");
+
+                    b.HasIndex("BuildId", "Mode", "WordCount", "OccurrenceCount", "Id")
+                        .IsDescending(false, false, false, true, false);
+
+                    b.ToTable("quran_phrase_variants", null, t =>
+                        {
+                            t.HasCheckConstraint("ck_quran_phrase_variants_counts", "occurrence_count > 0 AND ayah_count > 0 AND surah_count > 0 AND ayah_count <= occurrence_count AND surah_count <= ayah_count");
+
+                            t.HasCheckConstraint("ck_quran_phrase_variants_display_text", "btrim(display_text) <> ''");
+
+                            t.HasCheckConstraint("ck_quran_phrase_variants_exact_token_ids", "cardinality(exact_token_ids) = word_count");
+
+                            t.HasCheckConstraint("ck_quran_phrase_variants_mode", "mode IN (1, 2)");
+
+                            t.HasCheckConstraint("ck_quran_phrase_variants_search_token_ids", "cardinality(search_token_ids) = word_count");
+
+                            t.HasCheckConstraint("ck_quran_phrase_variants_word_count", "word_count > 0");
+                        });
+                });
+
             modelBuilder.Entity("QuranDashboard.Domain.Quran.Surahs.Surah", b =>
                 {
                     b.Property<short>("SurahNumber")
@@ -4666,7 +5142,8 @@ namespace QuranDashboard.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("AyahId");
+                    b.HasIndex("AyahId")
+                        .HasDatabaseName("IX_quran_words_ayah_id");
 
                     b.HasIndex("Location")
                         .IsUnique();
@@ -4678,6 +5155,10 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasIndex("UniqueTashkeelWordId")
                         .HasDatabaseName("IX_quran_words_unique_tashkeel_word_id")
                         .HasFilter("is_ayah_marker = false AND unique_tashkeel_word_id IS NOT NULL");
+
+                    b.HasIndex("AyahId", "WordNumber")
+                        .HasDatabaseName("IX_quran_words_readable_ayah_word")
+                        .HasFilter("is_ayah_marker = false");
 
                     b.HasIndex("PageNumber", "LineNumber", "LineWordOrder");
 
@@ -5519,6 +6000,99 @@ namespace QuranDashboard.Infrastructure.Migrations
                     b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
                         .WithMany()
                         .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexState", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexBuild", null)
+                        .WithMany()
+                        .HasForeignKey("ActiveBuildId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexBuild", null)
+                        .WithMany()
+                        .HasForeignKey("PreviousBuildId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseOccurrence", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.Ayahs.Ayah", null)
+                        .WithMany()
+                        .HasForeignKey("AyahId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("FirstQuranWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("LastQuranWordId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId", "VariantId", "Mode", "WordCount")
+                        .HasPrincipalKey("BuildId", "Id", "Mode", "WordCount")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSearchToken", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexBuild", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSimilarityAnchorStat", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId", "VariantId", "Mode", "WordCount")
+                        .HasPrincipalKey("BuildId", "Id", "Mode", "WordCount")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseSimilarityEdge", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId", "LeftVariantId", "Mode", "WordCount")
+                        .HasPrincipalKey("BuildId", "Id", "Mode", "WordCount")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId", "RightVariantId", "Mode", "WordCount")
+                        .HasPrincipalKey("BuildId", "Id", "Mode", "WordCount")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_quran_phrase_similarity_edges_quran_phrase_variants_build_~1");
+                });
+
+            modelBuilder.Entity("QuranDashboard.Domain.Quran.PhraseSearch.QuranPhraseVariant", b =>
+                {
+                    b.HasOne("QuranDashboard.Domain.Quran.PhraseSearch.PhraseIndexBuild", null)
+                        .WithMany()
+                        .HasForeignKey("BuildId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("QuranDashboard.Domain.Quran.Words.QuranWord", null)
+                        .WithMany()
+                        .HasForeignKey("FirstQuranWordId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

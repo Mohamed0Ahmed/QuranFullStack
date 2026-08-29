@@ -2,14 +2,9 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.Di
 
 internal static class DisplayWordsSql
 {
-    internal const string TashkeelIdentityCte = """
-        WITH display_word_identity AS (
-          SELECT U&'\0640\0653\06D6\06D7\06D8\06D9\06DA\06DB\06DC\06DE\06E9\200F'
-                 AS ignored_tashkeel_marks
-        )
-        """;
+    internal const string TashkeelIdentityCte = QuranTashkeelIdentitySql.IdentityCte;
 
-    private const string ReadableBase = TashkeelIdentityCte + """
+    private const string ReadableBase = QuranTashkeelIdentitySql.IdentityCte + """
         , readable AS (
           SELECT w.id, w.location, w.ayah_id, w.surah_number, w.ayah_number,
                  w.word_number, w.page_number, w.line_number,
@@ -226,7 +221,7 @@ internal static class DisplayWordsSql
             unique_simple_word_id = NULL
         """;
 
-    internal const string UpdateUniqueTashkeelLinks = TashkeelIdentityCte + """
+    internal const string UpdateUniqueTashkeelLinks = QuranTashkeelIdentitySql.IdentityCte + """
         UPDATE quran_words AS w
         SET unique_tashkeel_word_id = u.id
         FROM quran_words_unique_tashkeel AS u

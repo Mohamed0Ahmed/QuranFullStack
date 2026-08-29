@@ -460,7 +460,7 @@ public sealed class EfLemmasReader(QuranDashboardDbContext db) : ILemmasReader
                     && !w.IsAyahMarker
                 select new LemmaWordOccurrenceRow(
                     w.UniqueSimpleWordId,
-                    w.TextUthmaniSimple,
+                    w.TextImlaeiSimple,
                     w.SurahNumber,
                     w.AyahNumber,
                     w.WordNumber,

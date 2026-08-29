@@ -14,6 +14,7 @@ internal static class FoundationImportDependencyInjection
     {
         services.AddSingleton<ManifestReader>();
         services.AddSingleton<JsonWordSourceReader>();
+        services.AddSingleton<JsonMasaqSearchWordsReader>();
         services.AddSingleton<JsonLayoutSourceReader>();
         services.AddSingleton<JsonMetadataSourceReader>();
         services.AddSingleton<IQuranImportSource, QuranImportSource>();

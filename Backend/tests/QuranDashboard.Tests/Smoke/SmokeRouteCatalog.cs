@@ -68,7 +68,7 @@ internal abstract record SmokeSeededPayload
 // answers once the canonical dump is restored, and for the id-scoped reads the two genuinely differ
 // (api/mushaf/pages/1 derives 404 empty and 200 seeded). Collapsing them into one status with an optional
 // body would make one of the two tiers unable to state its own expectation.
-internal sealed record SmokeSeededExpectation(HttpStatusCode Status, SmokeSeededPayload Payload);
+internal sealed record SmokeSeededExpectation(HttpStatusCode Status, SmokeSeededPayload? Payload = null);
 
 // Template is what EndpointDataSource reports, constraints included, so a route whose constraint is
 // relaxed ({id:int} → {id}) surfaces as a parity mismatch instead of silently passing. Path is the bound
@@ -94,6 +94,8 @@ internal sealed record SmokeRoute(
     // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
     public HttpMethod Method { get; init; } = HttpMethod.Get;
 
+    public string? JsonBody { get; init; }
+
     // The route is catalogued so the parity gate sees it, and is deliberately not dispatched by the
     // generic sweep, because the sweep's premise is that it never writes. Do not "fix" this by
     // dispatching it — a write route run twice by the sweep is the bug, not the missing dispatch.
@@ -117,10 +119,12 @@ internal static class SmokeRouteCatalog
     // lemmas and stems list them the other way round.
     //
     // A Seeded expectation is given to the routes whose seeded answer follows from the artifact rather
-    // than from an ordinal. Three groups, twelve routes: the unfiltered reads whose size is a whole table
+    // than from an ordinal. The data-bearing groups cover thirteen routes: the unfiltered reads whose
+    // size is a whole table
     // (the four paged list reads, plus api/mushaf/surahs, which takes no key and whose collection length
-    // is quran_surahs); the three Mushaf reads addressed by a Quran-stable natural key (page 1, verse 1:1,
-    // word 1:1:1); and the four unique-word reads at id 1, whose id is deterministic by construction —
+    // is quran_surahs); the four Mushaf reads addressed by a Quran-stable natural key (page 1,
+    // verse 1:1 study and doors, and word 1:1:1); and the four unique-word reads at id 1, whose id is
+    // deterministic by construction —
     // migration DeterministicUniqueWordIds drops the
     // identity column, the configuration declares ValueGeneratedNever, and the id IS the quran_words.id of
     // the word's first mushaf occurrence, an equality DisplayWordsSql.CheckUnqIdDeterministicViolations
@@ -133,6 +137,8 @@ internal static class SmokeRouteCatalog
     // counter gave it to a root, so those tables start at 2 and 3 — which means /api/words/lemmas/1 and
     // /api/words/stems/1 answer 404 fully seeded, and answer it correctly. That 404 is not recorded as a
     // seeded expectation either: pinning it would pin the very ordinal this paragraph declines to trust.
+    // The eleven seeded PhraseSearch GET routes carry a status-only expectation because the canonical dump
+    // excludes every derived quran_phrase_* row and the migrated empty state must answer 503 honestly.
     public static IReadOnlyList<SmokeRoute> Routes { get; } =
     [
         // api/words/roots — RootsController + RootsController.Details
@@ -194,6 +200,90 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyPage()),
         },
 
+        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences",
+            "/api/quran/phrase-search/repetitions/00000000-0000-0000-0000-000000000001/1/occurrences",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/query-resolutions",
+            "/api/quran/phrase-search/query-resolutions?mode=simple&q64=eA",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/branches",
+            "/api/quran/phrase-search/contexts/branches?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/groups",
+            "/api/quran/phrase-search/contexts/groups?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/results",
+            "/api/quran/phrase-search/contexts/results?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/occurrences",
+            "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/linking-selection",
+            "/api/quran/phrase-search/contexts/linking-selection",
+            HttpStatusCode.ServiceUnavailable,
+            SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            JsonBody = """
+                {"resolutionRef":"AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO","selectionMode":"only","ayahIds":[1]}
+                """,
+            ParityOnly = true,
+        },
+        new(
+            "api/quran/phrase-search/similarities/search",
+            "/api/quran/phrase-search/similarities/search?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQACAAAAAQAAAALDBrQxDPHCLw&minimumMatchedWords=1",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/similarity-groups",
+            "/api/quran/phrase-search/similarity-groups?mode=simple&length=4&threshold=50",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/similarity-groups/{buildId}/{variantId}/matches",
+            "/api/quran/phrase-search/similarity-groups/00000000-0000-0000-0000-000000000001/1/matches?threshold=50",
+            HttpStatusCode.ServiceUnavailable)
+        {
+            Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are
         // distinct templates on the same controller; `.../word-types/table` (list) collides by prefix
@@ -218,6 +308,7 @@ internal static class SmokeRouteCatalog
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyCollection("lines")),
         },
+        new("api/mushaf/pages/{pageNumber}/door-highlights", "/api/mushaf/pages/1/door-highlights", HttpStatusCode.OK),
         new("api/mushaf/surahs", "/api/mushaf/surahs", HttpStatusCode.OK)
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.CountedCollection("surahs", "quran_surahs")),
@@ -226,6 +317,10 @@ internal static class SmokeRouteCatalog
         new("api/mushaf/ayahs/{verseKey}/study", "/api/mushaf/ayahs/1:1/study", HttpStatusCode.NotFound)
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.EchoedKey("ayah", "verseKey", "1:1")),
+        },
+        new("api/mushaf/ayahs/{verseKey}/doors", "/api/mushaf/ayahs/1:1/doors", HttpStatusCode.NotFound)
+        {
+            Seeded = new(HttpStatusCode.OK),
         },
         new("api/mushaf/ayahs/{verseKey}/mutashabihat", "/api/mushaf/ayahs/1:1/mutashabihat", HttpStatusCode.NotFound),
         new("api/mushaf/ayahs/{verseKey}/similar-ayahs", "/api/mushaf/ayahs/1:1/similar-ayahs", HttpStatusCode.NotFound),
@@ -246,6 +341,11 @@ internal static class SmokeRouteCatalog
         new("api/linking/workspace/sources/{id:long}", "/api/linking/workspace/sources/1", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
         {
             Method = HttpMethod.Delete,
+            ParityOnly = true,
+        },
+        new("api/linking/workspace/sources/{id:long}/types", "/api/linking/workspace/sources/1/types", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Patch,
             ParityOnly = true,
         },
         new("api/linking/workspace/sources/order", "/api/linking/workspace/sources/order", HttpStatusCode.OK, SmokeRouteAccess.OwnerOnly)

@@ -1,0 +1,122 @@
+@use '../../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.context-explorer {
+  display: grid;
+  gap: var(--qd-space-3);
+  min-inline-size: 0;
+}
+
+.context-explorer__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-2);
+  min-block-size: 3.5rem;
+}
+
+.context-explorer__header h2,
+.context-explorer__header p {
+  margin: 0;
+}
+
+.context-explorer__header p {
+  color: var(--qd-green-text);
+  font-size: var(--qd-type-caption);
+  font-weight: 700;
+}
+
+.context-explorer__result-count {
+  display: grid;
+  justify-items: end;
+  gap: var(--qd-s-2);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.context-explorer__result-count strong {
+  color: var(--qd-ink);
+  font-size: var(--qd-type-body);
+}
+
+.context-explorer__network {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--qd-space-3);
+  block-size: 40rem;
+  min-inline-size: 0;
+}
+
+.context-explorer__network > qd-phrase-context-web {
+  min-block-size: 0;
+  block-size: 100%;
+}
+
+.context-explorer__loading {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: color-mix(in oklch, var(--qd-surface) 88%, var(--qd-accent-tint));
+  color: var(--qd-ink-body);
+  font-size: var(--qd-type-caption);
+}
+
+.context-explorer__loading > span {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  border: 2px solid var(--qd-accent-soft);
+  border-block-start-color: var(--qd-accent);
+  border-radius: 50%;
+  animation: context-loading-spin 0.8s linear infinite;
+}
+
+@keyframes context-loading-spin {
+  to { transform: rotate(1turn); }
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .context-explorer__network {
+    grid-template-columns: minmax(0, 1fr);
+    block-size: calc(68rem + var(--qd-space-3));
+  }
+
+  .context-explorer__network > qd-phrase-context-web {
+    block-size: 34rem;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .context-explorer__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .context-explorer__result-count {
+    justify-items: start;
+  }
+
+  .context-explorer__network > qd-phrase-context-web {
+    block-size: 30rem;
+  }
+
+  .context-explorer__network {
+    block-size: calc(60rem + var(--qd-space-3));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .context-explorer__loading > span {
+    animation: none;
+  }
+}

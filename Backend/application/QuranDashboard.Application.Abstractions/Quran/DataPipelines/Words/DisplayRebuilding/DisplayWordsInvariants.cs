@@ -9,7 +9,7 @@ public static class DisplayWordsInvariants
     public const int CanonicalOrderedTashkeel = 77_432;
     public const int CanonicalOrderedSimple = 77_432;
     public const int CanonicalUniqueTashkeel = 19_016;
-    public const int CanonicalUniqueSimple = 14_783;
+    public const int CanonicalUniqueSimple = 14_910;
     public const int InformationalUniqueTashkeel = CanonicalUniqueTashkeel;
     public const int InformationalUniqueSimple = CanonicalUniqueSimple;
 

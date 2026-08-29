@@ -8,6 +8,7 @@ public interface ILinkingWorkspaceWriter
     Task<LinkingWorkspaceDto> AddSourceAsync(
         int userId,
         LinkingSourceDescriptor descriptor,
+        LinkingWorkspaceConfigurationInput? initialConfiguration,
         uint? expectedWorkspaceVersion,
         CancellationToken cancellationToken);
 

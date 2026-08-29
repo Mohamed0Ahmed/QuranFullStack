@@ -60,6 +60,7 @@ public static class ServiceCollectionExtensions
                 AdditionalPropertiesAllowed = true
             });
             options.SchemaFilter<AllPropertiesRequiredSchemaFilter>();
+            options.OperationFilter<PhraseSearchComputeRateLimitOperationFilter>();
         });
         services.Configure<PermissionCatalogueStartupOptions>(
             configuration.GetSection(PermissionCatalogueStartupOptions.SectionName));
@@ -87,10 +88,7 @@ public static class ServiceCollectionExtensions
                     .SetIsOriginAllowed(origin => IsAllowedCorsOrigin(origin, allowedOrigins, vercelPreviewHostPrefix))
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    // ETag is not a CORS-safelisted response header, and the app is cross-origin in both
-                    // environments: without this, headers.get('ETag') reads null in the browser, the
-                    // frontend never stores a validator, and conditional GETs silently never happen.
-                    .WithExposedHeaders(HeaderNames.ETag)
+                    .WithExposedHeaders(HeaderNames.ETag, HeaderNames.RetryAfter)
                     .AllowCredentials();
             });
         });

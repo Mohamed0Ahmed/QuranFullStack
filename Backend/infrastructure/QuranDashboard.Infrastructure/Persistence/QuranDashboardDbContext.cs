@@ -1,5 +1,6 @@
 using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
+using QuranDashboard.Domain.Quran.PhraseSearch;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Display;
@@ -50,6 +51,14 @@ public sealed class QuranDashboardDbContext(DbContextOptions<QuranDashboardDbCon
     public DbSet<FullI3rabSource> FullI3rabSources => Set<FullI3rabSource>();
     public DbSet<FullI3rabEntry> FullI3rabEntries => Set<FullI3rabEntry>();
     public DbSet<FullI3rabAyahEntry> FullI3rabAyahEntries => Set<FullI3rabAyahEntry>();
+    public DbSet<PhraseIndexBuild> QuranPhraseIndexBuilds => Set<PhraseIndexBuild>();
+    public DbSet<PhraseIndexState> QuranPhraseIndexStates => Set<PhraseIndexState>();
+    public DbSet<QuranPhraseSearchToken> QuranPhraseSearchTokens => Set<QuranPhraseSearchToken>();
+    public DbSet<QuranPhraseVariant> QuranPhraseVariants => Set<QuranPhraseVariant>();
+    public DbSet<QuranPhraseOccurrence> QuranPhraseOccurrences => Set<QuranPhraseOccurrence>();
+    public DbSet<QuranPhraseSimilarityEdge> QuranPhraseSimilarityEdges => Set<QuranPhraseSimilarityEdge>();
+    public DbSet<QuranPhraseSimilarityAnchorStat> QuranPhraseSimilarityAnchorStats =>
+        Set<QuranPhraseSimilarityAnchorStat>();
 
     public DbSet<User> AccessUsers => Set<User>();
     public DbSet<Role> AccessRoles => Set<Role>();

@@ -23,6 +23,8 @@ public sealed record LinkingSourceDescriptorBody
     public LinkingWordTypeSelectionBody? Selection { get; init; }
 
     public IReadOnlyList<LinkingManualAyahBody>? ManualAyahs { get; init; }
+
+    public string? ContextKey { get; init; }
 }
 
 public sealed record LinkingWordTypeSelectionBody

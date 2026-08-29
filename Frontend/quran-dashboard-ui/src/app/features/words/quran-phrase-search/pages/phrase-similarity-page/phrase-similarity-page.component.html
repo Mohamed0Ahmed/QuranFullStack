@@ -1,0 +1,168 @@
+<section class="phrase-similarity-page" aria-labelledby="phrase-similarity-title">
+  <header class="phrase-similarity-page__hero">
+    <div>
+      <p>أدوات البحث اللفظي</p>
+      <h1 id="phrase-similarity-title">متشابهات العبارات القرآنية</h1>
+      <span>اكتب عبارة مرجعية، ثم قارن أقرب العبارات إليها كلمةً بكلمة.</span>
+    </div>
+  </header>
+
+  <qd-notice
+    tone="info"
+    [message]="state().notice"
+    dismissLabel="إخفاء"
+    (dismiss)="facade.dismissNotice()"
+  />
+
+  @if (state().capabilitiesStatus === 'unavailable') {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="إعادة فحص جاهزية الفهرس"
+      (action)="facade.retry()"
+    />
+  } @else if (state().routeInvalid) {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="العودة للإعدادات الافتراضية"
+      (action)="facade.resetInvalidState()"
+    />
+  } @else if (!state().capabilities) {
+    @if (
+      state().capabilitiesStatus === 'error' ||
+      state().capabilitiesStatus === 'rate-limited'
+    ) {
+      <qd-error-state
+        [message]="state().errorMessage"
+        actionLabel="إعادة المحاولة"
+        (action)="facade.retry()"
+      />
+    } @else {
+      <qd-panel-skeleton
+        shape="rows"
+        [rowsCount]="5"
+        rowTemplate="minmax(9rem, 1fr) 8rem"
+        loadingLabel="جارٍ تجهيز المتشابهات…"
+      />
+    }
+  } @else {
+    <section class="phrase-similarity-page__search" aria-label="البحث بعبارة مرجعية">
+      <qd-phrase-query-resolution
+        [state]="resolutionView()"
+        [availableModes]="availableModes()"
+        [inlineControls]="true"
+        label="العبارة المرجعية"
+        help="اكتب كلمتين أو أكثر، ثم اختر الصياغة القرآنية الدقيقة عند الحاجة."
+        (draftChange)="facade.setDraft($event)"
+        (modeChange)="facade.setMode($event)"
+        (submitRequested)="facade.submitQuery()"
+        (candidateSelected)="facade.selectCandidate($event)"
+      />
+    </section>
+
+    @if (state().route.resolution) {
+      <section class="phrase-similarity-page__controls" aria-label="ضوابط التشابه">
+        <label class="phrase-similarity-page__field">
+          <span>مدى المقارنة</span>
+          <select
+            class="qd-select"
+            [value]="facade.maximumDifferences()"
+            [disabled]="busy() || state().queryDraftPending"
+            (change)="onDifferences($any($event.target).value)"
+          >
+            @for (difference of manualDifferences(); track difference) {
+              <option
+                [value]="difference"
+                [selected]="difference === facade.maximumDifferences()"
+              >
+                {{ difference === 1 ? 'اختلاف واحد' : difference + ' اختلافات' }} كحد أقصى
+              </option>
+            }
+          </select>
+        </label>
+
+        <label class="phrase-similarity-page__field">
+          <span>ترتيب النتائج</span>
+          <select
+            class="qd-select"
+            [value]="state().route.sort"
+            [disabled]="busy() || state().queryDraftPending"
+            (change)="onSort($any($event.target).value)"
+          >
+            <option value="strength">حسب درجة المطابقة</option>
+            <option value="mushaf-order">حسب ترتيب المصحف</option>
+          </select>
+        </label>
+
+        <div class="phrase-similarity-page__rule">
+          <strong>{{ facade.minimumMatchedWords() }} كلمة متطابقة على الأقل</strong>
+          <span>
+            من أصل {{ state().route.length }}، مع
+            {{ facade.maximumDifferences() === 1 ? 'اختلاف واحد' : facade.maximumDifferences() + ' اختلافات' }}
+            كحد أقصى.
+          </span>
+        </div>
+      </section>
+    }
+
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ countAnnouncement() }}</p>
+
+    <div
+      class="phrase-similarity-page__results"
+      [class.qd-refreshing-region]="state().resultsStatus === 'refreshing'"
+      [attr.aria-busy]="busy() ? 'true' : null"
+    >
+      <qd-refreshing-indicator
+        [active]="state().resultsStatus === 'refreshing'"
+        testId="phrase-similarity-refreshing"
+      />
+
+      @if (state().resultsStatus === 'loading') {
+        <qd-panel-skeleton
+          shape="rows"
+          [rowsCount]="6"
+          rowTemplate="minmax(11rem, 1fr) 7rem"
+          loadingLabel="جارٍ تحميل نتائج التشابه…"
+        />
+      } @else if (
+        state().resultsStatus === 'error' ||
+        state().resultsStatus === 'rate-limited' ||
+        state().resultsStatus === 'unavailable' ||
+        state().resultsStatus === 'stale' ||
+        state().resultsStatus === 'invalid'
+      ) {
+        <qd-error-state
+          [message]="state().errorMessage"
+          actionLabel="إعادة المحاولة"
+          (action)="facade.retry()"
+        />
+      } @else if (state().resultsStatus === 'empty') {
+        <qd-empty-state message="لا توجد عبارات بهذه الدرجة. وسّع مدى الاختلاف أو جرّب عبارة أقصر." />
+      } @else if (state().resultsStatus === 'idle') {
+        <div class="phrase-similarity-page__onboarding">
+          <span aria-hidden="true">١</span>
+          <div>
+            <h2>ابدأ بعبارة قرآنية</h2>
+            <p>
+              سنحدد موضعها الدقيق أولًا، ثم نعرض العبارات القريبة منها في جدول واضح
+              يبيّن الكلمات المتطابقة والمختلفة.
+            </p>
+          </div>
+        </div>
+      } @else if (state().queryPhrase; as queryPhrase) {
+        <qd-phrase-similarity-linking-actions
+          [disabled]="busy() || state().queryDraftPending || state().resultsStatus !== 'success'"
+        />
+        <qd-phrase-similarity-list
+          [items]="state().ayahs"
+          [queryPhrase]="queryPhrase"
+          [totalAyahCount]="state().totalAyahCount"
+          [totalOccurrenceCount]="state().totalOccurrenceCount"
+          [page]="state().route.page"
+          [resultSetKey]="state().route.resolution + '|' + state().route.min + '|' + state().route.sort + '|' + state().route.page"
+          [busy]="busy()"
+          (pageChange)="facade.setPage($event)"
+        />
+      }
+    </div>
+  }
+</section>

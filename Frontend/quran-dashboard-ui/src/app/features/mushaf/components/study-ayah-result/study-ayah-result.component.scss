@@ -1,0 +1,104 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--qd-space-2);
+  padding: var(--qd-space-2) var(--qd-space-3);
+  background: var(--qd-ayah-card-bg);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-sm);
+  box-shadow: none;
+}
+
+:host(.study-ayah-result--selected),
+:host(.study-ayah-result--linking-selected) {
+  border-color: var(--qd-border-accent);
+}
+
+:host(.study-ayah-result--linking-selectable) {
+  cursor: pointer;
+}
+
+.study-ayah-result {
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--qd-space-2);
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+  }
+
+  &__position {
+    flex-shrink: 0;
+    min-width: 1.25rem;
+    color: var(--qd-text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.4;
+  }
+
+  &__reference {
+    color: var(--qd-text);
+    font-weight: 700;
+  }
+
+  &__page {
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__selected-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border: var(--qd-hairline);
+    border-radius: var(--qd-radius-sm);
+    background: var(--qd-surface);
+    color: var(--qd-text);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  &__linking-selection {
+    display: inline-flex;
+    align-items: center;
+    min-inline-size: var(--qd-hit-target-min);
+    min-block-size: var(--qd-hit-target-min);
+    margin-inline-start: auto;
+    justify-content: center;
+  }
+
+  &__text {
+    display: block;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-radius: var(--qd-radius-sm);
+    background: transparent;
+    color: var(--qd-text);
+    font-family: var(--qd-font-quran);
+    font-size: 0.9375rem;
+    line-height: 2;
+    text-align: inherit;
+    cursor: pointer;
+
+    &:hover {
+      color: var(--qd-accent);
+    }
+
+    &:focus-visible {
+      outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+      outline-offset: var(--qd-focus-ring-offset);
+    }
+  }
+
+  &__word--matched {
+    background: var(--qd-success-tint);
+    color: var(--qd-success);
+    box-decoration-break: clone;
+  }
+}

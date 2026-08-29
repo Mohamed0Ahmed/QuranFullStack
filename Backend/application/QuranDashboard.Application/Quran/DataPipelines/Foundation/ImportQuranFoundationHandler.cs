@@ -58,13 +58,19 @@ public sealed class ImportQuranFoundationHandler
                     $"Import validation failed ({validation.Errors.Count} hard rule(s)): {validation.Errors[0]}");
             }
 
-            await importWriter.WriteAsync(assembled, command.Force, ct);
+            var writeResult = await importWriter.WriteAsync(assembled, command.Force, ct);
 
-            validation = validation with { Persisted = true };
+            validation = validation with
+            {
+                Persisted = true,
+                Warnings = validation.Warnings.Concat(writeResult.Warnings).ToList(),
+            };
 
             await reportWriter.WriteAsync(validation, reportOutDir, ct);
 
-            return ImportQuranFoundationResult.Success(validation.Totals);
+            return writeResult.PhraseIndexCleanupCompleted
+                ? ImportQuranFoundationResult.Success(validation.Totals)
+                : ImportQuranFoundationResult.SuccessWithCleanupWarning(validation.Totals);
         }
         catch (Exception ex) when (ex is InvalidDataException or FileNotFoundException or IOException)
         {

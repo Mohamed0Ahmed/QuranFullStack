@@ -5,6 +5,7 @@ import {
   ElementRef,
   PLATFORM_ID,
   afterNextRender,
+  effect,
   inject,
   input,
 } from '@angular/core';
@@ -50,6 +51,7 @@ export class SessionScrollStateDirective {
   private mutationObserver: MutationObserver | null = null;
   private activeKey: string | null = null;
   private captureCurrentOnFlush = true;
+  private initialized = false;
   private destroyed = false;
 
   private readonly onScroll = (): void => {
@@ -76,6 +78,17 @@ export class SessionScrollStateDirective {
       return;
     }
 
+    effect(() => {
+      const key = this.qdSessionScrollState().trim();
+      if (!this.initialized || key === '' || key === this.activeKey) {
+        return;
+      }
+      if (this.scrollTarget === null) {
+        this.initialize();
+        return;
+      }
+      this.changeKey(key);
+    });
     afterNextRender(() => this.initialize());
     this.destroyRef.onDestroy(() => this.destroy());
   }
@@ -84,6 +97,7 @@ export class SessionScrollStateDirective {
     if (this.destroyed) {
       return;
     }
+    this.initialized = true;
     const key = this.qdSessionScrollState().trim();
     if (key === '') {
       return;
@@ -105,18 +119,23 @@ export class SessionScrollStateDirective {
     this.scrollTarget.addEventListener('pointerdown', this.onUserScrollIntent, { passive: true });
     this.scrollTarget.addEventListener('keydown', this.onKeyDown, { passive: true });
 
-    const offset = this.store.read(key);
-    if (offset === null) {
-      if (this.scrollTarget === window) {
-        this.pendingRestore = { x: 0, y: 0 };
-        this.captureCurrentOnFlush = false;
-        this.scheduleRestoreAttempt();
-      }
-      return;
-    }
-    this.pendingRestore = offset;
+    this.restore(key);
+  }
+
+  private changeKey(key: string): void {
+    this.flush();
+    this.cancelPendingRestore();
+    this.activeKey = key;
+    this.restore(key);
+  }
+
+  private restore(key: string): void {
+    const savedOffset = this.store.read(key);
+    this.pendingRestore = savedOffset ?? { x: 0, y: 0 };
     this.captureCurrentOnFlush = false;
-    this.observeContentSize();
+    if (savedOffset !== null) {
+      this.observeContentSize();
+    }
     this.scheduleRestoreAttempt();
   }
 

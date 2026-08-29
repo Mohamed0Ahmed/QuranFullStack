@@ -1,0 +1,32 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.alternative-group {
+  min-inline-size: 0;
+  border-color: var(--context-web-hairline);
+  background: color-mix(in oklch, var(--qd-surface) 76%, var(--context-web-tint));
+}
+
+.alternative-group__chips {
+  min-inline-size: 0;
+  overflow-x: auto;
+}
+
+.alternative-group__chip {
+  flex: 0 0 auto;
+  color: var(--context-web-color);
+  font-family: var(--qd-font-quran);
+}
+
+@media (max-width: 767px) {
+  .alternative-group {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .alternative-group > .qd-btn {
+    align-self: flex-start;
+  }
+}

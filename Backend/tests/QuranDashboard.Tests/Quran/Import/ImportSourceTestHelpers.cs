@@ -6,9 +6,14 @@ internal static class ImportSourceTestHelpers
 {
     public static string CopySourceToTemp(string validSourceRoot)
     {
-        var tempDir = Path.Combine(Path.GetTempPath(), $"quran-import-test-{Guid.NewGuid():N}");
-        CopyDirectory(validSourceRoot, tempDir);
-        return tempDir;
+        var tempParent = Path.Combine(Path.GetTempPath(), $"quran-import-test-{Guid.NewGuid():N}");
+        var foundationDestination = Path.Combine(tempParent, "quran-foundation");
+        var masaqSource = Path.GetFullPath(Path.Combine(validSourceRoot, "..", "masaq-corpus-aligned"));
+        var masaqDestination = Path.Combine(tempParent, "masaq-corpus-aligned");
+
+        CopyDirectory(validSourceRoot, foundationDestination);
+        CopyDirectory(masaqSource, masaqDestination);
+        return foundationDestination;
     }
 
     // Per-test temp report dir so import tests never fall back to the handler's default
@@ -26,9 +31,15 @@ internal static class ImportSourceTestHelpers
             Path.Combine(sourceRoot, "words", "imlaei-simple.json")
         };
 
-        var referencePath = wordFiles[0];
+        var referencePath = wordFiles[3];
         var referenceRoot = JsonNode.Parse(File.ReadAllText(referencePath))!.AsObject();
-        var locations = referenceRoot.Select(pair => pair.Key).Take(2).ToArray();
+        var locations = referenceRoot
+            .Where(pair =>
+                pair.Value?["text"]?.GetValue<string>() is { Length: > 0 } text
+                && text.All(char.IsDigit))
+            .Select(pair => pair.Key)
+            .Take(2)
+            .ToArray();
 
         if (locations.Length < 2)
         {

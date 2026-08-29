@@ -1,0 +1,50 @@
+<header class="study-ayah-result__meta">
+  <span class="study-ayah-result__position" [attr.data-testid]="positionTestId()">
+    {{ position() }}
+  </span>
+  <span class="study-ayah-result__reference" [attr.data-testid]="referenceTestId()">
+    {{ surahNameArabic() }} — {{ ayahNumber() }}
+  </span>
+  <span class="study-ayah-result__page" [attr.data-testid]="pageTestId()">
+    صفحة {{ pageNumber() }}
+  </span>
+  @if (selected()) {
+    <span
+      class="study-ayah-result__selected-badge"
+      [attr.data-testid]="selectedLabelTestId()"
+    >
+      الآية المحددة
+    </span>
+  }
+  @if (linkingSelectionEnabled() && linkingSelectionLabel()) {
+    <span class="study-ayah-result__linking-selection">
+      <input
+        class="qd-checkbox"
+        type="checkbox"
+        [checked]="linkingSelected()"
+        [attr.aria-label]="linkingSelectionLabel()"
+        [attr.data-testid]="testIdKind() + '-linking-selection'"
+        (change)="toggleLinkingSelection()"
+      />
+    </span>
+  }
+</header>
+
+<button
+  type="button"
+  class="study-ayah-result__text"
+  dir="rtl"
+  [attr.data-testid]="textTestId()"
+  [attr.aria-label]="navigateLabel()"
+  (click)="ayahNavigate.emit()"
+>
+  @if (matchedWordFrom() !== null && matchedWordTo() !== null) {
+    @for (word of textWords(); track $index) {
+      <span [class.study-ayah-result__word--matched]="isMatched($index + 1)">{{
+        word
+      }}</span>{{ $last ? '' : ' ' }}
+    }
+  } @else {
+    {{ displayText() }}
+  }
+</button>

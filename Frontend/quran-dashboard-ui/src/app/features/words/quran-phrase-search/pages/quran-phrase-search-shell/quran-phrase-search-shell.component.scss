@@ -1,0 +1,13 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.phrase-search-shell__frame {
+  max-inline-size: 100rem;
+}
+
+.phrase-search-shell__content {
+  min-inline-size: 0;
+  outline: none;
+}

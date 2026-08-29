@@ -35,6 +35,7 @@ public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWrit
         verdict = report.Verdict,
         persisted = report.Persisted,
         forced = report.Forced,
+        profile = report.Profile,
         sourcePath = report.SourcePath,
         totals = new
         {
@@ -90,6 +91,7 @@ public sealed class MarkdownJsonTranslationReportWriter : ITranslationReportWrit
         builder.AppendLine($"- Verdict: {report.Verdict.ToUpperInvariant()}");
         builder.AppendLine($"- Persisted: {report.Persisted.ToString().ToLowerInvariant()}");
         builder.AppendLine($"- Forced: {report.Forced.ToString().ToLowerInvariant()}");
+        builder.AppendLine($"- Profile: {report.Profile}");
         builder.AppendLine($"- Source path: {report.SourcePath}");
         builder.AppendLine();
         builder.AppendLine("## Totals");

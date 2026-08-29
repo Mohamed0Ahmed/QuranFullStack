@@ -1,0 +1,165 @@
+<section class="similarity-ayahs" aria-labelledby="similarity-results-title">
+  <header class="similarity-ayahs__summary">
+    <div>
+      <p>نتائج العبارة</p>
+      <h2 id="similarity-results-title">{{ queryPhrase().displayText }}</h2>
+    </div>
+    <div class="similarity-ayahs__counts" aria-label="ملخص النتائج">
+      <strong>{{ totalAyahCount() }} آية</strong>
+      <span>{{ totalOccurrenceCount() }} موضعًا</span>
+      <span class="similarity-ayahs__selected-count qd-badge qd-badge--accent">{{ selection.selectedCount() }} آية محددة</span>
+    </div>
+    <label class="similarity-ayahs__compact-select-all qd-check-row">
+      <input
+        class="qd-checkbox"
+        type="checkbox"
+        [checked]="selection.allSelected()"
+        [indeterminate]="selection.partiallySelected()"
+        [disabled]="busy() || totalAyahCount() === 0"
+        aria-label="تحديد كل آيات نتائج التشابه"
+        data-testid="phrase-similarity-compact-select-all"
+        (change)="toggleAll($event)"
+      />
+      <span>تحديد كل الآيات</span>
+    </label>
+    <div class="similarity-ayahs__legend" aria-label="مفتاح التلوين">
+      <span class="similarity-ayahs__legend-match">أخضر: موضع مطابق</span>
+      <span class="similarity-ayahs__legend-difference">أحمر: موضع مختلف</span>
+    </div>
+  </header>
+
+  <p class="qd-sr-only" role="status" aria-live="polite">
+    تم تحديد {{ selection.selectedCount() }} من {{ totalAyahCount() }} آية
+  </p>
+
+  <qd-data-table
+    class="similarity-ayahs__table qd-explorer-table"
+    renderer="standard"
+    [rows]="rows()"
+    [rowId]="rowIdentity"
+    ariaLabel="جدول الآيات المطابقة والمتشابهة"
+    bodyAriaLabel="آيات العبارة المطابقة والمتشابهة"
+    [columnCount]="6"
+    [totalRowCount]="totalAyahCount()"
+    [state]="busy() ? 'refreshing' : 'ready'"
+    [rowHeight]="rowHeight"
+    [compactRowHeight]="compactRowHeight"
+    [selectable]="!busy()"
+    [selected]="isRowSelected"
+    scrollStateKey="words.phrases.similarity-ayahs"
+    (rowSelected)="toggleRow($event)"
+  >
+    <ng-template #headerTemplate>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--selection qd-explorer-table__header-cell" role="columnheader">
+        <input
+          class="qd-checkbox"
+          type="checkbox"
+          [checked]="selection.allSelected()"
+          [indeterminate]="selection.partiallySelected()"
+          [disabled]="busy() || totalAyahCount() === 0"
+          aria-label="تحديد كل آيات نتائج التشابه"
+          data-testid="phrase-similarity-select-all"
+          (change)="toggleAll($event)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
+      <div class="similarity-ayahs__cell qd-explorer-table__header-cell" role="columnheader">السورة والآية</div>
+      <div class="similarity-ayahs__cell qd-explorer-table__header-cell" role="columnheader">نص الآية</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell" role="columnheader">التطابق</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__header-cell" role="columnheader">المواضع</div>
+    </ng-template>
+
+    <ng-template #rowTemplate let-row let-index="index">
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--selection qd-explorer-table__cell" role="cell">
+        <input
+          class="qd-checkbox"
+          type="checkbox"
+          [checked]="selection.isSelected(row.ayah.ayahId)"
+          [disabled]="busy()"
+          [attr.aria-label]="'تحديد الآية ' + row.ayah.verseKey"
+          [attr.data-ayah-id]="row.ayah.ayahId"
+          (change)="toggleAyah($event, row.ayah.ayahId)"
+          (click)="$event.stopPropagation()"
+        />
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
+      <div class="similarity-ayahs__cell similarity-ayahs__location qd-explorer-table__cell" role="cell">
+        <strong>{{ row.ayah.surahNameArabic }}</strong>
+        <span>آية {{ row.ayah.ayahNumber }} · صفحة {{ row.ayah.pageFrom }}</span>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__ayah qd-explorer-table__cell" role="cell">
+        <a
+          class="similarity-ayahs__ayah-link qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
+          (click)="$event.stopPropagation()"
+        >
+          <qd-phrase-highlighted-ayah
+            roleScheme="similarity"
+            [compact]="true"
+            [words]="row.ayah.words"
+            [similarityHighlights]="row.ayah.highlights"
+          />
+        </a>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__score qd-explorer-table__cell" role="cell">
+        <strong [class.similarity-ayahs__score--exact]="row.ayah.minimumDifferenceCount === 0">
+          {{ row.matchPercentLabel }}%
+        </strong>
+        <span>{{ differenceLabel(row.ayah) }}</span>
+      </div>
+      <div class="similarity-ayahs__cell similarity-ayahs__cell--number qd-explorer-table__cell" role="cell">
+        {{ row.ayah.occurrenceCount }}
+      </div>
+    </ng-template>
+
+    <ng-template #compactRowTemplate let-row let-index="index">
+      <article class="similarity-ayahs__compact">
+        <input
+          class="qd-checkbox"
+          type="checkbox"
+          [checked]="selection.isSelected(row.ayah.ayahId)"
+          [disabled]="busy()"
+          [attr.aria-label]="'تحديد الآية ' + row.ayah.verseKey"
+          [attr.data-ayah-id]="row.ayah.ayahId"
+          (change)="toggleAyah($event, row.ayah.ayahId)"
+          (click)="$event.stopPropagation()"
+        />
+        <span class="similarity-ayahs__compact-number">{{ rowNumber(index) }}</span>
+        <div class="similarity-ayahs__compact-location">
+          <strong>{{ row.ayah.surahNameArabic }} · آية {{ row.ayah.ayahNumber }}</strong>
+          <span>صفحة {{ row.ayah.pageFrom }} · {{ row.ayah.occurrenceCount }} موضعًا</span>
+        </div>
+        <div class="similarity-ayahs__compact-score">
+          <strong>{{ row.matchPercentLabel }}%</strong>
+          <span>{{ differenceLabel(row.ayah) }}</span>
+        </div>
+        <a
+          class="similarity-ayahs__ayah-link qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
+          (click)="$event.stopPropagation()"
+        >
+          <qd-phrase-highlighted-ayah
+            roleScheme="similarity"
+            [compact]="true"
+            [words]="row.ayah.words"
+            [similarityHighlights]="row.ayah.highlights"
+          />
+        </a>
+      </article>
+    </ng-template>
+
+    <ng-template #paginationTemplate>
+      <qd-pagination
+        [currentPage]="page()"
+        [pageSize]="pageSize"
+        [totalCount]="totalAyahCount()"
+        [disabled]="busy()"
+        ariaLabel="صفحات الآيات المطابقة والمتشابهة"
+        (pageChange)="pageChange.emit($event)"
+      />
+    </ng-template>
+  </qd-data-table>
+</section>

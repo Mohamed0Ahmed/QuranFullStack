@@ -1,0 +1,14 @@
+<div class="phrase-mode-toggle" role="group" aria-label="نمط نص العبارة">
+  @for (option of availableModes(); track option) {
+    <button
+      type="button"
+      class="phrase-mode-toggle__option"
+      [class.phrase-mode-toggle__option--active]="mode() === option"
+      [attr.aria-pressed]="mode() === option"
+      [disabled]="disabled()"
+      (click)="select(option)"
+    >
+      {{ labels[option] }}
+    </button>
+  }
+</div>

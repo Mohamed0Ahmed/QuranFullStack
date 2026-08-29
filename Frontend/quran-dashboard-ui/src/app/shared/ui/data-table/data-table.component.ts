@@ -29,6 +29,8 @@ import { QdDataTableRenderer, QdDataTableRowContext, QdDataTableRowDirection, Qd
 
 const DEFAULT_ROW_HEIGHT = 40;
 const VIRTUAL_ROW_BUFFER = 640;
+const INTERACTIVE_ROW_DESCENDANT_SELECTOR =
+  'a, button, input, select, textarea, summary, [contenteditable], [role="button"], [role="link"], [tabindex]';
 
 @Component({
   selector: 'qd-data-table',
@@ -79,6 +81,7 @@ export class QdDataTableComponent<T> {
   readonly selectedRow = input<T | null>(null);
   readonly selected = input<(row: T, selectedRow: T | null) => boolean>((row, selectedRow) => row === selectedRow);
   readonly selectable = input(false);
+  readonly rowSelectable = input<(row: T) => boolean>(() => true);
   readonly virtual = input(true);
   readonly rowHeight = input(40);
   readonly compactRowHeight = input(88);
@@ -163,14 +166,18 @@ export class QdDataTableComponent<T> {
     return this.selected()(row, this.selectedRow());
   }
 
-  protected selectRow(row: T): void {
-    if (this.canSelect()) {
+  protected selectRow(event: MouseEvent, row: T): void {
+    if (!this.originatesFromInteractiveDescendant(event) && this.canSelect(row)) {
       this.rowSelected.emit(row);
     }
   }
 
   protected onRowKeydown(event: KeyboardEvent, row: T): void {
-    if (!this.canSelect() || (event.key !== 'Enter' && event.key !== ' ')) {
+    if (
+      this.originatesFromInteractiveDescendant(event) ||
+      !this.canSelect(row) ||
+      (event.key !== 'Enter' && event.key !== ' ')
+    ) {
       return;
     }
 
@@ -182,8 +189,19 @@ export class QdDataTableComponent<T> {
     return { $implicit: row, row, index };
   }
 
-  protected canSelect(): boolean {
-    return this.selectable() && this.renderer() !== 'grouped-rows';
+  protected canSelect(row: T): boolean {
+    return this.selectable() && this.rowSelectable()(row) && this.renderer() !== 'grouped-rows';
+  }
+
+  private originatesFromInteractiveDescendant(event: Event): boolean {
+    const row = event.currentTarget;
+    const target = event.target;
+    if (!(row instanceof Element) || !(target instanceof Element)) {
+      return false;
+    }
+
+    const interactiveElement = target.closest(INTERACTIVE_ROW_DESCENDANT_SELECTOR);
+    return interactiveElement !== null && interactiveElement !== row;
   }
 
   private scrollVirtualRowIntoView(

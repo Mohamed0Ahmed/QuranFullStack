@@ -1,0 +1,29 @@
+@use '../../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: grid;
+  gap: var(--qd-space-1);
+  justify-items: end;
+}
+
+.phrase-context-linking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-2);
+  justify-content: flex-end;
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  :host,
+  .phrase-context-linking-actions {
+    inline-size: 100%;
+  }
+
+  .phrase-context-linking-actions {
+    flex-wrap: nowrap;
+  }
+
+  .phrase-context-linking-actions .qd-action {
+    flex: 1 1 0;
+  }
+}

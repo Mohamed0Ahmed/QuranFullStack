@@ -7,10 +7,18 @@ internal static class CanonicalImportSourceTestGate
         "..", "..", "..", "..", "..", "..",
         "resources", "import-sources", "quran-foundation"));
 
-    public static string MissingReason =>
-        $"Canonical import source tree is missing: {SourceRoot}";
+    public static string MasaqSourceFile { get; } = Path.GetFullPath(Path.Combine(
+        SourceRoot,
+        "..",
+        "masaq-corpus-aligned",
+        "masaq-search-words.dashboard-ready.json"));
 
-    public static bool IsMissing => !Directory.Exists(SourceRoot);
+    public static string MissingReason =>
+        $"Canonical import source tree is missing: foundation={SourceRoot}; masaq={MasaqSourceFile}";
+
+    public static bool IsMissing =>
+        !Directory.Exists(SourceRoot)
+        || !File.Exists(MasaqSourceFile);
 }
 
 [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]

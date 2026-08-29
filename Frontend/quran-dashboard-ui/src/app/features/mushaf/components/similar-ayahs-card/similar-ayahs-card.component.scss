@@ -1,6 +1,12 @@
-// Each item composes the shared `qdAyahCard` frame (Feature 029, Change A); this file
-// keeps only inner metadata/text layout.
+@use '../../../../../styles/breakpoints' as bp;
+
 .similar-ayahs-card {
+  &__group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--qd-space-3);
+  }
+
   &__list {
     display: flex;
     flex-direction: column;
@@ -10,69 +16,62 @@
     list-style: none;
   }
 
-  &__meta {
+  &__selection-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+    padding-block-end: var(--qd-space-3);
+    border-block-end: var(--qd-hairline);
+  }
+
+  &__selection-summary {
+    margin: 0;
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  &__selection-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--qd-space-2);
+  }
+
+  &__linking-actions {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: var(--qd-space-2);
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    margin-inline-end: auto;
+    padding: var(--qd-space-2);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-layer);
+  }
+
+  &__skeleton-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    justify-content: space-between;
     gap: var(--qd-space-2);
     color: var(--qd-text-muted);
     font-size: 0.8125rem;
     line-height: 1.5;
   }
 
-  &__reference {
-    color: var(--qd-text);
-    font-weight: 700;
-  }
-
-  &__context {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--qd-space-2);
-  }
-
-  &__page {
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__text {
+  &__skeleton-text {
     margin: 0;
+    font-family: var(--qd-font-quran);
     font-size: 0.9375rem;
-    line-height: 1.9;
+    line-height: 2;
     color: var(--qd-text);
-
-    &--navigable {
-      display: block;
-      width: 100%;
-      padding: 0;
-      border: none;
-      background: transparent;
-      font-family: inherit;
-      text-align: inherit;
-      cursor: pointer;
-      border-radius: var(--qd-radius-sm);
-
-      &:hover {
-        color: var(--qd-accent);
-      }
-
-      &:focus-visible {
-        outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
-        outline-offset: var(--qd-focus-ring-offset);
-      }
-    }
   }
 
-  // N3 row 11: the loading placeholders reuse the real `qdAyahCard` frame and the
-  // real `__meta` / `__text` classes, so card padding, gap, hairline and both line
-  // boxes come from the loaded rules — never a parallel set of numbers. Each bar
-  // IS its line box (`auto` height around an `&nbsp;`), inheriting font-size and
-  // line-height from the very rule that sizes the loaded text, so restyling the
-  // loaded card moves the placeholder with it. A placeholder is therefore exactly
-  // a loaded one-line card. Residual: an ayah wrapping past one line still grows
-  // its card on settle — the text length is unknowable before the load (accepted).
   &__item--skeleton .qd-skeleton {
     --qd-skeleton-h: auto;
   }
@@ -83,5 +82,15 @@
 
   &__page-skeleton {
     --qd-skeleton-w: 4rem;
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .similar-ayahs-card__selection-controls {
+    inline-size: 100%;
+  }
+
+  .similar-ayahs-card__selection-controls .qd-action {
+    flex: 1 1 auto;
   }
 }

@@ -1,3 +1,5 @@
+using QuranDashboard.DataImporter.Import.ArgumentParsing;
+
 namespace QuranDashboard.DataImporter.Import.DefaultPaths;
 
 internal static class DataImporterDefaults
@@ -6,21 +8,33 @@ internal static class DataImporterDefaults
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "import-sources", "mutashabihat"));
 
-    internal static string ResolveDefaultTafsirSourcePath() =>
+    internal static string ResolveDefaultTafsirSourcePath(DataImporterProfile profile) =>
         Path.GetFullPath(Path.Combine(
-            ResolveRepositoryRoot(), "resources", "import-sources", "quran-tafsirs"));
+            ResolveRepositoryRoot(),
+            "resources",
+            "import-sources",
+            profile == DataImporterProfile.Full ? "quran-tafsirs" : "quran-tafsirs-neon-10"));
 
-    internal static string ResolveDefaultTafsirReportDir() =>
+    internal static string ResolveDefaultTafsirReportDir(DataImporterProfile profile) =>
         Path.GetFullPath(Path.Combine(
-            ResolveRepositoryRoot(), "resources", "report", "quran-tafsirs"));
+            ResolveRepositoryRoot(),
+            "resources",
+            "report",
+            profile == DataImporterProfile.Full ? "quran-tafsirs" : "quran-tafsirs-neon-10"));
 
-    internal static string ResolveDefaultTranslationSourcePath() =>
+    internal static string ResolveDefaultTranslationSourcePath(DataImporterProfile profile) =>
         Path.GetFullPath(Path.Combine(
-            ResolveRepositoryRoot(), "resources", "import-sources", "quran-translations"));
+            ResolveRepositoryRoot(),
+            "resources",
+            "import-sources",
+            profile == DataImporterProfile.Full ? "quran-translations" : "quran-translations-neon-10"));
 
-    internal static string ResolveDefaultTranslationReportDir() =>
-        Path.GetFullPath(Path.Combine(
-            ResolveRepositoryRoot(), "Backend", "report", "feature-008-quran-translations-foundation"));
+    internal static string ResolveDefaultTranslationReportDir(DataImporterProfile profile) =>
+        profile == DataImporterProfile.Full
+            ? Path.GetFullPath(Path.Combine(
+                ResolveRepositoryRoot(), "Backend", "report", "feature-008-quran-translations-foundation"))
+            : Path.GetFullPath(Path.Combine(
+                ResolveRepositoryRoot(), "resources", "report", "quran-translations-neon-10"));
 
     internal static string ResolveDefaultMorphologySourcePath() =>
         Path.GetFullPath(Path.Combine(
@@ -43,6 +57,18 @@ internal static class DataImporterDefaults
     internal static string ResolveDefaultSimpleI3rabReportDir() =>
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "report", "words-simple-i3rab"));
+
+    internal static string ResolveDefaultPhraseIndexReportDir() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "quran-phrase-search"));
+
+    internal static string ResolveDefaultAbwabSnapshotExportDir() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "exports", "abwab"));
+
+    internal static string ResolveDefaultAbwabSnapshotImportReportDir() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "abwab-snapshot-import"));
 
     internal static string ResolveDefaultMutashabihatReportDir() =>
         Path.GetFullPath(Path.Combine(

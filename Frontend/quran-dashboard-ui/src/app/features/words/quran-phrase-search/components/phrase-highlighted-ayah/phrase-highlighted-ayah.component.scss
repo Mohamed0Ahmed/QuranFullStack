@@ -1,0 +1,57 @@
+.phrase-highlighted-ayah {
+  margin: 0;
+  color: var(--qd-ink);
+  font-family: var(--qd-font-quran);
+  font-size: var(--qd-type-h3);
+  line-height: 2.15;
+}
+
+.phrase-highlighted-ayah--compact {
+  font-size: var(--qd-type-body);
+  line-height: 1.9;
+}
+
+.phrase-highlighted-ayah__word {
+  display: inline;
+  padding-inline: 0.09em;
+}
+
+.phrase-highlighted-ayah__word--query {
+  padding: 0.04em 0.16em 0.12em;
+  border-block-end: 2px solid var(--qd-accent);
+  border-radius: var(--qd-radius-xs);
+  background: var(--qd-accent-tint);
+  color: var(--qd-green-text);
+  font-weight: 700;
+  box-decoration-break: clone;
+}
+
+.phrase-highlighted-ayah__word--previous {
+  padding: 0.04em 0.16em 0.12em;
+  border-block-end: 2px dashed var(--qd-info);
+  background: var(--qd-info-tint);
+  box-decoration-break: clone;
+}
+
+.phrase-highlighted-ayah__word--following {
+  padding: 0.04em 0.16em 0.12em;
+  border-block-end: 3px double var(--qd-warning);
+  background: var(--qd-warning-tint);
+  box-decoration-break: clone;
+}
+
+.phrase-highlighted-ayah__word--matched {
+  padding: 0.04em 0.16em 0.12em;
+  border-block-end: 2px solid var(--qd-success);
+  background: var(--qd-success-tint);
+  box-decoration-break: clone;
+}
+
+.phrase-highlighted-ayah__word--differing {
+  padding: 0.04em 0.16em 0.12em;
+  border: 1px solid var(--qd-danger);
+  border-radius: var(--qd-radius-xs);
+  background: var(--qd-danger-tint);
+  font-weight: 700;
+  box-decoration-break: clone;
+}

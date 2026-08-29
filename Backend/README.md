@@ -59,6 +59,31 @@ TLS is terminated at Railway's edge; the container serves plain HTTP on `$PORT`
 (`app.UseHttpsRedirection()` no-ops with no HTTPS port configured). Railway healthcheck path:
 `/api/health` (liveness — returns `200` with per-check status in the body).
 
+### PhraseSearch one-shot build capacity
+
+PhraseSearch permits one data generation only. A build is refused when an active, previous,
+non-failed, or child-data-bearing generation exists; rebuilding therefore requires a full database
+reset first. Metadata-only failed audits do not block a retry. There is no replacement build,
+blue/green overlap, A/B generation, or in-database rollback generation.
+
+Before the sole build row is created, the storage preflight conservatively reserves one current
+database size as one-shot build working space, one current database size for WAL headroom, plus
+`PhraseSearch:DiskSafetyBytes` (4 GiB by default). This keeps the prior byte-safety margin without
+assuming that a second PhraseSearch generation exists. The executable formula is in
+[`PhraseDatabaseStoragePreflight.cs`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/PhraseDatabaseStoragePreflight.cs),
+and the empty-generation guard runs before source bootstrap or staging in
+[`EfPhraseIndexBuilder.cs`](infrastructure/QuranDashboard.Infrastructure/Persistence/DataPipelines/Quran/PhraseSearch/EfPhraseIndexBuilder.cs).
+
+Prove the database filesystem's freshly available bytes and its WAL retention/archiving behavior
+immediately before the one-shot build. Every environment, including loopback, fails closed unless
+the operator supplies `PhraseSearch:VerifiedDatabaseFreeBytes` and sets
+`PhraseSearch:DatabaseStorageProofContract` to
+`operator-verified-database-filesystem-v1`; there is no automatic filesystem measurement. That
+proof does not inspect the provider's WAL policy for the operator. WAL LSN deltas are cumulative
+bytes generated during a run, not resident WAL bytes on disk, so they cannot replace a
+resident-filesystem measurement. Build, report, refusal, and cancellation operations are retained in
+[`scripts/README.md`](scripts/README.md#phrasesearch-index-operations).
+
 **One instance — a real constraint that nothing in the contract above enforces.** Railway runs a
 single instance of this container today, but that is a fact about the current deployment, not
 something `railway.json`, the `Dockerfile`, or any variable pins. It is load-bearing because the

@@ -95,6 +95,7 @@ internal static class LinkingWorkspaceResponseMapper
             },
             LinkingSourceDescriptor.ManualMushafAyahs source => body with
             {
+                ContextKey = source.ContextKey,
                 ManualAyahs =
                 [
                     .. source.VerseKeys.Select(verseKey => new LinkingManualAyahBody

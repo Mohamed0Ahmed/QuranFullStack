@@ -1,0 +1,183 @@
+@use '../../../../../../styles/breakpoints' as bp;
+
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-page {
+  display: grid;
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-page__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--qd-space-1) var(--qd-space-3);
+  padding-inline: var(--qd-space-1);
+}
+
+.phrase-repetitions-page__heading h2,
+.phrase-repetitions-page__heading p {
+  margin: 0;
+}
+
+.phrase-repetitions-page__heading h2 {
+  font-size: var(--qd-type-h3);
+}
+
+.phrase-repetitions-page__heading p {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-caption);
+}
+
+.phrase-repetitions-page__controls {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.72fr) minmax(13rem, 1fr) minmax(10rem, 0.72fr);
+  gap: var(--qd-space-2);
+  align-items: end;
+  padding: var(--qd-space-2);
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-section-bg);
+}
+
+.phrase-repetitions-page__search {
+  grid-column: 1 / -1;
+}
+
+.phrase-repetitions-page__search-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--qd-space-2);
+  align-items: center;
+}
+
+.phrase-repetitions-page__search-controls .qd-input {
+  inline-size: 100%;
+  min-block-size: var(--qd-control-sm);
+}
+
+.phrase-repetitions-page__field {
+  display: grid;
+  gap: var(--qd-s-2);
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-page__field > span,
+.phrase-repetitions-page__field-label {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  font-weight: 700;
+}
+
+.phrase-repetitions-page__field .qd-select {
+  inline-size: 100%;
+  min-block-size: var(--qd-control-sm);
+  block-size: var(--qd-control-sm);
+  padding-block: 0;
+  font-size: var(--qd-type-meta);
+}
+
+.phrase-repetitions-page__field qd-phrase-text-mode-toggle {
+  --qd-control-md: var(--qd-control-sm);
+}
+
+.phrase-repetitions-page__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--qd-space-2);
+  padding-inline: var(--qd-space-1);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.phrase-repetitions-page__meta strong {
+  color: var(--qd-ink);
+}
+
+.phrase-repetitions-page__list-region {
+  position: relative;
+  display: grid;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-page__workspace.qd-explorer-layout {
+  grid-template-columns: minmax(0, 1.55fr) minmax(20rem, 0.72fr);
+  gap: var(--qd-space-2);
+}
+
+.phrase-repetitions-page__master,
+.phrase-repetitions-page__details {
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-page__master > qd-phrase-repetitions-list {
+  display: block;
+  block-size: var(--qd-explorer-table-card-height);
+}
+
+.phrase-repetitions-page__details {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  block-size: var(--qd-explorer-table-card-height);
+  overflow: hidden;
+  border: var(--qd-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+.phrase-repetitions-page__details > qd-empty-state,
+.phrase-repetitions-page__details > qd-error-state,
+.phrase-repetitions-page__details > qd-panel-skeleton,
+.phrase-repetitions-page__details > qd-phrase-occurrence-list {
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+.phrase-repetitions-page__mobile-details {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  block-size: min(85dvh, 42rem);
+  min-block-size: 0;
+  overflow: hidden;
+  background: var(--qd-surface);
+}
+
+.phrase-repetitions-page__mobile-details > qd-error-state,
+.phrase-repetitions-page__mobile-details > qd-panel-skeleton,
+.phrase-repetitions-page__mobile-details > qd-phrase-occurrence-list {
+  flex: 1 1 auto;
+  min-block-size: 0;
+}
+
+@media (max-width: bp.$qd-bp-tablet-max) {
+  .phrase-repetitions-page__workspace.qd-explorer-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .phrase-repetitions-page__details {
+    block-size: min(65vh, 34rem);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .phrase-repetitions-page__controls {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--qd-space-1);
+  }
+
+  .phrase-repetitions-page__heading,
+  .phrase-repetitions-page__meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

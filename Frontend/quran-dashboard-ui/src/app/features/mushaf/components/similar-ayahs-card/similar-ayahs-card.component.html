@@ -10,56 +10,99 @@
   </p>
   <!-- aria-hidden: the sr-only status above is the single announcement. No aria-busy here —
        it would be inert on a node that is out of the accessibility tree. -->
-  <ul
-    class="similar-ayahs-card__list"
-    data-testid="similar-ayahs-skeleton"
-    aria-hidden="true"
-  >
-    @for (placeholder of loadingPlaceholders(); track placeholder) {
-      <li qdAyahCard class="similar-ayahs-card__item similar-ayahs-card__item--skeleton">
-        <div class="similar-ayahs-card__meta">
-          <span class="qd-skeleton similar-ayahs-card__reference-skeleton">&nbsp;</span>
-          <span class="qd-skeleton similar-ayahs-card__page-skeleton">&nbsp;</span>
-        </div>
-        <p class="similar-ayahs-card__text">
-          <span class="qd-skeleton">&nbsp;</span>
-        </p>
-      </li>
-    }
-  </ul>
-} @else if (loadState().isEmpty || !similarAyahs() || similarAyahs()!.count === 0) {
+  <div class="similar-ayahs-card__group qd-card">
+    <ul
+      class="similar-ayahs-card__list"
+      data-testid="similar-ayahs-skeleton"
+      aria-hidden="true"
+    >
+      @for (placeholder of loadingPlaceholders(); track placeholder) {
+        <li qdAyahCard class="similar-ayahs-card__item similar-ayahs-card__item--skeleton">
+          <div class="similar-ayahs-card__skeleton-meta">
+            <span class="qd-skeleton similar-ayahs-card__reference-skeleton">&nbsp;</span>
+            <span class="qd-skeleton similar-ayahs-card__page-skeleton">&nbsp;</span>
+          </div>
+          <p class="similar-ayahs-card__skeleton-text">
+            <span class="qd-skeleton">&nbsp;</span>
+          </p>
+        </li>
+      }
+    </ul>
+  </div>
+} @else if (
+  loadState().isEmpty ||
+  !similarAyahs() ||
+  similarAyahs()!.count === 0 ||
+  !hasAvailableRelatedAyahs()
+) {
   <qd-empty-state [message]="emptyMessage" testId="similar-ayahs-empty" />
 } @else {
-  <ul
-    qdResultList
-    listVariant="quran-result"
-    listLabel="آيات قريبة في المعنى"
-    class="similar-ayahs-card__list"
-    data-testid="similar-ayahs-list"
-  >
-    @for (item of displayItems(); track item.targetVerseKey) {
-      <li qdAyahCard class="similar-ayahs-card__item" data-testid="similar-ayah-item">
-        <header class="similar-ayahs-card__meta">
-          <span class="similar-ayahs-card__reference" data-testid="similar-ayah-reference">
-            {{ item.surahNameArabic }} — {{ item.ayahNumber }}
-          </span>
-          <span class="similar-ayahs-card__context">
-            <span class="similar-ayahs-card__page" data-testid="similar-ayah-page-context">
-              صفحة {{ item.pageNumber }}
-            </span>
-          </span>
-        </header>
-        <button
-          type="button"
-          class="similar-ayahs-card__text similar-ayahs-card__text--navigable"
-          dir="rtl"
-          data-testid="similar-ayah-text"
-          [attr.aria-label]="item.navigateLabel"
-          (click)="onAyahNavigate(item)"
+  <div class="similar-ayahs-card__group qd-card">
+    @if (canUseLinking()) {
+      <div
+        class="similar-ayahs-card__selection-toolbar"
+        role="group"
+        aria-label="تحديد الآيات القريبة للربط"
+      >
+        <p
+          class="similar-ayahs-card__selection-summary"
+          role="status"
+          data-testid="similar-ayah-selection-count"
         >
-          {{ item.displayText }}
-        </button>
-      </li>
+          الآيات المحددة للربط: {{ selectedRelatedCount() }}
+        </p>
+        <div class="similar-ayahs-card__selection-controls">
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            [disabled]="allRelatedSelected()"
+            (click)="selectAllRelatedAyahs()"
+          >
+            تحديد الكل
+          </button>
+          <button
+            qdAction="tertiary"
+            size="sm"
+            type="button"
+            [disabled]="selectedRelatedCount() === 0"
+            (click)="clearRelatedAyahs()"
+          >
+            إلغاء تحديد الكل
+          </button>
+        </div>
+      </div>
     }
-  </ul>
+    <ul
+      qdResultList
+      listVariant="quran-result"
+      listLabel="آيات قريبة في المعنى"
+      class="similar-ayahs-card__list"
+      data-testid="similar-ayahs-list"
+    >
+      @for (item of displayItems(); track item.targetVerseKey; let i = $index) {
+        <li
+          qdStudyAyahResult
+          data-testid="similar-ayah-item"
+          [position]="i + 1"
+          [surahNameArabic]="item.surahNameArabic"
+          [ayahNumber]="item.ayahNumber"
+          [pageNumber]="item.pageNumber"
+          [displayText]="item.displayText"
+          [navigateLabel]="item.navigateLabel"
+          [linkingSelectionEnabled]="canUseLinking()"
+          [linkingSelected]="item.linkingSelected"
+          [linkingSelectionLabel]="item.linkingSelectionLabel"
+          testIdKind="similar-ayah"
+          (ayahNavigate)="onAyahNavigate(item)"
+          (linkingSelectionToggle)="toggleRelatedAyah(item.targetVerseKey)"
+        ></li>
+      }
+    </ul>
+    @if (linkingLaunch(); as launch) {
+      <div class="similar-ayahs-card__linking-actions">
+        <qd-quran-source-linking-actions [launch]="launch" />
+      </div>
+    }
+  </div>
 }

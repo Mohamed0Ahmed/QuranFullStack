@@ -9,8 +9,19 @@ internal static class ImportTranslationsRunner
 {
     internal static async Task<int> RunAsync(string[] args, Func<IHost> createHost, Action printUsage)
     {
-        if (!ImportArguments.TryParse(
+        if (!DataImporterProfileArguments.TryExtract(
                 args,
+                out var profile,
+                out var importArgs,
+                out var profileError))
+        {
+            Console.Error.WriteLine(profileError);
+            printUsage();
+            return ImportTranslationsResult.FailureExitCode;
+        }
+
+        if (!ImportArguments.TryParse(
+                importArgs,
                 requireSource: false,
                 validateSourceExists: true,
                 out var sourcePath,
@@ -27,16 +38,22 @@ internal static class ImportTranslationsRunner
         await using var scope = host.Services.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<ImportTranslationsHandler>();
 
-        sourcePath ??= DataImporterDefaults.ResolveDefaultTranslationSourcePath();
-        reportOutDir ??= DataImporterDefaults.ResolveDefaultTranslationReportDir();
+        sourcePath ??= DataImporterDefaults.ResolveDefaultTranslationSourcePath(profile);
+        reportOutDir ??= DataImporterDefaults.ResolveDefaultTranslationReportDir(profile);
+        var expectedCounts = profile == DataImporterProfile.Full
+            ? TranslationInvariants.Production
+            : TranslationInvariants.CuratedTen;
 
         var result = await handler.HandleAsync(
             new ImportTranslationsCommand(
                 sourcePath,
                 force,
-                TranslationInvariants.Production,
-                reportOutDir),
+                expectedCounts,
+                reportOutDir,
+                DataImporterProfileArguments.GetValue(profile)),
             CancellationToken.None);
+
+        Console.WriteLine($"profile={DataImporterProfileArguments.GetValue(profile)}.");
 
         if (result.Succeeded)
         {

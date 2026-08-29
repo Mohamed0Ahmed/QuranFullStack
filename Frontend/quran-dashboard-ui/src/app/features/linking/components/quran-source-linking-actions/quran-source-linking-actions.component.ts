@@ -2,6 +2,10 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { LINKING_LABELS } from '../../models/linking.labels';
+import {
+  createLinkingSourceLaunch,
+  LinkingSourceLaunch,
+} from '../../models/linking-source-launch.models';
 import { LinkingSourceDescriptor } from '../../models/linking-source.models';
 import { LinkingAccessService } from '../../state/linking-access.service';
 import { LinkingFocusCoordinator } from '../../state/linking-focus.coordinator';
@@ -24,15 +28,30 @@ export class QuranSourceLinkingActionsComponent {
   private readonly workflow = inject(LinkingWorkflowFacade);
   private readonly focus = inject(LinkingFocusCoordinator);
 
-  readonly source = input.required<LinkingSourceDescriptor>();
+  readonly source = input<LinkingSourceDescriptor | null>(null);
+  readonly launch = input<LinkingSourceLaunch | null>(null);
   readonly alignment = input<'start' | 'center'>('start');
 
   protected readonly labels = LINKING_LABELS;
   protected readonly canUseLinking = this.access.canUseLinking;
-  protected readonly sourceKey = computed(() => linkingSourceKey(this.source()));
-  protected readonly sourcePresentation = computed(() => linkingSourcePresentation(this.source()));
+  private readonly sourceLaunch = computed(() => {
+    const launch = this.launch();
+    const source = this.source();
+    return launch ?? (source === null ? null : createLinkingSourceLaunch(source));
+  });
+  protected readonly sourceKey = computed(() => {
+    const launch = this.sourceLaunch();
+    return launch === null ? null : linkingSourceKey(launch.source);
+  });
+  protected readonly sourcePresentation = computed(() => {
+    const launch = this.sourceLaunch();
+    return launch === null ? '' : linkingSourcePresentation(launch.source);
+  });
   protected readonly sourceDescription = computed(
-    () => `${this.sourcePresentation()}: ${this.source().label}`,
+    () => {
+      const launch = this.sourceLaunch();
+      return launch === null ? '' : `${this.sourcePresentation()}: ${launch.source.label}`;
+    },
   );
   protected readonly addActionLabel = computed(
     () => `${this.labels.addToWorkspace}: ${this.sourceDescription()}`,
@@ -46,8 +65,12 @@ export class QuranSourceLinkingActionsComponent {
       return;
     }
 
+    const launch = this.sourceLaunch();
+    if (launch === null) {
+      return;
+    }
     this.focus.capture('inline-source-action');
-    this.workspace.addSource(this.source());
+    this.workspace.addSource(launch);
   }
 
   protected startDirectLink(): void {
@@ -55,7 +78,11 @@ export class QuranSourceLinkingActionsComponent {
       return;
     }
 
+    const launch = this.sourceLaunch();
+    if (launch === null) {
+      return;
+    }
     this.focus.capture('inline-source-action');
-    this.workflow.startFromSource(this.source());
+    this.workflow.startFromSource(launch);
   }
 }

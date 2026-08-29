@@ -54,7 +54,20 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             candidateRows = candidateRows.Where(ayah => ayah.SourceId == selectedSourceId);
         }
 
-        if (!string.Equals(filter, "ALL", StringComparison.Ordinal))
+        if (string.Equals(
+                filter,
+                LinkingPreparedDetailFilters.ExistingFilter,
+                StringComparison.Ordinal))
+        {
+            var overlap = LinkingPreflightTokens.ToToken(LinkingPreflightClassification.OverlapOtherSource);
+            var unchanged = LinkingPreflightTokens.ToToken(LinkingPreflightClassification.Unchanged);
+            candidateRows = candidateRows.Where(ayah =>
+                ayah.Classification == overlap || ayah.Classification == unchanged);
+        }
+        else if (!string.Equals(
+                     filter,
+                     LinkingPreparedDetailFilters.AllFilter,
+                     StringComparison.Ordinal))
         {
             candidateRows = candidateRows.Where(ayah => ayah.Classification == filter);
         }

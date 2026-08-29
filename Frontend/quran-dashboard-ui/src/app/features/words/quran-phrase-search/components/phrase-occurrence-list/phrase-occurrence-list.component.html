@@ -1,0 +1,72 @@
+<section class="phrase-occurrences" aria-labelledby="phrase-occurrences-title">
+  <header class="phrase-occurrences__header">
+    <div>
+      <h3 id="phrase-occurrences-title">{{ response().phrase.displayText }}</h3>
+      <p>
+        {{ response().phrase.occurrenceCount }} موضعًا ·
+        {{ response().phrase.ayahCount }} آية ·
+        {{ response().phrase.surahCount }} سورة
+      </p>
+    </div>
+    <button
+      type="button"
+      class="phrase-occurrences__close qd-interactive-surface"
+      aria-label="إغلاق تفاصيل العبارة"
+      title="إغلاق تفاصيل العبارة"
+      (click)="closeRequested.emit()"
+    >
+      <span aria-hidden="true">×</span>
+    </button>
+  </header>
+
+  <div class="phrase-occurrences__legend" aria-label="مفتاح تمييز الآية">
+    <span aria-hidden="true"></span>
+    <strong>كلمات العبارة المحددة</strong>
+  </div>
+
+  @if (linkingLaunch(); as launch) {
+    <qd-quran-source-linking-actions [launch]="launch" alignment="center" />
+  }
+
+  <div
+    class="phrase-occurrences__list"
+    qdResultList
+    listVariant="quran-result"
+    listLabel="آيات مواضع العبارة"
+  >
+    @for (row of rows(); track row.occurrence.occurrenceId; let index = $index) {
+      <article
+        qdAyahCard
+        qdResultItem
+        [position]="position(index)"
+        [setSize]="response().totalCount"
+      >
+        <header class="phrase-occurrences__meta">
+          <span class="phrase-occurrences__number" aria-hidden="true">{{ position(index) }}</span>
+          <span>{{ row.occurrence.surahNameArabic }} · {{ row.occurrence.verseKey }}</span>
+          <span>{{ pageLabel(row.occurrence) }}</span>
+        </header>
+        <a
+          class="phrase-occurrences__ayah-link qd-interactive-surface"
+          [qdAyahOverlayLink]="row.mushafTarget"
+          [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+        >
+          <qd-phrase-highlighted-ayah
+            [compact]="true"
+            [words]="row.occurrence.words"
+            [queryQuranWordIds]="row.occurrence.highlights.queryQuranWordIds"
+          />
+        </a>
+      </article>
+    }
+  </div>
+
+  <qd-pagination
+    [currentPage]="response().page"
+    [pageSize]="response().pageSize"
+    [totalCount]="response().totalCount"
+    [disabled]="disabled()"
+    ariaLabel="صفحات مواضع العبارة"
+    (pageChange)="pageChange.emit($event)"
+  />
+</section>

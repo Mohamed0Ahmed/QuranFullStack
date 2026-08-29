@@ -1,0 +1,128 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.phrase-repetitions-table {
+  --qd-data-table-columns:
+    minmax(2.75rem, 0.25fr)
+    minmax(12rem, 2.4fr)
+    repeat(3, minmax(5.25rem, 0.7fr));
+
+  block-size: 100%;
+  min-block-size: 0;
+}
+
+.phrase-repetitions-table__cell {
+  min-inline-size: 0;
+  padding-inline: var(--qd-space-2);
+}
+
+.phrase-repetitions-table__cell--number,
+.phrase-repetitions-table__cell--metric {
+  justify-content: center;
+  color: var(--qd-ink-body);
+  font-size: var(--qd-type-meta);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.phrase-repetitions-table__cell--phrase {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  color: var(--qd-ink);
+  font-family: var(--qd-font-quran);
+  font-size: 1.02rem;
+  line-height: 1.6;
+}
+
+.phrase-repetitions-table__phrase-text {
+  min-inline-size: 0;
+  overflow: hidden;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.phrase-repetitions-table__cell--phrase .phrase-repetitions-table__phrase-text {
+  flex: 1;
+}
+
+.phrase-repetitions-table__copy {
+  --qd-action-size: 1.75rem;
+
+  flex: 0 0 auto;
+  border-color: transparent;
+  border-radius: var(--qd-radius-pill);
+  background: transparent;
+  color: var(--qd-ink-muted);
+}
+
+.phrase-repetitions-table__copy:hover:not(:disabled):not([aria-disabled='true']) {
+  border-color: transparent;
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.phrase-repetitions-table__copy--complete {
+  background: var(--qd-accent-tint);
+  color: var(--qd-accent-text);
+}
+
+.phrase-repetitions-table__copy svg {
+  inline-size: 0.9rem;
+  block-size: 0.9rem;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.phrase-repetitions-table__compact {
+  display: grid;
+  grid-template-areas:
+    'phrase number'
+    'metrics metrics';
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--qd-space-1) var(--qd-space-2);
+  align-content: center;
+  min-block-size: 100%;
+  padding: var(--qd-space-2);
+}
+
+.phrase-repetitions-table__compact-number {
+  grid-area: number;
+  align-self: start;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  font-variant-numeric: tabular-nums;
+}
+
+.phrase-repetitions-table__compact-phrase {
+  grid-area: phrase;
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  min-inline-size: 0;
+  color: var(--qd-ink);
+  font-family: var(--qd-font-quran);
+  font-size: var(--qd-type-body);
+  line-height: 1.7;
+}
+
+.phrase-repetitions-table__compact-phrase .phrase-repetitions-table__phrase-text {
+  flex: 1;
+}
+
+.phrase-repetitions-table__compact-metrics {
+  grid-area: metrics;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1) var(--qd-space-3);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.phrase-repetitions-table__compact-metrics strong {
+  color: var(--qd-green-text);
+  font-variant-numeric: tabular-nums;
+}

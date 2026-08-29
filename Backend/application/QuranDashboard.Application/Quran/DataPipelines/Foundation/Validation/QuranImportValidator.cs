@@ -95,6 +95,18 @@ public sealed class QuranImportValidator
         checks.Add(idContiguityCheck.Evaluate(assembled.Words));
         checks.Add(sourceAlignmentCheck.Evaluate(source));
         checks.Add(imlaeiCleanKeyCheck.Evaluate(source));
+        checks.Add(ImportCheckResults.Hard(
+            ImportValidationCheckIds.MasaqSearchWords,
+            "schema=masaq-search-words-dashboard-ready-v1, words=77432, unique=14910, "
+            + $"sha256={MasaqSearchWordsSourceSummary.ApprovedSha256}",
+            $"schema={source.MasaqSearchWords.Schema}, words={source.MasaqSearchWords.WordCount}, unique={source.MasaqSearchWords.UniqueTextCount}, sha256={source.MasaqSearchWords.Sha256}",
+            source.MasaqSearchWords.Schema == "masaq-search-words-dashboard-ready-v1"
+            && source.MasaqSearchWords.WordCount == ImportValidationExpectedCounts.ReadableWords
+            && source.MasaqSearchWords.UniqueTextCount == 14_910
+            && string.Equals(
+                source.MasaqSearchWords.Sha256,
+                MasaqSearchWordsSourceSummary.ApprovedSha256,
+                StringComparison.Ordinal)));
         checks.Add(layoutCoverageCheck.Evaluate(assembled.Lines));
 
         var wordsMissingPlacement = assembled.Words.Count(word => word.PageNumber <= 0 || word.LineNumber <= 0);
@@ -129,6 +141,8 @@ public sealed class QuranImportValidator
 
         infoNotes.Add(
             "Ayah-level readable text and word-level with-tashkeel text use different encodings; equality is not checked.");
+        infoNotes.Add(
+            $"MASAQ search/display words source: {source.MasaqSearchWords.FilePath} (sha256 {source.MasaqSearchWords.Sha256}).");
         checks.Add(ImportCheckResults.Info(
             ImportValidationCheckIds.EncodingInfo,
             "not compared",

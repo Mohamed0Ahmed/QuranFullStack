@@ -2,12 +2,12 @@ import { Routes } from '@angular/router';
 
 import {
   WORDS_LEMMAS_SEGMENT,
+  WORDS_PHRASES_SEGMENT,
   WORDS_ROOTS_SEGMENT,
   WORDS_STEMS_SEGMENT,
   WORDS_TYPES_SEGMENT,
   WORDS_UNIQUE_MODE_SEGMENT,
 } from '../../core/navigation/route-paths';
-// Tab titles reuse each explorer's own page-title label (its <h1>) so the two never drift.
 import { LEMMAS_PAGE_TITLE } from './models/lemmas.labels';
 import { ROOTS_PAGE_TITLE } from './models/roots.labels';
 import { STEMS_PAGE_TITLE } from './models/stems.labels';
@@ -79,6 +79,15 @@ export const WORDS_TYPES_ROUTE = {
   title: WORD_TYPES_PAGE_TITLE,
 } as const;
 
+export const WORDS_PHRASES_ROUTE = {
+  path: WORDS_PHRASES_SEGMENT,
+  loadChildren: () =>
+    import('./quran-phrase-search/quran-phrase-search.routes').then(
+      (m) => m.QURAN_PHRASE_SEARCH_ROUTES,
+    ),
+  title: 'البحث في القرآن',
+} as const;
+
 export const WORDS_ROUTES: Routes = [
   WORDS_HUB_ROUTE,
   {
@@ -91,4 +100,5 @@ export const WORDS_ROUTES: Routes = [
   WORDS_LEMMAS_ROUTE,
   WORDS_STEMS_ROUTE,
   WORDS_TYPES_ROUTE,
+  WORDS_PHRASES_ROUTE,
 ];

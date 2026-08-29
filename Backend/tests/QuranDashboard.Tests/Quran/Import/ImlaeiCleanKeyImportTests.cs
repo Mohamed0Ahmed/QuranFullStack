@@ -1,14 +1,11 @@
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
+using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Foundation;
 
 namespace QuranDashboard.Tests.Quran.Import;
 
 [Collection(nameof(ImportTestCollection))]
 public sealed class ImlaeiCleanKeyImportTests
 {
-    private const string Sajdah = "۩";
-    private const string RubElHizb = "۞";
-    private const string RightToLeftMark = "‏";
-
     private readonly ImportTestFixture fixture;
 
     public ImlaeiCleanKeyImportTests(ImportTestFixture fixture)
@@ -17,8 +14,14 @@ public sealed class ImlaeiCleanKeyImportTests
     }
 
     [FoundationImportSourceFact]
-    public async Task Import_BindsCleanImlaeiKeyAndPreservesRawImlaeiText()
+    public async Task Import_BindsExactMasaqTextToBothImlaeiFields()
     {
+        var masaqSourceRoot = Path.GetDirectoryName(FoundationImportSourceGate.MasaqSourceFile)!;
+        var masaqSource = await new JsonMasaqSearchWordsReader()
+            .ReadAsync(masaqSourceRoot, CancellationToken.None);
+        var expectedTextAt112 = masaqSource.Words.Single(word => word.Location == "1:1:2").Text;
+        var expectedTextAt151 = masaqSource.Words.Single(word => word.Location == "1:5:1").Text;
+
         var handler = await fixture.CreateHandlerAsync();
 
         var result = await handler.HandleAsync(
@@ -34,22 +37,18 @@ public sealed class ImlaeiCleanKeyImportTests
             .Should().Be(0);
 
         (await dbContext.QuranWords.CountAsync(word =>
-                !word.IsAyahMarker &&
-                (word.WordKeyImlaeiSimple.Contains(Sajdah) ||
-                 word.WordKeyImlaeiSimple.Contains(RubElHizb) ||
-                 word.WordKeyImlaeiSimple.Contains(RightToLeftMark))))
+                !word.IsAyahMarker
+                && word.TextImlaeiSimple != word.WordKeyImlaeiSimple))
             .Should().Be(0);
 
-        var allah = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Location == "1:1:2");
-        allah.Id.Should().Be(2);
-        allah.TextImlaeiSimple.Should().Be("الله");
-        allah.WordKeyImlaeiSimple.Should().Be("الله");
+        var wordAt112 = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Location == "1:1:2");
+        wordAt112.Id.Should().Be(2);
+        wordAt112.TextImlaeiSimple.Should().Be(expectedTextAt112);
+        wordAt112.WordKeyImlaeiSimple.Should().Be(expectedTextAt112);
 
-        var azim = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Location == "27:26:8");
-        azim.Id.Should().Be(51944);
-        azim.TextImlaeiSimple.Should().Contain(Sajdah);
-        azim.WordKeyImlaeiSimple.Should().Be("العظيم");
-        azim.WordKeyImlaeiSimple.Should().NotContain(Sajdah);
-        azim.WordKeyImlaeiSimple.Should().NotContain(RightToLeftMark);
+        var wordAt151 = await dbContext.QuranWords.AsNoTracking().SingleAsync(word => word.Location == "1:5:1");
+        wordAt151.Id.Should().Be(18);
+        wordAt151.TextImlaeiSimple.Should().Be(expectedTextAt151);
+        wordAt151.WordKeyImlaeiSimple.Should().Be(expectedTextAt151);
     }
 }

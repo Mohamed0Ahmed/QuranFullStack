@@ -5,6 +5,7 @@ public sealed record TranslationImportReport(
     string Verdict,
     bool Persisted,
     bool Forced,
+    string Profile,
     string SourcePath,
     TranslationImportTotals Totals,
     IReadOnlyList<TranslationSourceSummary> SourceSummaries,

@@ -1,0 +1,97 @@
+:host {
+  display: block;
+  min-inline-size: 0;
+}
+
+.phrase-context-page,
+.phrase-context-page__workspace {
+  display: grid;
+  gap: var(--qd-space-4);
+  min-inline-size: 0;
+}
+
+.phrase-context-results {
+  --qd-explorer-table-header-height: 2.75rem;
+  --qd-explorer-table-body-height: 34rem;
+  --phrase-context-pagination-height: 6rem;
+  --qd-explorer-table-card-height: calc(
+    var(--qd-explorer-table-header-height) + var(--qd-explorer-table-body-height)
+  );
+
+  display: grid;
+  grid-template-rows: auto var(--qd-explorer-table-card-height) var(--phrase-context-pagination-height);
+  gap: var(--qd-space-2);
+  min-inline-size: 0;
+}
+
+.phrase-context-results__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--qd-space-3);
+  padding: var(--qd-space-3);
+  border: 1px solid var(--qd-border);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+}
+
+.phrase-context-results__header h2 {
+  margin: 0;
+  color: var(--qd-ink);
+  font-size: var(--qd-type-h4);
+}
+
+.phrase-context-results__counts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--qd-space-1) var(--qd-space-3);
+  margin-block-start: var(--qd-space-1);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.phrase-context-results__counts strong {
+  color: var(--qd-ink);
+}
+
+.phrase-context-results__compact-select-all {
+  display: none;
+}
+
+.phrase-context-results > qd-phrase-context-occurrence-list {
+  display: block;
+  block-size: var(--qd-explorer-table-card-height);
+  min-block-size: 0;
+}
+
+@media (max-width: 1079px) {
+  .phrase-context-results {
+    --qd-explorer-table-body-height: 30rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .phrase-context-results {
+    --qd-explorer-table-body-height: 27rem;
+  }
+
+  .phrase-context-results__header {
+    flex-direction: column;
+  }
+
+  .phrase-context-results__compact-select-all {
+    display: flex;
+    align-items: center;
+    gap: var(--qd-space-2);
+    min-block-size: var(--qd-hit-target-min);
+    margin-block-start: var(--qd-space-2);
+    color: var(--qd-ink-body);
+    cursor: pointer;
+  }
+
+  .phrase-context-results__compact-select-all input {
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    accent-color: var(--qd-accent);
+  }
+}

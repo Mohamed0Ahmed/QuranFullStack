@@ -33,5 +33,14 @@ public sealed class SmokeAccessAdministrationAuthorizationTests(SmokeApiFixture 
         }
     }
 
-    private static HttpRequestMessage CreateRequest(SmokeRoute route) => new(route.Method, route.Path);
+    private static HttpRequestMessage CreateRequest(SmokeRoute route)
+    {
+        var request = new HttpRequestMessage(route.Method, route.Path);
+        if (route.JsonBody is not null)
+        {
+            request.Content = new StringContent(route.JsonBody, System.Text.Encoding.UTF8, "application/json");
+        }
+
+        return request;
+    }
 }

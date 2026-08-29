@@ -225,11 +225,15 @@ is `Authorization` (authorization contract gates), `Cli` (command-line contract 
   is not this tree's head, or a producer major the restore image cannot read — all checked
   before the container starts). A stale dump quietly skipping is the one failure
   `Smoke/Data/SmokeDumpGate.cs` exists to make impossible.
-  Regenerate with `Backend/scripts/create-smoke-dump --yes`; never hand-edit either file.
+  The artifact excludes DATA for every `quran_phrase_*` table while migrations retain the schema
+  and singleton empty state row; `SmokeDataReadTests` verifies the manifest/restore exclusion and
+  that all eleven seeded PhraseSearch routes answer `503` until the derived index is built. Regenerate with
+  `Backend/scripts/create-smoke-dump --yes`; never hand-edit either file. The full backup,
+  count-preservation and build runbook lives in `../../scripts/README.md`.
 
 ### Why `Smoke/Data/` runs postgres **18** while every other fixture runs **16**
 
-The dump is written by the host's `pg_dump`, which is **18.4**, and `pg_restore` refuses an
+The dump is written by the host's `pg_dump` on major **18**, and `pg_restore` refuses an
 archive whose header comes from a newer `pg_dump` than itself — a `postgres:16-alpine`
 restore fails with "unsupported version in file header" (measured: `pg_restore --list` on a
 16 client exits 1 with `unsupported version (1.16) in file header`). So `SmokeDataFixture`

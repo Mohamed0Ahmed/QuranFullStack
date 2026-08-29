@@ -1,0 +1,59 @@
+<section
+  class="context-explorer"
+  aria-labelledby="context-explorer-title"
+  [attr.aria-busy]="busy() ? 'true' : null"
+>
+  <header class="context-explorer__header">
+    <div>
+      <p>استكشاف سياق العبارة</p>
+      <h2 id="context-explorer-title">اختر ما يسبق العبارة أو يليها</h2>
+    </div>
+    <div class="context-explorer__result-count">
+      <span>النتائج الحالية</span>
+      <strong>{{ occurrenceLabel(branches().totalOccurrenceCount) }}</strong>
+    </div>
+  </header>
+
+  <p class="qd-sr-only">
+    ينتقل التركيز بعد الاختيار إلى أول خيار في المستوى الجديد، ويبقى في الجانب نفسه عند عرض المزيد.
+  </p>
+
+  <qd-phrase-context-current [branches]="branches()" />
+
+  <div class="context-explorer__network">
+    @if (busy()) {
+      <div class="context-explorer__loading" role="status" aria-live="polite">
+        <span aria-hidden="true"></span>
+        <strong>جارٍ تحديث السياق…</strong>
+      </div>
+    }
+    <qd-phrase-context-web
+      side="previous"
+      [page]="branches().previous"
+      [selection]="branches().previousSelection"
+      [options]="previousOptions()"
+      [busy]="busy()"
+      [navigationDisabled]="navigationDisabled()"
+      [alternativeGroupActive]="previousAlternativesActive()"
+      (optionSelected)="previousSelected.emit($event)"
+      (pathSelected)="previousPathSelected.emit($event)"
+      (alternativeToggled)="previousAlternativeToggled.emit($event)"
+      (alternativesCleared)="previousAlternativesCleared.emit()"
+      (moreRequested)="previousMoreRequested.emit()"
+    />
+    <qd-phrase-context-web
+      side="following"
+      [page]="branches().following"
+      [selection]="branches().followingSelection"
+      [options]="followingOptions()"
+      [busy]="busy()"
+      [navigationDisabled]="navigationDisabled()"
+      [alternativeGroupActive]="followingAlternativesActive()"
+      (optionSelected)="followingSelected.emit($event)"
+      (pathSelected)="followingPathSelected.emit($event)"
+      (alternativeToggled)="followingAlternativeToggled.emit($event)"
+      (alternativesCleared)="followingAlternativesCleared.emit()"
+      (moreRequested)="followingMoreRequested.emit()"
+    />
+  </div>
+</section>

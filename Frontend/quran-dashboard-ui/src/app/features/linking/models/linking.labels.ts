@@ -1,3 +1,5 @@
+const EXISTING_AYAH_LABEL = 'موجود بالفعل';
+
 export const LINKING_LABELS = {
   workspace: 'مساحة الربط',
   preparedSources: 'المصادر المُعَدَّة',
@@ -33,8 +35,8 @@ export const LINKING_LABELS = {
   },
   ayahClassifications: {
     NEW_AYAH: 'آية جديدة',
-    OVERLAP_OTHER_SOURCE: 'موجودة عبر ربط آخر',
-    UNCHANGED: 'نفس الربط موجود',
+    OVERLAP_OTHER_SOURCE: EXISTING_AYAH_LABEL,
+    UNCHANGED: EXISTING_AYAH_LABEL,
     UPDATE: 'تحديث',
     REMOVE: 'إزالة',
     INVALID: 'غير صالح',
@@ -77,6 +79,7 @@ export const LINKING_LABELS = {
   preflightAfterMerge: 'بعد دمج المصادر وإزالة التكرار',
   preflightAyahFilters: 'تصفية آيات الفحص المسبق',
   preflightAyahFilterAll: 'كل الآيات',
+  preflightAyahExisting: EXISTING_AYAH_LABEL,
   preflightAyahPreviewLoading: 'يجري تحميل نصوص الآيات للفحص المسبق',
   preflightAyahPreviewError: 'تعذر تحميل نصوص الآيات للفحص المسبق.',
   preflightAyahPreviewEmpty: 'لا توجد آيات ضمن هذا التصنيف.',

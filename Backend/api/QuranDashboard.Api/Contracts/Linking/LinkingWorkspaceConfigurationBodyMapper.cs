@@ -5,6 +5,27 @@ namespace QuranDashboard.Api.Contracts.Linking;
 
 internal static class LinkingWorkspaceConfigurationBodyMapper
 {
+    internal static bool TryMapInitial(
+        LinkingWorkspaceInitialConfigurationBody? body,
+        string label,
+        out LinkingWorkspaceConfigurationInput configuration,
+        out LinkingDescriptorViolation violation) =>
+        TryMap(
+            body is null
+                ? null
+                : new LinkingWorkspaceConfigurationBody
+                {
+                    Label = label,
+                    InclusionMode = body.InclusionMode,
+                    AyahOverrides = body.AyahOverrides,
+                    SelectedWords = body.SelectedWords,
+                    AutomaticWordMatchesEnabled = body.AutomaticWordMatchesEnabled,
+                    ManualLinkShape = body.ManualLinkShape,
+                    Descriptions = body.Descriptions,
+                },
+            out configuration,
+            out violation);
+
     internal static bool TryMap(
         LinkingWorkspaceConfigurationBody? body,
         out LinkingWorkspaceConfigurationInput configuration,

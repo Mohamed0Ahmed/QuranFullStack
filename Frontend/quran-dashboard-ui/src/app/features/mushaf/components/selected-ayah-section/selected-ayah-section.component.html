@@ -159,6 +159,7 @@
               [similarAyahs]="similarAyahs()"
               [loadState]="similarAyahsLoadState()"
               [expectedItemCount]="similarAyahCount()"
+              [selectedAyah]="study()?.ayah ?? null"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }
@@ -167,7 +168,7 @@
               [mutashabihat]="mutashabihat()"
               [loadState]="mutashabihatLoadState()"
               [expectedGroupCount]="mutashabihatGroupCount()"
-              [expectedOccurrenceCount]="mutashabihatOccurrenceCount()"
+              [selectedAyah]="study()?.ayah ?? null"
               (ayahNavigate)="ayahNavigate.emit($event)"
             />
           }

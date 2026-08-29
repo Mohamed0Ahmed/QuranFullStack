@@ -360,7 +360,7 @@ public sealed partial class EfStemsReader(QuranDashboardDbContext db) : IStemsRe
                     && !w.IsAyahMarker
                 select new StemWordOccurrenceRow(
                     w.UniqueSimpleWordId,
-                    w.TextUthmaniSimple,
+                    w.TextImlaeiSimple,
                     w.SurahNumber,
                     w.AyahNumber,
                     w.WordNumber,

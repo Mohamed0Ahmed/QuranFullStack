@@ -44,9 +44,9 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     }
 
     [CanonicalImportSourceTheory]
-    [InlineData("الله", 2_155)]
+    [InlineData("الله", 2_153)]
     [InlineData("العظيم", 36)]
-    [InlineData("الرحمان", 45)]
+    [InlineData("الرحمن", 45)]
     public async Task CanonicalImportRebuild_UniqueSimpleAnchorOccurrencesMatchExpected(
         string wordKeyImlaeiSimple,
         int expectedOccurrences)
@@ -69,14 +69,14 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
 
         var rahmanIdentity = await dbContext.QuranWordsUniqueSimple
             .AsNoTracking()
-            .SingleAsync(row => row.WordKeyImlaeiSimple == "الرحمان");
+            .SingleAsync(row => row.WordKeyImlaeiSimple == "الرحمن");
 
-        rahmanIdentity.WordKeyImlaeiSimple.Should().Be("الرحمان");
+        rahmanIdentity.WordKeyImlaeiSimple.Should().Be("الرحمن");
         rahmanIdentity.TextUthmani.Should().NotBe(rahmanIdentity.WordKeyImlaeiSimple);
 
         var firstOccurrence = await dbContext.QuranWords
             .AsNoTracking()
-            .Where(word => !word.IsAyahMarker && word.WordKeyImlaeiSimple == "الرحمان")
+            .Where(word => !word.IsAyahMarker && word.WordKeyImlaeiSimple == "الرحمن")
             .OrderBy(word => word.Id)
             .FirstAsync();
 
@@ -85,20 +85,20 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
     }
 
     [CanonicalImportSourceFact]
-    public async Task CanonicalImportRebuild_AlYasinRemainsSingleMultiTokenIdentity()
+    public async Task CanonicalImportRebuild_AlYasinUsesMasaqIdentity()
     {
         await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var alYasin = await dbContext.QuranWordsUniqueSimple
             .AsNoTracking()
-            .SingleAsync(row => row.WordKeyImlaeiSimple == "ال ياسين");
+            .SingleAsync(row => row.WordKeyImlaeiSimple == "إلياسين");
 
         alYasin.OccurrencesCount.Should().Be(1);
     }
 
     [CanonicalImportSourceFact]
-    public async Task CanonicalImportRebuild_Location55212KeepsDairaImlaeiKey()
+    public async Task CanonicalImportRebuild_Location55212UsesMasaqDairaKey()
     {
         await using var scope = fixture.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
@@ -107,7 +107,7 @@ public sealed class DisplayWordsRealImportIdentityLinksTests
             .AsNoTracking()
             .SingleAsync(word => word.Location == "5:52:12");
 
-        daira.WordKeyImlaeiSimple.Should().Be("دايرة");
+        daira.WordKeyImlaeiSimple.Should().Be("دائرة");
     }
 
     [CanonicalImportSourceFact]

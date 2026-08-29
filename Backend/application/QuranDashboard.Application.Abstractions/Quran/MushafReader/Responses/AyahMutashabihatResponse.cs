@@ -26,6 +26,7 @@ public sealed record MutashabihatSelectedOccurrenceDto(
     string? PhraseTextUthmani);
 
 public sealed record MutashabihatOccurrenceDto(
+    int AyahId,
     string VerseKey,
     int SurahNumber,
     string SurahNameArabic,
@@ -36,7 +37,8 @@ public sealed record MutashabihatOccurrenceDto(
     bool IsSelectedAyah,
     bool IsRepresentative,
     string TextUthmani,
-    string? PhraseTextUthmani);
+    string? PhraseTextUthmani,
+    IReadOnlyList<int> MatchedQuranWordIds);
 
 public static class MutashabihatGroupKeys
 {

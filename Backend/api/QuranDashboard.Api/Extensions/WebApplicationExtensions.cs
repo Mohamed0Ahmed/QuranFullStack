@@ -77,6 +77,7 @@ public static class WebApplicationExtensions
 
         app.UseHttpsRedirection();
         app.UseCors("AngularDev");
+        app.UseRequestTimeouts();
         app.UseRateLimiter();
         app.UseAuthentication();
         app.UseMiddleware<DeviceSessionAntiforgeryMiddleware>();

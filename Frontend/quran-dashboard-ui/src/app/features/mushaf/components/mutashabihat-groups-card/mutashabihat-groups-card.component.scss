@@ -1,3 +1,5 @@
+@use '../../../../../styles/breakpoints' as bp;
+
 .mutashabihat-groups-card {
   &__groups {
     display: flex;
@@ -11,11 +13,43 @@
     gap: var(--qd-space-3);
   }
 
-  &__group-header {
+  &__selection-toolbar {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--qd-space-2);
+  }
+
+  &__selection-summary {
+    margin: 0;
+    color: var(--qd-text-muted);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  &__selection-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--qd-space-2);
+  }
+
+  &__group-header {
+    display: grid;
+    grid-template-columns: var(--qd-hit-target-min) minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: var(--qd-space-3);
+    text-align: center;
+  }
+
+  &__group-copy {
+    grid-column: 2;
+    grid-row: 1;
+    display: flex;
+    min-inline-size: 0;
     flex-direction: column;
     gap: var(--qd-space-2);
-    text-align: center;
   }
 
   &__group-title {
@@ -25,6 +59,16 @@
     font-weight: 700;
     line-height: 2;
     color: var(--qd-text);
+  }
+
+  &__group-selection {
+    grid-column: 1;
+    grid-row: 1;
+    display: inline-flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-inline-size: var(--qd-hit-target-min);
+    min-block-size: var(--qd-hit-target-min);
   }
 
   &__phrase {
@@ -39,19 +83,6 @@
     line-height: 1.5;
   }
 
-  &__selected-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.125rem 0.5rem;
-    border-radius: var(--qd-radius-sm);
-    border: var(--qd-hairline);
-    background: var(--qd-surface);
-    color: var(--qd-text);
-    font-size: 0.75rem;
-    font-weight: 700;
-    line-height: 1.4;
-  }
-
   &__occurrences {
     display: flex;
     flex-direction: column;
@@ -61,85 +92,34 @@
     list-style: none;
   }
 
-  // Occurrences compose the shared `qdAyahCard` frame (Feature 029, Change A); the
-  // selected state stays feature-owned as an accent hairline layered on that frame.
-  &__occurrence--selected {
-    border-color: var(--qd-border-accent);
-  }
-
-  &__occurrence-meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: var(--qd-space-2);
-    color: var(--qd-text-muted);
-    font-size: 0.8125rem;
-    line-height: 1.5;
-  }
-
-  &__occurrence-index {
-    flex-shrink: 0;
-    min-width: 1.25rem;
-    color: var(--qd-text-muted);
-    font-size: 0.75rem;
-    font-weight: 700;
-    font-variant-numeric: tabular-nums;
-    line-height: 1.4;
-  }
-
-  &__occurrence-reference {
-    color: var(--qd-text);
-    font-weight: 700;
-  }
-
-  &__occurrence-context {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--qd-space-2);
-    font-variant-numeric: tabular-nums;
-  }
-
-  &__text {
-    margin: 0;
-    font-family: var(--qd-font-quran);
-    font-size: 0.9375rem;
-    line-height: 2;
-    color: var(--qd-text);
-    text-align: inherit;
-
-    &--navigable {
-      display: block;
-      width: 100%;
-      padding: 0;
-      border: none;
-      background: transparent;
-      cursor: pointer;
-      border-radius: var(--qd-radius-sm);
-
-      &:hover {
-        color: var(--qd-accent);
-      }
-
-      &:focus-visible {
-        outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
-        outline-offset: var(--qd-focus-ring-offset);
-      }
-    }
+  &__occurrence-panel[hidden] {
+    display: none;
   }
 
   &__expand-toggle {
-    align-self: center;
+    grid-column: 3;
+    grid-row: 1;
+    align-self: start;
+    justify-self: end;
+    inline-size: 8rem;
     font-size: 0.8125rem;
   }
 
-  // N3 row 12: the loading placeholders reuse the real group / `qdAyahCard` frames
-  // and the real title / meta / text classes, so every padding, gap, hairline and
-  // line box comes from the loaded rules — never a parallel set of numbers. Each
-  // bar IS its line box (`auto` height around an `&nbsp;`), inheriting font-size and
-  // line-height from the very rule that sizes the loaded text, so restyling a loaded
-  // group moves the placeholder with it. Residual: multi-line phrases or ayah texts,
-  // and the expand toggle on groups above the preview count, still grow their group
-  // on settle (accepted — neither is knowable before the load).
+  &__linking-actions {
+    position: sticky;
+    z-index: 2;
+    inset-block-end: var(--qd-space-2);
+    inline-size: fit-content;
+    max-inline-size: 100%;
+    margin-block-start: var(--qd-space-4);
+    margin-inline-end: auto;
+    padding: var(--qd-space-2);
+    border: var(--qd-hairline-strong);
+    border-radius: var(--qd-radius-md);
+    background: var(--qd-surface);
+    box-shadow: var(--qd-shadow-layer);
+  }
+
   &__group--skeleton .qd-skeleton {
     --qd-skeleton-h: auto;
   }
@@ -154,7 +134,22 @@
     margin-inline: auto;
   }
 
-  &__occurrence-meta-skeleton {
-    --qd-skeleton-w: 10rem;
+  &__toggle-skeleton {
+    grid-column: 3;
+    grid-row: 1;
+    --qd-skeleton-w: 8rem;
+    align-self: start;
+    justify-self: end;
+    min-block-size: var(--qd-control-sm);
+  }
+}
+
+@media (max-width: bp.$qd-bp-compact-max) {
+  .mutashabihat-groups-card__selection-controls {
+    inline-size: 100%;
+  }
+
+  .mutashabihat-groups-card__selection-controls .qd-action {
+    flex: 1 1 auto;
   }
 }

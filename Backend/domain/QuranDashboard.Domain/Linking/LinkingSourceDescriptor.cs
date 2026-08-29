@@ -86,7 +86,12 @@ public abstract class LinkingSourceDescriptor
 
     public sealed class ManualMushafAyahs : LinkingSourceDescriptor
     {
-        public ManualMushafAyahs(IEnumerable<VerseKey> verseKeys, string label)
+        public const int MaxContextKeyLength = 512;
+
+        public ManualMushafAyahs(
+            IEnumerable<VerseKey> verseKeys,
+            string label,
+            string? contextKey = null)
             : base(LinkingSourceKind.ManualMushafAyahs, label)
         {
             ArgumentNullException.ThrowIfNull(verseKeys);
@@ -106,9 +111,39 @@ public abstract class LinkingSourceDescriptor
                     "A manual Mushaf source requires at least one verse.",
                     nameof(verseKeys));
             }
+
+            if (!TryNormalizeContextKey(contextKey, out var normalizedContextKey))
+            {
+                throw new ArgumentException(
+                    $"The context key must be non-blank and no longer than {MaxContextKeyLength} characters.",
+                    nameof(contextKey));
+            }
+
+            ContextKey = normalizedContextKey;
         }
 
         public IReadOnlyList<VerseKey> VerseKeys { get; }
+
+        public string? ContextKey { get; }
+
+        public static bool TryNormalizeContextKey(string? contextKey, out string? normalizedContextKey)
+        {
+            normalizedContextKey = null;
+
+            if (contextKey is null)
+            {
+                return true;
+            }
+
+            var trimmed = contextKey.Trim();
+            if (trimmed.Length is 0 or > MaxContextKeyLength)
+            {
+                return false;
+            }
+
+            normalizedContextKey = trimmed;
+            return true;
+        }
     }
 
     private static IReadOnlyList<string> NormalizeTypeCodes(IEnumerable<string>? typeCodes) =>

@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch;
 
 namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Foundation;
 
@@ -20,12 +21,15 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
 
     private readonly QuranDashboardDbContext dbContext;
     private readonly ILinkingDataRevisionWriterStore revisionStore;
+    private readonly PhraseSourceStateCoordinator phraseSourceStateCoordinator;
 
     public EfBulkQuranImportWriter(
         QuranDashboardDbContext dbContext,
+        PhraseSourceStateCoordinator phraseSourceStateCoordinator,
         ILinkingDataRevisionWriterStore? revisionStore = null)
     {
         this.dbContext = dbContext;
+        this.phraseSourceStateCoordinator = phraseSourceStateCoordinator;
         this.revisionStore = revisionStore ?? new LinkingDataRevisionStore();
     }
 
@@ -38,7 +42,10 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             || await dbContext.QuranWords.AnyAsync(ct);
     }
 
-    public async Task WriteAsync(AssembledQuranData data, bool force, CancellationToken ct)
+    public async Task<QuranImportWriteResult> WriteAsync(
+        AssembledQuranData data,
+        bool force,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(data);
         var connection = dbContext.Database.GetDbConnection();
@@ -56,12 +63,20 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
 
         try
         {
-            await revisionStore.LockForWriteAsync(npgsqlConnection, transaction, ct);
-
+            await phraseSourceStateCoordinator.LockSourceMutationAsync(
+                npgsqlConnection,
+                transaction,
+                ct);
             if (!force && await AnyTargetTableHasDataAsync(npgsqlConnection, transaction, ct))
             {
                 throw new InvalidOperationException(ImportRefusalMessages.TablesNotEmpty);
             }
+
+            await phraseSourceStateCoordinator.BeginFoundationResetAsync(
+                npgsqlConnection,
+                transaction,
+                ct);
+            await revisionStore.LockForWriteAsync(npgsqlConnection, transaction, ct);
 
             if (force)
             {
@@ -74,6 +89,10 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             await CopyWordsAsync(npgsqlConnection, data.Words, ct);
             await CopyLinesAsync(npgsqlConnection, data.Lines, ct);
 
+            await phraseSourceStateCoordinator.CompleteFoundationResetAsync(
+                npgsqlConnection,
+                transaction,
+                ct);
             await revisionStore.IncrementAsync(npgsqlConnection, transaction, ct);
             await transaction.CommitAsync(ct);
         }
@@ -82,6 +101,14 @@ public sealed class EfBulkQuranImportWriter : IQuranImportWriter
             await transaction.RollbackAsync(ct);
             throw;
         }
+
+        var cleanup = await phraseSourceStateCoordinator.CleanupUnreferencedGenerationsAsync(
+            npgsqlConnection,
+            CancellationToken.None);
+        return cleanup.Succeeded
+            ? QuranImportWriteResult.Completed
+            : QuranImportWriteResult.WithCleanupWarning(
+                cleanup.Warning ?? PhraseIndexGenerationCleanup.PendingWarning);
     }
 
     private static async Task CopySurahsAsync(

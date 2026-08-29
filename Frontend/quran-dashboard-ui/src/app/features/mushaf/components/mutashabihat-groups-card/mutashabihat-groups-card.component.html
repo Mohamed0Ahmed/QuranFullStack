@@ -16,133 +16,166 @@
     @for (group of loadingGroupPlaceholders(); track group) {
       <section class="mutashabihat-groups-card__group mutashabihat-groups-card__group--skeleton qd-card">
         <div class="mutashabihat-groups-card__group-header">
-          <div class="mutashabihat-groups-card__group-title">
-            <span class="qd-skeleton mutashabihat-groups-card__phrase-skeleton">&nbsp;</span>
+          <div class="mutashabihat-groups-card__group-copy">
+            <div class="mutashabihat-groups-card__group-title">
+              <span class="qd-skeleton mutashabihat-groups-card__phrase-skeleton">&nbsp;</span>
+            </div>
+            <p class="mutashabihat-groups-card__group-meta">
+              <span class="qd-skeleton mutashabihat-groups-card__group-meta-skeleton">&nbsp;</span>
+            </p>
           </div>
-          <p class="mutashabihat-groups-card__group-meta">
-            <span class="qd-skeleton mutashabihat-groups-card__group-meta-skeleton">&nbsp;</span>
-          </p>
+          <span class="qd-skeleton mutashabihat-groups-card__toggle-skeleton">&nbsp;</span>
         </div>
-
-        <ul class="mutashabihat-groups-card__occurrences">
-          @for (occurrence of loadingOccurrencePlaceholders(); track occurrence) {
-            <li qdAyahCard class="mutashabihat-groups-card__occurrence">
-              <div class="mutashabihat-groups-card__occurrence-meta">
-                <span class="qd-skeleton mutashabihat-groups-card__occurrence-meta-skeleton">&nbsp;</span>
-              </div>
-              <p class="mutashabihat-groups-card__text">
-                <span class="qd-skeleton">&nbsp;</span>
-              </p>
-            </li>
-          }
-        </ul>
       </section>
     }
   </div>
-} @else if (loadState().isEmpty || !mutashabihat() || mutashabihat()!.groupCount === 0) {
+} @else if (
+  loadState().isEmpty ||
+  !mutashabihat() ||
+  mutashabihat()!.groupCount === 0 ||
+  !hasAvailableGroups()
+) {
   <qd-empty-state [message]="emptyMessage" testId="mutashabihat-empty" />
 } @else {
   <div class="mutashabihat-groups-card__groups" data-testid="mutashabihat-groups-list">
+    @if (canUseLinking()) {
+      <div
+        class="mutashabihat-groups-card__selection-toolbar qd-card"
+        role="group"
+        aria-label="تحديد مواضع المتشابهات للربط"
+      >
+        <p
+          class="mutashabihat-groups-card__selection-summary"
+          role="status"
+          data-testid="mutashabihat-selection-count"
+        >
+          المواضع المحددة للربط: {{ selectedOccurrenceCount() }}
+        </p>
+        <div class="mutashabihat-groups-card__selection-controls">
+          <button
+            qdAction="secondary"
+            size="sm"
+            type="button"
+            [disabled]="allOccurrencesSelected()"
+            (click)="selectAllOccurrences()"
+          >
+            تحديد الكل
+          </button>
+          <button
+            qdAction="tertiary"
+            size="sm"
+            type="button"
+            [disabled]="selectedOccurrenceCount() === 0"
+            (click)="clearOccurrences()"
+          >
+            إلغاء تحديد الكل
+          </button>
+        </div>
+      </div>
+    }
     @for (group of displayGroups(); track group.groupKey) {
       <section class="mutashabihat-groups-card__group qd-card" data-testid="mutashabihat-group">
         <header class="mutashabihat-groups-card__group-header">
-          <h3 class="mutashabihat-groups-card__group-title" data-testid="mutashabihat-group-title">
-            @if (group.phraseTextUthmani) {
-              <span class="mutashabihat-groups-card__phrase" dir="rtl">{{
-                group.phraseTextUthmani
-              }}</span>
-            } @else {
-              <span class="mutashabihat-groups-card__phrase-range">
-                {{ group.wordRangeLabel }}
-                — {{ group.representativeVerseKey }}
-              </span>
-            }
-          </h3>
-          <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
-            {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
-            {{ group.distinctSurahCount }} سور
-          </p>
+          @if (canUseLinking()) {
+            <span class="mutashabihat-groups-card__group-selection">
+              <input
+                class="qd-checkbox"
+                type="checkbox"
+                [checked]="group.allOccurrencesSelected"
+                [indeterminate]="group.isIndeterminate"
+                [attr.aria-checked]="group.isIndeterminate ? 'mixed' : group.allOccurrencesSelected"
+                [attr.aria-label]="group.selectionLabel"
+                [attr.data-testid]="'mutashabihat-group-selection-' + group.sourceGroupId"
+                (change)="toggleGroupSelection(group)"
+              />
+            </span>
+          }
+          <div class="mutashabihat-groups-card__group-copy">
+            <h3 class="mutashabihat-groups-card__group-title" data-testid="mutashabihat-group-title">
+              @if (group.phraseTextUthmani) {
+                <span class="mutashabihat-groups-card__phrase" dir="rtl">{{
+                  group.phraseTextUthmani
+                }}</span>
+              } @else {
+                <span class="mutashabihat-groups-card__phrase-range">
+                  {{ group.wordRangeLabel }}
+                  — {{ group.representativeVerseKey }}
+                </span>
+              }
+            </h3>
+            <p class="mutashabihat-groups-card__group-meta" data-testid="mutashabihat-group-meta">
+              {{ group.occurrenceCount }} حدوث · {{ group.distinctAyahCount }} آيات ·
+              {{ group.distinctSurahCount }} سور
+            </p>
+          </div>
+          @if (group.showExpandToggle) {
+            <button
+              type="button"
+              qdAction="secondary"
+              size="sm"
+              class="mutashabihat-groups-card__expand-toggle"
+              data-testid="mutashabihat-expand-toggle"
+              [attr.aria-expanded]="group.isExpanded"
+              [attr.aria-controls]="group.occurrenceListId"
+              (click)="toggleGroupExpanded(group.groupKey)"
+            >
+              @if (group.isExpanded) {
+                إخفاء الآيات
+              } @else {
+                عرض كل الآيات ({{ group.distinctAyahCount }})
+              }
+            </button>
+          }
         </header>
 
-        <ul
-          qdResultList
-          listVariant="quran-result"
-          class="mutashabihat-groups-card__occurrences"
+        <div
+          class="mutashabihat-groups-card__occurrence-panel"
           [id]="group.occurrenceListId"
-          [listLabel]="group.occurrenceListLabel"
-          data-testid="mutashabihat-occurrence-list"
+          [hidden]="!group.isExpanded"
         >
-          @for (
-            occurrence of group.visibleOccurrences;
-            track occurrence.verseKey + ':' + occurrence.wordFrom;
-            let i = $index
-          ) {
-            <li
-              qdAyahCard
-              class="mutashabihat-groups-card__occurrence"
-              [class.mutashabihat-groups-card__occurrence--selected]="occurrence.isSelectedAyah"
-              data-testid="mutashabihat-occurrence"
+          @if (group.isExpanded) {
+            <ul
+              qdResultList
+              listVariant="quran-result"
+              class="mutashabihat-groups-card__occurrences"
+              [listLabel]="group.occurrenceListLabel"
+              data-testid="mutashabihat-occurrence-list"
             >
-              <header class="mutashabihat-groups-card__occurrence-meta">
-                <span
-                  class="mutashabihat-groups-card__occurrence-index"
-                  data-testid="mutashabihat-occurrence-index"
-                >
-                  {{ i + 1 }}
-                </span>
-                <span
-                  class="mutashabihat-groups-card__occurrence-reference"
-                  data-testid="mutashabihat-occurrence-reference"
-                >
-                  {{ occurrence.surahNameArabic }} — {{ occurrence.ayahNumber }}
-                </span>
-                <span class="mutashabihat-groups-card__occurrence-context">
-                  <span data-testid="mutashabihat-occurrence-page"
-                    >صفحة {{ occurrence.pageNumber }}</span
-                  >
-                </span>
-                @if (occurrence.isSelectedAyah) {
-                  <span
-                    class="mutashabihat-groups-card__selected-badge"
-                    data-testid="mutashabihat-occurrence-selected-label"
-                  >
-                    الآية المحددة
-                  </span>
-                }
-              </header>
-              <button
-                type="button"
-                class="mutashabihat-groups-card__text mutashabihat-groups-card__text--navigable"
-                dir="rtl"
-                data-testid="mutashabihat-occurrence-text"
-                [attr.aria-label]="occurrence.navigateLabel"
-                (click)="onAyahNavigate(occurrence)"
-              >
-                {{ occurrence.displayText }}
-              </button>
-            </li>
+              @for (
+                occurrence of group.visibleOccurrences;
+                track occurrence.selectionKey;
+                let i = $index
+              ) {
+                <li
+                  qdStudyAyahResult
+                  data-testid="mutashabihat-occurrence"
+                  [position]="i + 1"
+                  [surahNameArabic]="occurrence.surahNameArabic"
+                  [ayahNumber]="occurrence.ayahNumber"
+                  [pageNumber]="occurrence.pageNumber"
+                  [displayText]="occurrence.displayText"
+                  [navigateLabel]="occurrence.navigateLabel"
+                  [matchedWordFrom]="occurrence.wordFrom"
+                  [matchedWordTo]="occurrence.wordTo"
+                  testIdKind="mutashabihat-occurrence"
+                  [selected]="occurrence.isSelectedAyah"
+                  [linkingSelectionEnabled]="canUseLinking()"
+                  [linkingSelected]="occurrence.linkingSelected"
+                  [linkingSelectionLabel]="occurrence.linkingSelectionLabel"
+                  (ayahNavigate)="onAyahNavigate(occurrence)"
+                  (linkingSelectionToggle)="toggleOccurrenceSelection(occurrence.selectionKey)"
+                ></li>
+              }
+            </ul>
           }
-        </ul>
+        </div>
 
-        @if (group.showExpandToggle) {
-          <button
-            type="button"
-            qdAction="tertiary"
-            size="sm"
-            class="mutashabihat-groups-card__expand-toggle"
-            data-testid="mutashabihat-expand-toggle"
-            [attr.aria-expanded]="group.isExpanded"
-            [attr.aria-controls]="group.occurrenceListId"
-            (click)="toggleGroupExpanded(group.groupKey)"
-          >
-            @if (group.isExpanded) {
-              عرض أقل
-            } @else {
-              عرض الكل ({{ group.hiddenOccurrenceCount }} آية أخرى)
-            }
-          </button>
-        }
       </section>
     }
   </div>
+  @if (linkingLaunch(); as launch) {
+    <div class="mutashabihat-groups-card__linking-actions">
+      <qd-quran-source-linking-actions [launch]="launch" />
+    </div>
+  }
 }

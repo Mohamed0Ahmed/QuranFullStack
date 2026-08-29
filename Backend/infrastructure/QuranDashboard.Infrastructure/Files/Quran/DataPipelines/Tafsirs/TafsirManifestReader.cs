@@ -107,6 +107,7 @@ public sealed class TafsirManifestReader
             excludedCount,
             arabicCount,
             nonArabicCount,
+            languageCount,
             approvedSources,
             excludedSources,
             expectedCounts));
@@ -201,6 +202,7 @@ public sealed class TafsirManifestReader
         int excludedCount,
         int arabicCount,
         int nonArabicCount,
+        int languageCount,
         IReadOnlyList<TafsirManifestSourceRecord> approvedSources,
         IReadOnlyList<ExcludedTafsirSourceDto> excludedSources,
         TafsirExpectedCounts? expectedCounts)
@@ -209,6 +211,11 @@ public sealed class TafsirManifestReader
         var observedExcluded = excludedSources.Count;
         var observedArabic = approvedSources.Count(source => source.LanguageCode == "ar");
         var observedNonArabic = observedApproved - observedArabic;
+        var observedLanguages = approvedSources
+            .Select(source => source.LanguageCode)
+            .Distinct(StringComparer.Ordinal)
+            .Count();
+        var expectedLanguages = expectedCounts?.Languages ?? languageCount;
 
         return
         [
@@ -244,7 +251,13 @@ public sealed class TafsirManifestReader
                 observedNonArabic.ToString(CultureInfo.InvariantCulture),
                 nonArabicCount == observedNonArabic
                     && (expectedCounts is null
-                        || observedNonArabic == expectedCounts.NonArabicSources))
+                        || observedNonArabic == expectedCounts.NonArabicSources)),
+            TafsirValidationChecks.Hard(
+                TafsirInvariants.CheckLanguageCount,
+                $"declared=distinct={expectedLanguages.ToString(CultureInfo.InvariantCulture)}",
+                $"declared={languageCount.ToString(CultureInfo.InvariantCulture)}, distinct={observedLanguages.ToString(CultureInfo.InvariantCulture)}",
+                languageCount == observedLanguages
+                    && observedLanguages == expectedLanguages)
         ];
     }
 

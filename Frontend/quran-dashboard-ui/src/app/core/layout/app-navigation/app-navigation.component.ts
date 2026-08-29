@@ -15,7 +15,9 @@ import {
   untracked,
   viewChild,
 } from '@angular/core';
-import { Router, RouterLink, RouterLinkActive, UrlTree } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterLinkActive, UrlTree } from '@angular/router';
+import { filter, map } from 'rxjs';
 
 import { NavItem } from '../../navigation/nav-items';
 import { NavigationResumeService } from '../../navigation/navigation-resume.service';
@@ -55,6 +57,13 @@ export class AppNavigationComponent {
   private readonly navigationResume = inject(NavigationResumeService);
   private readonly platformId = inject(PLATFORM_ID);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly currentUrl = toSignal(
+    this.router.events.pipe(
+      filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
 
   readonly mode = input.required<QdAppNavigationMode>();
   readonly items = input.required<readonly NavItem[]>();
@@ -131,13 +140,12 @@ export class AppNavigationComponent {
   }
 
   protected isMenuActive(item: NavItem): boolean {
-    return this.activeMatchRoutes(item).some((route) =>
-      this.router.isActive(route, {
-        paths: 'subset',
-        queryParams: 'ignored',
-        fragment: 'ignored',
-        matrixParams: 'ignored',
-      }),
+    const currentPath = this.currentUrl().split(/[?#]/, 1)[0];
+
+    return (item.children ?? []).some((child) =>
+      child.route === item.route
+        ? currentPath === child.route
+        : currentPath === child.route || currentPath.startsWith(`${child.route}/`),
     );
   }
 
@@ -184,12 +192,6 @@ export class AppNavigationComponent {
     menu.style.setProperty('inset-block-start', `${placement.top}px`);
     menu.style.setProperty('left', `${placement.left}px`);
     menu.style.setProperty('max-block-size', `${placement.maxBlockSize}px`);
-  }
-
-  private activeMatchRoutes(item: NavItem): string[] {
-    return item.route === NAV_GROUP_ONLY_ROUTE
-      ? (item.children ?? []).map((child) => child.route)
-      : [item.route];
   }
 
   private groupSheetItems(items: readonly NavItem[]): readonly NavItem[] {

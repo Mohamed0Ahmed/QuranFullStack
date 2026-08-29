@@ -5,6 +5,7 @@ public sealed record TafsirImportReport(
     string Verdict,
     bool Persisted,
     bool Forced,
+    string Profile,
     string SourcePath,
     TafsirImportTotals Totals,
     IReadOnlyList<TafsirSourceSummary> SourceSummaries,

@@ -63,6 +63,14 @@ export const NAV_ITEMS: NavItem[] = [
     group: 'primary',
   },
   {
+    key: 'quran-search',
+    labelAr: 'البحث في القرآن',
+    labelEn: 'Quran Search',
+    route: '',
+    icon: 'search',
+    group: 'primary',
+  },
+  {
     key: 'mushaf',
     labelAr: 'قارئ المصحف',
     labelEn: 'Mushaf Reader',

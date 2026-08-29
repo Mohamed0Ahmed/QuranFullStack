@@ -1,0 +1,183 @@
+<section class="phrase-context-page" aria-label="البحث اليدوي في السياق">
+  <qd-notice
+    tone="info"
+    [message]="state().notice"
+    dismissLabel="إخفاء"
+    (dismiss)="facade.dismissNotice()"
+  />
+
+  @if (state().capabilitiesStatus === 'unavailable') {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="إعادة فحص جاهزية الفهرس"
+      (action)="facade.retryRoute()"
+    />
+  } @else if (state().routeInvalid) {
+    <qd-error-state
+      [message]="state().errorMessage"
+      actionLabel="بدء بحث جديد"
+      (action)="facade.resetInvalidState()"
+    />
+  } @else if (!state().capabilities) {
+    @if (
+      state().capabilitiesStatus === 'error' ||
+      state().capabilitiesStatus === 'rate-limited' ||
+      state().capabilitiesStatus === 'unavailable'
+    ) {
+      <qd-error-state
+        [message]="state().errorMessage"
+        actionLabel="إعادة المحاولة"
+        (action)="facade.retryRoute()"
+      />
+    } @else {
+      <qd-panel-skeleton
+        shape="rows"
+        [rowsCount]="4"
+        rowTemplate="minmax(10rem, 1fr) 8rem"
+        loadingLabel="جارٍ تجهيز البحث السياقي…"
+      />
+    }
+  } @else {
+    <qd-phrase-query-resolution
+      [state]="state().resolution"
+      [availableModes]="availableModes()"
+      [inlineControls]="true"
+      label="العبارة المراد استكشاف سياقها"
+      (draftChange)="facade.setDraft($event)"
+      (modeChange)="facade.setMode($event)"
+      (submitRequested)="facade.submitQuery()"
+      (candidateSelected)="selectCandidate($event)"
+    />
+
+    <p class="qd-sr-only" role="status" aria-live="polite">{{ countAnnouncement() }}</p>
+
+    @if (state().resolution.status === 'unresolved') {
+      <qd-empty-state message="لم يُعثر على تسلسل قرآني مطابق. راجع الكتابة وأرسل العبارة من جديد." />
+    } @else if (state().resolution.status === 'ambiguous') {
+      <qd-empty-state message="اختر أحد تسلسلات الكلمات الدقيقة أعلاه لمتابعة استكشاف السياق." />
+    } @else if (
+      state().resolution.status === 'error' ||
+      state().resolution.status === 'rate-limited' ||
+      state().resolution.status === 'unavailable' ||
+      state().resolution.status === 'stale'
+    ) {
+      <qd-error-state
+        [message]="state().resolution.message || state().errorMessage"
+        actionLabel="إعادة المحاولة"
+        (action)="facade.retryResolution()"
+      />
+    } @else if (state().route.resolution) {
+      <div
+        class="phrase-context-page__workspace"
+        [class.qd-refreshing-region]="workspaceInteractionBusy()"
+        [attr.aria-busy]="workspaceInteractionBusy() ? 'true' : null"
+      >
+        <qd-refreshing-indicator
+          [active]="workspaceInteractionBusy()"
+          testId="phrase-context-refreshing"
+        />
+
+        @if (
+          state().branchesStatus === 'loading' && !state().branches
+        ) {
+          <qd-panel-skeleton
+            shape="rows"
+            [rowsCount]="7"
+            rowTemplate="minmax(10rem, 1fr) minmax(12rem, 2fr)"
+            loadingLabel="جارٍ تحميل طرفي السياق…"
+          />
+        } @else if (!state().branches && workspaceRequestFailed()) {
+          <qd-error-state
+            [message]="state().errorMessage"
+            actionLabel="إعادة المحاولة"
+            (action)="facade.retryRoute()"
+          />
+        } @else if (state().branches; as branches) {
+          @if (workspaceRequestFailed()) {
+            <qd-error-state
+              [message]="state().errorMessage"
+              actionLabel="إعادة المحاولة"
+              (action)="facade.retryRoute()"
+            />
+          }
+
+          <qd-phrase-context-explorer
+            [branches]="branches"
+            [previousOptions]="state().previousOptions"
+            [followingOptions]="state().followingOptions"
+            [busy]="workspaceInteractionBusy()"
+            [navigationDisabled]="!state().workspaceDraftFresh"
+            [previousAlternativesActive]="state().route.previousAlternatives !== null"
+            [followingAlternativesActive]="state().route.followingAlternatives !== null"
+            (previousSelected)="selectBranch('previous', $event)"
+            (followingSelected)="selectBranch('following', $event)"
+            (previousPathSelected)="selectPath('previous', $event)"
+            (followingPathSelected)="selectPath('following', $event)"
+            (previousAlternativeToggled)="toggleAlternative('previous', $event)"
+            (followingAlternativeToggled)="toggleAlternative('following', $event)"
+            (previousAlternativesCleared)="clearAlternatives('previous')"
+            (followingAlternativesCleared)="clearAlternatives('following')"
+            (previousMoreRequested)="loadMoreBranches('previous')"
+            (followingMoreRequested)="loadMoreBranches('following')"
+          />
+
+          @if (state().resultsStatus === 'empty') {
+            <qd-empty-state message="لا توجد آيات ضمن اختيارات الطرفين الحالية." />
+          } @else if (resultsRequestFailed() && !workspaceRequestFailed()) {
+            <qd-error-state
+              [message]="state().errorMessage"
+              actionLabel="إعادة المحاولة"
+              (action)="facade.retryRoute()"
+            />
+          }
+
+          @if (state().ayahs.length > 0 && state().resultsStatus !== 'empty') {
+            <section class="phrase-context-results" aria-label="آيات السياق المطابقة">
+              <header class="phrase-context-results__header">
+                <div>
+                  <h2>نتائج السياق</h2>
+                  <div class="phrase-context-results__counts" aria-label="ملخص نتائج السياق">
+                    <strong>{{ state().totalAyahCount }} آية</strong>
+                    <span>{{ state().totalOccurrenceCount }} موضعًا</span>
+                    <span>{{ ayahSelection.selectedCount() }} آية محددة</span>
+                  </div>
+                  <label class="phrase-context-results__compact-select-all">
+                    <input
+                      type="checkbox"
+                      [checked]="ayahSelection.allSelected()"
+                      [indeterminate]="ayahSelection.partiallySelected()"
+                      [disabled]="resultsBusy()"
+                      (change)="toggleAllAyahs($event)"
+                    />
+                    <span>تحديد كل الآيات</span>
+                  </label>
+                </div>
+                <qd-phrase-context-linking-actions
+                  [route]="state().route"
+                  [disabled]="resultsBusy() || !state().workspaceDraftFresh"
+                />
+              </header>
+              <qd-phrase-context-occurrence-list
+                [ayahs]="state().ayahs"
+                [totalCount]="state().totalAyahCount"
+                [resultSetKey]="resultSetKey()"
+                [firstRowNumber]="resultFirstRowNumber()"
+                [busy]="resultsBusy()"
+              />
+              <qd-pagination
+                [currentPage]="state().resultsPage"
+                [pageSize]="state().resultsPageSize"
+                [totalCount]="state().totalAyahCount"
+                [disabled]="resultsBusy() || !state().workspaceDraftFresh"
+                ariaLabel="صفحات آيات السياق المطابقة"
+                (pageChange)="changeResultsPage($event)"
+              />
+            </section>
+          }
+        }
+      </div>
+    } @else if (state().resolution.status === 'idle') {
+      <qd-empty-state message="اكتب عبارة ثم اضغط «بحث» لعرض خياراتها وسياقاتها المقترنة." />
+    }
+  }
+</section>

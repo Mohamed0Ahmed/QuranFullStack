@@ -6,6 +6,7 @@ export interface LinkingManualMushafAyahReference {
 
 export interface LinkingManualMushafAyahSource {
   manualAyahs: readonly LinkingManualMushafAyahReference[];
+  contextKey: string | null;
 }
 
 export type LinkingManualLinkShape = 'grouped' | 'independent';
@@ -13,7 +14,12 @@ export type LinkingManualLinkShape = 'grouped' | 'independent';
 export type LinkingManualWordIdsByVerseKey = Readonly<Record<string, readonly number[]>>;
 
 export function isLinkingManualMushafAyahSource(value: unknown): value is LinkingManualMushafAyahSource {
-  if (!isRecord(value) || !Array.isArray(value['manualAyahs']) || value['manualAyahs'].length === 0) {
+  if (
+    !isRecord(value) ||
+    !Array.isArray(value['manualAyahs']) ||
+    value['manualAyahs'].length === 0 ||
+    !isContextKey(value['contextKey'])
+  ) {
     return false;
   }
 
@@ -58,4 +64,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function isNonBlankString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isContextKey(value: unknown): value is string | null {
+  return value === null ||
+    typeof value === 'string' &&
+    value.length > 0 &&
+    value.length <= 512 &&
+    value.trim() === value;
 }

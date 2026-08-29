@@ -1,0 +1,206 @@
+:host {
+  display: block;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.context-web {
+  --context-web-color: var(--qd-accent);
+  --context-web-tint: var(--qd-accent-tint);
+  --context-web-hairline: var(--qd-accent-soft);
+
+  display: grid;
+  grid-template-rows: 6rem auto minmax(0, 1fr) var(--qd-control-md);
+  gap: var(--qd-space-2);
+  block-size: 100%;
+  min-inline-size: 0;
+}
+
+.context-web--previous {
+  --context-web-color: var(--qd-info);
+  --context-web-tint: var(--qd-info-tint);
+  --context-web-hairline: var(--qd-info-hairline);
+}
+
+.context-web--following {
+  --context-web-color: var(--qd-warning);
+  --context-web-tint: var(--qd-warning-tint);
+  --context-web-hairline: var(--qd-warning-hairline);
+}
+
+.context-web__hub {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--qd-space-2);
+  block-size: 6rem;
+  padding: var(--qd-space-2) var(--qd-space-3);
+  border: 1px solid var(--context-web-hairline);
+  border-radius: var(--qd-radius-md);
+  background: var(--context-web-tint);
+}
+
+.context-web h3 {
+  margin: 0;
+}
+
+.context-web__hub > div > span {
+  color: var(--qd-green-text);
+  font-size: var(--qd-type-caption);
+  font-weight: 700;
+}
+
+.context-web__hub h3 {
+  color: var(--qd-ink);
+  font-size: var(--qd-type-h3);
+}
+
+.context-web__hub small {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.context-web__summary {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: end;
+  gap: var(--qd-s-2);
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.context-web__metric {
+  font-weight: 800;
+}
+
+.context-web__metric--words { color: var(--context-web-color); }
+
+.context-web__path {
+  display: flex;
+  align-items: center;
+  gap: var(--qd-space-1);
+  block-size: var(--qd-control-md);
+  padding-inline: var(--qd-space-2);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.context-path__item:not(.context-path__item--root),
+.context-path__current:not(.context-path__current--boundary) {
+  font-family: var(--qd-font-quran);
+}
+
+.context-web__table-region {
+  min-block-size: 0;
+  border: 1px solid color-mix(in oklch, var(--context-web-hairline) 72%, transparent);
+  border-radius: var(--qd-radius-md);
+  background: var(--qd-surface);
+  overflow: auto;
+}
+
+.context-web__table-region--empty {
+  display: grid;
+  place-items: center;
+}
+
+.context-options-table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.context-options-table th,
+.context-options-table td {
+  block-size: 3rem;
+  padding: 0 var(--qd-space-3);
+  border-block-end: 1px solid color-mix(in oklch, var(--context-web-hairline) 42%, transparent);
+  text-align: start;
+}
+
+.context-options-table th {
+  position: sticky;
+  z-index: 2;
+  inset-block-start: 0;
+  background: color-mix(in oklch, var(--qd-surface) 72%, var(--context-web-tint));
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  font-weight: 700;
+}
+
+.context-options-table th:last-child,
+.context-options-table__count {
+  inline-size: 7rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.context-options-table__action {
+  inline-size: 4rem;
+}
+
+.context-options-table__index {
+  inline-size: 3.25rem;
+  text-align: center;
+}
+
+.context-options-table tbody tr:hover {
+  background: color-mix(in oklch, var(--qd-surface) 56%, var(--context-web-tint));
+}
+
+.context-options-table__row--boundary,
+.context-options-table__row--current {
+  background: color-mix(in oklch, var(--qd-surface) 78%, var(--context-web-tint));
+}
+
+.context-option {
+  inline-size: 100%;
+  block-size: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--qd-ink);
+  cursor: pointer;
+  font-family: var(--qd-font-quran);
+  font-size: var(--qd-type-body);
+  text-align: start;
+}
+
+.context-option--boundary {
+  font-family: var(--qd-font-ui);
+  font-size: var(--qd-type-caption);
+  font-weight: 700;
+}
+
+.context-option:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.context-web__footer {
+  display: grid;
+  place-items: center;
+}
+
+.context-web__end { padding: var(--qd-space-4); color: var(--qd-ink-muted); text-align: center; }
+
+@media (max-width: 767px) {
+  .context-web {
+    grid-template-rows: 9rem auto minmax(0, 1fr) var(--qd-control-md);
+  }
+
+  .context-web__hub {
+    align-items: stretch;
+    flex-direction: column;
+    block-size: 9rem;
+  }
+  .context-web__summary { justify-items: start; }
+  .context-options-table th:last-child,
+  .context-options-table__count {
+    inline-size: 6rem;
+  }
+
+  .context-options-table__action {
+    inline-size: 3.25rem;
+  }
+
+}

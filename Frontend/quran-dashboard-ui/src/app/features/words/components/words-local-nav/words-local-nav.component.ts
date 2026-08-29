@@ -15,7 +15,13 @@ import { STEMS_PAGE_TITLE } from '../../models/stems.labels';
 import { ACTIVE_HUB_SECTION } from '../../models/unique-words.labels';
 import { WORD_TYPES_PAGE_TITLE } from '../../models/word-types.labels';
 
-export type WordsLocalNavSection = 'hub' | 'unique' | 'roots' | 'lemmas' | 'stems' | 'types';
+export type WordsLocalNavSection =
+  | 'hub'
+  | 'unique'
+  | 'roots'
+  | 'lemmas'
+  | 'stems'
+  | 'types';
 
 @Component({
   selector: 'qd-words-local-nav',

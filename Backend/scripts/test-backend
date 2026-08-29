@@ -496,6 +496,11 @@ canonical_preflight() {
     echo "ERROR: canonical foundation source is missing." >&2
     missing=true
   fi
+  if [[ "${require_foundation}" == true \
+    && ! -f "${REPO_ROOT}/resources/import-sources/masaq-corpus-aligned/masaq-search-words.dashboard-ready.json" ]]; then
+    echo "ERROR: canonical MASAQ search words source is missing." >&2
+    missing=true
+  fi
   if [[ "${require_enriched}" == true \
     && ! -f "${REPO_ROOT}/resources/import-sources/quran-enriched-morphology/corpus-based-enriched-morphology.dashboard-ready.json" ]]; then
     echo "ERROR: canonical enriched morphology artifact is missing." >&2

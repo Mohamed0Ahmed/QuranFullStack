@@ -35,7 +35,8 @@ public static class LinkingSourceDescriptorValidation
         LinkingSourceDescriptor.Stem source =>
             IdentifierError(source.StemId, "stemId") ?? TypeCodesError(source.TypeCodes),
         LinkingSourceDescriptor.WordType source => SelectionError(source.Selection),
-        LinkingSourceDescriptor.ManualMushafAyahs source => ManualAyahsError(source.VerseKeys),
+        LinkingSourceDescriptor.ManualMushafAyahs source =>
+            ManualAyahsError(source.VerseKeys) ?? ContextKeyError(source.ContextKey),
         _ => "Unknown source kind.",
     };
 
@@ -79,6 +80,14 @@ public static class LinkingSourceDescriptorValidation
 
         return null;
     }
+
+    private static string? ContextKeyError(string? contextKey) =>
+        LinkingSourceDescriptor.ManualMushafAyahs.TryNormalizeContextKey(
+            contextKey,
+            out var normalizedContextKey)
+        && string.Equals(contextKey, normalizedContextKey, StringComparison.Ordinal)
+            ? null
+            : "The contextKey must be absent or a trimmed non-blank value within the supported length.";
 
     private static bool IsWellFormedVerseKey(VerseKey verseKey) => VerseKeyError(verseKey.Value) is null;
 

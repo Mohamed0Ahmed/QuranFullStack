@@ -1,0 +1,115 @@
+:host {
+  display: block;
+  block-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.phrase-context-occurrences-table {
+  --qd-data-table-columns:
+    minmax(2.75rem, 0.24fr)
+    minmax(2.5rem, 0.22fr)
+    minmax(7rem, 0.75fr)
+    minmax(4.5rem, 0.45fr)
+    minmax(20rem, 3fr);
+  --qd-data-table-virtual-flex: 1 1 0;
+  --qd-data-table-virtual-block-size: 0;
+
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
+}
+
+.occurrence-table__cell {
+  min-inline-size: 0;
+  padding-inline: var(--qd-space-2);
+}
+
+.occurrence-table__cell.qd-explorer-table__cell:not(.occurrence-table__cell--ayah),
+.occurrence-table__compact {
+  cursor: pointer;
+}
+
+.occurrence-table__cell--number {
+  justify-content: center;
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.occurrence-table__cell--selection {
+  justify-content: center;
+  padding-inline: var(--qd-space-1);
+}
+
+.occurrence-table__checkbox {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  accent-color: var(--qd-accent);
+  cursor: pointer;
+}
+
+.occurrence-table__checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.occurrence-table__checkbox:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.occurrence-table__cell--location {
+  display: grid;
+  align-content: center;
+  gap: var(--qd-s-2);
+  font-size: var(--qd-type-meta);
+}
+
+.occurrence-table__cell--location span {
+  color: var(--qd-ink-muted);
+}
+
+.occurrence-table__cell--ayah {
+  overflow: hidden;
+}
+
+.occurrence-table__ayah-link {
+  display: block;
+  inline-size: 100%;
+  min-inline-size: 0;
+  overflow: hidden;
+  padding: var(--qd-space-1);
+  border-radius: var(--qd-radius-xs);
+  color: inherit;
+  text-decoration: none;
+}
+
+.occurrence-table__ayah-link:hover {
+  background: var(--qd-surface-hover);
+}
+
+.occurrence-table__ayah-link:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
+}
+
+.occurrence-table__compact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--qd-space-1) var(--qd-space-2);
+  align-content: center;
+  min-block-size: 100%;
+  padding: var(--qd-space-2);
+}
+
+.occurrence-table__compact-number {
+  color: var(--qd-ink-muted);
+  font-size: var(--qd-type-meta);
+}
+
+.occurrence-table__compact .occurrence-table__ayah-link {
+  grid-column: 1 / -1;
+}
