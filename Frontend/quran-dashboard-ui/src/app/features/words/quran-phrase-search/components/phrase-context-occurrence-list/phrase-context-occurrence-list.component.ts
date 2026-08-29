@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   effect,
+  inject,
   input,
   viewChild,
 } from '@angular/core';
@@ -15,10 +16,11 @@ import {
 } from '../../../../../core/navigation/detail-overlay/detail-overlay-ayah-link.directive';
 import { QdDataTableComponent } from '../../../../../shared/ui/data-table/data-table.component';
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
+import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
-interface ContextOccurrenceRow {
-  readonly occurrence: PhraseContextAyahDto;
+interface ContextAyahRow {
+  readonly ayah: PhraseContextAyahDto;
   readonly highlights: PhraseContextHighlightsDto;
   readonly mushafTarget: DetailOverlayBaseTarget;
 }
@@ -39,7 +41,9 @@ const COMPACT_ROW_HEIGHT = 104;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseContextOccurrenceListComponent {
-  readonly items = input.required<readonly PhraseContextAyahDto[]>();
+  protected readonly selection = inject(PhraseContextAyahSelectionStore);
+
+  readonly ayahs = input.required<readonly PhraseContextAyahDto[]>();
   readonly totalCount = input.required<number>();
   readonly resultSetKey = input.required<string>();
   readonly firstRowNumber = input(1);
@@ -47,23 +51,23 @@ export class PhraseContextOccurrenceListComponent {
 
   protected readonly rowHeight = ROW_HEIGHT;
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
-  protected readonly rowIdentity = (row: ContextOccurrenceRow): number =>
-    row.occurrence.ayahId;
+  protected readonly rowIdentity = (row: ContextAyahRow): number =>
+    row.ayah.ayahId;
   protected readonly rowNumber = (index: number): number => this.firstRowNumber() + index;
-  private readonly table = viewChild(QdDataTableComponent<ContextOccurrenceRow>);
+  private readonly table = viewChild(QdDataTableComponent<ContextAyahRow>);
   private lastResultSetKey = '';
 
-  protected readonly rows = computed<readonly ContextOccurrenceRow[]>(() =>
-    this.items().map((occurrence) => {
+  protected readonly rows = computed<readonly ContextAyahRow[]>(() =>
+    this.ayahs().map((ayah) => {
       const deepLink = buildMushafDeepLink({
-        pageNumber: occurrence.pageFrom,
-        ayah: occurrence.verseKey,
-        focusAyah: occurrence.verseKey,
+        pageNumber: ayah.pageFrom,
+        ayah: ayah.verseKey,
+        focusAyah: ayah.verseKey,
         panel: 'ayah',
       });
       return {
-        occurrence,
-        highlights: occurrence.highlights,
+        ayah,
+        highlights: ayah.highlights,
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
       };
     }),
@@ -80,4 +84,17 @@ export class PhraseContextOccurrenceListComponent {
       table.scrollToTop();
     });
   }
+
+  protected toggleAll(event: Event): void {
+    const checked = checkboxValue(event);
+    checked ? this.selection.selectAll() : this.selection.clearAll();
+  }
+
+  protected toggleAyah(event: Event, ayahId: number): void {
+    this.selection.setSelected(ayahId, checkboxValue(event));
+  }
+}
+
+function checkboxValue(event: Event): boolean {
+  return event.target instanceof HTMLInputElement && event.target.checked;
 }

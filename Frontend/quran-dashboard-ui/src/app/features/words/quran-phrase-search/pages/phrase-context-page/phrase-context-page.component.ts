@@ -18,6 +18,7 @@ import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.compon
 import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseContextExplorerComponent } from '../../components/phrase-context-explorer/phrase-context-explorer.component';
+import { PhraseContextLinkingActionsComponent } from '../../components/phrase-context-linking-actions/phrase-context-linking-actions.component';
 import { PhraseContextOccurrenceListComponent } from '../../components/phrase-context-occurrence-list/phrase-context-occurrence-list.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
 import { PhraseResolutionCandidateDto } from '../../../../../core/api/generated/models/phrase-resolution-candidate-dto';
@@ -27,6 +28,7 @@ import {
   isPhraseTextMode,
 } from '../../models/phrase-repetitions.models';
 import { PhraseContextFacade } from '../../state/phrase-context.facade';
+import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
 
 const MINIMUM_WORKSPACE_BUSY_MS = 300;
 
@@ -36,6 +38,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
   imports: [
     ExplorerPanelSkeletonComponent,
     PhraseContextExplorerComponent,
+    PhraseContextLinkingActionsComponent,
     PhraseContextOccurrenceListComponent,
     PhraseQueryResolutionComponent,
     QdEmptyStateComponent,
@@ -50,6 +53,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
 })
 export class PhraseContextPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(PhraseContextFacade);
+  protected readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private focusTimer?: ReturnType<typeof setTimeout>;
@@ -100,7 +104,7 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
     if (!state.branches || (state.branchesStatus !== 'success' && state.branchesStatus !== 'refreshing')) {
       return '';
     }
-    return `تم تحديث جدول الآيات، الصفحة ${state.resultsPage}، ${state.occurrences.length} من ${state.occurrencesTotalCount} موضعًا`;
+    return `تم تحديث جدول الآيات، الصفحة ${state.resultsPage}، ${state.ayahs.length} صفوف من ${state.totalAyahCount} آية في ${state.totalOccurrenceCount} موضعًا، والمحدد ${this.ayahSelection.selectedCount()} آية`;
   });
 
   constructor() {
@@ -196,6 +200,11 @@ export class PhraseContextPageComponent implements OnInit, OnDestroy {
       return;
     }
     this.facade.changeResultsPage(page);
+  }
+
+  protected toggleAllAyahs(event: Event): void {
+    const checked = event.target instanceof HTMLInputElement && event.target.checked;
+    checked ? this.ayahSelection.selectAll() : this.ayahSelection.clearAll();
   }
 
   private restoreFocus(pending: string, attempt: number): void {

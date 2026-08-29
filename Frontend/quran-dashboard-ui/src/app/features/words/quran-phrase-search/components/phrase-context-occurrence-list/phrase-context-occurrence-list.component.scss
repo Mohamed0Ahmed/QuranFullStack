@@ -7,6 +7,7 @@
 
 .phrase-context-occurrences-table {
   --qd-data-table-columns:
+    minmax(2.75rem, 0.24fr)
     minmax(2.5rem, 0.22fr)
     minmax(7rem, 0.75fr)
     minmax(4.5rem, 0.45fr)
@@ -32,6 +33,27 @@
   font-size: var(--qd-type-meta);
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+.occurrence-table__cell--selection {
+  justify-content: center;
+  padding-inline: var(--qd-space-1);
+}
+
+.occurrence-table__checkbox {
+  inline-size: 1.125rem;
+  block-size: 1.125rem;
+  accent-color: var(--qd-accent);
+  cursor: pointer;
+}
+
+.occurrence-table__checkbox:disabled {
+  cursor: not-allowed;
+}
+
+.occurrence-table__checkbox:focus-visible {
+  outline: var(--qd-focus-ring-width) solid var(--qd-focus-ring);
+  outline-offset: var(--qd-focus-ring-offset);
 }
 
 .occurrence-table__cell--location {
@@ -71,7 +93,7 @@
 
 .occurrence-table__compact {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   gap: var(--qd-space-1) var(--qd-space-2);
   align-content: center;
   min-block-size: 100%;

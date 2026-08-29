@@ -18,8 +18,10 @@ import {
   parsePhraseContextUrlState,
   contextResultsPageOnlyChanged,
   phraseContextBranchStateKey,
+  phraseContextResultSetKey,
   phraseContextStateKey,
 } from './phrase-context-url-sync';
+import { PhraseContextAyahSelectionStore } from './phrase-context-ayah-selection.store';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
 import { contextResultsRedirectPage } from './phrase-context-results-paging';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
@@ -55,6 +57,7 @@ export class PhraseContextFacade {
   private readonly resolutionApi = inject(PhraseResolutionApi);
   private readonly resolutionFlow = inject(PhraseContextResolutionStore);
   private readonly selection = inject(PhraseContextSelectionStore);
+  private readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
   private readonly requestStatus = inject(PhraseContextRequestStatusStore);
   private readonly routeCoordinator = inject(PhraseRouteNavigationCoordinator);
   private readonly actionGate = inject(PhraseActionRequestGate);
@@ -99,10 +102,11 @@ export class PhraseContextFacade {
     previousOptions: this.selection.previousOptions(),
     followingOptions: this.selection.followingOptions(),
     resultsStatus: this.requestStatus.results(),
-    occurrences: this.selection.occurrences(),
+    ayahs: this.selection.ayahs(),
     resultsPage: this.selection.resultsPage(),
     resultsPageSize: this.selection.resultsPageSize(),
-    occurrencesTotalCount: this.selection.occurrencesTotalCount(),
+    totalAyahCount: this.selection.totalAyahCount(),
+    totalOccurrenceCount: this.selection.totalOccurrenceCount(),
     errorMessage: this.requestStatus.errorMessage(),
     notice: this.notice.message(),
     sessionOnly: this.notice.sessionOnly(),
@@ -326,6 +330,7 @@ export class PhraseContextFacade {
       contextResultsPageOnlyChanged(previousRoute, parsed.state) &&
       this.workspaceRequests.isCommittedWorkspaceCurrent(parsed.state);
     this._route.set(parsed.state);
+    this.ayahSelection.synchronizeResultSet(phraseContextResultSetKey(parsed.state));
     this.syncDraftForRoute(previousRoute, parsed.state);
     this.workspaceRequests.clearMismatchedPendingWorkspace(previousRoute, parsed.state);
     this._routeInvalid.set(parsed.invalid);
@@ -417,7 +422,7 @@ export class PhraseContextFacade {
         const redirectPage = contextResultsRedirectPage(
           route.contextsPage,
           result.results.pageSize,
-          result.results.totalCount,
+          result.results.totalAyahCount,
         );
         if (redirectPage !== null) {
           this.navigate({ ...route, contextsPage: redirectPage }, true);
@@ -428,7 +433,7 @@ export class PhraseContextFacade {
         this.resolutionFlow.restoreFromBranches(route.q, result.branches);
         this.requestStatus.branches.set('success');
         this.requestStatus.results.set(
-          result.results.totalCount === 0 ? 'empty' : 'success',
+          result.results.totalAyahCount === 0 ? 'empty' : 'success',
         );
       }),
       catchError((error: unknown) =>

@@ -131,11 +131,35 @@
             />
           }
 
-          @if (state().occurrences.length > 0 && state().resultsStatus !== 'empty') {
+          @if (state().ayahs.length > 0 && state().resultsStatus !== 'empty') {
             <section class="phrase-context-results" aria-label="آيات السياق المطابقة">
+              <header class="phrase-context-results__header">
+                <div>
+                  <h2>نتائج السياق</h2>
+                  <div class="phrase-context-results__counts" aria-label="ملخص نتائج السياق">
+                    <strong>{{ state().totalAyahCount }} آية</strong>
+                    <span>{{ state().totalOccurrenceCount }} موضعًا</span>
+                    <span>{{ ayahSelection.selectedCount() }} آية محددة</span>
+                  </div>
+                  <label class="phrase-context-results__compact-select-all">
+                    <input
+                      type="checkbox"
+                      [checked]="ayahSelection.allSelected()"
+                      [indeterminate]="ayahSelection.partiallySelected()"
+                      [disabled]="resultsBusy()"
+                      (change)="toggleAllAyahs($event)"
+                    />
+                    <span>تحديد كل الآيات</span>
+                  </label>
+                </div>
+                <qd-phrase-context-linking-actions
+                  [route]="state().route"
+                  [disabled]="resultsBusy() || !state().workspaceDraftFresh"
+                />
+              </header>
               <qd-phrase-context-occurrence-list
-                [items]="state().occurrences"
-                [totalCount]="state().occurrencesTotalCount"
+                [ayahs]="state().ayahs"
+                [totalCount]="state().totalAyahCount"
                 [resultSetKey]="resultSetKey()"
                 [firstRowNumber]="resultFirstRowNumber()"
                 [busy]="resultsBusy()"
@@ -143,7 +167,7 @@
               <qd-pagination
                 [currentPage]="state().resultsPage"
                 [pageSize]="state().resultsPageSize"
-                [totalCount]="state().occurrencesTotalCount"
+                [totalCount]="state().totalAyahCount"
                 [disabled]="resultsBusy() || !state().workspaceDraftFresh"
                 ariaLabel="صفحات آيات السياق المطابقة"
                 (pageChange)="changeResultsPage($event)"

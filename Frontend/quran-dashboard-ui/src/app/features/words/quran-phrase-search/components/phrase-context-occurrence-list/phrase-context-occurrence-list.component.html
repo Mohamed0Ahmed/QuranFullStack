@@ -3,9 +3,9 @@
   renderer="standard"
   [rows]="rows()"
   [rowId]="rowIdentity"
-  ariaLabel="جدول مواضع السياق المحدد"
-  bodyAriaLabel="مواضع السياق المحدد في الآيات"
-  [columnCount]="4"
+  ariaLabel="جدول آيات السياق المطابقة"
+  bodyAriaLabel="آيات السياق المطابقة"
+  [columnCount]="5"
   [totalRowCount]="totalCount()"
   [state]="busy() ? 'refreshing' : 'ready'"
   [rowHeight]="rowHeight"
@@ -13,6 +13,19 @@
   scrollStateKey="words.phrases.context-occurrences"
 >
   <ng-template #headerTemplate>
+    <div class="occurrence-table__cell occurrence-table__cell--selection qd-explorer-table__header-cell" role="columnheader">
+      <input
+        class="occurrence-table__checkbox"
+        type="checkbox"
+        [checked]="selection.allSelected()"
+        [indeterminate]="selection.partiallySelected()"
+        [disabled]="busy() || totalCount() === 0"
+        aria-label="تحديد كل الآيات المطابقة"
+        data-testid="phrase-context-select-all"
+        (change)="toggleAll($event)"
+        (click)="$event.stopPropagation()"
+      />
+    </div>
     <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__header-cell qd-explorer-table__header-cell--row-number" role="columnheader">م</div>
     <div class="occurrence-table__cell qd-explorer-table__header-cell" role="columnheader">السورة والآية</div>
     <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__header-cell" role="columnheader">الصفحة</div>
@@ -20,21 +33,33 @@
   </ng-template>
 
   <ng-template #rowTemplate let-row let-index="index">
+    <div class="occurrence-table__cell occurrence-table__cell--selection qd-explorer-table__cell" role="cell">
+      <input
+        class="occurrence-table__checkbox"
+        type="checkbox"
+        [checked]="selection.isSelected(row.ayah.ayahId)"
+        [disabled]="busy()"
+        [attr.aria-label]="'تحديد الآية ' + row.ayah.verseKey"
+        [attr.data-ayah-id]="row.ayah.ayahId"
+        (change)="toggleAyah($event, row.ayah.ayahId)"
+        (click)="$event.stopPropagation()"
+      />
+    </div>
     <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell qd-explorer-table__cell--row-number" role="cell">{{ rowNumber(index) }}</div>
     <div class="occurrence-table__cell occurrence-table__cell--location qd-explorer-table__cell" role="cell">
-      <strong>{{ row.occurrence.surahNameArabic }}</strong>
-      <span>آية {{ row.occurrence.ayahNumber }}</span>
+      <strong>{{ row.ayah.surahNameArabic }}</strong>
+      <span>آية {{ row.ayah.ayahNumber }}</span>
     </div>
-    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell" role="cell">{{ row.occurrence.pageFrom }}</div>
+    <div class="occurrence-table__cell occurrence-table__cell--number qd-explorer-table__cell" role="cell">{{ row.ayah.pageFrom }}</div>
     <div class="occurrence-table__cell occurrence-table__cell--ayah qd-explorer-table__cell" role="cell">
       <a
         class="occurrence-table__ayah-link qd-interactive-surface"
         [qdAyahOverlayLink]="row.mushafTarget"
-        [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+        [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
       >
         <qd-phrase-highlighted-ayah
           roleScheme="context"
-          [words]="row.occurrence.words"
+          [words]="row.ayah.words"
           [compact]="true"
           [contextHighlights]="row.highlights"
         />
@@ -44,16 +69,26 @@
 
   <ng-template #compactRowTemplate let-row let-index="index">
     <div class="occurrence-table__compact">
+      <input
+        class="occurrence-table__checkbox"
+        type="checkbox"
+        [checked]="selection.isSelected(row.ayah.ayahId)"
+        [disabled]="busy()"
+        [attr.aria-label]="'تحديد الآية ' + row.ayah.verseKey"
+        [attr.data-ayah-id]="row.ayah.ayahId"
+        (change)="toggleAyah($event, row.ayah.ayahId)"
+        (click)="$event.stopPropagation()"
+      />
       <span class="occurrence-table__compact-number">{{ rowNumber(index) }}</span>
-      <strong>{{ row.occurrence.surahNameArabic }} · آية {{ row.occurrence.ayahNumber }}</strong>
+      <strong>{{ row.ayah.surahNameArabic }} · آية {{ row.ayah.ayahNumber }}</strong>
       <a
         class="occurrence-table__ayah-link qd-interactive-surface"
         [qdAyahOverlayLink]="row.mushafTarget"
-        [attr.aria-label]="'فتح الآية ' + row.occurrence.verseKey + ' في المصحف'"
+        [attr.aria-label]="'فتح الآية ' + row.ayah.verseKey + ' في المصحف'"
       >
         <qd-phrase-highlighted-ayah
           roleScheme="context"
-          [words]="row.occurrence.words"
+          [words]="row.ayah.words"
           [compact]="true"
           [contextHighlights]="row.highlights"
         />

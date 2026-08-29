@@ -84,14 +84,14 @@ export class PhraseContextActionCoordinator {
           const redirectPage = contextResultsRedirectPage(
             route.contextsPage,
             result.results.pageSize,
-            result.results.totalCount,
+            result.results.totalAyahCount,
           );
           if (redirectPage !== null) {
             hooks.navigate({ ...route, contextsPage: redirectPage }, true);
             return;
           }
           this.selection.replaceResults(result.results);
-          this.status.results.set(result.results.totalCount === 0 ? 'empty' : 'success');
+          this.status.results.set(result.results.totalAyahCount === 0 ? 'empty' : 'success');
         }),
         catchError((error: unknown) => this.fail(error, target, epoch, routeKey, hooks)),
       )

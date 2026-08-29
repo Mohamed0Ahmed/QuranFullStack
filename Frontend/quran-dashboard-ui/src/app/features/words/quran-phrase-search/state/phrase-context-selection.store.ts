@@ -7,6 +7,7 @@ import {
   PHRASE_CONTEXT_RESULT_PAGE_SIZE,
   PhraseContextFocusTarget,
 } from '../models/phrase-context.models';
+import { PhraseContextAyahSelectionStore } from './phrase-context-ayah-selection.store';
 import { PhraseLongStateSessionStore } from './phrase-long-state-session.store';
 
 type PhraseContextBranchOptions = PhraseContextBranchesResponse['previous']['options'];
@@ -20,15 +21,17 @@ interface PhraseContextBranchSnapshot {
 @Injectable()
 export class PhraseContextSelectionStore {
   private readonly longState = inject(PhraseLongStateSessionStore);
+  private readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
   private readonly branchSnapshots = new Map<string, PhraseContextBranchSnapshot>();
   private readonly _activeBranchStateKey = signal<string | null>(null);
   private readonly _branches = signal<PhraseContextBranchesResponse | null>(null);
   private readonly _previousOptions = signal<PhraseContextBranchOptions>([]);
   private readonly _followingOptions = signal<PhraseContextBranchOptions>([]);
-  private readonly _occurrences = signal<readonly PhraseContextAyahDto[]>([]);
+  private readonly _ayahs = signal<readonly PhraseContextAyahDto[]>([]);
   private readonly _resultsPage = signal(1);
   private readonly _resultsPageSize = signal(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
-  private readonly _occurrencesTotalCount = signal(0);
+  private readonly _totalAyahCount = signal(0);
+  private readonly _totalOccurrenceCount = signal(0);
   private readonly _focusTarget = signal<PhraseContextFocusTarget | null>(
     this.longState.restoreFocusTarget(),
   );
@@ -37,10 +40,11 @@ export class PhraseContextSelectionStore {
   readonly activeBranchStateKey = this._activeBranchStateKey.asReadonly();
   readonly previousOptions = this._previousOptions.asReadonly();
   readonly followingOptions = this._followingOptions.asReadonly();
-  readonly occurrences = this._occurrences.asReadonly();
+  readonly ayahs = this._ayahs.asReadonly();
   readonly resultsPage = this._resultsPage.asReadonly();
   readonly resultsPageSize = this._resultsPageSize.asReadonly();
-  readonly occurrencesTotalCount = this._occurrencesTotalCount.asReadonly();
+  readonly totalAyahCount = this._totalAyahCount.asReadonly();
+  readonly totalOccurrenceCount = this._totalOccurrenceCount.asReadonly();
   readonly focusTarget = this._focusTarget.asReadonly();
 
   requestFocus(target: PhraseContextFocusTarget): void {
@@ -109,10 +113,12 @@ export class PhraseContextSelectionStore {
   }
 
   replaceResults(response: PhraseContextResultsResponse): void {
-    this._occurrences.set(response.items);
+    this._ayahs.set(response.items);
     this._resultsPage.set(response.page);
     this._resultsPageSize.set(response.pageSize);
-    this._occurrencesTotalCount.set(response.totalCount);
+    this._totalAyahCount.set(response.totalAyahCount);
+    this._totalOccurrenceCount.set(response.totalOccurrenceCount);
+    this.ayahSelection.setTotalAyahCount(response.totalAyahCount);
   }
 
   clearAll(): void {
@@ -124,15 +130,17 @@ export class PhraseContextSelectionStore {
     this._branches.set(null);
     this._previousOptions.set([]);
     this._followingOptions.set([]);
-    this.clearOccurrences();
+    this.clearAyahs();
     this._activeBranchStateKey.set(null);
   }
 
-  clearOccurrences(): void {
-    this._occurrences.set([]);
+  clearAyahs(): void {
+    this._ayahs.set([]);
     this._resultsPage.set(1);
     this._resultsPageSize.set(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
-    this._occurrencesTotalCount.set(0);
+    this._totalAyahCount.set(0);
+    this._totalOccurrenceCount.set(0);
+    this.ayahSelection.setTotalAyahCount(0);
   }
 
   private showBranchSnapshot(snapshot: PhraseContextBranchSnapshot): void {

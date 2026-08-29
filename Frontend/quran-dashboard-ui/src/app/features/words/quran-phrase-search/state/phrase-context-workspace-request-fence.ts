@@ -82,7 +82,7 @@ export class PhraseContextWorkspaceRequestFence {
     const hasWorkspace = this.selection.branches() !== null;
     this.status.branches.set(hasWorkspace ? 'success' : 'idle');
     this.status.results.set(
-      hasWorkspace ? (this.selection.occurrencesTotalCount() === 0 ? 'empty' : 'success') : 'idle',
+      hasWorkspace ? (this.selection.totalAyahCount() === 0 ? 'empty' : 'success') : 'idle',
     );
   }
 

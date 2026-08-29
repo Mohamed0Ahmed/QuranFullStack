@@ -35,10 +35,11 @@ export interface PhraseContextState {
   readonly previousOptions: PhraseContextBranchesResponse['previous']['options'];
   readonly followingOptions: PhraseContextBranchesResponse['following']['options'];
   readonly resultsStatus: PhraseLoadStatus;
-  readonly occurrences: readonly PhraseContextAyahDto[];
+  readonly ayahs: readonly PhraseContextAyahDto[];
   readonly resultsPage: number;
   readonly resultsPageSize: number;
-  readonly occurrencesTotalCount: number;
+  readonly totalAyahCount: number;
+  readonly totalOccurrenceCount: number;
   readonly errorMessage: string;
   readonly notice: string;
   readonly sessionOnly: boolean;

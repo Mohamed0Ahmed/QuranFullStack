@@ -118,6 +118,10 @@ export function phraseContextBranchStateKey(state: PhraseContextUrlState): strin
   ].join('|');
 }
 
+export function phraseContextResultSetKey(state: PhraseContextUrlState): string {
+  return phraseContextBranchStateKey(state);
+}
+
 export function contextResultsPageOnlyChanged(
   current: PhraseContextUrlState,
   next: PhraseContextUrlState,
