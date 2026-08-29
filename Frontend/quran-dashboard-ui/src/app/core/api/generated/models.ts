@@ -233,6 +233,7 @@ export type { PhraseResolvedQueryDto } from './models/phrase-resolved-query-dto'
 export type { PhraseSearchCapabilitiesResponse } from './models/phrase-search-capabilities-response';
 export type { PhraseSearchCapabilitiesResponseApiResponse } from './models/phrase-search-capabilities-response-api-response';
 export type { PhraseSearchContextLinkingSelectionBody } from './models/phrase-search-context-linking-selection-body';
+export type { PhraseSearchSimilarityLinkingSelectionBody } from './models/phrase-search-similarity-linking-selection-body';
 export type { PhraseSelectedPathDto } from './models/phrase-selected-path-dto';
 export type { PhraseSelectedPathStepDto } from './models/phrase-selected-path-step-dto';
 export type { PhraseSimilarityAyahDto } from './models/phrase-similarity-ayah-dto';
@@ -240,6 +241,10 @@ export type { PhraseSimilarityGroupDto } from './models/phrase-similarity-group-
 export type { PhraseSimilarityGroupsResponse } from './models/phrase-similarity-groups-response';
 export type { PhraseSimilarityGroupsResponseApiResponse } from './models/phrase-similarity-groups-response-api-response';
 export type { PhraseSimilarityHighlightsDto } from './models/phrase-similarity-highlights-dto';
+export type { PhraseSimilarityLinkingSelectionAyahDto } from './models/phrase-similarity-linking-selection-ayah-dto';
+export type { PhraseSimilarityLinkingSelectionQueryDto } from './models/phrase-similarity-linking-selection-query-dto';
+export type { PhraseSimilarityLinkingSelectionResponse } from './models/phrase-similarity-linking-selection-response';
+export type { PhraseSimilarityLinkingSelectionResponseApiResponse } from './models/phrase-similarity-linking-selection-response-api-response';
 export type { PhraseSimilarityMatchDto } from './models/phrase-similarity-match-dto';
 export type { PhraseSimilarityMatchesResponse } from './models/phrase-similarity-matches-response';
 export type { PhraseSimilarityMatchesResponseApiResponse } from './models/phrase-similarity-matches-response-api-response';

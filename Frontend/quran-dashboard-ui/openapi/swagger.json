@@ -6897,6 +6897,13 @@
             }
           },
           {
+            "name": "q64",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "sort",
             "in": "query",
             "schema": {
@@ -7549,6 +7556,145 @@
               "text/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PhraseSimilarityMatchesResponseApiResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/quran/phrase-search/similarities/linking-selection": {
+      "post": {
+        "tags": [
+          "PhraseSearchSimilarityLinkingSelection"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PhraseSearchSimilarityLinkingSelectionBody"
+                  }
+                ]
+              }
+            },
+            "text/json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PhraseSearchSimilarityLinkingSelectionBody"
+                  }
+                ]
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PhraseSearchSimilarityLinkingSelectionBody"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              },
+              "text/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponseApiResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until the request may be retried",
+                "schema": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ObjectApiResponse"
                 }
               }
             }
@@ -18035,6 +18181,39 @@
         },
         "additionalProperties": false
       },
+      "PhraseSearchSimilarityLinkingSelectionBody": {
+        "required": [
+          "ayahIds",
+          "minimumMatchedWords",
+          "resolutionRef",
+          "selectionMode"
+        ],
+        "type": "object",
+        "properties": {
+          "resolutionRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "minimumMatchedWords": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "selectionMode": {
+            "type": "string",
+            "nullable": true
+          },
+          "ayahIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
       "PhraseSelectedPathDto": {
         "required": [
           "endsAtBoundary",
@@ -18328,6 +18507,125 @@
               "type": "integer",
               "format": "int32"
             }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSimilarityLinkingSelectionAyahDto": {
+        "required": [
+          "ayahId",
+          "pageNumber",
+          "selectedQuranWordIds",
+          "verseKey"
+        ],
+        "type": "object",
+        "properties": {
+          "ayahId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "verseKey": {
+            "type": "string"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "selectedQuranWordIds": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSimilarityLinkingSelectionQueryDto": {
+        "required": [
+          "displayText",
+          "variantId",
+          "wordCount"
+        ],
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "displayText": {
+            "type": "string"
+          },
+          "wordCount": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSimilarityLinkingSelectionResponse": {
+        "required": [
+          "activeBuildId",
+          "ayahs",
+          "query",
+          "selectedAyahCount"
+        ],
+        "type": "object",
+        "properties": {
+          "activeBuildId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "query": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionQueryDto"
+              }
+            ]
+          },
+          "selectedAyahCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "ayahs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionAyahDto"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PhraseSimilarityLinkingSelectionResponseApiResponse": {
+        "required": [
+          "data",
+          "errors",
+          "isSuccess",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string",
+            "nullable": true
+          },
+          "data": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PhraseSimilarityLinkingSelectionResponse"
+              }
+            ],
+            "nullable": true
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "nullable": true
           }
         },
         "additionalProperties": false
@@ -22932,6 +23230,9 @@
     },
     {
       "name": "PhraseSearchSimilarityGroups"
+    },
+    {
+      "name": "PhraseSearchSimilarityLinkingSelection"
     },
     {
       "name": "Roots"

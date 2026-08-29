@@ -12,6 +12,7 @@ internal static class PhraseSearchApiMessages
     internal const string ContextResultsLoaded = "تم تحميل آيات السياق";
     internal const string ContextLinkingSelectionResolved = "تم تحميل آيات السياق المحددة";
     internal const string SimilaritiesLoaded = "تم تحميل العبارات المتشابهة";
+    internal const string SimilarityLinkingSelectionResolved = "تم تحميل آيات التشابه المحددة";
     internal const string SimilarityGroupsLoaded = "تم تحميل مجموعات العبارات المتشابهة";
     internal const string SimilarityMatchesLoaded = "تم تحميل العبارات المطابقة لمجموعة التشابه";
     internal const string InvalidMode = "نمط نص العبارة غير صالح";

@@ -19,23 +19,14 @@ public sealed class SearchPhraseSimilaritiesHandler(
                 PhraseRequestInvalidKind.Reference);
         }
 
-        var wordCount = resolution.ExactTokenIds.Count;
-        if (wordCount is < PhraseSimilarityContract.MinimumLength
-            or > PhraseSearchPaging.MaximumSourceLength)
+        if (!PhraseSimilarityRequestValidation.TryMinimumMatchedWords(
+                resolution,
+                query.MinimumMatchedWords,
+                out var minimumMatchedWords,
+                out var invalidKind))
         {
             return new PhraseReadOutcome<PhraseSimilaritySearchResponse>.Invalid(
-                PhraseRequestInvalidKind.Length);
-        }
-
-        var minimumAllowed = PhraseSimilarityContract.MinimumMatchedWords(
-            wordCount,
-            PhraseSimilarityContract.DefaultThreshold);
-        if (query.MinimumMatchedWords is null
-            || query.MinimumMatchedWords < minimumAllowed
-            || query.MinimumMatchedWords > wordCount)
-        {
-            return new PhraseReadOutcome<PhraseSimilaritySearchResponse>.Invalid(
-                PhraseRequestInvalidKind.MinimumMatchedWords);
+                invalidKind);
         }
 
         var requestedSort = query.Sort ?? PhraseSimilaritySortKeys.Strength;
@@ -58,7 +49,7 @@ public sealed class SearchPhraseSimilaritiesHandler(
 
         var result = await reader.SearchAsync(
             resolution,
-            checked((short)query.MinimumMatchedWords.Value),
+            minimumMatchedWords,
             sort,
             page,
             pageSize,
