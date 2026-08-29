@@ -99,6 +99,29 @@ export class PhraseContextActionCoordinator {
     this.gate.track(target, epoch, subscription);
   }
 
+  updateAlternativeGroup(
+    route: PhraseContextUrlState,
+    side: 'previous' | 'following',
+    alternativeRef: string | null,
+    hooks: PhraseContextActionHooks,
+  ): void {
+    const currentRef = side === 'previous'
+      ? route.previousAlternatives
+      : route.followingAlternatives;
+    if (currentRef === alternativeRef) {
+      return;
+    }
+    this.selection.requestFocus(`${side}-alternative`);
+    this.status.branches.set('refreshing');
+    this.status.results.set('refreshing');
+    hooks.navigate({
+      ...route,
+      previousAlternatives: side === 'previous' ? alternativeRef : route.previousAlternatives,
+      followingAlternatives: side === 'following' ? alternativeRef : route.followingAlternatives,
+      contextsPage: 1,
+    }, false);
+  }
+
   loadBranchPage(
     route: PhraseContextUrlState,
     side: 'previous' | 'following',

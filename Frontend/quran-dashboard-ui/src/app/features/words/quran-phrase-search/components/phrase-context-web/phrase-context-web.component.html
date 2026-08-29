@@ -24,72 +24,83 @@
     </div>
   </header>
 
-  <nav
-    class="context-web__path"
-    [attr.dir]="side() === 'previous' ? 'ltr' : 'rtl'"
-    [attr.aria-label]="
-      side() === 'previous' ? 'مسار الكلمات السابقة المختارة' : 'مسار الكلمات اللاحقة المختارة'
-    "
-  >
-    @if (selection().selectionRef === null) {
-      <span
-        class="context-path__current qd-chip qd-chip--static qd-is-selected"
-        dir="rtl"
-        aria-current="page"
-      >
-        العبارة الأصلية
-      </span>
-    } @else {
-      <button
-        type="button"
-        class="context-path__item context-path__item--root qd-chip qd-chip--pill"
-        dir="rtl"
-        [disabled]="busy() || navigationDisabled()"
-        (click)="pathSelected.emit(null)"
-      >
-        العبارة الأصلية
-      </button>
-      @if (pathSteps().length === 0) {
-        <span class="context-path__separator" aria-hidden="true">
-          {{ side() === 'previous' ? '›' : '‹' }}
-        </span>
+  <div class="context-web__selection qd-flex-col qd-gap-2 qd-flex-shrink-guard">
+    <nav
+      class="context-web__path"
+      [attr.dir]="side() === 'previous' ? 'ltr' : 'rtl'"
+      [attr.aria-label]="
+        side() === 'previous' ? 'مسار الكلمات السابقة المختارة' : 'مسار الكلمات اللاحقة المختارة'
+      "
+    >
+      @if (selection().selectionRef === null) {
         <span
           class="context-path__current qd-chip qd-chip--static qd-is-selected"
           dir="rtl"
           aria-current="page"
         >
-          {{ fallbackCurrentLabel() }}
+          العبارة الأصلية
         </span>
       } @else {
-        @for (step of pathSteps(); track step.selectionRef) {
+        <button
+          type="button"
+          class="context-path__item context-path__item--root qd-chip qd-chip--pill"
+          dir="rtl"
+          [disabled]="busy() || pathNavigationDisabled()"
+          (click)="pathSelected.emit(null)"
+        >
+          العبارة الأصلية
+        </button>
+        @if (pathSteps().length === 0) {
           <span class="context-path__separator" aria-hidden="true">
             {{ side() === 'previous' ? '›' : '‹' }}
           </span>
-          @if ($last) {
-            <span
-              class="context-path__current qd-chip qd-chip--static qd-is-selected"
-              dir="rtl"
-              [class.context-path__current--boundary]="step.boundaryKind !== null"
-              aria-current="page"
-            >
-              {{ step.displayText }}
+          <span
+            class="context-path__current qd-chip qd-chip--static qd-is-selected"
+            dir="rtl"
+            aria-current="page"
+          >
+            {{ fallbackCurrentLabel() }}
+          </span>
+        } @else {
+          @for (step of pathSteps(); track step.selectionRef) {
+            <span class="context-path__separator" aria-hidden="true">
+              {{ side() === 'previous' ? '›' : '‹' }}
             </span>
-          } @else {
-            <button
-              type="button"
-              class="context-path__item qd-chip qd-chip--pill"
-              dir="rtl"
-              [disabled]="busy() || navigationDisabled()"
-              [attr.aria-label]="'الرجوع إلى مستوى ' + step.displayText"
-              (click)="pathSelected.emit(step.selectionRef)"
-            >
-              {{ step.displayText }}
-            </button>
+            @if ($last) {
+              <span
+                class="context-path__current qd-chip qd-chip--static qd-is-selected"
+                dir="rtl"
+                [class.context-path__current--boundary]="step.boundaryKind !== null"
+                aria-current="page"
+              >
+                {{ step.displayText }}
+              </span>
+            } @else {
+              <button
+                type="button"
+                class="context-path__item qd-chip qd-chip--pill"
+                dir="rtl"
+                [disabled]="busy() || pathNavigationDisabled()"
+                [attr.aria-label]="'الرجوع إلى مستوى ' + step.displayText"
+                (click)="pathSelected.emit(step.selectionRef)"
+              >
+                {{ step.displayText }}
+              </button>
+            }
           }
         }
       }
+    </nav>
+
+    @if (selectedAlternatives().length > 0) {
+      <qd-phrase-context-alternative-group
+        [side]="side()"
+        [options]="selectedAlternatives()"
+        [disabled]="busy() || navigationDisabled()"
+        (cleared)="alternativesCleared.emit()"
+      />
     }
-  </nav>
+  </div>
 
   @if (tableOptions().length > 0) {
     <div
@@ -107,6 +118,7 @@
           <tr>
             <th class="context-options-table__index" scope="col">م</th>
             <th scope="col">الكلمة أو الحد</th>
+            <th class="context-options-table__action" scope="col">اختيار</th>
             <th scope="col">عدد المواضع</th>
           </tr>
         </thead>
@@ -126,7 +138,7 @@
                   [class.context-option--boundary]="option.boundaryKind !== null"
                   [disabled]="
                     busy() ||
-                    navigationDisabled() ||
+                    pathNavigationDisabled() ||
                     option.selectionRef === selection().selectionRef
                   "
                   [attr.aria-current]="
@@ -139,6 +151,29 @@
                 >
                   {{ option.displayText }}
                 </button>
+              </td>
+              <td class="context-options-table__action">
+                @if (option.boundaryKind === null) {
+                  <button
+                    type="button"
+                    class="context-alternative-action qd-chip"
+                    [class.qd-is-selected]="option.isAlternativeSelected"
+                    [disabled]="
+                      busy() ||
+                      navigationDisabled() ||
+                      (!option.isAlternativeSelected && option.alternativeToggleRef === null)
+                    "
+                    [attr.aria-label]="alternativeActionLabel(option)"
+                    [attr.aria-pressed]="option.isAlternativeSelected"
+                    [attr.data-alternative-selected]="option.isAlternativeSelected"
+                    (click)="alternativeToggled.emit(option.alternativeToggleRef)"
+                  >
+                    <span aria-hidden="true">{{ option.isAlternativeSelected ? '×' : '+' }}</span>
+                  </button>
+                } @else {
+                  <span aria-hidden="true">—</span>
+                  <span class="qd-sr-only">لا يوجد اختيار إضافي لهذا الحد</span>
+                }
               </td>
               <td class="context-options-table__count">
                 <span class="context-options-table__count-value qd-chip__count">

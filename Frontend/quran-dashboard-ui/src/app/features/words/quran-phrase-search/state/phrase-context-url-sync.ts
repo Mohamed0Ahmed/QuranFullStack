@@ -21,6 +21,8 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
   const resolution = parseReference(params.get('resolution'));
   const before = parseReference(params.get('before'));
   const after = parseReference(params.get('after'));
+  const previousAlternatives = parseReference(params.get('beforeAny'));
+  const followingAlternatives = parseReference(params.get('afterAny'));
   const contextsPage = parsePositiveInteger(params.get('contextsPage'), 1);
   const q = params.get('q') ?? '';
   const state: PhraseContextUrlState = {
@@ -30,9 +32,16 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
     resolution: resolution.value,
     before: before.value,
     after: after.value,
+    previousAlternatives: previousAlternatives.value,
+    followingAlternatives: followingAlternatives.value,
     contextsPage: contextsPage.value,
   };
-  const orphanPath = (state.before !== null || state.after !== null) && state.resolution === null;
+  const orphanPath = (
+    state.before !== null ||
+    state.after !== null ||
+    state.previousAlternatives !== null ||
+    state.followingAlternatives !== null
+  ) && state.resolution === null;
   const orphanPage = state.contextsPage !== 1 && state.resolution === null;
   return {
     state,
@@ -42,6 +51,8 @@ export function parsePhraseContextUrlState(params: ParamMap): ParsedPhraseContex
       resolution.invalid ||
       before.invalid ||
       after.invalid ||
+      previousAlternatives.invalid ||
+      followingAlternatives.invalid ||
       contextsPage.invalid ||
       orphanPath ||
       orphanPage,
@@ -56,6 +67,8 @@ export function serializePhraseContextUrlState(state: PhraseContextUrlState): Pa
     resolution: state.resolution,
     before: state.before,
     after: state.after,
+    beforeAny: state.previousAlternatives,
+    afterAny: state.followingAlternatives,
     contextsPage: state.contextsPage === 1 ? null : String(state.contextsPage),
   };
 }
@@ -86,6 +99,8 @@ export function phraseContextStateKey(state: PhraseContextUrlState): string {
     state.resolution,
     state.before,
     state.after,
+    state.previousAlternatives,
+    state.followingAlternatives,
     state.contextsPage,
   ].join('|');
 }
@@ -98,6 +113,8 @@ export function phraseContextBranchStateKey(state: PhraseContextUrlState): strin
     state.resolution,
     state.before,
     state.after,
+    state.previousAlternatives,
+    state.followingAlternatives,
   ].join('|');
 }
 
@@ -112,7 +129,9 @@ export function contextResultsPageOnlyChanged(
     current.q === next.q &&
     current.resolution === next.resolution &&
     current.before === next.before &&
-    current.after === next.after
+    current.after === next.after &&
+    current.previousAlternatives === next.previousAlternatives &&
+    current.followingAlternatives === next.followingAlternatives
   );
 }
 

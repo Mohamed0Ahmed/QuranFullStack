@@ -1,7 +1,7 @@
 import { Injectable, inject, signal } from '@angular/core';
 
 import { PhraseContextBranchesResponse } from '../../../../core/api/generated/models/phrase-context-branches-response';
-import { PhraseContextOccurrenceDto } from '../../../../core/api/generated/models/phrase-context-occurrence-dto';
+import { PhraseContextAyahDto } from '../../../../core/api/generated/models/phrase-context-ayah-dto';
 import { PhraseContextResultsResponse } from '../../../../core/api/generated/models/phrase-context-results-response';
 import {
   PHRASE_CONTEXT_RESULT_PAGE_SIZE,
@@ -25,7 +25,7 @@ export class PhraseContextSelectionStore {
   private readonly _branches = signal<PhraseContextBranchesResponse | null>(null);
   private readonly _previousOptions = signal<PhraseContextBranchOptions>([]);
   private readonly _followingOptions = signal<PhraseContextBranchOptions>([]);
-  private readonly _occurrences = signal<readonly PhraseContextOccurrenceDto[]>([]);
+  private readonly _occurrences = signal<readonly PhraseContextAyahDto[]>([]);
   private readonly _resultsPage = signal(1);
   private readonly _resultsPageSize = signal(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
   private readonly _occurrencesTotalCount = signal(0);

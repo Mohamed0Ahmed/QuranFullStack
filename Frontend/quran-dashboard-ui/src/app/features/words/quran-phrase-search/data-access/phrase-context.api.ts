@@ -18,6 +18,8 @@ export class PhraseContextApi {
     resolutionRef: string,
     previousRef: string | null,
     followingRef: string | null,
+    previousAlternativesRef: string | null,
+    followingAlternativesRef: string | null,
     previousCursor: string | null,
     followingCursor: string | null,
     pageSize: number,
@@ -28,6 +30,8 @@ export class PhraseContextApi {
       .set('followingPageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'previousAlternativesRef', previousAlternativesRef);
+    params = setOptional(params, 'followingAlternativesRef', followingAlternativesRef);
     params = setOptional(params, 'previousCursor', previousCursor);
     params = setOptional(params, 'followingCursor', followingCursor);
     return this.cache.buildScoped(
@@ -36,6 +40,8 @@ export class PhraseContextApi {
         resolutionRef,
         previousRef,
         followingRef,
+        previousAlternativesRef,
+        followingAlternativesRef,
         previousCursor,
         followingCursor,
         pageSize,
@@ -56,6 +62,8 @@ export class PhraseContextApi {
     resolutionRef: string,
     previousRef: string | null,
     followingRef: string | null,
+    previousAlternativesRef: string | null,
+    followingAlternativesRef: string | null,
     page: number,
     pageSize: number,
   ): Observable<PhraseContextResultsResponseApiResponse> {
@@ -65,12 +73,16 @@ export class PhraseContextApi {
       .set('pageSize', pageSize);
     params = setOptional(params, 'previousRef', previousRef);
     params = setOptional(params, 'followingRef', followingRef);
+    params = setOptional(params, 'previousAlternativesRef', previousAlternativesRef);
+    params = setOptional(params, 'followingAlternativesRef', followingAlternativesRef);
     return this.cache.buildScoped(
       phraseSearchCacheKey(
         'context-results',
         resolutionRef,
         previousRef,
         followingRef,
+        previousAlternativesRef,
+        followingAlternativesRef,
         page,
         pageSize,
       ),

@@ -25,11 +25,17 @@ export class PhraseContextExplorerComponent {
   readonly followingOptions = input.required<readonly PhraseContextBranchOptionDto[]>();
   readonly busy = input(false);
   readonly navigationDisabled = input(false);
+  readonly previousAlternativesActive = input(false);
+  readonly followingAlternativesActive = input(false);
 
   readonly previousSelected = output<string>();
   readonly followingSelected = output<string>();
   readonly previousPathSelected = output<string | null>();
   readonly followingPathSelected = output<string | null>();
+  readonly previousAlternativeToggled = output<string | null>();
+  readonly followingAlternativeToggled = output<string | null>();
+  readonly previousAlternativesCleared = output<void>();
+  readonly followingAlternativesCleared = output<void>();
   readonly previousMoreRequested = output<void>();
   readonly followingMoreRequested = output<void>();
 

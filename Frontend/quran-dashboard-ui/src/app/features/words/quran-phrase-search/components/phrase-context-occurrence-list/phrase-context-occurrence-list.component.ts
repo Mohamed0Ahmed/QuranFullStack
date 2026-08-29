@@ -7,7 +7,7 @@ import {
   viewChild,
 } from '@angular/core';
 
-import { PhraseContextOccurrenceDto } from '../../../../../core/api/generated/models/phrase-context-occurrence-dto';
+import { PhraseContextAyahDto } from '../../../../../core/api/generated/models/phrase-context-ayah-dto';
 import { PhraseContextHighlightsDto } from '../../../../../core/api/generated/models/phrase-context-highlights-dto';
 import {
   DetailOverlayAyahLinkDirective,
@@ -18,7 +18,7 @@ import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
 interface ContextOccurrenceRow {
-  readonly occurrence: PhraseContextOccurrenceDto;
+  readonly occurrence: PhraseContextAyahDto;
   readonly highlights: PhraseContextHighlightsDto;
   readonly mushafTarget: DetailOverlayBaseTarget;
 }
@@ -39,25 +39,22 @@ const COMPACT_ROW_HEIGHT = 104;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseContextOccurrenceListComponent {
-  readonly items = input.required<readonly PhraseContextOccurrenceDto[]>();
+  readonly items = input.required<readonly PhraseContextAyahDto[]>();
   readonly totalCount = input.required<number>();
   readonly resultSetKey = input.required<string>();
   readonly firstRowNumber = input(1);
   readonly busy = input(false);
-  readonly previousHighlightWordCount = input(0);
-  readonly followingHighlightWordCount = input(0);
 
   protected readonly rowHeight = ROW_HEIGHT;
   protected readonly compactRowHeight = COMPACT_ROW_HEIGHT;
   protected readonly rowIdentity = (row: ContextOccurrenceRow): number =>
-    row.occurrence.occurrenceId;
+    row.occurrence.ayahId;
   protected readonly rowNumber = (index: number): number => this.firstRowNumber() + index;
   private readonly table = viewChild(QdDataTableComponent<ContextOccurrenceRow>);
   private lastResultSetKey = '';
 
   protected readonly rows = computed<readonly ContextOccurrenceRow[]>(() =>
     this.items().map((occurrence) => {
-      const previousCount = this.previousHighlightWordCount();
       const deepLink = buildMushafDeepLink({
         pageNumber: occurrence.pageFrom,
         ayah: occurrence.verseKey,
@@ -66,17 +63,7 @@ export class PhraseContextOccurrenceListComponent {
       });
       return {
         occurrence,
-        highlights: {
-          queryQuranWordIds: occurrence.highlights.queryQuranWordIds,
-          previousQuranWordIds:
-            previousCount > 0
-              ? occurrence.highlights.previousQuranWordIds.slice(-previousCount)
-              : [],
-          followingQuranWordIds: occurrence.highlights.followingQuranWordIds.slice(
-            0,
-            this.followingHighlightWordCount(),
-          ),
-        },
+        highlights: occurrence.highlights,
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
       };
     }),

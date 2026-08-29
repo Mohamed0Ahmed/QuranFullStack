@@ -170,12 +170,14 @@ export class PhraseContextFacade {
       resolution: candidate.resolutionRef,
       before: null,
       after: null,
+      previousAlternatives: null,
+      followingAlternatives: null,
       contextsPage: 1,
     });
   }
 
   selectPrevious(selectionRef: string): void {
-    if (!this.hasFreshCommittedWorkspace()) {
+    if (!this.hasFreshCommittedWorkspace() || this._route().previousAlternatives !== null) {
       return;
     }
     this.selection.requestFocus('previous');
@@ -184,7 +186,7 @@ export class PhraseContextFacade {
   }
 
   selectFollowing(selectionRef: string): void {
-    if (!this.hasFreshCommittedWorkspace()) {
+    if (!this.hasFreshCommittedWorkspace() || this._route().followingAlternatives !== null) {
       return;
     }
     this.selection.requestFocus('following');
@@ -193,7 +195,7 @@ export class PhraseContextFacade {
   }
 
   selectPreviousPath(selectionRef: string | null): void {
-    if (!this.hasFreshCommittedWorkspace()) {
+    if (!this.hasFreshCommittedWorkspace() || this._route().previousAlternatives !== null) {
       return;
     }
     this.selection.requestFocus('previous');
@@ -202,12 +204,42 @@ export class PhraseContextFacade {
   }
 
   selectFollowingPath(selectionRef: string | null): void {
-    if (!this.hasFreshCommittedWorkspace()) {
+    if (!this.hasFreshCommittedWorkspace() || this._route().followingAlternatives !== null) {
       return;
     }
     this.selection.requestFocus('following');
     this.workspaceRequests.markRefreshing();
     this.navigate({ ...this._route(), after: selectionRef, contextsPage: 1 });
+  }
+
+  togglePreviousAlternative(alternativeRef: string | null): void {
+    if (this.hasFreshCommittedWorkspace()) {
+      this.actions.updateAlternativeGroup(
+        this._route(),
+        'previous',
+        alternativeRef,
+        this.actionHooks,
+      );
+    }
+  }
+
+  toggleFollowingAlternative(alternativeRef: string | null): void {
+    if (this.hasFreshCommittedWorkspace()) {
+      this.actions.updateAlternativeGroup(
+        this._route(),
+        'following',
+        alternativeRef,
+        this.actionHooks,
+      );
+    }
+  }
+
+  clearPreviousAlternatives(): void {
+    this.togglePreviousAlternative(null);
+  }
+
+  clearFollowingAlternatives(): void {
+    this.toggleFollowingAlternative(null);
   }
 
   loadMorePrevious(): void {

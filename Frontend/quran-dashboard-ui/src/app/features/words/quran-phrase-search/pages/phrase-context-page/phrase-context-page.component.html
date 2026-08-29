@@ -86,54 +86,58 @@
             rowTemplate="minmax(10rem, 1fr) minmax(12rem, 2fr)"
             loadingLabel="جارٍ تحميل طرفي السياق…"
           />
-        } @else if (
-          state().branchesStatus === 'error' ||
-          state().branchesStatus === 'rate-limited' ||
-          state().branchesStatus === 'unavailable' ||
-          state().branchesStatus === 'stale' ||
-          state().branchesStatus === 'invalid'
-        ) {
+        } @else if (!state().branches && workspaceRequestFailed()) {
           <qd-error-state
             [message]="state().errorMessage"
             actionLabel="إعادة المحاولة"
             (action)="facade.retryRoute()"
           />
         } @else if (state().branches; as branches) {
+          @if (workspaceRequestFailed()) {
+            <qd-error-state
+              [message]="state().errorMessage"
+              actionLabel="إعادة المحاولة"
+              (action)="facade.retryRoute()"
+            />
+          }
+
           <qd-phrase-context-explorer
             [branches]="branches"
             [previousOptions]="state().previousOptions"
             [followingOptions]="state().followingOptions"
             [busy]="workspaceInteractionBusy()"
             [navigationDisabled]="!state().workspaceDraftFresh"
+            [previousAlternativesActive]="state().route.previousAlternatives !== null"
+            [followingAlternativesActive]="state().route.followingAlternatives !== null"
             (previousSelected)="selectBranch('previous', $event)"
             (followingSelected)="selectBranch('following', $event)"
             (previousPathSelected)="selectPath('previous', $event)"
             (followingPathSelected)="selectPath('following', $event)"
+            (previousAlternativeToggled)="toggleAlternative('previous', $event)"
+            (followingAlternativeToggled)="toggleAlternative('following', $event)"
+            (previousAlternativesCleared)="clearAlternatives('previous')"
+            (followingAlternativesCleared)="clearAlternatives('following')"
             (previousMoreRequested)="loadMoreBranches('previous')"
             (followingMoreRequested)="loadMoreBranches('following')"
           />
 
           @if (state().resultsStatus === 'empty') {
             <qd-empty-state message="لا توجد آيات ضمن اختيارات الطرفين الحالية." />
-          } @else if (
-            state().resultsStatus === 'error' ||
-            state().resultsStatus === 'rate-limited' ||
-            state().resultsStatus === 'unavailable'
-          ) {
+          } @else if (resultsRequestFailed() && !workspaceRequestFailed()) {
             <qd-error-state
               [message]="state().errorMessage"
               actionLabel="إعادة المحاولة"
               (action)="facade.retryRoute()"
             />
-          } @else if (state().occurrences.length > 0) {
+          }
+
+          @if (state().occurrences.length > 0 && state().resultsStatus !== 'empty') {
             <section class="phrase-context-results" aria-label="آيات السياق المطابقة">
               <qd-phrase-context-occurrence-list
                 [items]="state().occurrences"
                 [totalCount]="state().occurrencesTotalCount"
                 [resultSetKey]="resultSetKey()"
                 [firstRowNumber]="resultFirstRowNumber()"
-                [previousHighlightWordCount]="branches.previousSelection.tokens.length"
-                [followingHighlightWordCount]="branches.followingSelection.tokens.length"
                 [busy]="resultsBusy()"
               />
               <qd-pagination

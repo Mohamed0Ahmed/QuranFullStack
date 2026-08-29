@@ -26,7 +26,14 @@ export class PhraseLongStateSessionStore {
 
   restoreContext(base: PhraseContextUrlState): PhraseContextUrlState | null {
     const stored = this.state.context;
-    return stored && sameContextBase(stored, base) ? stored : null;
+    if (!stored || !sameContextBase(stored, base)) {
+      return null;
+    }
+    return {
+      ...stored,
+      previousAlternatives: stored.previousAlternatives ?? null,
+      followingAlternatives: stored.followingAlternatives ?? null,
+    };
   }
 
   clearContext(): void {
