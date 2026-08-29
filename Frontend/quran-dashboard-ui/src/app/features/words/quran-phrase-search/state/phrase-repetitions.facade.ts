@@ -10,7 +10,6 @@ import { lastPageNumber } from '../../../../shared/ui/pagination/pagination-rang
 import { PhraseRepetitionsApi } from '../data-access/phrase-repetitions.api';
 import {
   DEFAULT_PHRASE_REPETITIONS_URL_STATE,
-  PHRASE_OCCURRENCES_PAGE_SIZE,
   PHRASE_REPETITIONS_PAGE_SIZE,
   ParsedPhraseRepetitionsUrlState,
   PhraseLoadStatus,
@@ -257,9 +256,10 @@ export class PhraseRepetitionsFacade {
       this.resetForBuildChange(capabilities.activeBuildId, true);
       return EMPTY;
     }
-    return forkJoin([this.loadRepetitions(route), this.loadOccurrences(route)]).pipe(
-      map(() => undefined),
-    );
+    return forkJoin([
+      this.loadRepetitions(route),
+      this.loadOccurrences(route, capabilities.maximumRepetitionOccurrencePageSize),
+    ]).pipe(map(() => undefined));
   }
 
   private loadRepetitions(route: PhraseRepetitionsUrlState): Observable<void> {
@@ -326,7 +326,10 @@ export class PhraseRepetitionsFacade {
       );
   }
 
-  private loadOccurrences(route: PhraseRepetitionsUrlState): Observable<void> {
+  private loadOccurrences(
+    route: PhraseRepetitionsUrlState,
+    pageSize: number,
+  ): Observable<void> {
     if (route.phrase === null || route.build === null) {
       this.occurrencesRequestKey = null;
       this._occurrences.set(null);
@@ -334,7 +337,7 @@ export class PhraseRepetitionsFacade {
       return of(undefined);
     }
 
-    const requestKey = [route.build, route.phrase, route.occPage].join('|');
+    const requestKey = [route.build, route.phrase, route.occPage, pageSize].join('|');
     if (
       requestKey === this.occurrencesRequestKey &&
       (this._occurrencesStatus() === 'success' || this._occurrencesStatus() === 'empty')
@@ -348,7 +351,7 @@ export class PhraseRepetitionsFacade {
         route.build,
         route.phrase,
         route.occPage,
-        PHRASE_OCCURRENCES_PAGE_SIZE,
+        pageSize,
       )
       .pipe(
         tap((response) => {

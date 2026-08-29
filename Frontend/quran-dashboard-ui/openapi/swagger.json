@@ -17553,6 +17553,7 @@
           "defaultRepetitionSort",
           "exactReady",
           "maximumPageSize",
+          "maximumRepetitionOccurrencePageSize",
           "maximumRepetitionPageSize",
           "minimumSimilarityPercent",
           "modes",
@@ -17590,6 +17591,10 @@
             "format": "int32"
           },
           "maximumRepetitionPageSize": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "maximumRepetitionOccurrencePageSize": {
             "type": "integer",
             "format": "int32"
           },

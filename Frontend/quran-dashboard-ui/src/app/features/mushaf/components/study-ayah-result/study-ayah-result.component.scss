@@ -15,6 +15,10 @@
   border-color: var(--qd-border-accent);
 }
 
+:host(.study-ayah-result--linking-selectable) {
+  cursor: pointer;
+}
+
 .study-ayah-result {
   &__meta {
     display: flex;

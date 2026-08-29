@@ -7,8 +7,7 @@ import { LINKING_LABELS } from '../../models/linking.labels';
 export type LinkingPreflightAyahFilter =
   | 'ALL'
   | 'NEW_AYAH'
-  | 'OVERLAP_OTHER_SOURCE'
-  | 'UNCHANGED'
+  | 'EXISTING'
   | 'UPDATE';
 
 interface LinkingPreflightFilterOption {
@@ -37,11 +36,10 @@ export class LinkingPreflightFilterBarComponent {
       { value: 'ALL', label: this.labels.preflightAyahFilterAll, count: counts.requested },
       { value: 'NEW_AYAH', label: this.labels.ayahClassifications.NEW_AYAH, count: counts.new },
       {
-        value: 'OVERLAP_OTHER_SOURCE',
-        label: this.labels.ayahClassifications.OVERLAP_OTHER_SOURCE,
-        count: counts.overlapping,
+        value: 'EXISTING',
+        label: this.labels.preflightAyahExisting,
+        count: counts.overlapping + counts.unchanged,
       },
-      { value: 'UNCHANGED', label: this.labels.ayahClassifications.UNCHANGED, count: counts.unchanged },
       {
         value: 'UPDATE',
         label: this.labels.ayahClassifications.UPDATE,

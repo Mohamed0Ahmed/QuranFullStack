@@ -24,6 +24,10 @@
     <strong>كلمات العبارة المحددة</strong>
   </div>
 
+  @if (linkingLaunch(); as launch) {
+    <qd-quran-source-linking-actions [launch]="launch" alignment="center" />
+  }
+
   <div
     class="phrase-occurrences__list"
     qdResultList

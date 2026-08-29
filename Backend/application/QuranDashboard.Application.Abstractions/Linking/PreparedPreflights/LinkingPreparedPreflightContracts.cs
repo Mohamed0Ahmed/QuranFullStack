@@ -101,9 +101,14 @@ public sealed record LinkingPreparedAyahOverlayDto(
 
 public static class LinkingPreparedDetailFilters
 {
+    public const string AllFilter = "ALL";
+
+    public const string ExistingFilter = "EXISTING";
+
     public static IReadOnlySet<string> All { get; } = new HashSet<string>(StringComparer.Ordinal)
     {
-        "ALL",
+        AllFilter,
+        ExistingFilter,
         "NEW_AYAH",
         "OVERLAP_OTHER_SOURCE",
         "UNCHANGED",

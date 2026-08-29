@@ -45,6 +45,7 @@
 
 .linking-virtual-ayah-list__row--grouped {
   padding-block: 0;
+  border-block-end: 0;
 }
 
 .linking-virtual-ayah-list__row--grouped-start {
@@ -60,11 +61,6 @@
   padding: var(--qd-space-2) var(--qd-space-3);
   border-inline: var(--qd-hairline);
   background: var(--qd-ayah-card-bg);
-}
-
-.linking-virtual-ayah-list__row--grouped:not(.linking-virtual-ayah-list__row--grouped-start)
-  .linking-virtual-ayah-list__content--grouped {
-  border-block-start: var(--qd-hairline);
 }
 
 .linking-virtual-ayah-list__row--grouped-start .linking-virtual-ayah-list__content--grouped {

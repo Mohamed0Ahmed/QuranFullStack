@@ -76,6 +76,7 @@ public sealed partial class EfPhraseRepetitionsReader
             PhraseSearchPaging.DefaultPageSize,
             PhraseSearchPaging.MaximumPageSize,
             PhraseSearchPaging.MaximumRepetitionPageSize,
+            PhraseSearchPaging.MaximumRepetitionOccurrencePageSize,
             PhraseSimilarityContract.Thresholds.Min(),
             [.. PhraseSimilarityContract.Thresholds],
             modes);

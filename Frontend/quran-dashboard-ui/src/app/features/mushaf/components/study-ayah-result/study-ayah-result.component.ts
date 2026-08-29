@@ -11,7 +11,9 @@ type StudyAyahResultTestIdKind = 'similar-ayah' | 'mutashabihat-occurrence';
   host: {
     class: 'study-ayah-result',
     '[class.study-ayah-result--selected]': 'selected()',
+    '[class.study-ayah-result--linking-selectable]': 'linkingSelectionEnabled()',
     '[class.study-ayah-result--linking-selected]': 'linkingSelected()',
+    '(click)': 'onCardClick($event)',
   },
 })
 export class StudyAyahResultComponent {
@@ -54,4 +56,16 @@ export class StudyAyahResultComponent {
   protected toggleLinkingSelection(): void {
     this.linkingSelectionToggle.emit();
   }
+
+  protected onCardClick(event: MouseEvent): void {
+    if (!this.linkingSelectionEnabled() || isNestedInteraction(event.target)) {
+      return;
+    }
+
+    this.toggleLinkingSelection();
+  }
+}
+
+function isNestedInteraction(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest('button, input, a') !== null;
 }

@@ -41,7 +41,7 @@ export function createSimilarAyahsLinkingLaunch(
       ayahOverrideIds: [],
       selectedWords: [],
       automaticWordMatchesEnabled: null,
-      manualLinkShape: 'grouped',
+      manualLinkShape: 'independent',
       descriptions: [],
     },
   };
@@ -104,7 +104,7 @@ export function createMutashabihatLinkingLaunch(
       ayahOverrideIds: [],
       selectedWords,
       automaticWordMatchesEnabled: null,
-      manualLinkShape: 'grouped',
+      manualLinkShape: 'independent',
       descriptions: [],
     },
   };
