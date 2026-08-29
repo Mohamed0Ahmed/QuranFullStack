@@ -146,6 +146,9 @@
           </div>
         </div>
       } @else if (state().queryPhrase; as queryPhrase) {
+        <qd-phrase-similarity-linking-actions
+          [disabled]="busy() || state().queryDraftPending || state().resultsStatus !== 'success'"
+        />
         <qd-phrase-similarity-list
           [items]="state().ayahs"
           [queryPhrase]="queryPhrase"

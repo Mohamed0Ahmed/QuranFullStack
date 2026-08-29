@@ -2,6 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
+import { PhraseSearchSimilarityLinkingSelectionBody } from '../../../../core/api/generated/models/phrase-search-similarity-linking-selection-body';
+import { PhraseSimilarityLinkingSelectionResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-linking-selection-response-api-response';
 import { PhraseSimilaritySearchResponseApiResponse } from '../../../../core/api/generated/models/phrase-similarity-search-response-api-response';
 import { environment } from '../../../../../environments/environment';
 import { PhraseSimilarityResultSort } from '../models/phrase-similarity.models';
@@ -48,4 +50,12 @@ export class PhraseSimilarityApi {
     );
   }
 
+  resolveLinkingSelection(
+    request: PhraseSearchSimilarityLinkingSelectionBody,
+  ): Observable<PhraseSimilarityLinkingSelectionResponseApiResponse> {
+    return this.http.post<PhraseSimilarityLinkingSelectionResponseApiResponse>(
+      `${this.baseUrl}/similarities/linking-selection`,
+      request,
+    );
+  }
 }

@@ -16,6 +16,7 @@ import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/erro
 import { QdNoticeComponent } from '../../../../../shared/ui/notice/notice.component';
 import { QdRefreshingIndicatorComponent } from '../../../../../shared/ui/refreshing-indicator/refreshing-indicator.component';
 import { PhraseQueryResolutionComponent } from '../../components/phrase-query-resolution/phrase-query-resolution.component';
+import { PhraseSimilarityLinkingActionsComponent } from '../../components/phrase-similarity-linking-actions/phrase-similarity-linking-actions.component';
 import { PhraseSimilarityListComponent } from '../../components/phrase-similarity-list/phrase-similarity-list.component';
 import { PhraseResolutionViewState } from '../../models/phrase-query.models';
 import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetitions.models';
@@ -33,6 +34,7 @@ import {
   imports: [
     ExplorerPanelSkeletonComponent,
     PhraseQueryResolutionComponent,
+    PhraseSimilarityLinkingActionsComponent,
     PhraseSimilarityListComponent,
     QdEmptyStateComponent,
     QdErrorStateComponent,

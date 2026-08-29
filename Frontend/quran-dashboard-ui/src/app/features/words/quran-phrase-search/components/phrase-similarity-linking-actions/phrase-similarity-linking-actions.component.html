@@ -1,0 +1,45 @@
+@if (linking.canUseLinking()) {
+  <div
+    class="phrase-similarity-linking-actions"
+    role="group"
+    aria-label="خيارات ربط آيات التشابه المحددة"
+  >
+    <button
+      qdAction="primary"
+      size="sm"
+      type="button"
+      [busy]="linking.resolving()"
+      [disabled]="actionDisabled()"
+      [attr.aria-label]="addLabel()"
+      data-linking-source-action="phrase-similarity-results"
+      data-testid="phrase-similarity-add-to-workspace"
+      (click)="addToWorkspace()"
+    >
+      {{ labels.addToWorkspace }}
+    </button>
+    <button
+      qdAction="warning"
+      size="sm"
+      type="button"
+      [busy]="linking.resolving()"
+      [disabled]="actionDisabled()"
+      [attr.aria-label]="directLabel()"
+      data-linking-source-action="phrase-similarity-results"
+      data-testid="phrase-similarity-direct-link"
+      (click)="startDirectLink()"
+    >
+      {{ labels.directLink }}
+    </button>
+  </div>
+}
+
+@if (linking.errorMessage(); as errorMessage) {
+  <qd-error-state
+    severity="write"
+    [message]="errorMessage"
+    actionLabel="إخفاء"
+    actionAriaLabel="إخفاء خطأ تجهيز ربط آيات التشابه"
+    testId="phrase-similarity-linking-error"
+    (action)="linking.dismissError()"
+  />
+}
