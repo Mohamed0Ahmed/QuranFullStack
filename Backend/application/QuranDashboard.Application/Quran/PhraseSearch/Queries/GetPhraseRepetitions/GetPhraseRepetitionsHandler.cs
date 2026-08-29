@@ -26,6 +26,18 @@ public sealed class GetPhraseRepetitionsHandler(IPhraseRepetitionsReader reader)
             return new GetPhraseRepetitionsOutcome.InvalidLength();
         }
 
+        IReadOnlyList<string> searchTerms = [];
+        if (!string.IsNullOrWhiteSpace(query.Q64))
+        {
+            var parsed = PhraseQueryInputParser.Parse(query.Q64, mode);
+            if (parsed is PhraseQueryParseResult.Failure failure)
+            {
+                return new GetPhraseRepetitionsOutcome.InvalidQuery(failure.Kind);
+            }
+
+            searchTerms = ((PhraseQueryParseResult.Success)parsed).Segments;
+        }
+
         var sortValue = string.IsNullOrWhiteSpace(query.Sort)
             ? PhraseRepetitionSortKeys.Occurrences
             : query.Sort;
@@ -44,6 +56,7 @@ public sealed class GetPhraseRepetitionsHandler(IPhraseRepetitionsReader reader)
         var result = await reader.GetRepetitionsAsync(
             mode,
             checked((short)wordCount),
+            searchTerms,
             sort,
             page,
             pageSize,

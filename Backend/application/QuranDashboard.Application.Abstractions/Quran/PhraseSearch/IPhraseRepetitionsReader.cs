@@ -11,6 +11,7 @@ public interface IPhraseRepetitionsReader
     Task<PhraseSearchReadResult<PhraseRepetitionsPageResponse>> GetRepetitionsAsync(
         PhraseTextMode mode,
         short wordCount,
+        IReadOnlyList<string> searchTerms,
         PhraseRepetitionSort sort,
         int page,
         int pageSize,

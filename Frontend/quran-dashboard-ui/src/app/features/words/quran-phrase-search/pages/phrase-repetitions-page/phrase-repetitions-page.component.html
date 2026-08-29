@@ -65,6 +65,54 @@
     />
   } @else {
     <div class="phrase-repetitions-page__controls" aria-label="مرشحات التكرارات">
+      <form
+        class="phrase-repetitions-page__search"
+        role="search"
+        (submit)="submitSearch($event, repetitionSearch.value)"
+      >
+        <div class="phrase-repetitions-page__field">
+          <label
+            class="phrase-repetitions-page__field-label"
+            for="phrase-repetitions-search"
+          >
+            بحث داخل عبارات {{ state().route.length }} كلمات
+          </label>
+          <div class="phrase-repetitions-page__search-controls">
+            <input
+              #repetitionSearch
+              id="phrase-repetitions-search"
+              class="qd-input"
+              type="search"
+              inputmode="search"
+              placeholder="اكتب الكلمات المطلوب وجودها"
+              [value]="state().route.query"
+              [disabled]="controlsBusy()"
+              data-testid="phrase-repetitions-search"
+            />
+            <button
+              qdAction="primary"
+              size="sm"
+              type="submit"
+              [disabled]="controlsBusy()"
+            >
+              بحث
+            </button>
+            @if (state().route.query) {
+              <button
+                qdAction="secondary"
+                size="sm"
+                type="button"
+                [disabled]="controlsBusy()"
+                aria-label="مسح بحث العبارات المتكررة"
+                (click)="clearSearch(repetitionSearch)"
+              >
+                مسح
+              </button>
+            }
+          </div>
+        </div>
+      </form>
+
       <label class="phrase-repetitions-page__field">
         <span>عدد كلمات العبارة</span>
         <select
@@ -143,7 +191,13 @@
           loadingLabel="جارٍ تحميل العبارات المتكررة…"
         />
       } @else if (state().listStatus === 'empty') {
-        <qd-empty-state message="لا توجد عبارات متكررة بهذه الخيارات. جرّب طولًا أو نمطًا آخر." />
+        <qd-empty-state
+          [message]="
+            state().route.query
+              ? 'لا توجد عبارات من ' + state().route.length + ' كلمات تحتوي على كلمات البحث.'
+              : 'لا توجد عبارات متكررة بهذه الخيارات. جرّب طولًا أو نمطًا آخر.'
+          "
+        />
       } @else if (state().list; as list) {
         <div class="phrase-repetitions-page__meta">
           <strong>{{ list.totalCount }} عبارة</strong>
@@ -203,6 +257,7 @@
               [activeBuildId]="list.activeBuildId"
               [mode]="list.mode"
               [wordCount]="list.wordCount"
+              [query]="state().route.query"
               [sort]="list.sort"
               [totalCount]="list.totalCount"
               [page]="list.page"

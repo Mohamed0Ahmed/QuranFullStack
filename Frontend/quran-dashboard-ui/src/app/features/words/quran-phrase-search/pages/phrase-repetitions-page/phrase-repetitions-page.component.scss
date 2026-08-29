@@ -45,13 +45,30 @@
   background: var(--qd-section-bg);
 }
 
+.phrase-repetitions-page__search {
+  grid-column: 1 / -1;
+}
+
+.phrase-repetitions-page__search-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--qd-space-2);
+  align-items: center;
+}
+
+.phrase-repetitions-page__search-controls .qd-input {
+  inline-size: 100%;
+  min-block-size: var(--qd-control-sm);
+}
+
 .phrase-repetitions-page__field {
   display: grid;
   gap: var(--qd-s-2);
   min-inline-size: 0;
 }
 
-.phrase-repetitions-page__field > span {
+.phrase-repetitions-page__field > span,
+.phrase-repetitions-page__field-label {
   color: var(--qd-ink-muted);
   font-size: var(--qd-type-meta);
   font-weight: 700;

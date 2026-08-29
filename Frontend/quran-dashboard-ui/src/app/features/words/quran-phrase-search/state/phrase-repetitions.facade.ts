@@ -32,6 +32,7 @@ import {
   phraseRepetitionsRouteStateKey,
   serializePhraseRepetitionsUrlState,
 } from './phrase-repetitions-url-sync';
+import { encodePhraseQuery } from './phrase-query-encoding';
 
 const INVALID_URL_MESSAGE = 'رابط البحث غير صالح أو يحتوي على خيارات غير متاحة.';
 const INDEX_CHANGED_MESSAGE = 'تغير فهرس البحث، أعد اختيار النتيجة';
@@ -135,6 +136,15 @@ export class PhraseRepetitionsFacade {
     }
     this.startListTransition();
     this.navigate(updatePhraseListRoute(this._route(), this.currentBuildId(), { sort }));
+  }
+
+  setQuery(rawQuery: string): void {
+    const query = normalizeSearchQuery(rawQuery);
+    if (query === this._route().query) {
+      return;
+    }
+    this.startListTransition();
+    this.navigate(updatePhraseListRoute(this._route(), this.currentBuildId(), { query }));
   }
 
   setPage(page: number): void {
@@ -263,7 +273,14 @@ export class PhraseRepetitionsFacade {
   }
 
   private loadRepetitions(route: PhraseRepetitionsUrlState): Observable<void> {
-    const requestKey = [route.build, route.mode, route.length, route.sort, route.page].join('|');
+    const requestKey = [
+      route.build,
+      route.mode,
+      route.length,
+      route.query,
+      route.sort,
+      route.page,
+    ].join('|');
     if (
       requestKey === this.listRequestKey &&
       (this._listStatus() === 'success' || this._listStatus() === 'empty')
@@ -276,6 +293,7 @@ export class PhraseRepetitionsFacade {
       .getRepetitions(
         route.mode,
         route.length,
+        route.query ? encodePhraseQuery(route.query) : null,
         route.sort,
         route.page,
         PHRASE_REPETITIONS_PAGE_SIZE,
@@ -497,6 +515,11 @@ function sameOccurrenceIdentity(
     previous.build === current.build &&
     previous.phrase === current.phrase &&
     previous.mode === current.mode &&
-    previous.length === current.length
+    previous.length === current.length &&
+    previous.query === current.query
   );
+}
+
+function normalizeSearchQuery(value: string): string {
+  return value.trim().replace(/\s+/g, ' ');
 }

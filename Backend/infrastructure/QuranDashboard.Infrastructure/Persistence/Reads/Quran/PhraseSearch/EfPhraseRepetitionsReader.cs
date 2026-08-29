@@ -16,6 +16,7 @@ public sealed partial class EfPhraseRepetitionsReader(
     public async Task<PhraseSearchReadResult<PhraseRepetitionsPageResponse>> GetRepetitionsAsync(
         PhraseTextMode mode,
         short wordCount,
+        IReadOnlyList<string> searchTerms,
         PhraseRepetitionSort sort,
         int page,
         int pageSize,
@@ -31,6 +32,7 @@ public sealed partial class EfPhraseRepetitionsReader(
             snapshot.ActiveBuildId,
             mode,
             wordCount,
+            searchTerms,
             sort,
             page,
             pageSize);
@@ -46,6 +48,32 @@ public sealed partial class EfPhraseRepetitionsReader(
                 && variant.Mode == mode
                 && variant.WordCount == wordCount
                 && variant.OccurrenceCount >= 2);
+
+        if (searchTerms.Count > 0)
+        {
+            var canonicalTerms = searchTerms
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+            var searchTokenIds = await db.QuranPhraseSearchTokens
+                .AsNoTracking()
+                .Where(token => token.BuildId == snapshot.ActiveBuildId
+                    && token.Mode == mode
+                    && canonicalTerms.Contains(token.SearchText))
+                .Select(token => checked((int)token.Id))
+                .ToListAsync(cancellationToken);
+
+            if (searchTokenIds.Count != canonicalTerms.Count)
+            {
+                variants = variants.Where(_ => false);
+            }
+            else
+            {
+                foreach (var searchTokenId in searchTokenIds)
+                {
+                    variants = variants.Where(variant => variant.SearchTokenIds.Contains(searchTokenId));
+                }
+            }
+        }
 
         var totalCount = await variants.CountAsync(cancellationToken);
         var ordered = ApplySort(variants, sort);

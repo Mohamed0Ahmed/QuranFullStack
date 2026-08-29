@@ -9,7 +9,7 @@ import {
 } from '../models/phrase-repetitions.models';
 
 type PhraseListRouteChanges = Partial<
-  Pick<PhraseRepetitionsUrlState, 'length' | 'page'>
+  Pick<PhraseRepetitionsUrlState, 'length' | 'query' | 'page'>
 > & {
   readonly mode?: PhraseTextMode;
   readonly sort?: PhraseRepetitionSort;
@@ -61,6 +61,7 @@ export function defaultPhraseRepetitionsRoute(
       : DEFAULT_PHRASE_REPETITIONS_URL_STATE.mode,
     length:
       capabilities?.defaultRepetitionLength ?? DEFAULT_PHRASE_REPETITIONS_URL_STATE.length,
+    query: '',
     sort: isPhraseRepetitionSort(capabilities?.defaultRepetitionSort)
       ? capabilities.defaultRepetitionSort
       : DEFAULT_PHRASE_REPETITIONS_URL_STATE.sort,

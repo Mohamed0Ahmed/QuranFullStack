@@ -9,10 +9,16 @@ public static class PhraseSearchCacheKeys
         Guid buildId,
         PhraseTextMode mode,
         short wordCount,
+        IReadOnlyList<string> searchTerms,
         PhraseRepetitionSort sort,
         int page,
-        int pageSize) =>
-        $"phrase-search:{buildId:N}:repetitions:{(short)mode}:{wordCount}:{(short)sort}:p{page}:s{pageSize}";
+        int pageSize)
+    {
+        var searchKey = searchTerms.Count == 0
+            ? "all"
+            : Hash(searchTerms.Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal));
+        return $"phrase-search:{buildId:N}:repetitions:{(short)mode}:{wordCount}:q{searchKey}:{(short)sort}:p{page}:s{pageSize}";
+    }
 
     public static string RepetitionOccurrences(
         Guid buildId,
