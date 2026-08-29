@@ -39,7 +39,9 @@ public sealed record PhraseContextBranchOptionDto(
     string DisplayText,
     string? BoundaryKind,
     long PassesThroughCount,
-    long SideEndsHereCount);
+    long SideEndsHereCount,
+    bool IsAlternativeSelected,
+    string? AlternativeToggleRef);
 
 public sealed record PhraseContextGroupsResponse(
     Guid ActiveBuildId,
@@ -55,6 +57,8 @@ public sealed record PhraseContextResultsResponse(
     int Page,
     int PageSize,
     int TotalCount,
+    int TotalAyahCount,
+    int TotalOccurrenceCount,
     IReadOnlyList<PhraseContextOccurrenceDto> Items);
 
 public sealed record PhraseFullContextGroupDto(

@@ -62,6 +62,8 @@ internal sealed partial class PhraseSearchReferenceCodec
             EncodeResolution(selection.Resolution),
             selection.Previous is null ? string.Empty : EncodePath(selection.Previous),
             selection.Following is null ? string.Empty : EncodePath(selection.Following),
+            selection.PreviousAlternatives is null ? string.Empty : EncodeAlternative(selection.PreviousAlternatives),
+            selection.FollowingAlternatives is null ? string.Empty : EncodeAlternative(selection.FollowingAlternatives),
         };
         return HashScope(values);
     }

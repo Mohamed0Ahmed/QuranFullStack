@@ -4,5 +4,7 @@ public sealed record GetPhraseContextResultsQuery(
     string? Resolution,
     string? Previous,
     string? Following,
+    string? PreviousAlternatives,
+    string? FollowingAlternatives,
     int? Page,
     int? PageSize);

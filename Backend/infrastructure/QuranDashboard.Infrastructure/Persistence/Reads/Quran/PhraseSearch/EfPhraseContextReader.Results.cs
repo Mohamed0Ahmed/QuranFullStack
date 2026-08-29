@@ -64,6 +64,8 @@ public sealed partial class EfPhraseContextReader
             page,
             pageSize,
             loaded.TotalCount,
+            loaded.TotalAyahCount,
+            loaded.TotalCount,
             loaded.Items
                 .Select(row => CreateContextOccurrence(occurrences[row.OccurrenceId]))
                 .ToList());

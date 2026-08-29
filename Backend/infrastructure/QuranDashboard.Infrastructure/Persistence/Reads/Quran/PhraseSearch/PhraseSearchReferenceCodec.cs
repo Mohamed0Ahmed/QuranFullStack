@@ -12,6 +12,7 @@ internal sealed partial class PhraseSearchReferenceCodec : IPhraseSearchReferenc
     private const byte PathKind = 2;
     private const byte FullContextKind = 3;
     private const byte CursorKind = 4;
+    private const byte AlternativeKind = 5;
     private const int ChecksumLength = 8;
     private const int MaximumEncodedReferenceLength = 4096;
 
@@ -121,6 +122,28 @@ internal sealed partial class PhraseSearchReferenceCodec : IPhraseSearchReferenc
         {
             throw new ArgumentOutOfRangeException(nameof(tokenIds));
         }
+    }
+
+    private static IReadOnlyList<int> CanonicalizeAlternativeTokenIds(IReadOnlyList<int> tokenIds)
+    {
+        ValidateTokens(tokenIds, allowEmpty: false);
+        return tokenIds
+            .Order()
+            .Distinct()
+            .ToArray();
+    }
+
+    private static bool IsCanonicalAlternativeTokenIds(IReadOnlyList<int> tokenIds)
+    {
+        for (var index = 1; index < tokenIds.Count; index++)
+        {
+            if (tokenIds[index - 1] >= tokenIds[index])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static void WriteGuid(BinaryWriter writer, Guid value)

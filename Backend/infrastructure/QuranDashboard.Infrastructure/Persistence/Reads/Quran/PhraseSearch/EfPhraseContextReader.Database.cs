@@ -114,7 +114,8 @@ public sealed partial class EfPhraseContextReader
                  ) AS row_number
           FROM filtered_occurrences AS occurrence
         ), filtered_summary AS (
-          SELECT COUNT(*)::integer AS total_count
+          SELECT COUNT(*)::integer AS total_count,
+                 COUNT(DISTINCT ayah_id)::integer AS total_ayah_count
           FROM filtered_occurrences
         ), requested_occurrences AS (
           SELECT occurrence.*
@@ -126,6 +127,7 @@ public sealed partial class EfPhraseContextReader
              )
         )
         SELECT summary.total_count,
+               summary.total_ayah_count,
                integrity.has_invalid_exact_identity,
                occurrence.row_number,
                occurrence.occurrence_id,
@@ -177,6 +179,7 @@ public sealed partial class EfPhraseContextReader
         command.Parameters.AddWithValue("page_size", pageSize);
 
         var totalCount = 0;
+        var totalAyahCount = 0;
         var hasInvalidExactIdentity = false;
         ContextOccurrenceRow? representative = null;
         var items = new List<ContextOccurrenceRow>();
@@ -186,14 +189,15 @@ public sealed partial class EfPhraseContextReader
         while (await reader.ReadAsync(cancellationToken))
         {
             totalCount = reader.GetInt32(0);
-            hasInvalidExactIdentity = reader.GetBoolean(1);
-            if (reader.IsDBNull(2))
+            totalAyahCount = reader.GetInt32(1);
+            hasInvalidExactIdentity = reader.GetBoolean(2);
+            if (reader.IsDBNull(3))
             {
                 continue;
             }
 
-            var rowNumber = reader.GetInt64(2);
-            var occurrence = ReadOccurrenceRow(reader, 3);
+            var rowNumber = reader.GetInt64(3);
+            var occurrence = ReadOccurrenceRow(reader, 4);
             if (rowNumber == 1)
             {
                 representative = occurrence;
@@ -215,7 +219,7 @@ public sealed partial class EfPhraseContextReader
             throw new InvalidDataException("PhraseSearch context query did not return its representative occurrence.");
         }
 
-        return new ContextOccurrencePageLoad(totalCount, representative, items);
+        return new ContextOccurrencePageLoad(totalCount, totalAyahCount, representative, items);
     }
 
     private async Task<IReadOnlyDictionary<long, ContextOccurrence>> LoadContextOccurrencesAsync(
@@ -349,6 +353,7 @@ public sealed partial class EfPhraseContextReader
 
     private sealed record ContextOccurrencePageLoad(
         int TotalCount,
+        int TotalAyahCount,
         ContextOccurrenceRow? Representative,
         IReadOnlyList<ContextOccurrenceRow> Items);
 
