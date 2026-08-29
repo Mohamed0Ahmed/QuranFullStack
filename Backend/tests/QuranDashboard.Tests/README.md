@@ -227,7 +227,7 @@ is `Authorization` (authorization contract gates), `Cli` (command-line contract 
   `Smoke/Data/SmokeDumpGate.cs` exists to make impossible.
   The artifact excludes DATA for every `quran_phrase_*` table while migrations retain the schema
   and singleton empty state row; `SmokeDataReadTests` verifies the manifest/restore exclusion and
-  that all ten PhraseSearch routes answer `503` until the derived index is built. Regenerate with
+  that all eleven seeded PhraseSearch routes answer `503` until the derived index is built. Regenerate with
   `Backend/scripts/create-smoke-dump --yes`; never hand-edit either file. The full backup,
   count-preservation and build runbook lives in `../../scripts/README.md`.
 

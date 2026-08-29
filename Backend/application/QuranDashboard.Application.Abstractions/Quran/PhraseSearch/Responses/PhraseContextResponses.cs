@@ -59,7 +59,7 @@ public sealed record PhraseContextResultsResponse(
     int TotalCount,
     int TotalAyahCount,
     int TotalOccurrenceCount,
-    IReadOnlyList<PhraseContextOccurrenceDto> Items);
+    IReadOnlyList<PhraseContextAyahDto> Items);
 
 public sealed record PhraseFullContextGroupDto(
     string ContextRef,
@@ -98,6 +98,18 @@ public sealed record PhraseContextOccurrenceDto(
     short StartWordNumber,
     short EndWordNumber,
     IReadOnlyList<PhraseAyahWordDto> Words,
+    PhraseContextHighlightsDto Highlights);
+
+public sealed record PhraseContextAyahDto(
+    int AyahId,
+    string VerseKey,
+    short SurahNumber,
+    string SurahNameArabic,
+    short AyahNumber,
+    short PageFrom,
+    short PageTo,
+    IReadOnlyList<PhraseAyahWordDto> Words,
+    int OccurrenceCount,
     PhraseContextHighlightsDto Highlights);
 
 public sealed record PhraseContextHighlightsDto(

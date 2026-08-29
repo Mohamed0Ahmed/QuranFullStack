@@ -11,18 +11,21 @@ public sealed partial class EfPhraseContextReader
         PhraseContextSide side,
         int offset,
         int pageSize,
-        ulong scope)
+        ulong scope,
+        int totalOccurrenceCount,
+        IReadOnlyDictionary<int, string> tokenTexts)
     {
         var selected = side == PhraseContextSide.Previous ? selection.Previous : selection.Following;
         var selectedIds = selected?.SelectedExactTokenIds ?? [];
-        var items = loaded.Options
+        var items = PinnedOptions(selection, side, loaded, tokenTexts)
+            .Concat(loaded.Options)
             .Select(option => CreateBranchOption(selection, side, selectedIds, option))
             .ToList();
         var kind = side == PhraseContextSide.Previous
             ? PhraseCursorKind.PreviousBranches
             : PhraseCursorKind.FollowingBranches;
         return new PhraseContextSidePageDto(
-            loaded.PassesThroughCount,
+            totalOccurrenceCount,
             loaded.BoundaryCount,
             loaded.TotalOptions,
             CreateNextCursor(
@@ -30,9 +33,46 @@ public sealed partial class EfPhraseContextReader
                 kind,
                 offset,
                 pageSize,
-                loaded.TotalOptions,
+                loaded.CandidatePageCount,
                 scope),
             items);
+    }
+
+    private static IReadOnlyList<int> BranchResponseExactTokenIds(PhraseContextSelection selection) => selection
+        .Resolution.ExactTokenIds
+        .Concat(selection.Previous?.SelectedExactTokenIds ?? [])
+        .Concat(selection.Following?.SelectedExactTokenIds ?? [])
+        .Concat(selection.PreviousAlternatives?.AlternativeExactTokenIds ?? [])
+        .Concat(selection.FollowingAlternatives?.AlternativeExactTokenIds ?? [])
+        .Distinct()
+        .Order()
+        .ToArray();
+
+    private static IEnumerable<BranchOption> PinnedOptions(
+        PhraseContextSelection selection,
+        PhraseContextSide side,
+        BranchSideLoad loaded,
+        IReadOnlyDictionary<int, string> tokenTexts)
+    {
+        var alternativeTokenIds = side == PhraseContextSide.Previous
+            ? selection.PreviousAlternatives?.AlternativeExactTokenIds
+            : selection.FollowingAlternatives?.AlternativeExactTokenIds;
+        if (alternativeTokenIds is null)
+        {
+            return [];
+        }
+
+        var existingById = loaded.PinnedOptions.ToDictionary(option => option.ExactTokenId!.Value);
+        return alternativeTokenIds
+            .Select(exactTokenId => existingById.GetValueOrDefault(exactTokenId)
+                ?? new BranchOption(
+                    exactTokenId,
+                    tokenTexts[exactTokenId],
+                    false,
+                    0,
+                    0))
+            .OrderByDescending(option => option.PassesThroughCount)
+            .ThenBy(option => option.ExactTokenId);
     }
 
     private PhraseContextBranchOptionDto CreateBranchOption(

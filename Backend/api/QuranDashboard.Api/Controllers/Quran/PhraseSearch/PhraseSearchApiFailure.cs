@@ -42,6 +42,9 @@ internal static class PhraseSearchApiFailure
         PhraseRequestInvalidKind.MinimumMatchedWords => Fail<T>(
             PhraseSearchApiMessages.InvalidMinimumMatchedWords,
             PhraseSearchErrorCodes.InvalidMinimumMatchedWords),
+        PhraseRequestInvalidKind.Selection => Fail<T>(
+            PhraseSearchApiMessages.InvalidSelection,
+            PhraseSearchErrorCodes.InvalidSelection),
         _ => throw new InvalidOperationException($"Unhandled {nameof(PhraseRequestInvalidKind)} value: {kind}."),
     };
 

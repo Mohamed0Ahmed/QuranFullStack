@@ -199,12 +199,16 @@ export type { PermissionCatalogueItem } from './models/permission-catalogue-item
 export type { PermissionCatalogueResponse } from './models/permission-catalogue-response';
 export type { PermissionCatalogueResponseApiResponse } from './models/permission-catalogue-response-api-response';
 export type { PhraseAyahWordDto } from './models/phrase-ayah-word-dto';
+export type { PhraseContextAyahDto } from './models/phrase-context-ayah-dto';
 export type { PhraseContextBranchesResponse } from './models/phrase-context-branches-response';
 export type { PhraseContextBranchesResponseApiResponse } from './models/phrase-context-branches-response-api-response';
 export type { PhraseContextBranchOptionDto } from './models/phrase-context-branch-option-dto';
 export type { PhraseContextGroupsResponse } from './models/phrase-context-groups-response';
 export type { PhraseContextGroupsResponseApiResponse } from './models/phrase-context-groups-response-api-response';
 export type { PhraseContextHighlightsDto } from './models/phrase-context-highlights-dto';
+export type { PhraseContextLinkingSelectionAyahDto } from './models/phrase-context-linking-selection-ayah-dto';
+export type { PhraseContextLinkingSelectionResponse } from './models/phrase-context-linking-selection-response';
+export type { PhraseContextLinkingSelectionResponseApiResponse } from './models/phrase-context-linking-selection-response-api-response';
 export type { PhraseContextOccurrenceDto } from './models/phrase-context-occurrence-dto';
 export type { PhraseContextOccurrencesResponse } from './models/phrase-context-occurrences-response';
 export type { PhraseContextOccurrencesResponseApiResponse } from './models/phrase-context-occurrences-response-api-response';
@@ -228,6 +232,7 @@ export type { PhraseResolutionCandidateDto } from './models/phrase-resolution-ca
 export type { PhraseResolvedQueryDto } from './models/phrase-resolved-query-dto';
 export type { PhraseSearchCapabilitiesResponse } from './models/phrase-search-capabilities-response';
 export type { PhraseSearchCapabilitiesResponseApiResponse } from './models/phrase-search-capabilities-response-api-response';
+export type { PhraseSearchContextLinkingSelectionBody } from './models/phrase-search-context-linking-selection-body';
 export type { PhraseSelectedPathDto } from './models/phrase-selected-path-dto';
 export type { PhraseSelectedPathStepDto } from './models/phrase-selected-path-step-dto';
 export type { PhraseSimilarityAyahDto } from './models/phrase-similarity-ayah-dto';

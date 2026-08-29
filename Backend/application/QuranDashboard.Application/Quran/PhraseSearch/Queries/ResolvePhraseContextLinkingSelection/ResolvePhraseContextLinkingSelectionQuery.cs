@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
+
 namespace QuranDashboard.Application.Quran.PhraseSearch.Queries.ResolvePhraseContextLinkingSelection;
 
 public sealed record ResolvePhraseContextLinkingSelectionQuery(
@@ -8,9 +10,3 @@ public sealed record ResolvePhraseContextLinkingSelectionQuery(
     string? FollowingAlternatives,
     PhraseContextAyahSelectionMode? SelectionMode,
     IReadOnlyList<int>? AyahIds);
-
-public enum PhraseContextAyahSelectionMode : byte
-{
-    Only = 1,
-    AllExcept = 2,
-}

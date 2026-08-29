@@ -94,6 +94,8 @@ internal sealed record SmokeRoute(
     // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
     public HttpMethod Method { get; init; } = HttpMethod.Get;
 
+    public string? JsonBody { get; init; }
+
     // The route is catalogued so the parity gate sees it, and is deliberately not dispatched by the
     // generic sweep, because the sweep's premise is that it never writes. Do not "fix" this by
     // dispatching it — a write route run twice by the sweep is the bug, not the missing dispatch.
@@ -135,7 +137,7 @@ internal static class SmokeRouteCatalog
     // counter gave it to a root, so those tables start at 2 and 3 — which means /api/words/lemmas/1 and
     // /api/words/stems/1 answer 404 fully seeded, and answer it correctly. That 404 is not recorded as a
     // seeded expectation either: pinning it would pin the very ordinal this paragraph declines to trust.
-    // All ten PhraseSearch routes carry a status-only seeded expectation because the canonical dump
+    // The eleven seeded PhraseSearch GET routes carry a status-only expectation because the canonical dump
     // excludes every derived quran_phrase_* row and the migrated empty state must answer 503 honestly.
     public static IReadOnlyList<SmokeRoute> Routes { get; } =
     [
@@ -247,6 +249,18 @@ internal static class SmokeRouteCatalog
             HttpStatusCode.ServiceUnavailable)
         {
             Seeded = new(HttpStatusCode.ServiceUnavailable),
+        },
+        new(
+            "api/quran/phrase-search/contexts/linking-selection",
+            "/api/quran/phrase-search/contexts/linking-selection",
+            HttpStatusCode.ServiceUnavailable,
+            SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            JsonBody = """
+                {"resolutionRef":"AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO","selectionMode":"only","ayahIds":[1]}
+                """,
+            ParityOnly = true,
         },
         new(
             "api/quran/phrase-search/similarities/search",

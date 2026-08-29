@@ -10,6 +10,7 @@ internal static class PhraseSearchApiMessages
     internal const string ContextGroupsLoaded = "تم تحميل السياقات الكاملة للعبارة";
     internal const string ContextOccurrencesLoaded = "تم تحميل مواضع السياق الكامل";
     internal const string ContextResultsLoaded = "تم تحميل آيات السياق";
+    internal const string ContextLinkingSelectionResolved = "تم تحميل آيات السياق المحددة";
     internal const string SimilaritiesLoaded = "تم تحميل العبارات المتشابهة";
     internal const string SimilarityGroupsLoaded = "تم تحميل مجموعات العبارات المتشابهة";
     internal const string SimilarityMatchesLoaded = "تم تحميل العبارات المطابقة لمجموعة التشابه";
@@ -25,6 +26,7 @@ internal static class PhraseSearchApiMessages
     internal const string InvalidCursor = "مرجع متابعة النتائج غير صالح";
     internal const string InvalidSimilarityThreshold = "نسبة تشابه العبارات غير صالحة";
     internal const string InvalidMinimumMatchedWords = "الحد الأدنى للكلمات المتطابقة غير صالح";
+    internal const string InvalidSelection = "اختيار آيات السياق غير صالح";
     internal const string VariantNotFound = "العبارة المحددة غير موجودة";
     internal const string SimilarityGroupNotFound = "مجموعة التشابه المحددة غير موجودة";
     internal const string IndexChanged = "تغير فهرس البحث، أعد اختيار النتيجة";
@@ -46,6 +48,7 @@ internal static class PhraseSearchErrorCodes
     internal const string InvalidCursor = "phrase_cursor_invalid";
     internal const string InvalidSimilarityThreshold = "phrase_similarity_threshold_invalid";
     internal const string InvalidMinimumMatchedWords = "phrase_minimum_matched_words_invalid";
+    internal const string InvalidSelection = "phrase_context_selection_invalid";
     internal const string VariantNotFound = "phrase_variant_not_found";
     internal const string SimilarityGroupNotFound = "phrase_similarity_group_not_found";
     internal const string IndexChanged = "phrase_index_changed";

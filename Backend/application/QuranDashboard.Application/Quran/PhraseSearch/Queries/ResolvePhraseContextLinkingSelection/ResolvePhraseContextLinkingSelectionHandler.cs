@@ -1,19 +1,28 @@
 using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
+using QuranDashboard.Application.Abstractions.Quran.PhraseSearch.Responses;
 
 namespace QuranDashboard.Application.Quran.PhraseSearch.Queries.ResolvePhraseContextLinkingSelection;
 
-public sealed class ResolvePhraseContextLinkingSelectionHandler(PhraseContextRequestParser parser)
+public sealed class ResolvePhraseContextLinkingSelectionHandler(
+    IPhraseContextReader reader,
+    PhraseContextRequestParser parser)
 {
-    internal bool TryParse(
+    public async Task<PhraseReadOutcome<PhraseContextLinkingSelectionResponse>> HandleAsync(
         ResolvePhraseContextLinkingSelectionQuery query,
-        out PhraseContextLinkingSelectionRequest? request)
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        request = null;
         if (query.SelectionMode is null
             || !Enum.IsDefined(query.SelectionMode.Value)
             || query.AyahIds is null
-            || !parser.TryParseSelection(
+            || query.AyahIds.Any(ayahId => ayahId <= 0)
+            || query.AyahIds.Distinct().Count() != query.AyahIds.Count)
+        {
+            return new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Invalid(
+                PhraseRequestInvalidKind.Selection);
+        }
+
+        if (!parser.TryParseSelection(
                 query.Resolution,
                 query.Previous,
                 query.Following,
@@ -22,18 +31,30 @@ public sealed class ResolvePhraseContextLinkingSelectionHandler(PhraseContextReq
                 out var selection)
             || selection is null)
         {
-            return false;
+            return new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Invalid(
+                PhraseRequestInvalidKind.Reference);
         }
 
-        request = new PhraseContextLinkingSelectionRequest(
+        var result = await reader.GetLinkingSelectionAsync(
             selection,
-            query.SelectionMode.Value,
-            query.AyahIds);
-        return true;
+            new PhraseContextLinkingSelection(query.SelectionMode.Value, query.AyahIds),
+            cancellationToken);
+        return result switch
+        {
+            PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.Success success =>
+                new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Success(success.Value),
+            PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.Unavailable =>
+                new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Unavailable(),
+            PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.BuildChanged =>
+                new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.BuildChanged(),
+            PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.InvalidReference =>
+                new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Invalid(
+                    PhraseRequestInvalidKind.Reference),
+            PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.InvalidSelection =>
+                new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Invalid(
+                    PhraseRequestInvalidKind.Selection),
+            _ => throw new InvalidOperationException(
+                $"Unhandled {nameof(PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>)} variant."),
+        };
     }
 }
-
-public sealed record PhraseContextLinkingSelectionRequest(
-    PhraseContextSelection Selection,
-    PhraseContextAyahSelectionMode SelectionMode,
-    IReadOnlyList<int> AyahIds);
