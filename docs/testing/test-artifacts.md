@@ -1,0 +1,266 @@
+# Test Artifact Contract
+
+**Status:** Accepted target-state design; tooling and lockfile are not yet implemented
+
+**Decision date:** 2026-08-30
+
+This document defines how Quran Dashboard test data is identified, acquired, verified, provisioned,
+shared, reset, refreshed, and retired. It supports the
+[Risk-Based Testing Strategy](./risk-based-strategy.md) without making test execution depend on an
+arbitrary developer database or repeated copies of large restored datasets.
+
+## Core rules
+
+- Quran data is always source-traceable. Fabricated Quranic content is never a fallback.
+- Required PR journeys use compact fixtures containing only their reviewed Quran/PhraseSearch
+  sentinels and small mutable scenarios.
+- Large full-canonical and phrase-ready artifacts are scheduled/release inputs, not per-test fixtures.
+- A large artifact is fetched, verified, and provisioned once per applicable run.
+- The multi-gigabyte full-canonical/PhraseSearch state is never physically copied or restored per
+  scenario, test, or journey group. Exact artifact sizes belong in the tracked lock.
+- Isolation means independently clean mutable state, not independent copies of immutable corpora.
+- Artifact caches are optimizations. Immutable content-addressed storage plus the tracked lock is the
+  trust source.
+- Named required lanes fail closed when a required artifact is absent or mismatched.
+- Operator or production snapshots are not test fixtures unless they are deliberately sanitized,
+  manifested, reviewed, and adopted under this contract.
+
+## Current state
+
+The repository currently has a local, gitignored canonical smoke set:
+
+- `resources/db-dumps/quran-canonical/quran-canonical.dump`
+- `resources/db-dumps/quran-canonical/manifest.json`
+
+The dump is approximately 355 MiB and restores into PostgreSQL 18. Its manifest pins the dump hash,
+migration head, producer PostgreSQL version, and counts for 32 Quran tables. It contains Quran data but
+deliberately excludes PhraseSearch data, Abwab, Access, and Linking state.
+
+Producer and consumer checks already provide valuable safeguards: migration parity, canonical baseline
+counts, temporary output files, hash verification, producer-major compatibility, and restored row-count
+validation. However:
+
+- All resources are gitignored and unavailable in a clean clone.
+- There is no tracked fetch/provision command or immutable storage identifier.
+- A direct focused test can skip when an artifact is absent; the supported Backend `pre-pr` wrapper
+  instead fails its canonical preflight.
+- The Frontend harness clones the currently configured local database rather than consuming a declared
+  artifact.
+- Existing PhraseSearch-ready and Abwab operator snapshots are not sufficient trust contracts for
+  deterministic testing.
+
+This document retains the existing safeguards and closes the acquisition, trust-root, fixture-size,
+and reset gaps.
+
+Current implementation truth includes the
+[canonical dump producer](../../Backend/scripts/create-smoke-dump),
+[Backend test runner](../../Backend/scripts/test-backend), and the canonical fixture/gate code under
+[`Backend/tests/QuranDashboard.Tests/Smoke/Data`](../../Backend/tests/QuranDashboard.Tests/Smoke/Data/).
+
+## Artifact classes
+
+The exact identifiers are implementation work, but the lock must distinguish these logical sets:
+
+| Logical set | Intended content | Required by | Provisioning rule |
+| --- | --- | --- | --- |
+| Compact cross-stack base | Independently reviewed Quran sentinels plus small deterministic Access, Abwab, and Linking prerequisites | Required PR fidelity, security, Linking, and Abwab journeys | Provision once for a compatible PR stack; reset only mutable scenario tables |
+| Compact PhraseSearch-ready fixture | Source-traceable minimal phrase variants, active-build state, capabilities, and reviewed expected results | Required PR PhraseSearch available-path journey | Provision once; never rebuild during ordinary journeys |
+| Backend canonical smoke | Full approved Quran-only dump and manifest | Scheduled/release canonical Backend reads | Fetch, verify, and restore once per applicable run |
+| Foundation canonical sources | Approved foundation package plus required MASAQ input | Scheduled/release importer protection | Fetch and verify once per applicable run |
+| Enriched morphology | Enriched artifact and manifest | Scheduled/release enriched import protection | Fetch and verify once per applicable run |
+| Full PhraseSearch-ready state | Full canonical Quran and activated phrase index with build manifest | Scheduled/release full PhraseSearch journeys | Provision once and share immutably; do not copy per test |
+| PhraseSearch build input | Eligible full source state with no active build | Dedicated scheduled/release build/activation test | Exclusive state; only this test builds the index |
+
+Compact fixtures must remain genuinely compact. They contain real, reviewed Quran/source excerpts and
+only the derived PhraseSearch records required to prove the selected behavior. They do not build the
+full Quran corpus during a PR.
+
+Non-Quran Access, Abwab, and Linking scenario data may be deterministic and synthetic. It remains
+logically separate from the trusted Quran oracle and must not be mistaken for canonical authored data.
+
+## Tracked trust root
+
+A future tracked `test-artifacts.lock.json` is the trust root. This task documents that requirement but
+does not create the lockfile.
+
+Each locked artifact records at least:
+
+- Stable artifact ID and contract version.
+- Lanes or journey groups that require it.
+- Exact staged relative paths.
+- Exact byte size of every delivered archive, dump, fixture, and manifest.
+- SHA-256 for every delivered file and the external manifest itself.
+- Migration head and migration count.
+- PostgreSQL producer major/version and, where applicable, the required container digest.
+- Producer command and producer/tool version.
+- Source package hashes, source identity, and provenance.
+- Table scope, including explicit presence/absence of Quran, PhraseSearch, Abwab, Access, and Linking
+  data.
+- Reviewed Quran sentinels, expected counts, and oracle hash where applicable.
+- PhraseSearch manifest hash, source fingerprint, and readiness expectations where applicable. The
+  volatile active build ID remains inside the immutable external manifest and is compared with runtime
+  capabilities; it is not duplicated into the tracked lock.
+- Immutable logical storage identifier with no credentials or signed query string.
+- Refresh reason, date, and owning role.
+
+A hash stored only inside an untrusted external manifest is insufficient. The tracked lock pins the
+manifest hash as well as its payload files.
+
+## Storage and acquisition
+
+The storage provider is intentionally unspecified. It must provide immutable, content-addressed or
+versioned objects and a credential-free logical identifier suitable for the lockfile.
+
+Provisioning follows this order:
+
+1. Resolve the immutable storage identifier from the tracked lock.
+2. Fetch during the controlled-egress provisioning phase.
+3. Verify byte size and SHA-256 before extraction or database use.
+4. Validate the external manifest against a strict schema.
+5. Validate migration and PostgreSQL compatibility.
+6. Validate table names against an allowlist or strict identifier rule before interpolating them into
+   SQL.
+7. Stage the artifact at its declared relative path.
+8. Remove retrieval credentials before test execution begins.
+
+Cache by the lockfile or artifact content hash. A cache hit still verifies the payload. A cache miss is
+part of the 12-minute PR activation measurement for compact fixtures. Large artifacts are outside the
+PR journey path and are provisioned once per applicable scheduled or release run.
+
+The target tooling contract is a read-only-first command surface such as:
+
+- `status`: report required, present, missing, stale, or mismatched sets.
+- `fetch`: acquire immutable content during controlled provisioning.
+- `verify`: perform all lock, manifest, schema, compatibility, and sentinel checks.
+- `refresh`: produce a candidate change report without accepting it.
+- `publish`: place an independently approved artifact at its immutable identifier.
+
+These commands are target-state requirements, not claims about scripts currently present in the
+repository.
+
+## PR fixture model
+
+Required PR journeys do not restore or clone the full canonical/PhraseSearch database.
+
+- Provision each compact fixture once for a compatible isolated stack.
+- Share immutable Quran and PhraseSearch tables across scenarios.
+- Keep mutable scenario tables explicitly identified and small.
+- Reset only those mutable tables between mutating scenarios.
+- Verify the expected clean-state sentinel after reset.
+- Drain or account for background jobs before considering reset complete.
+- Do not rely on execution order.
+
+The mutable allowlist is implementation-owned and must cover the scenario's Access/session/audit,
+Abwab, Linking workspace/job/outcome, and derived projection state. A table outside the allowlist is not
+silently truncated. Expanding the allowlist is a reviewed test-infrastructure change.
+
+Reset may use deterministic delete/truncate-and-reseed operations, a small schema/database clone, or a
+copy-on-write mechanism. The mechanism is acceptable only when it:
+
+- Proves the required clean state.
+- Does not modify immutable Quran/PhraseSearch data.
+- Preserves scenario independence.
+- Fits the 12-minute end-to-end PR budget and low execution-cost constraint under measurement.
+
+Repeated full-database copy/restore is prohibited. Quran words and PhraseSearch indexes are not rebuilt
+except by their dedicated build/activation tests.
+
+## Scheduled and release model
+
+Large canonical and phrase-ready inputs are provisioned once per applicable run. Tests share the
+restored immutable state and isolate only small mutable scenarios. Separate databases or application
+processes are created only for incompatible configuration or exclusive operations.
+
+The dedicated PhraseSearch build/activation test receives eligible state with no active build. It
+proves:
+
+- Fail-closed prerequisites and storage proof.
+- No active pointer before successful completion.
+- Successful report and activation.
+- Matching active build ID in capabilities.
+- Correct post-build reads.
+- Refusal to force or replace an already active build.
+
+All other PhraseSearch tests consume a ready artifact and must not rebuild it.
+
+Destructive Abwab snapshot/topics imports receive their own small mutable target state and prove
+checksum validation, empty-table or other documented preconditions, transactionality, rollback,
+identity/projection repair, exact results, and a post-operation API read.
+
+## Local modes
+
+The target harness must expose two explicit modes; the current harness does not yet implement them:
+
+- `artifact`: deterministic and canonical for the selected lane. This is the default for critical/full
+  commands and the only mode accepted in target CI.
+- `clone-local`: opt-in developer convenience using a loopback-only database. It is non-canonical and
+  cannot be cited as release evidence.
+
+The implemented harness must never infer `clone-local` from user secrets or an ambient connection
+string. Target CI must reject it. No mode may point at production or a shared staging database.
+
+## Hermetic execution
+
+Acquisition is a controlled-egress provisioning concern. Target test execution must be sealed:
+
+- Dependencies, browser binaries, container images, certificates, and artifacts are already present.
+- PostgreSQL images are pinned by digest and pulling is disabled during execution.
+- Backend tests use `--no-restore` and `--no-build` where the runner contract permits.
+- OIDC/JWKS and Logto Management API behavior are local stubs.
+- Artifact credentials are absent.
+- Process/container network egress is denied.
+
+The staging Logto sentinel is a separate serialized provider-contract lane with a narrow allowlist and
+dedicated non-human identities. It does not reuse artifact retrieval credentials or mutate Abwab,
+Linking, PhraseSearch, or canonical Quran data.
+
+## Refresh triggers
+
+Refresh an artifact when any of these changes:
+
+- Migration head or migration count.
+- Canonical source identity, source hash, or approved Quran oracle.
+- Seeded journey expectation.
+- PostgreSQL producer/restore major or pinned image digest.
+- Importer or fixture contract version.
+- PhraseSearch format, source fingerprint, active-build contract, or availability policy.
+- Included table scope.
+
+Do not refresh merely because a test failed.
+
+## Refresh review
+
+Artifact and Quran-oracle changes require an independent reviewer. The candidate report contains:
+
+- Old and new hashes and byte sizes.
+- Old and new migration head/count.
+- Added or removed tables and every row-count delta.
+- Old and new source/provenance identifiers.
+- Golden Quran sentinel comparison.
+- PhraseSearch fingerprint/build/readiness changes when applicable.
+- Explicit reason for every expected delta.
+- Producer version and command.
+
+Changed counts or Quran values are never automatically accepted. The reviewer validates the source,
+not just internal consistency between a dump and the manifest produced beside it.
+
+## Retention, recovery, and security
+
+- Retain every artifact referenced by an active release, supported previous-release migration test, or
+  current lockfile.
+- Retain the immediately previous approved artifact generation until the new generation has completed
+  scheduled and release verification.
+- Recovery uses immutable storage identifiers and tracked hashes, not mutable aliases.
+- Do not record connection strings, credentials, signed URLs, storage proofs, volatile paths, real
+  identity tokens, or production-derived personal data in tracked files.
+- Diagnostic database dumps are opt-in, sanitized, checksummed, access-controlled, and time-limited.
+
+## Governance
+
+The pull-request author explains why an artifact or oracle change is required. An independent reviewer
+checks provenance, deltas, and source fidelity. Emergency acceptance follows the same maintainer,
+owner, rationale, and seven-day expiry rules as a test downgrade; it cannot bypass hash or provenance
+verification.
+
+Review this contract after an artifact incident, unexplained count change, migration failure, stale
+lock, new destructive importer verb, PhraseSearch format change, or the quarterly strategy review.
