@@ -1,6 +1,6 @@
 # Risk-Based Testing Strategy
 
-**Status:** Accepted design; adoption is in progress
+**Strategy designed; not yet adopted**
 
 **Decision date:** 2026-08-30
 
@@ -35,19 +35,17 @@ The strategy does not:
 - Treat route registration, non-empty text, or a page rendering as proof of business behavior.
 - Select or implement a CI provider.
 
-## Risk order
+## Release-risk hierarchy
 
-Work and release decisions follow this order:
+Release decisions use the approved three-tier hierarchy:
 
 1. Quran fidelity, provenance, and destructive data corruption.
-2. Device sessions, authentication, Permissions, and Owner boundaries.
-3. Linking state transitions and durable outcomes.
-4. PhraseSearch build validity, readiness, and user-visible results.
-5. Abwab mutation and projection into its consuming views.
-6. Contract compatibility, availability, accessibility, RTL/responsive behavior, and presentation.
+2. Authentication, authorization, and privilege boundaries.
+3. Core user journeys and Backend–Frontend contract compatibility.
 
-The first five are the critical cross-stack journey groups. Destructive operational workflows form a
-parallel P0 track; they do not wait for browser coverage to be completed.
+This release-risk hierarchy is separate from the critical-journey rollout order in the adoption
+roadmap. Destructive operational workflows form a parallel P0 track under the first tier; they do not
+wait for the ordered browser-journey work and do not create another release-risk tier.
 
 ## Current protection inventory
 
@@ -165,16 +163,120 @@ the narrowest faithful seam.
 ## Critical journey catalogue
 
 This is a human risk map, not a duplicate executable test catalogue. Backend class selection remains in
-`test-gates.tsv`; target Playwright tags and annotations will live in the specifications themselves
-once implemented.
+`test-gates.tsv`; target Playwright annotations will live in the specifications themselves once
+implemented.
 
-| Order | Journey | Critical evidence | Independent outcome | Current status |
-| ---: | --- | --- | --- | --- |
-| 1 | Quran fidelity | Navigate to a reviewed verse and word through the real UI; assert exact associations, source identities, font readiness, and absence of replacement glyphs | Small independently reviewed oracle plus direct API mapping | Open |
-| 2 | Device sessions and Permissions | Automatic HTTPS session bootstrap; cookie-backed access; CSRF denial on protected unsafe endpoints; Owner UI grant/revoke for a non-Owner | `/api/access/me` without `Authorization`, Permission/audit reads, and actual protected API allow/deny | Open |
-| 3 | Linking | Owner configures sources, preflights, confirms, handles stale/idempotent/cancel/recovery behavior, and observes completion | Durable outcome, link snapshot, and Mushaf ayah-to-door projection | Open |
-| 4 | PhraseSearch | Operator-provisioned ready state; browser search/context/similarity resolution followed by the persistent Add to Workspace action | Builder or fixture manifest, capabilities with matching active build, query result oracle, and an independent Linking workspace read containing the added source | Open |
-| 5 | Abwab projection | Least-privilege user performs a representative mutation and refreshes the consuming UI | Public Abwab tree, version/ETag behavior, and Mushaf projection where applicable | Open |
+### 1. Quran fidelity
+
+- **Current status:** Open.
+- **Unacceptable failure:** Fabricated, corrupted, or incorrectly associated Quran text, word location,
+  translation/tafsir source, or rendered glyph reaches the UI.
+- **Successful path:** Navigate through the real UI to a reviewed verse and word, then observe the exact
+  expected associations, source identities, font readiness, and absence of replacement glyphs.
+- **Failure or recovery path:** Missing or mismatched source data fails closed to the controlled missing
+  state, and any trusted-oracle mismatch fails the gate rather than accepting a new value.
+- **Authoritative oracle:** The independently reviewed, committed subset of verse keys, exact Unicode
+  text, word locations, source identities, and its recorded provenance/hash.
+- **Owning test layer:** Backend canonical/import and API-mapping xUnit tests.
+- **Cross-stack sentinel:** Chromium Playwright navigates the Mushaf and study UI and compares its
+  visible associations with the trusted subset and independent API mapping.
+- **Lane and state/resource policy:** Required PR `critical`, `read-only` journey using the compact
+  cross-stack base fixture; run desktop and the approved Mushaf mobile variant against immutable Quran
+  state. Full-canonical validation remains scheduled/release evidence.
+
+### 2. Device sessions and Permissions
+
+- **Current status:** Open.
+- **Unacceptable failure:** An unauthenticated, revoked, disabled, expired, or under-privileged actor
+  retains authority; cookie-authenticated unsafe requests bypass the CSRF contract.
+- **Successful path:** Complete automatic device-session bootstrap over HTTPS, prove cookie-backed
+  access, then have an Owner grant one exact Permission through the UI so an Active non-Owner can perform
+  the protected action.
+- **Failure or recovery path:** Missing or mismatched CSRF fails on protected unsafe endpoints; logout,
+  revoke, disable, and Permission removal make both the UI affordance and protected API action fail even
+  when browser state is stale.
+- **Authoritative oracle:** `/api/access/me` without `Authorization`, direct-Permission reads, filtered
+  audit events, persisted device-session state, and the actual protected API allow/deny result.
+- **Owning test layer:** Backend `WebApplicationFactory` authentication/authorization tests plus Access
+  database integration tests.
+- **Cross-stack sentinel:** Chromium Playwright exercises HTTPS session bootstrap and the Owner access
+  administration UI, then independently verifies the non-Owner's effective authority.
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
+  cross-stack base fixture; reset only the small Access/session/audit scenario tables and use distinct
+  least-privilege Owner and non-Owner identities.
+
+### 3. Linking
+
+- **Current status:** Open.
+- **Unacceptable failure:** Linking accepts stale or unauthorized state, duplicates work, loses a
+  confirmed result, or leaves partial door links/projections after cancellation or failure.
+- **Successful path:** An Owner configures sources, obtains an unblocked prepared preflight, confirms it,
+  observes the durable outcome, and sees the expected Abwab/Mushaf projection.
+- **Failure or recovery path:** Prove stale-revision refusal, idempotent resubmission, cancellation,
+  restart recovery, lease/inclusion-sync failure handling, and zero partial writes.
+- **Authoritative oracle:** Canonical source verse keys, the prepared-preflight token/summary, durable
+  confirmation outcome, door-link snapshot, and Mushaf ayah-to-door projection.
+- **Owning test layer:** Backend application/persistence xUnit tests with Testcontainers, including the
+  real API-hosted background processors and HTTP response variants.
+- **Cross-stack sentinel:** Chromium Playwright performs the Owner configuration, preflight, and
+  confirmation through the real UI, then independently rereads the durable outcome and projection.
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
+  cross-stack base fixture; run desktop and the approved Linking mobile variant, and reset only small
+  Linking workspace/job/outcome, Abwab, and related projection state.
+
+### 4. PhraseSearch
+
+- **Current status:** Open.
+- **Unacceptable failure:** An unavailable, stale, mismatched, or incorrectly built phrase index serves
+  wrong results or adds the wrong Quran selection to Linking.
+- **Successful path:** Verify ready capabilities against the approved build manifest, perform the
+  reviewed search/context/similarity path in the UI, resolve the selection, and persist it with Add to
+  Workspace.
+- **Failure or recovery path:** Prove unavailable `503`, stale-reference `409`, controlled unavailable
+  UI, fail-closed build prerequisites, inactive state after build failure, and refusal to replace an
+  already active one-shot build.
+- **Authoritative oracle:** The hashed fixture/builder manifest, source fingerprint, active build ID at
+  runtime, reviewed query/result subset, and the independently reread Linking workspace source.
+- **Owning test layer:** Backend process/database/API tests for build, readiness, query semantics,
+  conditional requests, and bounded compute behavior.
+- **Cross-stack sentinel:** Chromium Playwright performs an available query and persistent Add to
+  Workspace action, then independently rereads the workspace; resolution alone is not persistence
+  evidence.
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
+  PhraseSearch-ready fixture with immutable phrase data and resettable workspace state. Full one-shot
+  build/activation uses exclusive eligible state in the scheduled/release lane only.
+
+### 5. Abwab projection
+
+- **Current status:** Open.
+- **Unacceptable failure:** An authorized mutation is lost, partially committed, incorrectly ordered or
+  versioned, projected to the wrong Mushaf content, or remains possible after Permission removal.
+- **Successful path:** A least-privilege user performs the representative mutation through the UI,
+  refreshes, and observes the durable Abwab tree and consuming projection.
+- **Failure or recovery path:** Prove unauthorized denial, stale-version/concurrency conflict,
+  transaction rollback with no partial state, and revoke/disable behavior.
+- **Authoritative oracle:** The public Abwab tree, door/tree versions, relevant ETag/detail response,
+  relation/inclusion/link counts, and Mushaf projection where applicable.
+- **Owning test layer:** Backend Abwab application/persistence xUnit tests with Testcontainers plus HTTP
+  Permission and concurrency protection.
+- **Cross-stack sentinel:** Chromium Playwright performs the real mutation and verifies it after a fresh
+  read/browser context through the consuming UI and independent API seam.
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
+  cross-stack base fixture; reset only small Abwab, Access, and related projection scenario tables.
+
+### Playwright selection metadata
+
+Each target Playwright suite records these annotations in the specification that owns the test:
+
+- `critical`.
+- `mobile` when the approved mobile variant applies.
+- Exactly one of `mutating` or `read-only`.
+- The required artifact or compact-fixture identifier.
+- The risk/journey identifier.
+
+Lane selection consumes these annotations and validates them through Playwright discovery output. The
+specifications remain the executable source of truth; this human risk map does not become a second
+machine-readable catalogue.
 
 ### Quran fidelity oracle
 
