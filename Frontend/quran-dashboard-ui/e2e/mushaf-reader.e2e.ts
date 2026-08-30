@@ -100,19 +100,30 @@ test('the surah jump picker moves the reader to another page', async ({ page }) 
   await expect(page.getByTestId('mushaf-page-view')).toBeVisible();
 });
 
-test('the Mushaf renders Uthmani chrome glyphs and Amiri Quran text', async ({ page }) => {
-  await openReader(page);
+test(
+  'the Mushaf renders Uthmani chrome glyphs and Amiri Quran text',
+  {
+    annotation: [
+      { type: 'critical' },
+      { type: 'read-only' },
+      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'journey', description: 'quran-fidelity.mushaf-font-rendering' },
+    ],
+  },
+  async ({ page }) => {
+    await openReader(page);
 
-  await expect(page.getByTestId('mushaf-page-surah-glyph').first()).toBeVisible();
-  await expect(page.getByTestId('mushaf-page-juz-glyph').first()).toBeVisible();
+    await expect(page.getByTestId('mushaf-page-surah-glyph').first()).toBeVisible();
+    await expect(page.getByTestId('mushaf-page-juz-glyph').first()).toBeVisible();
 
-  const words = page.locator('[data-word-location]');
-  await expect(words.first()).toBeVisible();
+    const words = page.locator('[data-word-location]');
+    await expect(words.first()).toBeVisible();
 
-  // The reader must render in Amiri, never UthmanicHafs_V22, which mis-renders U+06DF
-  // (Frontend/quran-dashboard-ui/README.md).
-  const fontFamily = await words
-    .first()
-    .evaluate((element) => getComputedStyle(element).fontFamily);
-  expect(fontFamily).toContain('Amiri');
-});
+    // The reader must render in Amiri, never UthmanicHafs_V22, which mis-renders U+06DF
+    // (Frontend/quran-dashboard-ui/README.md).
+    const fontFamily = await words
+      .first()
+      .evaluate((element) => getComputedStyle(element).fontFamily);
+    expect(fontFamily).toContain('Amiri');
+  },
+);

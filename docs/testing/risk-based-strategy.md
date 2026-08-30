@@ -110,7 +110,9 @@ Important limits remain:
 - The current harness clones an arbitrary local developer database and is not deterministic in a clean
   runner.
 - `test:pre-pr` does not include Playwright or `e2e:typecheck`.
-- The canonical `e2e` command starts two application stacks and has no critical-journey selector.
+- The canonical `e2e` command starts two application stacks. Critical-journey discovery now validates
+  annotations and selects the declared browser evidence, but deterministic artifact-backed execution is
+  still pending.
 
 ### Cross-stack and automation
 
@@ -163,8 +165,7 @@ the narrowest faithful seam.
 ## Critical journey catalogue
 
 This is a human risk map, not a duplicate executable test catalogue. Backend class selection remains in
-`test-gates.tsv`; target Playwright annotations will live in the specifications themselves once
-implemented.
+`test-gates.tsv`; Playwright annotations live in the specifications themselves.
 
 ### 1. Quran fidelity
 
@@ -399,8 +400,9 @@ artifact-bound full-canonical classes required in scheduled/release lanes. Do no
 reduced lane as the current full `pre-pr` command.
 
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
-includes `test:pre-pr` and `e2e:typecheck`. The critical Playwright selector is target-state work; until
-it exists, no document may claim the critical browser gate is enforced.
+includes `test:pre-pr` and `e2e:typecheck`. Critical Playwright discovery and annotation validation now
+exist, but no document may claim the critical browser gate is enforced until deterministic artifact
+execution and the observation job are implemented.
 
 The 12-minute budget:
 
