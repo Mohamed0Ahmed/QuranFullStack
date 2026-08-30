@@ -1,4 +1,0 @@
-interface:
-  display_name: "Focused Review"
-  short_description: "Review one explicit implementation scope"
-  default_prompt: "Use $focused-review to review only this named phase, task, fix, file set, or risk checkpoint."

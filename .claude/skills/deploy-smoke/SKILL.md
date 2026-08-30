@@ -18,8 +18,7 @@ done.
 **Not this skill's job:** running proactively before reviews, commits, or PRs; test
 lanes or broad test commands of any kind; package installs; Git actions or Git status
 reporting; source-code changes; remote deployment; or destructive data work. A runtime
-curl here is a **smoke observation** — it is never route-smoke test evidence
-(`Backend/tests/QuranDashboard.Tests/README.md` owns that gate).
+curl here is a **smoke observation**.
 
 ## Database target safety (hard rules)
 
@@ -38,8 +37,8 @@ curl here is a **smoke observation** — it is never route-smoke test evidence
 ## Workflow
 
 1. Confirm the explicitly requested scope (backend, frontend, or full-stack path).
-2. Read `Backend/README.md` §Deployment (Docker / Railway) and §Invariants for the
-   deployment truth of the requested target, and `Backend/scripts/README.md` when a
+2. Read `Backend/README.md` §Deployment (Docker / Railway) for the deployment truth of
+   the requested target, and `Backend/scripts/README.md` when a
    project script is involved. Prefer the project's own scripts; confirm real names
    before running anything.
 3. Observe only what the request touches; mark the rest not applicable. Distinguish "it
@@ -53,9 +52,8 @@ curl here is a **smoke observation** — it is never route-smoke test evidence
   secrets masked.
 - `Frontend/quran-dashboard-ui/package.json` scripts — only when the requested smoke
   includes the frontend build or app.
-- `.claude/skills/engineering-review/references/quran-data-safety.md` — only when the
-  smoke path touches Quran source/import behavior; a "make it run" shortcut that
-  bypasses source-integrity checks is a finding, never an acceptable smoke.
+- The implicated source and validation code when the smoke path touches Quran source/import
+  behavior.
 
 ## Output
 

@@ -4,9 +4,8 @@
 `Program.cs` dispatches the first arg (a verb) to a `Import/VerbRunners/*` runner, which
 runs the matching `application/.../Quran/DataPipelines/**` handler.
 
-**HOW rules:** `Backend/.architecture/LOGGING_GUIDELINES.md` (run summaries). Source-data
-rules: `CODING_PRINCIPLES.md` §10 Quranic Data Safety, this README's *Defaults & sources*
-and *Safety* sections, and `Backend/report/README.md` when a durable report applies.
+Operational defaults and source-safety behavior are documented in this README's
+*Defaults & sources* and *Safety* sections.
 
 ## Verbs
 

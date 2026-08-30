@@ -3,12 +3,7 @@
 Angular 20 (standalone components + Signals) frontend for the Quran Dashboard
 (المنهج القرآني) — an **Arabic-first (RTL)**, scholarly/calm admin dashboard.
 
-> HOW to work here: use `.architecture/FRONTEND_STRUCTURE.md` for code organization and
-> `.architecture/API_INTEGRATION_GUIDELINES.md` for API work. `../../PRODUCT.md` owns users and
-> product purpose. During the UI rebuild, the owner's explicit direction controls visual work and
-> no permanent visual rule set is active. This file owns only operational run/build,
-> generated-contract, and verification guidance. Active Spec Kit artifacts own feature intent and
-> code owns implemented truth.
+> This file documents operational run/build commands and generated API artifacts.
 
 ## Run / build
 
@@ -39,28 +34,3 @@ Local HTTPS needs `mkcert localhost` in the project root (see `Backend/scripts/R
   historical local names) and keep UI-only unions, request params, and view models
   hand-written; closed backend vocabularies the spec types as `string` are narrowed there
   via documented `Omit`-overlays.
-
-## Verification
-
-`../../TESTING_CONSTITUTION.md` is the policy. The normal frontend verification chain is three
-independent commands, in this order:
-
-```bash
-npm run check:no-unit-specs
-npm run typecheck:app
-npm run build:verify
-```
-
-Keep `check:no-unit-specs` independent; never fold it into `build:verify`. `npm run typecheck` is an
-alias for `typecheck:app`. `npm run test:pre-pr` runs the permission catalogue, audit action type,
-no-unit-specs, typecheck, and production-build checks in sequence.
-
-New automated tests are frozen by default. The source tree must contain no Angular unit specs.
-Playwright is the retained frontend test estate, and a new journey still requires owner approval
-under the constitution. Commands are `npm run e2e` (headless), `npm run e2e:headed`, and
-`npm run e2e:ui`; Chromium only. Playwright owns the Angular dev server, a backend in the `Testing`
-environment, a local Management API stub, and a disposable clone of the local source database. The
-source database supplies the clone and is never the E2E write target. The run needs mkcert
-certificates and a prior `dotnet build Backend/QuranDashboard.sln`. Journey files live in `e2e/`
-and must be named `*.e2e.ts`; see `e2e/README.md` for the six retained journeys and runtime
-invariants.

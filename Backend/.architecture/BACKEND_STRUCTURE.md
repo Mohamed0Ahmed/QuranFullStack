@@ -5,19 +5,16 @@
 This document defines how Backend files and folders should be organized in the
 Quran Dashboard backend.
 
-Agents must read this before adding or moving backend files.
+Use this document when deciding where Backend files belong.
 
 ## Canonical Ownership
 
 To avoid drift between the backend architecture docs:
 
 - **This file (`BACKEND_STRUCTURE.md`)** is canonical for backend file/folder
-  placement, feature/domain organization, global usings placement, and
-  file-size/responsibility thresholds.
+  placement, feature/domain organization, and global usings placement.
 - **`CLEAN_ARCHITECTURE.md`** is canonical for layer responsibilities, dependency
   direction, and request/use-case flow.
-- **`API_GUIDELINES.md`** is canonical for the API boundary, HTTP behavior,
-  response shape, and API localization/message rules.
 
 ## Main Rule
 
@@ -384,123 +381,3 @@ When adding backend files:
 - Do not introduce infrastructure dependencies into Domain or Application.
 - Do not invent Quranic data.
 - Preserve traceability for generated/imported data.
-
-## File Size and Responsibility Guidelines
-
-File size limits here are **review thresholds, not blind automatic failures**. A
-file that exceeds a threshold is a strong signal that responsibilities may be
-mixed and should be reviewed and justified — not a number to satisfy mechanically.
-
-Principles:
-
-- File size limits are review thresholds, not blind automatic failures.
-- A file exceeding the threshold is a strong signal that responsibilities may be
-  mixed.
-- The agent must not create very large files without explaining why.
-- Never create files with thousands of lines.
-- A 1000+ line service/component is almost always a design smell.
-- A 3000+ line service/component is not acceptable and must be split before
-  completion.
-- Prefer cohesive small files organized by feature / domain / bounded context.
-- Split by responsibility, not by technical dumping folders (see the dumping-folder
-  rules earlier in this document).
-
-### Backend thresholds
-
-Thresholds are line counts per file. A **soft** threshold means "review and
-justify"; a **hard** threshold means "stop and split, or split immediately".
-
-#### 1. Controllers / API endpoints
-
-- Ideal: 80–150 lines
-- Soft review threshold: 200 lines
-- Hard review threshold: 300 lines
-
-Rules:
-
-- Controllers / endpoints must stay thin.
-- If a controller exceeds the threshold, move logic into Application use cases.
-- Controllers must not contain business logic, EF queries, file parsing, or Quranic
-  data processing.
-
-#### 2. Application command / query handlers
-
-- Ideal: 80–180 lines
-- Soft review threshold: 250 lines
-- Hard review threshold: 350 lines
-
-Rules:
-
-- Handlers should orchestrate one use case.
-- If a handler grows too large, split private logic into focused domain/application
-  services, validators, mappers, or helper classes near the feature.
-- Do not hide multiple use cases inside one handler.
-
-#### 3. Application services / Domain services
-
-- Ideal: 150–250 lines
-- Soft review threshold: 300 lines
-- Hard review threshold: 450 lines
-
-Rules:
-
-- Services must have one clear reason to change.
-- Avoid oversized services.
-- If a service approaches the hard threshold, split by responsibility or workflow.
-- A service over 1000 lines is not acceptable without explicit human approval and
-  should normally be refactored before finishing.
-
-#### 4. Repository implementations / read services
-
-- Ideal: 150–300 lines
-- Soft review threshold: 400 lines
-- Hard review threshold: 600 lines
-
-Rules:
-
-- Repositories / read services may be larger because of queries, but must remain
-  focused.
-- Split large repositories by aggregate, feature, read model, or use case.
-- Do not create a single repository that owns unrelated data access for many
-  domains.
-
-#### 5. Domain entities / aggregates
-
-- Ideal: 100–250 lines
-- Soft review threshold: 300 lines
-- Hard review threshold: 500 lines
-
-Rules:
-
-- Entities may contain domain behavior, but should remain cohesive.
-- If an entity becomes too large, check whether behavior belongs in value objects,
-  domain services, or smaller aggregates.
-
-#### 6. DTOs / contracts / models
-
-- Ideal: small and focused
-- Soft review threshold: 150 lines
-- Hard review threshold: 250 lines
-
-Rules:
-
-- Do not combine many unrelated contracts in one file.
-- Prefer one focused contract per file when it improves clarity.
-
-### Backend review behavior
-
-If a backend file is expected to exceed its **soft** threshold, the agent must:
-
-- mention it in the plan or final response
-- explain why the size is justified
-- explain why splitting is not better
-
-If a backend file is expected to exceed its **hard** threshold, the agent must:
-
-- stop and propose a split before implementing, or
-- split the file immediately into cohesive smaller files
-
-If a backend file would exceed **1000 lines**:
-
-- do not proceed without explicit human approval
-- propose a concrete split plan

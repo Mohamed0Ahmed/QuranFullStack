@@ -10,19 +10,12 @@ description: Use when explicitly asked for Quran Dashboard Backend or Playwright
 Judge or guide **how retained Backend and Playwright tests are written** against the nine rules
 below, for changed or proposed `*Tests.cs`, `*Test.cs`, and `*.e2e.ts` code. When invoked before test writing, apply the rules as
 guidance so violations are never written; when reviewing, report violations. This
-skill's result is evidence — the formal review verdict stays with the separately
-requested `engineering-review`, which consumes an existing same-diff Test Guard result.
+skill's result is focused test-quality evidence, not an implementation-readiness verdict.
 
 **Not this skill's job:** production-code review, selecting or running tests, judging
-whether executed test evidence was sufficient for a changed scope
-(`TESTING_CONSTITUTION.md` owns policy; the Backend and E2E READMEs own commands;
-`engineering-review` owns the verification verdict), implementing test fixes, Git, or loading stack references the changed tests do
-not use. Be a sharp reviewer, not a pedantic one: flag what wastes maintenance effort or
-hides real bugs, ignore cosmetic preferences.
-
-The Test Freeze applies: updating a retained Permanent test or a triggered change/release gate is
-narrowly allowed, while any new Backend or Playwright test requires owner approval recorded in the
-active Testing Decision. This Skill never supplies that approval. Frontend unit tests are prohibited.
+whether executed test evidence is sufficient, implementing test fixes, or Git. Be a sharp
+reviewer, not a pedantic one: flag what wastes maintenance effort or hides real bugs, and
+ignore cosmetic preferences.
 
 ## The Nine Rules
 
@@ -93,11 +86,3 @@ no test. Do not flag pre-existing violations in untouched files unless asked to 
 ## Conditional references
 
 - [references/dotnet.md](references/dotnet.md) — when .NET/xUnit tests are in scope.
-- `Frontend/quran-dashboard-ui/e2e/README.md` — when Playwright journeys or fixtures are in scope.
-  Load both only when the change genuinely spans Backend and Playwright.
-- `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` and
-  `Backend/tests/QuranDashboard.Tests/README.md` — only for real PostgreSQL
-  fixture/serialization scope.
-- `CODING_PRINCIPLES.md` §10 — Quranic data safety applies to test data in full
-  (synthetic-only, clearly labeled placeholders, never hand-typed "real" scripture);
-  load it whenever test data is source-sensitive.
