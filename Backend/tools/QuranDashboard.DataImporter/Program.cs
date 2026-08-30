@@ -38,6 +38,7 @@ internal static class Program
             "build-phrase-index" => await BuildPhraseIndexRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "export-abwab-snapshot" => await ExportAbwabSnapshotRunner.RunAsync(verbArgs, createHost, PrintUsage),
             "import-abwab-snapshot" => await ImportAbwabSnapshotRunner.RunAsync(verbArgs, createHost, PrintUsage),
+            "import-quran-topics-book" => await ImportQuranTopicsBookRunner.RunAsync(verbArgs, createHost, PrintUsage),
             _ => UnknownVerb(verb)
         };
     }
@@ -107,5 +108,7 @@ internal static class Program
             "  QuranDashboard.DataImporter export-abwab-snapshot [--output-dir <path>]");
         Console.Error.WriteLine(
             "  QuranDashboard.DataImporter import-abwab-snapshot --source <snapshot-v4.json> [--report-out <path>] [--allow-remote --yes]");
+        Console.Error.WriteLine(
+            "  QuranDashboard.DataImporter import-quran-topics-book --source <book-v1.json> --actor-user-id <id> [--validate-only] [--report-out <path>] [--allow-remote --yes]");
     }
 }
