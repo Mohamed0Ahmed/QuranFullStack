@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quran-dashboard.local/schemas/test-artifact-manifest.schema.json",
+  "title": "Quran Dashboard external test artifact manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contractVersion",
+    "artifactId",
+    "artifactVersion",
+    "migration",
+    "postgresql",
+    "producer",
+    "tables",
+    "sources",
+    "sentinels"
+  ],
+  "properties": {
+    "contractVersion": { "const": 1 },
+    "artifactId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9._-]{0,99}$"
+    },
+    "artifactVersion": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$"
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["head", "count"],
+      "properties": {
+        "head": {
+          "type": "string",
+          "pattern": "^[0-9]{14}_[A-Za-z0-9_]+$"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "postgresql": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producerVersion"],
+      "properties": {
+        "producerVersion": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "version"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tables": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "rows"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]{0,62}$"
+          },
+          "rows": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "sha256", "provenance"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "version": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "provenance": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "sentinels": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "expectedCount", "oracleSha256"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "expectedCount": { "type": "integer", "minimum": 0 },
+          "oracleSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "phraseSearch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sourceFingerprint", "readiness", "activeBuildId"],
+      "properties": {
+        "sourceFingerprint": { "type": "string", "minLength": 1 },
+        "readiness": { "enum": ["available", "unavailable"] },
+        "activeBuildId": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

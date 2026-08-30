@@ -13,6 +13,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
+| `test-artifacts status\|verify [--lane LANE\|--artifact ID]` | Read-only inspection of the tracked test-artifact lock; `verify` adds hashes and strict external-manifest checks |
 | `wipe-abwab` | Empties the literal Abwab and Abwab-owned Linking reset closure on a local database, leaving canonical `quran_*`, access, and linking-workspace data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
@@ -36,6 +37,26 @@ against it.
 `abwab_*` content is authored curation data. Preserve it with the v4 export/import workflow before
 a full reset; prefer `wipe-abwab` when the goal is only to clear Abwab rows. A full reset also
 discards canonical `quran_*` data, which then has to be re-imported.
+
+## Verifying locked test artifacts
+
+The repository-root `test-artifacts.lock.json` and the schemas under `docs/testing/` are the tracked
+trust contract. These commands are read-only: they do not fetch, extract, restore, refresh, publish,
+or connect to PostgreSQL.
+
+```bash
+./scripts/test-artifacts status
+./scripts/test-artifacts status --lane critical
+./scripts/test-artifacts verify --artifact compact-cross-stack-base
+```
+
+`status` checks strict lock shape, required selection, staged presence and size, and repository
+migration freshness. `verify` additionally checks every SHA-256, strictly parses the hashed external
+manifest, validates PostgreSQL table identifiers, and compares manifest identity, migration,
+producer, table scope, provenance, sentinels, and PhraseSearch expectations with the lock. An explicit
+lane or artifact that has no lock entry fails closed. The initial lock intentionally has no entries;
+the compact-fixture implementation adds its reviewed artifact rather than predeclaring invented
+hashes or Quran sentinels.
 
 ## Exporting the current Railway Abwab snapshot
 

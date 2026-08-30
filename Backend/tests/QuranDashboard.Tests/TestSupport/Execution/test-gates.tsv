@@ -116,6 +116,7 @@ QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke
 QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB
+QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
 QuranDashboard.Tests.TestSupport.DependencyInjection.OwnedServiceProviderRegistryTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlDatabaseSlotContractTests	ApiBehavior	Database	TierB	Execution

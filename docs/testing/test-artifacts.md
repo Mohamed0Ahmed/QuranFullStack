@@ -1,6 +1,6 @@
 # Test Artifact Contract
 
-**Status:** Accepted target-state design; tooling and lockfile are not yet implemented
+**Status:** Accepted design; tracked lock contract and read-only verification implemented, artifact entries pending
 
 **Decision date:** 2026-08-30
 
@@ -80,8 +80,11 @@ logically separate from the trusted Quran oracle and must not be mistaken for ca
 
 ## Tracked trust root
 
-A future tracked `test-artifacts.lock.json` is the trust root. This task documents that requirement but
-does not create the lockfile.
+The tracked repository-root `test-artifacts.lock.json` is the trust root. Its strict schema is
+[`test-artifacts-lock.schema.json`](./test-artifacts-lock.schema.json); hashed external manifests use
+[`test-artifact-manifest.schema.json`](./test-artifact-manifest.schema.json). The lock begins empty so
+an unfinished fixture cannot acquire invented hashes or Quran sentinels. A required lane or artifact
+requested before its reviewed entry exists fails closed.
 
 Each locked artifact records at least:
 
@@ -100,7 +103,8 @@ Each locked artifact records at least:
 - PhraseSearch manifest hash, source fingerprint, and readiness expectations where applicable. The
   volatile active build ID remains inside the immutable external manifest and is compared with runtime
   capabilities; it is not duplicated into the tracked lock.
-- Immutable logical storage identifier with no credentials or signed query string.
+- Immutable logical storage identifier with no credentials or signed query string, ending in an
+  explicit `@sha256:<hash>` or `@version:<provider-version>` identity rather than a mutable alias.
 - Refresh reason, date, and owning role.
 
 A hash stored only inside an untrusted external manifest is insufficient. The tracked lock pins the
@@ -127,16 +131,21 @@ Cache by the lockfile or artifact content hash. A cache hit still verifies the p
 part of the 12-minute PR activation measurement for compact fixtures. Large artifacts are outside the
 PR journey path and are provisioned once per applicable scheduled or release run.
 
-The target tooling contract is a read-only-first command surface such as:
+The implemented read-only command surface is:
 
 - `status`: report required, present, missing, stale, or mismatched sets.
-- `fetch`: acquire immutable content during controlled provisioning.
 - `verify`: perform all lock, manifest, schema, compatibility, and sentinel checks.
+
+Run these through `Backend/scripts/test-artifacts`; both accept `--lane` or `--artifact`. `status`
+checks lock shape, selection, staged presence/size, and migration freshness. `verify` additionally
+checks hashes, strict external-manifest shape, safe table identifiers, and lock/manifest agreement.
+Both are read-only and return non-zero for any required set that is missing, stale, or mismatched.
+
+The remaining target provisioning/maintenance commands are not part of this phase:
+
+- `fetch`: acquire immutable content during controlled provisioning.
 - `refresh`: produce a candidate change report without accepting it.
 - `publish`: place an independently approved artifact at its immutable identifier.
-
-These commands are target-state requirements, not claims about scripts currently present in the
-repository.
 
 ## PR fixture model
 
