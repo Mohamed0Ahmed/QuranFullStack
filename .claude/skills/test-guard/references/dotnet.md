@@ -54,12 +54,11 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 
 - Boot the app in-memory and exercise the **real** pipeline: routing, model binding, filters, middleware, and the `ApiResponse<T>` envelope end to end.
 - In `ConfigureTestServices`, override **only true boundaries** (swap external HTTP/LLM clients for fakes); keep the real pipeline and the real database.
-- Assert on the HTTP status code **plus** the deserialized `ApiResponse<T>` — `IsSuccess`, `Message`, `Data`, `Errors` — matching `API_GUIDELINES.md` §5 / `Contracts/ApiResponse.cs` (indexed by `docs/contracts/response-envelope.md`). Do not assert internal call chains.
+- Assert on the HTTP status code **plus** the deserialized `ApiResponse<T>` — `IsSuccess`, `Message`, `Data`, `Errors` — matching `Contracts/ApiResponse.cs`. Do not assert internal call chains.
 
 **Database — real PostgreSQL via Testcontainers:**
 
 - When a **query, migration, mapping, constraint, or persistence behavior is the subject**, run against real Postgres, applying the real EF Core migrations, seeding via fixtures, and isolating each test.
-- **In this repository a fixture must not construct its own `PostgreSqlContainer`** — fixtures lease a database from the shared, project-owned runtime. The fixture/serialization rules are owned by `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`; read the README before writing or reviewing a database fixture, and treat a new container start as a finding.
 - Mocking the `DbContext` here tests nothing (Rules 2 and 9).
 
 **SQLite fallback — acceptable / not acceptable:**
@@ -97,11 +96,9 @@ Reproduce a real bug, reference the incident (issue ID / date) in the test name 
 
 ## Quranic data safety in tests (overrides convenience)
 
-The canonical rules are `CODING_PRINCIPLES.md` §10, which applies to test data in full:
-synthetic-only unless loaded from a traceable fixture source, obvious placeholders, never
-hand-typed "real" scripture. The .NET application of it: import/persistence tests for
-Quranic data assert the safety guarantees themselves — totals, missing records, duplicates,
-validation result — not just the happy path.
+Use synthetic values unless a test loads a traceable fixture source. Import and persistence
+tests for Quranic data should assert totals, missing records, duplicates, and validation results,
+not only the happy path.
 
 ## .NET-specific smells
 

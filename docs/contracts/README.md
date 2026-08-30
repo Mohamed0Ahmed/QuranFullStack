@@ -10,11 +10,8 @@ no identity rules, no schemas. Each page links to the authoritative source.
 
 ## Precedence (truth model)
 
-Current **code** is implemented truth. Applicable `.architecture/` sources govern structural
-rules, and this index **defers** to both. Per-feature, planning-time contracts live in
-`specs/<feature>/contracts/` during a feature's development; this index covers steady-state code
-after merge. Merged features 001–019 are historical and **not** scanned routinely — see
-[`../../specs/README.md`](../../specs/README.md).
+Current **code** is implemented truth. Applicable structure sources describe placement and
+layer boundaries, and this index **defers** to both.
 
 ## Pages
 
@@ -26,8 +23,3 @@ after merge. Merged features 001–019 are historical and **not** scanned routin
 - [Security access — identity and authorization](./security-access.md)
 - [Import pipelines & CLI verbs](./import-pipelines.md)
 - [Frontend shell — navigation, tokens, URL-state](./frontend-shell.md)
-
-## Related
-
-- Workspace docs layer: [`../README.md`](../README.md)
-- Per-feature planning workspace (001–019 frozen): [`../../specs/README.md`](../../specs/README.md)

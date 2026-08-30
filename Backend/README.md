@@ -5,8 +5,8 @@
 also exposes permission-protected Abwab writes plus Owner-only access administration;
 bulk import and generation writes remain CLI-only.
 
-> This is the operational build/run/deployment guide. Active Spec Kit artifacts own feature
-> intent, code owns implemented truth, and `.architecture/` owns Backend structure and API rules.
+> This is the operational build/run/deployment guide. Code owns implemented truth, and
+> `.architecture/` documents Backend structure.
 
 ## Build / run
 
@@ -20,17 +20,6 @@ Connection string via user secrets — see `scripts/README.md` §Prerequisites. 
 `https://localhost:5015/swagger`, health at `/api/health`.
 
 ## Deployment (Docker / Railway)
-
-Before release, run the mandatory Backend pre-release gate:
-
-```bash
-Backend/scripts/test-backend pre-pr
-```
-
-Daily Backend verification is `Backend/scripts/test-backend smoke` plus
-`Backend/scripts/test-backend tier-b`. Change-specific gates are `pipeline`, `canonical-data`,
-`migration`, `access-db`, and `gate-contract`; run each on its own trigger. The complete lane
-contract and flags live in `tests/QuranDashboard.Tests/README.md` and `scripts/README.md`.
 
 The API is containerized for Railway (Hobby). Artifacts live at the backend root:
 `Dockerfile` (multi-stage: `sdk:10.0` build → `aspnet:10.0` runtime, publishes only
@@ -98,14 +87,3 @@ answering `304` to its own clients' `If-None-Match` — stale data behind a vali
 fresh. **Before a second instance is added**, the generation has to become shared across processes
 or the validator has to be derived from the data rather than from a process counter. Neither
 exists; do not scale this service horizontally until one does.
-
-## Invariants
-
-- EF migrations are generated with EF tooling only. Add a migration only when explicitly
-  requested, and do not apply one with `dotnet ef database update` without explicit authority.
-- Do not hand-write migration files or manually edit generated migration `.cs`, `.Designer.cs`,
-  or `ModelSnapshot` files except for a clearly documented exceptional fix. For an exception,
-  explain why, list every manually edited file, and report the verification run.
-- After generating a migration, report its name, generated files, build status, applicable test
-  status, and whether the database update was executed or skipped.
-- `resources/` source packages are local/gitignored.

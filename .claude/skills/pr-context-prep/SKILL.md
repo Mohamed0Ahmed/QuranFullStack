@@ -14,9 +14,8 @@ owners, the supplied test/build evidence (or its absence, stated plainly), revie
 CodeRabbit focus, and a suggested review checklist.
 
 **Not this skill's job:** writing files, any Git/PR mutation, rerunning or generating
-evidence, formal review, an independent merge-readiness verdict, fixes, or invoking
-another Skill. Readiness is adjudicated by the separately requested `engineering-review`
-and by the reviewers this package serves.
+evidence, an independent merge-readiness verdict, fixes, or invoking another Skill.
+Readiness is adjudicated by the reviewers this package serves.
 
 ## Establish the target
 
@@ -37,8 +36,7 @@ is open, the matching `docs/contracts/*.md` pointer, the implicated code, and th
 
 - **Quran-data flag:** if the diff touches Quran text, an ayah/word/root/morphology
   source file, a seed correction, an identity key, or importer logic that writes Quran
-  data, put `⚠ Quran data touched` at the **top** of the package and point reviewers at
-  `CODING_PRINCIPLES.md` §10. This is the highest-signal line in the package.
+  data, put `⚠ Quran data touched` at the **top** of the package.
 - **Subtree imports:** a PR carrying unsquashed subtree history must state "Merge commit
   required; do not squash or rebase" and list the imported tips (verified with
   `git merge-base --is-ancestor <sha> HEAD`).
@@ -46,12 +44,8 @@ is open, the matching `docs/contracts/*.md` pointer, the implicated code, and th
 ## Evidence (never fabricate)
 
 Use only evidence that already exists in this conversation or that the user supplies.
-Name the executed lanes; label anything missing plainly ("not yet run — needs: …") and
-never claim green. When labeling supplied evidence, consult the exact
-`TESTING_CONSTITUTION.md` policy and the owning command sections in
-`Backend/tests/QuranDashboard.Tests/README.md`, `Backend/scripts/README.md`, and
-`Frontend/quran-dashboard-ui/e2e/README.md` rather than restating their rules here. Do not run any
-of it; state gaps for the caller to close.
+Label supplied evidence and anything missing plainly, and never claim green. Do not run
+verification from this Skill; state gaps for the caller to close.
 
 ## Output
 

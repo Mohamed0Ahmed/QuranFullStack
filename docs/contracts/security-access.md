@@ -1,6 +1,6 @@
 # Security access — identity and authorization
 
-Index only — defers to the linked code and security architecture authority. See
+Index only — defers to the linked code. See
 [docs/contracts/README.md](./README.md).
 
 ## Authoritative sources
@@ -21,4 +21,4 @@ Index only — defers to the linked code and security architecture authority. Se
   [`features/access-admin/`](../../Frontend/quran-dashboard-ui/src/app/features/access-admin/)
 
 **Precedence:** backend code defines server access; frontend code defines client-side access
-behaviour. `Backend/.architecture/API_GUIDELINES.md` §11 governs the security boundary.
+behaviour.

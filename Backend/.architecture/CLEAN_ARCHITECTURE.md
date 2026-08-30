@@ -24,10 +24,7 @@ To avoid drift between the backend architecture docs:
 
 - **This file (`CLEAN_ARCHITECTURE.md`)** is canonical for layer responsibilities,
   dependency direction, and request/use-case flow.
-- **`BACKEND_STRUCTURE.md`** is canonical for file/folder placement and
-  file-size/responsibility thresholds.
-- **`API_GUIDELINES.md`** is canonical for the API boundary and
-  response/localization rules.
+- **`BACKEND_STRUCTURE.md`** is canonical for file/folder placement.
 
 ## Projects
 
@@ -334,39 +331,6 @@ Frontend:
 
 - not relevant here; do not put backend rules in frontend.
 
-## Quranic Data Safety
-
-Quranic data is source-sensitive.
-
-Rules:
-
-- Never invent Quran text, ayah text, tafsir, translations, morphology,
-  gates/topics, or religious content.
-- Never silently modify source data.
-- Do not hide data problems.
-- Preserve traceability from generated data back to source files.
-- Data processors/importers/generators must produce clear reports with:
-  - totals
-  - missing records
-  - duplicates
-  - warnings
-  - validation result
-
-## Feature Implementation Pattern
-
-Before adding a backend feature:
-
-1. Identify the feature/bounded context.
-2. Check `.architecture/BACKEND_STRUCTURE.md` for file placement.
-3. Add Domain types only if there is real domain behavior or a clear domain
-   concept.
-4. Add Application use case under the feature folder.
-5. Add abstractions needed by Application.
-6. Add Infrastructure implementation for those abstractions.
-7. Add Api endpoint/controller as a thin entry point.
-8. Add tests/verification when relevant.
-9. Report changed files and build/test status.
-
 ## Example: Mushaf Page Viewer Read-only
 
 Possible structure:
@@ -412,13 +376,3 @@ Important summary:
 - Each C# project may have its own `GlobalUsings.cs`.
 - Keep it small and layer-safe.
 - Do not use it to hide architectural dependencies.
-
-## Definition of Done
-
-For backend implementation work, the final summary should include:
-
-- changed files
-- build status
-- test status if applicable
-- validation/report path if data-related
-- any skipped or uncertain items

@@ -2,23 +2,14 @@
 
 ## Purpose
 
-This document defines lightweight structure rules for the Quran Dashboard Angular
-app, plus file size and responsibility thresholds.
+This document defines the structure of the Quran Dashboard Angular app.
 
-Read this file **before** adding or changing:
+Use this file when placing or moving:
 
 - Angular components, services, or routes
 - state / facade / store files
 - feature folder structure
 - frontend file organization
-
-For product context, read `../../PRODUCT.md`. During the UI rebuild, the owner's explicit direction
-controls visual work and no permanent visual rule set is active.
-
-> Scope note: this is documentation/rules only. It does not create components,
-> services, routes, or features — it defines how that work must be organized when
-> it is explicitly requested. This file is intentionally minimal for now and will
-> grow as the frontend foundation is built.
 
 ## Minimum Structure Guidance
 
@@ -49,131 +40,6 @@ more.
 - Arabic-first / RTL is the default; respect it in structure and layout.
 - Quranic data safety: never invent Quranic text or labels; show missing data as a
   controlled state, never silently fabricated.
-
-## File Size and Responsibility Guidelines
-
-File size limits here are **review thresholds, not blind automatic failures**. A
-file that exceeds a threshold is a strong signal that a component or service is
-doing too much and should be reviewed and justified — not a number to satisfy
-mechanically.
-
-Principles:
-
-- File size limits are review thresholds, not blind automatic failures.
-- Do not generate huge Angular components or services.
-- Never put HTML templates inside TypeScript files unless it is a tiny inline
-  component with explicit approval.
-- Angular components should use separate `.html` and `.scss` files by default.
-- A component / service with thousands of lines is not acceptable.
-- A 1000+ line Angular file usually means the component/service is doing too much.
-- A 3000+ line service/component is not acceptable and must be split before
-  completion.
-- Split by feature, UI responsibility, state responsibility, or API
-  responsibility.
-
-### Frontend thresholds
-
-Thresholds are line counts per file. A **soft** threshold means "review and
-justify"; a **hard** threshold means "stop and split, or split immediately".
-
-#### 1. Angular component TypeScript files
-
-- Ideal: 150–250 lines
-- Soft review threshold: 300 lines
-- Hard review threshold: 400 lines
-
-Rules:
-
-- Component TS should coordinate UI state and user interactions only.
-- Do not put large business logic, formatting pipelines, API orchestration, or
-  repeated helpers inside the component.
-- If it grows, split into child components, facade/store services, pure helpers, or
-  feature services.
-
-#### 2. Angular component HTML templates
-
-- Ideal: 150–250 lines
-- Soft review threshold: 300 lines
-- Hard review threshold: 400 lines
-
-Rules:
-
-- If a template grows too large, split it into child components.
-- Do not build full pages as one giant template.
-- Keep repeated sections as reusable components.
-
-#### 3. Angular component SCSS
-
-- Ideal: under 150 lines
-- Soft review threshold: 200 lines
-- Hard review threshold: 300 lines
-
-Rules:
-
-- Component SCSS should stay local and small.
-- Repeated visual patterns must move to the global style system using `qd-`
-  classes.
-- Do not create a component-level design system.
-- Do not redefine global cards / buttons / inputs / tables / modals inside
-  component SCSS.
-
-#### 4. Frontend API services
-
-- Ideal: 100–200 lines
-- Soft review threshold: 250 lines
-- Hard review threshold: 350 lines
-
-Rules:
-
-- API services should mainly call HTTP endpoints and map basic API responses.
-- They must not own page state, complex UI logic, business workflows, or formatting
-  logic.
-- Split by backend resource / feature when needed.
-
-#### 5. Frontend facade / store / state services
-
-- Ideal: 200–350 lines
-- Soft review threshold: 400 lines
-- Hard review threshold: 600 lines
-
-Rules:
-
-- State / facade services can be larger than API services, but must remain
-  cohesive.
-- Split by workflow, state slice, or feature area when they become too broad.
-- Avoid oversized stores that own unrelated modals, filters, data loading, selection,
-  drag/drop, and persistence all in one file.
-
-#### 6. Frontend utility / helper files
-
-- Ideal: under 150 lines
-- Soft review threshold: 200 lines
-- Hard review threshold: 300 lines
-
-Rules:
-
-- Helpers must be pure and focused.
-- Do not create generic dumping files like `helpers.ts` or `utils.ts` with
-  unrelated functions.
-- Put helper functions near the feature unless truly shared.
-
-### Frontend review behavior
-
-If a frontend file is expected to exceed its **soft** threshold, the agent must:
-
-- mention it in the plan or final response
-- explain why the size is justified
-- explain why splitting is not better
-
-If a frontend file is expected to exceed its **hard** threshold, the agent must:
-
-- stop and propose a split before implementing, or
-- split the file immediately into cohesive smaller files
-
-If a frontend file would exceed **1000 lines**:
-
-- do not proceed without explicit human approval
-- propose a concrete split plan
 
 ## Routeable Smart Components
 
@@ -340,18 +206,6 @@ Example route metadata shape only:
 ```
 
 Note: this is an example shape only. Do not implement it now.
-
-## Agent Behavior for New Screens
-
-When adding a new frontend screen later, the agent must state:
-
-- whether it is a routeable smart / page component or a child component
-- its route if it is routeable
-- whether it has important tabs
-- how the tab state is represented in the URL
-- whether navigation metadata is needed
-
-If a feature has tabs but no URL state, the agent must explain why.
 
 ## Feature Folder Structure
 
@@ -592,8 +446,6 @@ A smart / page component should be split when:
 - it has major tabs with different content
 - it owns modals or panels that have their own behavior
 - it has repeated template sections
-- its HTML approaches the soft threshold
-- its TypeScript approaches the soft threshold
 - it mixes API loading, state management, rendering, and formatting
 - a child section can be understood and tested independently
 - the owner / admin may navigate to or configure part of it separately
@@ -606,20 +458,3 @@ Rules:
 - Do not move logic into generic helpers just to reduce line count; split around
   real responsibilities.
 - Keep related files near the feature that owns them.
-
-## Agent Behavior for Large Pages
-
-When implementing a large page later, the agent must state:
-
-- the routeable smart / page component
-- child components created
-- data-access services created
-- facade / store services created
-- where URL tab state lives
-- why the split keeps each file under the review thresholds
-
-If the agent chooses to keep a large page in one component, it must explicitly
-justify why splitting is not better.
-
-If the component would exceed the hard threshold, the agent must stop and propose a
-split.

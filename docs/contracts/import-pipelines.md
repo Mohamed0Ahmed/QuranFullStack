@@ -5,7 +5,7 @@ Index only — defers to the linked code and retained operator documentation. Se
 Covers the operator-only DataImporter verbs, the file→DB data pipelines, and the
 validation / import report outputs. This page does **not** restate verb lists, manifest
 schemas, report shapes, or output paths. The retained DataImporter README owns CLI operation;
-code owns pipeline implementation and `CODING_PRINCIPLES.md` §10 owns source safety.
+code owns pipeline implementation.
 
 ## Authoritative sources
 
