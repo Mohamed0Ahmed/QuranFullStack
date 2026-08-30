@@ -1,26 +1,18 @@
 # Quran Dashboard Workspace
 
-This repository is a monorepo with a .NET 10 Backend in `Backend/` and an Angular 20 Frontend in
-`Frontend/quran-dashboard-ui/`. Current code and project manifests are implementation truth.
+Route the user's requested scope before editing:
 
-## Instruction routing
+- **Backend:** for API, application, domain, persistence, migrations, imports, or backend tests, read
+  `Backend/AGENTS.md`.
+- **Frontend:** for Angular UI, routes, state, styling, API clients, or browser tests, read
+  `Frontend/quran-dashboard-ui/AGENTS.md`.
+- **Cross-stack:** for an endpoint, wire model, authentication/authorization behavior, or feature that
+  spans both applications, read both files. The Backend owns the HTTP/OpenAPI contract; the Frontend
+  consumes its committed spec and generated models.
+- **Domain language or architecture decisions:** read `docs/agents/domain.md` before naming concepts or
+  changing a documented decision.
+- **GitHub issues:** read `docs/agents/issue-tracker.md`; load `docs/agents/triage-labels.md` only when
+  applying triage roles.
 
-- The user's explicit request defines the task and scope.
-- For Backend work, read `Backend/AGENTS.md`.
-- For Frontend work, read `Frontend/quran-dashboard-ui/AGENTS.md`.
-- Load structure documentation only when file placement, ownership, or layer boundaries are relevant.
-- Operational READMEs describe their named commands and tools; they are not general workflow rules.
-
-## Agent skills
-
-### Issue tracker
-
-Issues are tracked in GitHub Issues using the `gh` CLI. See `docs/agents/issue-tracker.md`.
-
-### Triage labels
-
-Triage uses the five default canonical label names. See `docs/agents/triage-labels.md`.
-
-### Domain docs
-
-This repo uses a single-context domain documentation layout. See `docs/agents/domain.md`.
+Code and project manifests are implementation truth. Operational READMEs govern only the commands and
+workflows they name.
