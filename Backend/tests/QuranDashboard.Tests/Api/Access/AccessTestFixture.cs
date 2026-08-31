@@ -76,14 +76,20 @@ public sealed class AccessTestFixture : IAsyncLifetime
     public WebApplicationFactory<AccessController> CreateAuthorizationPipelineFactory(
         Action<IServiceCollection>? configureServices = null)
     {
+        return CreateApiFactory(services =>
+        {
+            services.AddControllers().AddApplicationPart(typeof(AuthorizationPipelineProbeController).Assembly);
+            services.AddSingleton<AuthorizationPipelineProbe>();
+            configureServices?.Invoke(services);
+        });
+    }
+
+    public WebApplicationFactory<AccessController> CreateApiFactory(
+        Action<IServiceCollection>? configureServices = null)
+    {
         return Factory.WithWebHostBuilder(builder =>
         {
-            builder.ConfigureTestServices(services =>
-            {
-                services.AddControllers().AddApplicationPart(typeof(AuthorizationPipelineProbeController).Assembly);
-                services.AddSingleton<AuthorizationPipelineProbe>();
-                configureServices?.Invoke(services);
-            });
+            builder.ConfigureTestServices(services => configureServices?.Invoke(services));
         });
     }
 

@@ -5,9 +5,23 @@
 #include <netinet/in.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/syscall.h>
 #include <unistd.h>
+
+static int ipv4_is_allowed(const struct in_addr *address)
+{
+    if ((ntohl(address->s_addr) & 0xff000000U) == 0x7f000000U) {
+        return 1;
+    }
+
+    const char *allowed_value = getenv("QDB_E2E_ALLOWED_IPV4");
+    struct in_addr allowed;
+    return allowed_value != NULL
+        && inet_pton(AF_INET, allowed_value, &allowed) == 1
+        && allowed.s_addr == address->s_addr;
+}
 
 static int address_is_allowed(const struct sockaddr *address, socklen_t length)
 {
@@ -17,21 +31,20 @@ static int address_is_allowed(const struct sockaddr *address, socklen_t length)
 
     if (address->sa_family == AF_INET && length >= sizeof(struct sockaddr_in)) {
         const struct sockaddr_in *ipv4 = (const struct sockaddr_in *)address;
-        const unsigned char *octets = (const unsigned char *)&ipv4->sin_addr.s_addr;
-        if (octets[0] == 127) {
-            return 1;
-        }
-
-        const char *allowed_value = getenv("QDB_E2E_ALLOWED_IPV4");
-        struct in_addr allowed;
-        return allowed_value != NULL
-            && inet_pton(AF_INET, allowed_value, &allowed) == 1
-            && allowed.s_addr == ipv4->sin_addr.s_addr;
+        return ipv4_is_allowed(&ipv4->sin_addr);
     }
 
     if (address->sa_family == AF_INET6 && length >= sizeof(struct sockaddr_in6)) {
         const struct sockaddr_in6 *ipv6 = (const struct sockaddr_in6 *)address;
-        return IN6_IS_ADDR_LOOPBACK(&ipv6->sin6_addr);
+        if (IN6_IS_ADDR_LOOPBACK(&ipv6->sin6_addr)) {
+            return 1;
+        }
+        if (IN6_IS_ADDR_V4MAPPED(&ipv6->sin6_addr)) {
+            struct in_addr mapped;
+            memcpy(&mapped, &ipv6->sin6_addr.s6_addr[12], sizeof(mapped));
+            return ipv4_is_allowed(&mapped);
+        }
+        return 0;
     }
 
     return 0;
