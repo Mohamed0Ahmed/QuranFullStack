@@ -31,6 +31,7 @@ internal sealed record LockedArtifact(
     IReadOnlyList<ArtifactSentinel> Sentinels,
     string ImmutableStorageId,
     ArtifactRefresh Refresh,
+    IReadOnlyList<ArtifactManifestTable>? TableCounts = null,
     LockedPhraseSearchState? PhraseSearch = null,
     ArtifactRestoreContract? Restore = null);
 
@@ -88,7 +89,7 @@ internal sealed record ArtifactRestoreSentinel(
     string Id,
     string Table,
     long ExpectedCount,
-    string CriticalReadSha256);
+    string? CriticalReadSha256 = null);
 
 internal sealed record TestArtifactManifest(
     int ContractVersion,
@@ -110,6 +111,43 @@ internal sealed record TestArtifactManifest(
 }
 
 internal sealed record ArtifactManifestTable(string Name, long Rows);
+
+internal sealed record CanonicalDumpManifest(
+    string Name,
+    DateTimeOffset CreatedUtc,
+    string MigrationId,
+    int MigrationCount,
+    string DumpSha256,
+    string PgDumpVersion,
+    IReadOnlyDictionary<string, long> Tables)
+{
+    internal static CanonicalDumpManifest ReadFrom(string path) =>
+        StrictJson.Read<CanonicalDumpManifest>(path, "Canonical dump manifest");
+
+    internal IReadOnlyList<ArtifactManifestTable> TableCounts() => Tables
+        .Select(table => new ArtifactManifestTable(table.Key, table.Value))
+        .ToArray();
+}
+
+internal static class ArtifactManifestReader
+{
+    internal static IReadOnlyList<ArtifactManifestTable> ReadTables(LockedArtifact artifact, string path) =>
+        artifact.Restore is null
+            ? TestArtifactManifest.ReadFrom(path).Tables
+            : ReadFullCanonicalTables(path);
+
+    private static IReadOnlyList<ArtifactManifestTable> ReadFullCanonicalTables(string path)
+    {
+        try
+        {
+            return CanonicalDumpManifest.ReadFrom(path).TableCounts();
+        }
+        catch (JsonException)
+        {
+            return TestArtifactManifest.ReadFrom(path).Tables;
+        }
+    }
+}
 
 internal sealed record ManifestPhraseSearchState(
     string SourceFingerprint,

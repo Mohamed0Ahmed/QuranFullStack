@@ -67,7 +67,7 @@ public sealed class SmokeDataFixture : IAsyncLifetime
             RestoreImage,
             // Bind-mounted read-only rather than copied in: copying the archive would stream every byte
             // through the Docker API before the restore can begin.
-            builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory, DumpMountPath, AccessMode.ReadOnly));
+            builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory!, DumpMountPath, AccessMode.ReadOnly));
         ConnectionString = _serverLease.ConnectionString;
 
         // The dump is data-only, so the schema it lands in is this tree's migrations, applied first.

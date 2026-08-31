@@ -376,6 +376,11 @@ canonical or PhraseSearch database.
   scenario, test, or journey group are prohibited. Exact artifact sizes belong in the tracked lock.
 - Large canonical and phrase-ready artifacts are provisioned once per applicable scheduled or release
   run.
+- Full-canonical acquisition is Local-first on the current trusted solo-developer runner: a scheduled or
+  release provisioner resolves only the lock-pinned payload beneath `QURAN_TEST_ARTIFACT_ROOT`, then
+  shares its immutable restored state. It never falls back to an ambient developer, shared, staging, or
+  production database. External storage is deferred until remote CI, a second machine, or another
+  developer requires it.
 
 Tests must pass independently and in random order. PhraseSearch read scenarios use a provisioned
 immutable ready fixture; the one-shot build/activation test receives separate eligible state. See

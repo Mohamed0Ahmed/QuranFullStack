@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace QuranDashboard.TestArtifacts;
 
@@ -27,9 +28,8 @@ internal static class ArtifactTrustVerifier
             return stagedFiles;
         }
 
-        var manifest = TestArtifactManifest.ReadFrom(
-            Path.Combine(artifactRoot, artifact.ManifestPath));
-        var mismatch = CompareManifest(artifactLock, artifact, manifest);
+        var manifestPath = Path.Combine(artifactRoot, artifact.ManifestPath);
+        var mismatch = CompareArtifactManifest(artifactLock, artifact, manifestPath);
         if (mismatch is not null)
         {
             return new ArtifactTrustResult(ArtifactTrustState.Mismatched, mismatch);
@@ -39,6 +39,26 @@ internal static class ArtifactTrustVerifier
         return migrationState.State == ArtifactTrustState.Present
             ? new ArtifactTrustResult(ArtifactTrustState.Present, "verified")
             : migrationState;
+    }
+
+    private static string? CompareArtifactManifest(
+        ArtifactTrustLock artifactLock,
+        LockedArtifact artifact,
+        string manifestPath)
+    {
+        if (artifact.Restore is null)
+        {
+            return CompareManifest(artifactLock, artifact, TestArtifactManifest.ReadFrom(manifestPath));
+        }
+
+        try
+        {
+            return CompareCanonicalDumpManifest(artifact, CanonicalDumpManifest.ReadFrom(manifestPath));
+        }
+        catch (JsonException)
+        {
+            return CompareManifest(artifactLock, artifact, TestArtifactManifest.ReadFrom(manifestPath));
+        }
     }
 
     private static ArtifactTrustResult InspectStagedFiles(
@@ -137,6 +157,11 @@ internal static class ArtifactTrustVerifier
             return "manifest table rows or identifiers are invalid";
         }
 
+        if (artifact.TableCounts is not null && !manifest.Tables.SequenceEqual(artifact.TableCounts))
+        {
+            return "manifest table counts do not match the lock";
+        }
+
         if (!manifest.Sources.SequenceEqual(artifact.Sources)
             || !manifest.Sentinels.SequenceEqual(artifact.Sentinels))
         {
@@ -178,6 +203,32 @@ internal static class ArtifactTrustVerifier
         if (!RestoreContractsMatch(manifest.Restore, artifact.Restore))
         {
             return "manifest restore contract does not match the lock";
+        }
+
+        return null;
+    }
+
+    private static string? CompareCanonicalDumpManifest(
+        LockedArtifact artifact,
+        CanonicalDumpManifest manifest)
+    {
+        var payload = artifact.StagedFiles.Single(file => file.Role == "payload");
+        var tables = manifest.TableCounts();
+        if (!string.Equals(manifest.Name, artifact.Id, StringComparison.Ordinal)
+            || manifest.MigrationId != artifact.Migration.Head
+            || manifest.MigrationCount != artifact.Migration.Count
+            || manifest.PgDumpVersion != artifact.PostgreSql.ProducerVersion
+            || manifest.DumpSha256 != payload.Sha256)
+        {
+            return "canonical dump manifest identity, migration, producer, or payload hash does not match the lock";
+        }
+
+        if (artifact.TableCounts is null
+            || !tables.SequenceEqual(artifact.TableCounts)
+            || !tables.Select(table => table.Name).SequenceEqual(artifact.TableScope.Tables, StringComparer.Ordinal)
+            || tables.Any(table => table.Rows < 0 || !ArtifactTrustLockValidator.IsValidTableIdentifier(table.Name)))
+        {
+            return "canonical dump manifest table scope or counts do not match the lock";
         }
 
         return null;

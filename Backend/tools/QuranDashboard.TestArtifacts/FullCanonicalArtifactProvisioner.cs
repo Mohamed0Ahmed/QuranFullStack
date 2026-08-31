@@ -19,14 +19,19 @@ internal static class FullCanonicalArtifactProvisioner
         CancellationToken cancellationToken = default)
     {
         var artifacts = SelectArtifacts(runKind, artifactLock);
-        await PreflightRestoreTargetAsync(artifacts, database, cancellationToken);
         Directory.CreateDirectory(stagingRoot);
 
-        var provisioned = new List<FullCanonicalProvisionedArtifact>();
         foreach (var artifact in artifacts)
         {
             await fetcher.FetchAsync(artifact, stagingRoot, cancellationToken);
             VerifyArtifactTrust(artifactLock, artifact, repositoryRoot, stagingRoot);
+        }
+
+        await PreflightRestoreTargetAsync(artifacts, database, cancellationToken);
+
+        var provisioned = new List<FullCanonicalProvisionedArtifact>();
+        foreach (var artifact in artifacts)
+        {
             await database.RestoreAsync(
                 artifact,
                 Path.Combine(stagingRoot, Payload(artifact).Path),
@@ -168,11 +173,13 @@ internal static class FullCanonicalArtifactProvisioner
         IFullCanonicalArtifactDatabase database,
         CancellationToken cancellationToken)
     {
-        var manifest = TestArtifactManifest.ReadFrom(Path.Combine(stagingRoot, artifact.ManifestPath));
+        var manifest = ArtifactManifestReader.ReadTables(
+            artifact,
+            Path.Combine(stagingRoot, artifact.ManifestPath));
         var actualRows = await database.CountRowsAsync(
-            manifest.Tables.Select(table => table.Name).ToArray(),
+            manifest.Select(table => table.Name).ToArray(),
             cancellationToken);
-        foreach (var table in manifest.Tables)
+        foreach (var table in manifest)
         {
             if (!actualRows.TryGetValue(table.Name, out var actual) || actual != table.Rows)
             {
@@ -208,7 +215,7 @@ internal static class FullCanonicalArtifactProvisioner
         return new FullCanonicalProvisionedArtifact(
             artifact.Id,
             artifact.ImmutableStorageId,
-            manifest.Tables,
+            manifest,
             sentinels);
     }
 

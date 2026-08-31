@@ -14,8 +14,9 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
 | `test-artifacts status\|verify [--lane LANE\|--artifact ID]` | Read-only inspection of the tracked test-artifact lock; `verify` adds hashes and strict external-manifest checks |
-| `test-artifacts provision-full-canonical\|verify-full-canonical ...` | Provider-neutral scheduled/release full-canonical provision-once and sealed shared-state verification; see the artifact tool README |
+| `test-artifacts provision-full-canonical\|verify-full-canonical ...` | Local-first scheduled/release full-canonical provision-once and sealed shared-state verification; `provision` requires `QURAN_TEST_ARTIFACT_ROOT` |
 | `test-artifacts previous-release-upgrade` | Read-only fail-closed gate for previous-release migration rehearsal adoption evidence; it never opens or mutates a database |
+| `test-backend full-canonical --build` | Runs the local-first full-canonical trust, provision-once, and shared-state contract tests |
 | `wipe-abwab` | Empties the literal Abwab and Abwab-owned Linking reset closure on a local database, leaving canonical `quran_*`, access, and linking-workspace data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |

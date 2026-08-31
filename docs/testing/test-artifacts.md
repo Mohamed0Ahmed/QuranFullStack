@@ -1,7 +1,7 @@
 # Test Artifact Contract
 
-**Status:** Accepted design; compact cross-stack and PhraseSearch-ready artifacts locked and executable,
-larger artifact entries pending
+**Status:** Accepted design; compact artifacts and the approved full-canonical Quran-only artifact are
+locked. Full-canonical execution is Local-first and fail-closed.
 
 **Decision date:** 2026-08-30
 
@@ -16,35 +16,42 @@ arbitrary developer database or repeated copies of large restored datasets.
 - Required PR journeys use compact fixtures containing only their reviewed Quran/PhraseSearch
   sentinels and small mutable scenarios.
 - Large full-canonical and phrase-ready artifacts are scheduled/release inputs, not per-test fixtures.
-- A large artifact is fetched, verified, and provisioned once per applicable run.
+- A large artifact is resolved, verified, and provisioned once per applicable run.
 - The multi-gigabyte full-canonical/PhraseSearch state is never physically copied or restored per
   scenario, test, or journey group. Exact artifact sizes belong in the tracked lock.
 - Isolation means independently clean mutable state, not independent copies of immutable corpora.
-- Artifact caches are optimizations. Immutable content-addressed storage plus the tracked lock is the
-  trust source.
+- On the current trusted solo-developer runner, the explicit local content-addressed artifact root plus
+  the tracked lock is the trust source. There is no default path and no database fallback.
 - Named required lanes fail closed when a required artifact is absent or mismatched.
 - Operator or production snapshots are not test fixtures unless they are deliberately sanitized,
   manifested, reviewed, and adopted under this contract.
 
 ## Current state
 
-The repository currently has a local, gitignored canonical smoke set:
+The approved non-production candidate is `quran-canonical`, a 372,143,834-byte custom dump with
+SHA-256 `3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d`. Its companion manifest
+has SHA-256 `3b2d15dbc30d8dbe5010f1d373e6a33b8e089902b6347ebb6f561f18874bec3e`, was created at
+`2026-08-26T11:52:38Z`, records migration `20260826012918_AddQuranPhraseSearchIndex` at count `6`,
+PostgreSQL `18.6`, and all 32 Quran table counts. It contains Quran data but deliberately excludes
+PhraseSearch, Abwab, Access, and Linking state.
 
-- `resources/db-dumps/quran-canonical/quran-canonical.dump`
-- `resources/db-dumps/quran-canonical/manifest.json`
+The archive was created on `2026-08-26T14:50:46 EEST` from
+`quran_dashboard_phrase_phase9_canonical_repair` by PostgreSQL/pg_dump `18.6`, custom archive format
+`1.16` with gzip compression. `Backend/scripts/create-smoke-dump` produced it locally and excludes
+`quran_phrase_*` data. A disposable PostgreSQL 18 restore verified every manifest count, zero phrase
+rows, no populated non-Quran public table, database size `1351440063` bytes, and summed Quran relation
+size `1339113472` bytes.
 
-The dump is approximately 355 MiB and restores into PostgreSQL 18. Its manifest pins the dump hash,
-migration head, producer PostgreSQL version, and counts for 32 Quran tables. It contains Quran data but
-deliberately excludes PhraseSearch data, Abwab, Access, and Linking state.
+Producer and consumer checks provide migration parity, canonical baseline counts, temporary output files,
+hash verification, producer-major compatibility, and restored row-count validation. Limits remain:
 
-Producer and consumer checks already provide valuable safeguards: migration parity, canonical baseline
-counts, temporary output files, hash verification, producer-major compatibility, and restored row-count
-validation. However:
-
-- All resources are gitignored and unavailable in a clean clone.
-- The provider-neutral full-canonical provisioner is tracked, but no approved full-canonical lock entry,
-  reviewed sentinel set, or credential-free immutable storage identifier has been adopted for this local
-  candidate. The command therefore fails closed before any fetch or restore.
+- All resources are gitignored and unavailable in a clean clone. The lock contains the approved artifact's
+  exact companion-manifest table scope and counts, while provisioning resolves only the explicit local
+  content-addressed root. It never substitutes a repository path or an arbitrary developer, shared,
+  staging, or production database.
+- Historical provenance is limited: the current manifest has no source-package hashes and no remote
+  immutable-storage ID. The local content-addressed dump identity is the trusted-runner boundary for now;
+  unavailable source-package hashes remain explicitly unavailable rather than being reconstructed.
 - Previous-release upgrade rehearsal is also intentionally blocked. Local history has no authoritative
   release tag/ref for a prior migration head, and no approved representative artifact produced at a
   prior schema. `previous-release-migration-upgrade.json` names both blockers; the read-only
@@ -58,7 +65,7 @@ validation. However:
   hashed oracle and manifest, and tracked lock. Other PhraseSearch-ready and Abwab operator snapshots
   remain insufficient trust contracts until separately reviewed and adopted.
 
-This document retains the existing safeguards and closes the acquisition, trust-root, fixture-size,
+This document retains the existing safeguards and closes the local acquisition, trust-root, fixture-size,
 and reset gaps.
 
 Current implementation truth includes the
@@ -90,10 +97,10 @@ logically separate from the trusted Quran oracle and must not be mistaken for ca
 ## Tracked trust root
 
 The tracked repository-root `test-artifacts.lock.json` is the trust root. Its strict schema is
-[`test-artifacts-lock.schema.json`](./test-artifacts-lock.schema.json); hashed external manifests use
-[`test-artifact-manifest.schema.json`](./test-artifact-manifest.schema.json). The lock begins empty so
-an unfinished fixture cannot acquire invented hashes or Quran sentinels. A required lane or artifact
-requested before its reviewed entry exists fails closed.
+[`test-artifacts-lock.schema.json`](./test-artifacts-lock.schema.json); hashed artifact manifests use
+[`test-artifact-manifest.schema.json`](./test-artifact-manifest.schema.json). Only reviewed entries with
+real hashes and Quran sentinels are adopted; an unfinished fixture remains absent. A required lane or
+artifact requested before its reviewed entry exists fails closed.
 
 Each locked artifact records at least:
 
@@ -101,40 +108,54 @@ Each locked artifact records at least:
 - Lanes or journey groups that require it.
 - Exact staged relative paths.
 - Exact byte size of every delivered archive, dump, fixture, and manifest.
-- SHA-256 for every delivered file and the external manifest itself.
+- SHA-256 for every delivered file and the artifact manifest itself.
 - Migration head and migration count.
 - PostgreSQL producer major/version and, where applicable, the required container digest.
 - Producer command and producer/tool version.
-- Source package hashes, source identity, and provenance.
+- Source identity and provenance, including an explicit limitation where historical source-package hashes
+  are unavailable.
 - Table scope, including explicit presence/absence of Quran, PhraseSearch, Abwab, Access, and Linking
   data.
 - Reviewed Quran sentinels, expected counts, and oracle hash where applicable.
 - PhraseSearch manifest hash, source fingerprint, and readiness expectations where applicable. The
-  volatile active build ID remains inside the immutable external manifest and is compared with runtime
+  volatile active build ID remains inside the immutable artifact manifest and is compared with runtime
   capabilities; it is not duplicated into the tracked lock.
-- Immutable logical storage identifier with no credentials or signed query string, ending in an
-  explicit `@sha256:<hash>` or `@version:<provider-version>` identity rather than a mutable alias.
+- A credential-free immutable logical storage identifier. The current full-canonical artifact uses a
+  `local://…@sha256:<payload-hash>` identity; remote provider identities are deferred.
 - Refresh reason, date, and owning role.
 
-A hash stored only inside an untrusted external manifest is insufficient. The tracked lock pins the
+A hash stored only inside an untrusted artifact manifest is insufficient. The tracked lock pins the
 manifest hash as well as its payload files.
 
-## Storage and acquisition
+## Local storage and acquisition
 
-The storage provider is intentionally unspecified. It must provide immutable, content-addressed or
-versioned objects and a credential-free logical identifier suitable for the lockfile.
+The current full-canonical contract is Local-first for the trusted solo-developer runner. Provisioning
+requires `QURAN_TEST_ARTIFACT_ROOT`; it never reads the historical repository checkout path and never
+falls back to an ambient connection string or another database. For a payload pinned as `<payload-hash>`,
+the root must contain this content-addressed layout:
+
+```text
+$QURAN_TEST_ARTIFACT_ROOT/sha256/<payload-hash>/<payload-file-name>
+$QURAN_TEST_ARTIFACT_ROOT/sha256/<payload-hash>/<manifest-file-name>
+```
+
+The lock's `local://…@sha256:<payload-hash>` identity must match the locked payload SHA-256. The
+provisioner derives every source path from that hash, stages only the locked file names, then verifies
+locked sizes, hashes, manifest identity, migration state, table scope, counts, provenance, and restore
+sentinels before use. Missing root, directory, file, size, hash, manifest, migration state, scope,
+counts, or provenance fails closed before a database restore.
 
 Provisioning follows this order:
 
-1. Resolve the immutable storage identifier from the tracked lock.
-2. Fetch during the controlled-egress provisioning phase.
-3. Verify byte size and SHA-256 before extraction or database use.
-4. Validate the external manifest against a strict schema.
+1. Resolve the local immutable storage identity from the tracked lock beneath `QURAN_TEST_ARTIFACT_ROOT`.
+2. Copy only the identified files to the isolated staging root.
+3. Verify byte size and SHA-256 before database use.
+4. Validate the artifact manifest against a strict schema.
 5. Validate migration and PostgreSQL compatibility.
 6. Validate table names against an allowlist or strict identifier rule before interpolating them into
    SQL.
 7. Stage the artifact at its declared relative path.
-8. Remove retrieval credentials before test execution begins.
+8. Start sealed execution with no retrieval credentials or arbitrary database fallback.
 
 Cache by the lockfile or artifact content hash. A cache hit still verifies the payload. A cache miss is
 part of the 12-minute PR activation measurement for compact fixtures. Large artifacts are outside the
@@ -147,29 +168,29 @@ The implemented read-only command surface is:
 
 Run these through `Backend/scripts/test-artifacts`; both accept `--lane` or `--artifact`. `status`
 checks lock shape, selection, staged presence/size, and migration freshness. `verify` additionally
-checks hashes, strict external-manifest shape, safe table identifiers, and lock/manifest agreement.
+checks hashes, strict artifact-manifest shape, safe table identifiers, and lock/manifest agreement.
 Both are read-only and return non-zero for any required set that is missing, stale, or mismatched.
 
 The implemented full-canonical controlled-provisioning surface is:
 
-- `provision-full-canonical`: scheduled/release-only provision-once command. A provider-owned adapter
-  fetches the immutable artifact into an isolated staging root exactly once, then the tool invokes the
-  same trust verifier, checks the private disposable PostgreSQL target's migration state, restores once,
-  validates every manifest row count and reviewed sentinel-table count, and writes a credential-free
-  receipt. An incomplete/failed receipt blocks automatic retry.
-- `verify-full-canonical`: sealed execution-side receipt and shared-state verifier. It has no fetch
+- `provision-full-canonical`: scheduled/release-only provision-once command. It resolves the locked
+  local content-addressed files beneath `QURAN_TEST_ARTIFACT_ROOT` into an isolated staging root exactly
+  once, invokes the same trust verifier, checks the private disposable PostgreSQL target's migration
+  state, restores once, validates every manifest row count and reviewed sentinel-table count, and writes
+  a credential-free receipt. An incomplete/failed receipt blocks automatic retry.
+- `verify-full-canonical`: sealed execution-side receipt and shared-state verifier. It has no retrieval
   adapter, rejects artifact credentials in its environment, and performs no restore.
 - `rehearse-full-canonical-recovery`: an explicit-intent recovery contract. It captures integrity
   metadata for a representative backup, verifies it before restoring only to an isolated disposable
   target, and records sanitized data-recovery evidence distinct from application rollback. Full-canonical
-  sentinel declarations pin each critical read's SHA-256 in both the lock and external manifest, while
-  recovery evidence retains the locked staged hashes and source provenance. It remains fail-closed because
-  no reviewed full-canonical lock entry or immutable storage identity is adopted.
+  sentinel declarations pin each critical read's SHA-256 in both the lock and artifact manifest, while
+  recovery evidence retains the locked staged hashes and source provenance. It remains fail-closed when a
+  critical-read fingerprint is unavailable from the approved artifact.
 
-The remaining target maintenance commands are not part of this phase:
-
-- `refresh`: produce a candidate change report without accepting it.
-- `publish`: place an independently approved artifact at its immutable identifier.
+External storage is explicitly deferred. Revisit it only when a remote CI provider, second machine, or
+additional developer needs the artifact. That decision must add a reviewed provider-neutral acquisition
+adapter and immutable remote identity; this repository does not configure Cloudflare or any other
+provider, credentials, uploads, or provider-specific settings.
 
 ## PR fixture model
 
@@ -306,7 +327,7 @@ not just internal consistency between a dump and the manifest produced beside it
   current lockfile.
 - Retain the immediately previous approved artifact generation until the new generation has completed
   scheduled and release verification.
-- Recovery uses immutable storage identifiers and tracked hashes, not mutable aliases.
+- Recovery uses the local immutable content identity and tracked hashes, not mutable aliases.
 - Do not record connection strings, credentials, signed URLs, storage proofs, volatile paths, real
   identity tokens, or production-derived personal data in tracked files.
 - Diagnostic database dumps are opt-in, sanitized, checksummed, access-controlled, and time-limited.
