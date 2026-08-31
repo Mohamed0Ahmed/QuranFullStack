@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import { test as base, expect } from '@playwright/test';
+import { test as base, expect, type BrowserContext, type TestInfo } from '@playwright/test';
 
 import { LOGTO_ORIGIN, stubLogto } from './logto';
 
@@ -55,72 +55,90 @@ export const test = base.extend<{ mutableDatabaseState: void }>({
     }
   },
   context: async ({ context }, use, testInfo) => {
-    const leaked: string[] = [];
-    const requests: Array<Record<string, unknown>> = [];
-    const consoleErrors: Array<Record<string, unknown>> = [];
+    const finalizeInstrumentation = await instrumentAppContext(context, testInfo);
+    try {
+      await use(context);
+    } finally {
+      await finalizeInstrumentation();
+    }
+  },
+});
 
-    await stubLogto(context);
+export { expect };
 
-    context.on('request', (request) => {
-      const url = new URL(request.url());
-      requests.push({
-        event: 'request',
-        method: request.method(),
-        origin: url.origin,
-        path: url.pathname,
-        resourceType: request.resourceType(),
-      });
-      if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
-      if (url.origin === LOGTO_ORIGIN) return;
-      if (LOCAL_HOSTNAMES.has(url.hostname)) return;
-      leaked.push(`${url.origin}${url.pathname}`);
+export async function instrumentAppContext(
+  context: BrowserContext,
+  testInfo: TestInfo,
+): Promise<() => Promise<void>> {
+  const leaked: string[] = [];
+  const requests: Array<Record<string, unknown>> = [];
+  const consoleErrors: Array<Record<string, unknown>> = [];
+  let finalized = false;
+
+  await stubLogto(context);
+
+  context.on('request', (request) => {
+    const url = new URL(request.url());
+    requests.push({
+      event: 'request',
+      method: request.method(),
+      origin: url.origin,
+      path: url.pathname,
+      resourceType: request.resourceType(),
     });
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+    if (url.origin === LOGTO_ORIGIN) return;
+    if (LOCAL_HOSTNAMES.has(url.hostname)) return;
+    leaked.push(`${url.origin}${url.pathname}`);
+  });
 
-    context.on('response', (response) => {
-      const request = response.request();
-      const url = new URL(request.url());
-      requests.push({
-        event: 'response',
-        method: request.method(),
-        origin: url.origin,
-        path: url.pathname,
-        status: response.status(),
+  context.on('response', (response) => {
+    const request = response.request();
+    const url = new URL(request.url());
+    requests.push({
+      event: 'response',
+      method: request.method(),
+      origin: url.origin,
+      path: url.pathname,
+      status: response.status(),
+    });
+  });
+
+  context.on('requestfailed', (request) => {
+    const url = new URL(request.url());
+    requests.push({
+      event: 'requestfailed',
+      method: request.method(),
+      origin: url.origin,
+      path: url.pathname,
+      error: sanitizeBrowserDiagnostic(request.failure()?.errorText ?? 'request failed'),
+    });
+  });
+
+  context.on('page', (page) => {
+    page.on('console', (message) => {
+      if (message.type() !== 'error') return;
+      const location = message.location();
+      consoleErrors.push({
+        type: message.type(),
+        text: sanitizeBrowserDiagnostic(message.text()),
+        location: stripUrlQuery(location.url),
+        line: location.lineNumber,
+        column: location.columnNumber,
       });
     });
-
-    context.on('requestfailed', (request) => {
-      const url = new URL(request.url());
-      requests.push({
-        event: 'requestfailed',
-        method: request.method(),
-        origin: url.origin,
-        path: url.pathname,
-        error: sanitizeBrowserDiagnostic(request.failure()?.errorText ?? 'request failed'),
+    page.on('pageerror', (error) => {
+      consoleErrors.push({
+        type: 'pageerror',
+        name: error.name,
+        text: sanitizeBrowserDiagnostic(error.message),
       });
     });
+  });
 
-    context.on('page', (page) => {
-      page.on('console', (message) => {
-        if (message.type() !== 'error') return;
-        const location = message.location();
-        consoleErrors.push({
-          type: message.type(),
-          text: sanitizeBrowserDiagnostic(message.text()),
-          location: stripUrlQuery(location.url),
-          line: location.lineNumber,
-          column: location.columnNumber,
-        });
-      });
-      page.on('pageerror', (error) => {
-        consoleErrors.push({
-          type: 'pageerror',
-          name: error.name,
-          text: sanitizeBrowserDiagnostic(error.message),
-        });
-      });
-    });
-
-    await use(context);
+  return async () => {
+    if (finalized) return;
+    finalized = true;
 
     if (testInfo.status !== testInfo.expectedStatus || leaked.length > 0) {
       await testInfo.attach('request-metadata', {
@@ -134,10 +152,8 @@ export const test = base.extend<{ mutableDatabaseState: void }>({
     }
 
     expect(leaked, `requests left localhost: ${leaked.join(', ')}`).toEqual([]);
-  },
-});
-
-export { expect };
+  };
+}
 
 function resetMutableDatabase(): void {
   execFileSync(process.execPath, [RESET_DATABASE], {
