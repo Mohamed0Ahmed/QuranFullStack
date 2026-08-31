@@ -15,6 +15,7 @@ internal static class TestGateCatalog
             "FullI3rab",
             "FoundationImport",
             "Linking",
+            "PhraseSearch",
             "MushafReader",
             "Mutashabihat",
             "Navigation",
