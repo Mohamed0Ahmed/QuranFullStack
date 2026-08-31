@@ -401,9 +401,10 @@ artifact-bound full-canonical classes required in scheduled/release lanes. Do no
 reduced lane as the current full `pre-pr` command.
 
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
-includes `test:pre-pr` and `e2e:typecheck`. Critical Playwright discovery, annotation validation, and
-deterministic artifact execution now exist, but no document may claim the critical browser gate is
-enforced until the observation job is implemented and meets the activation criteria below.
+includes `test:pre-pr` and `e2e:typecheck`. The provider-neutral
+[PR observation matrix](./pr-observation-matrix.md) exposes all four jobs with one attempt, an outer
+12-minute timeout, and structured end-to-end duration. The matrix is explicitly non-blocking; no
+document may claim the critical browser gate is enforced until it meets the activation criteria below.
 
 The 12-minute budget:
 

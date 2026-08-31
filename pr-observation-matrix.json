@@ -1,0 +1,165 @@
+{
+  "schemaVersion": 1,
+  "id": "pull-request-observation",
+  "scheduling": "parallel",
+  "durationScope": "runner allocation through the final command; provider queue time is excluded and provisioning, database preparation, application startup, and test execution are included",
+  "durationComponents": [
+    "provisioning",
+    "databasePreparation",
+    "applicationStartup",
+    "testExecution"
+  ],
+  "jobs": [
+    {
+      "id": "backend-pr",
+      "title": "Backend PR lane",
+      "policy": {
+        "blocking": false,
+        "maxAttempts": 1,
+        "timeoutSeconds": 720,
+        "queueTimeIncluded": false
+      },
+      "inputContract": {
+        "candidate": "full-canonical",
+        "lane": "Backend/scripts/test-backend pre-pr",
+        "compactFixtureException": null,
+        "exceptionNamingRequirement": "Any future compact-fixture exception must name the omitted full-canonical classes and preserve them in a scheduled or release lane; it must not be relabeled as the full pre-pr lane."
+      },
+      "commands": [
+        {
+          "id": "locked-nuget-restore",
+          "phase": "provisioning",
+          "cwd": "Backend",
+          "executable": "dotnet",
+          "arguments": [
+            "restore",
+            "QuranDashboard.sln",
+            "--locked-mode",
+            "--disable-parallel",
+            "-m:1",
+            "-p:BuildInParallel=false",
+            "-p:RestoreDisableParallel=true"
+          ]
+        },
+        {
+          "id": "full-backend-pre-pr",
+          "phase": "execution",
+          "cwd": ".",
+          "executable": "Backend/scripts/test-backend",
+          "arguments": [
+            "pre-pr",
+            "--results-dir",
+            "{JOB_RESULTS_DIR}/backend-tests"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "api-contract-model",
+      "title": "API contract and pending-model verification",
+      "policy": {
+        "blocking": false,
+        "maxAttempts": 1,
+        "timeoutSeconds": 720,
+        "queueTimeIncluded": false
+      },
+      "commands": [
+        {
+          "id": "locked-npm-install",
+          "phase": "provisioning",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["ci"]
+        },
+        {
+          "id": "locked-nuget-restore",
+          "phase": "provisioning",
+          "cwd": "Backend",
+          "executable": "dotnet",
+          "arguments": [
+            "restore",
+            "QuranDashboard.sln",
+            "--locked-mode",
+            "--disable-parallel",
+            "-m:1",
+            "-p:BuildInParallel=false",
+            "-p:RestoreDisableParallel=true"
+          ]
+        },
+        {
+          "id": "api-contract",
+          "phase": "execution",
+          "cwd": ".",
+          "executable": "Backend/scripts/check-api-contract",
+          "arguments": []
+        },
+        {
+          "id": "pending-model",
+          "phase": "execution",
+          "cwd": ".",
+          "executable": "Backend/scripts/check-pending-model",
+          "arguments": ["--build"]
+        }
+      ]
+    },
+    {
+      "id": "frontend-policy-build",
+      "title": "Frontend policy, type, and build checks",
+      "policy": {
+        "blocking": false,
+        "maxAttempts": 1,
+        "timeoutSeconds": 720,
+        "queueTimeIncluded": false
+      },
+      "commands": [
+        {
+          "id": "locked-npm-install",
+          "phase": "provisioning",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["ci"]
+        },
+        {
+          "id": "frontend-pre-pr",
+          "phase": "execution",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["run", "test:pre-pr"]
+        },
+        {
+          "id": "playwright-typecheck",
+          "phase": "execution",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["run", "e2e:typecheck"]
+        }
+      ]
+    },
+    {
+      "id": "critical-chromium",
+      "title": "Critical Chromium Playwright journeys",
+      "policy": {
+        "blocking": false,
+        "maxAttempts": 1,
+        "timeoutSeconds": 720,
+        "queueTimeIncluded": false
+      },
+      "commands": [
+        {
+          "id": "sealed-e2e-provisioning",
+          "phase": "provisioning",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["run", "e2e:provision"]
+        },
+        {
+          "id": "sealed-critical-journeys",
+          "phase": "execution",
+          "cwd": "Frontend/quran-dashboard-ui",
+          "executable": "npm",
+          "arguments": ["run", "e2e:critical"]
+        }
+      ]
+    }
+  ]
+}
