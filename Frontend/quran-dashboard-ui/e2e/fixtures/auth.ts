@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { createPrivateKey, sign } from 'node:crypto';
 import { resolve } from 'node:path';
-import type { APIRequestContext, APIResponse, BrowserContext, Page } from '@playwright/test';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
 
 import { ABWAB_PERMISSION_CODES } from '../../src/app/core/auth/permission-codes.generated';
 import { environment } from '../../src/environments/environment.development';
 import { instrumentAppContext, test as appTest } from './app-test';
+import { readApiData } from './api-envelope';
 import {
   E2E_OWNER_SUBJECT,
   E2E_TEST_ISSUER,
@@ -54,12 +55,6 @@ interface TokenPair {
   idToken: string;
 }
 
-interface ApiEnvelope<T> {
-  isSuccess: boolean;
-  message: string | null;
-  data: T | null;
-}
-
 interface CurrentUser {
   status: string;
   isOwner: boolean;
@@ -106,9 +101,14 @@ interface PermissionLifecyclePersona {
   ownerPage: Page;
 }
 
+interface OwnerPersona {
+  accessToken: string;
+}
+
 export const test = appTest.extend<{
   authenticatedPersona: AuthenticatedPersona;
   deviceSessionPersona: DeviceSessionPersona;
+  ownerPersona: OwnerPersona;
   permissionLifecyclePersona: PermissionLifecyclePersona;
 }>({
   deviceSessionPersona: async ({ context }, use, testInfo) => {
@@ -141,6 +141,17 @@ export const test = appTest.extend<{
         await disablePersona(request, ownerTokens.accessToken, personaSubject);
       }
     }
+  },
+  ownerPersona: async ({ context, request }, use) => {
+    prepareAccessAdministration();
+    const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
+    const owner = await provisionCurrentUser(request, ownerTokens);
+    if (owner.status !== 'active' || !owner.isOwner) {
+      throw new Error('The E2E Owner was not provisioned as an active Owner.');
+    }
+
+    await installOidcSession(context, ownerTokens);
+    await use({ accessToken: ownerTokens.accessToken });
   },
   permissionLifecyclePersona: async ({ browser, context, request }, use, testInfo) => {
     const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
@@ -265,7 +276,7 @@ async function provisionCurrentUser(
       [IDENTITY_EVIDENCE_HEADER]: tokens.idToken,
     },
   });
-  return readData<CurrentUser>(response, 'provision current user');
+  return readApiData<CurrentUser>(response, 'provision current user');
 }
 
 async function activatePersona(
@@ -448,7 +459,7 @@ function getOwnerData<T>(
 ): Promise<T> {
   return request
     .get(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken) })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function postOwnerData<T>(
@@ -460,7 +471,7 @@ function postOwnerData<T>(
 ): Promise<T> {
   return request
     .post(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken), data })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function putOwnerData<T>(
@@ -472,24 +483,9 @@ function putOwnerData<T>(
 ): Promise<T> {
   return request
     .put(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken), data })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function ownerHeaders(accessToken: string): Record<string, string> {
   return { Authorization: `Bearer ${accessToken}` };
-}
-
-async function readData<T>(response: APIResponse, operation: string): Promise<T> {
-  const status = response.status();
-  const body = await response.text();
-  await response.dispose();
-  if (status < 200 || status >= 300) {
-    throw new Error(`${operation} failed with HTTP ${status}: ${body}`);
-  }
-
-  const envelope = JSON.parse(body) as ApiEnvelope<T>;
-  if (!envelope.isSuccess || envelope.data === null) {
-    throw new Error(`${operation} returned an unsuccessful API envelope: ${envelope.message ?? body}`);
-  }
-  return envelope.data;
 }

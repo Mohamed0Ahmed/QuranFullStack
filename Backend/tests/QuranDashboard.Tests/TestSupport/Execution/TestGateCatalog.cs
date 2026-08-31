@@ -14,6 +14,7 @@ internal static class TestGateCatalog
             "RateLimiting",
             "FullI3rab",
             "FoundationImport",
+            "Linking",
             "MushafReader",
             "Mutashabihat",
             "Navigation",
