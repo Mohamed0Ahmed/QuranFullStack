@@ -107,6 +107,31 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                         "Refused");
                 }
 
+                run.DiskPreflight = await database.ReadDiskPreflightAsync(
+                    connection,
+                    ct);
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "DISK-STORAGE-PROOF",
+                    "hard",
+                    "verified database filesystem free bytes",
+                    run.DiskPreflight.ProofKind,
+                    run.DiskPreflight.ProofVerified));
+                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
+                    "DISK-PREFLIGHT",
+                    "hard",
+                    $">={run.DiskPreflight.RequiredFreeBytes.ToString(CultureInfo.InvariantCulture)}",
+                    run.DiskPreflight.AvailableDatabaseFilesystemBytes.ToString(CultureInfo.InvariantCulture),
+                    run.DiskPreflight.Passed));
+                if (!run.DiskPreflight.Passed)
+                {
+                    return await finalizer.FinishFailureAsync(
+                        connection,
+                        run,
+                        PhraseIndexBuildOutcome.Failed,
+                        "Phrase index disk preflight failed.",
+                        "Failed");
+                }
+
                 run.CurrentStage = PhraseIndexBuildStage.BootstrapSource;
                 var bootstrap = await sourceStateCoordinator.BootstrapAsync(
                     connection,
@@ -188,40 +213,8 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                         "Failed");
                 }
 
-                run.DiskPreflight = await database.ReadDiskPreflightAsync(
-                    connection,
-                    ct);
-                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                    "DISK-STORAGE-PROOF",
-                    "hard",
-                    "verified database filesystem free bytes",
-                    run.DiskPreflight.ProofKind,
-                    run.DiskPreflight.ProofVerified));
-                AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
-                    "DISK-PREFLIGHT",
-                    "hard",
-                    $">={run.DiskPreflight.RequiredFreeBytes.ToString(CultureInfo.InvariantCulture)}",
-                    run.DiskPreflight.AvailableDatabaseFilesystemBytes.ToString(CultureInfo.InvariantCulture),
-                    run.DiskPreflight.Passed));
-
                 await database.CreateBuildAsync(connection, run.BuildId, snapshot, run.StartedAtUtc, ct);
                 run.BuildPersisted = true;
-
-                if (!run.DiskPreflight.Passed)
-                {
-                    await database.MarkFailedAsync(
-                        connection,
-                        run.BuildId,
-                        "fail",
-                        "disk-preflight-failed",
-                        ct);
-                    return await finalizer.FinishFailureAsync(
-                        connection,
-                        run,
-                        PhraseIndexBuildOutcome.Failed,
-                        "Phrase index disk preflight failed.",
-                        "Failed");
-                }
 
                 var staging = await StageAndValidateAsync(connection, snapshot, run, ct);
                 if (!staging.Passed)
