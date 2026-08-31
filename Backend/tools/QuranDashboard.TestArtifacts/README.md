@@ -55,6 +55,27 @@ provider-owned: it receives an artifact ID, its credential-free immutable storag
 staging root, and must stage the exact lock-relative files. Neither the adapter nor its credentials are
 named in the receipt.
 
+## Recovery rehearsal
+
+`rehearse-full-canonical-recovery --confirm-backup` reserves the controlled mutation seam for a
+representative backup/recovery rehearsal. Backup creation is refused unless the operator supplies the
+exact confirmation. The reusable contract records only the backup filename, byte size, SHA-256,
+migration state, locked manifest/payload/oracle hashes, source provenance, table counts, sentinel counts,
+and the lock-pinned SHA-256 critical-read fingerprints. It verifies the backup before touching an empty
+disposable target, then verifies target migration compatibility, counts, sentinels, and critical reads.
+The backup output must be a new private file outside the worktree. The adapter accepts an explicit Quran-
+table allowlist for both backup and restore and attests that both source and target are disposable. Its
+receipt classifies the operation as
+`data-recovery` and explicitly records that application rollback was not requested.
+
+There is currently no reviewed `full-canonical` lock entry with an immutable storage identity. The
+command therefore fails closed before opening a database and reports
+`no-reviewed-full-canonical-artifact-with-immutable-storage-identity`. Do not substitute a developer,
+shared, staging, or production database, a mutable storage alias, or a made-up artifact identity to
+unblock it. Adoption requires the reviewed full-canonical lock entry plus operator-supplied disposable
+source/target and private backup paths; provider-specific fetch, publication, and CI wiring remain out
+of scope.
+
 For scheduled/release Backend canonical reads, set the seven non-secret path/run variables below before
 calling `Backend/scripts/test-backend canonical-data --no-build` (or a lane that includes the canonical
 class): `QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT`,

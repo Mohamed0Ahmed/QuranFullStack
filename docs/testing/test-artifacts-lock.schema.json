@@ -302,7 +302,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "table", "expectedCount"],
+            "required": ["id", "table", "expectedCount", "criticalReadSha256"],
             "properties": {
               "id": {
                 "$ref": "#/$defs/token"
@@ -314,6 +314,9 @@
               "expectedCount": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "criticalReadSha256": {
+                "$ref": "#/$defs/sha256"
               }
             }
           }

@@ -131,11 +131,12 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "table", "expectedCount"],
+            "required": ["id", "table", "expectedCount", "criticalReadSha256"],
             "properties": {
               "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,99}$" },
               "table": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,62}$" },
-              "expectedCount": { "type": "integer", "minimum": 0 }
+              "expectedCount": { "type": "integer", "minimum": 0 },
+              "criticalReadSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
             }
           }
         }

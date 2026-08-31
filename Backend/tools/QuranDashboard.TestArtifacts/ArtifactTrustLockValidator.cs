@@ -271,6 +271,11 @@ internal static class ArtifactTrustLockValidator
             {
                 return "restore sentinel tables must map every locked sentinel to a scoped safe table and expected count";
             }
+
+            if (!IsSha256(sentinel.CriticalReadSha256))
+            {
+                return "restore sentinel tables require a lowercase SHA-256 critical-read fingerprint";
+            }
         }
 
         return artifact.Restore.SentinelTables.Count == lockedSentinels.Count

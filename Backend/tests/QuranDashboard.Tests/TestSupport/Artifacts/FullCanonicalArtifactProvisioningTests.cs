@@ -1,5 +1,6 @@
 using QuranDashboard.TestArtifacts;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
+using System.Text;
 using System.Text.Json.Nodes;
 
 namespace QuranDashboard.Tests.TestSupport.Artifacts;
@@ -219,6 +220,259 @@ public sealed class FullCanonicalArtifactProvisioningTests(
     }
 
     [Fact]
+    public async Task RecoveryRehearsal_RefusesUnconfirmedCaptureBeforeCreatingBackup()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var capture = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                confirmBackup: false,
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                new SyntheticCanonicalDatabase(fixture.ConnectionString));
+
+            await capture.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*explicit operator intent*");
+            File.Exists(backupPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RefusesExistingAndRepositoryReachedBackupPathsBeforeCreatingBackup()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        var existingPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        var symlink = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-link-{Guid.NewGuid():N}");
+        File.WriteAllText(existingPath, "existing");
+        try
+        {
+            var existing = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot, existingPath, source);
+            await existing.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*new private file outside the repository worktree*");
+
+            var inside = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot,
+                Path.Combine(repository.Root, "new-backup.sql"), source);
+            await inside.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*new private file outside the repository worktree*");
+
+            Directory.CreateSymbolicLink(symlink, repository.Root);
+            var throughLink = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot,
+                Path.Combine(symlink, "new-backup.sql"), source);
+            await throughLink.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*new private file outside the repository worktree*");
+
+            source.BackupCalls.Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(existingPath);
+            if (Directory.Exists(symlink))
+            {
+                Directory.Delete(symlink);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RefusesNonDisposableSourceBeforeCreatingBackup()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString, rejectDisposableSource: true);
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var capture = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot, backupPath, source);
+
+            await capture.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*source is not disposable*");
+            source.BackupCalls.Should().Be(0);
+            File.Exists(backupPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RefusesNonDisposableTargetBeforeRestore()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        repository.CopyToStaging(tamperPayload: false);
+        await source.RestoreAsync(
+            repository.Lock.Artifacts.Single(),
+            Path.Combine(repository.StagingRoot, repository.Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload").Path));
+        await using var targetLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_RefusesNonDisposableTargetBeforeRestore));
+        await CreateProvisionContractTableAsync(targetLease.ConnectionString);
+        var target = new SyntheticCanonicalDatabase(targetLease.ConnectionString, rejectDisposableTarget: true);
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var backup = await FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot, backupPath, source);
+            var restore = () => FullCanonicalRecoveryRehearsal.RestoreAsync(
+                "scheduled", repository.Lock, repository.Root, repository.StagingRoot, backupPath, backup, target);
+
+            await restore.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*target is not disposable*");
+            target.RestoreCalls.Should().Be(0);
+            (await target.CountRowsAsync(["quran_provision_contract"]))["quran_provision_contract"].Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_CapturesExactBackupThenRestoresAndVerifiesIsolatedTarget()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        repository.CopyToStaging(tamperPayload: false);
+        await source.RestoreAsync(
+            repository.Lock.Artifacts.Single(),
+            Path.Combine(repository.StagingRoot, repository.Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload").Path));
+        await using var targetLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_CapturesExactBackupThenRestoresAndVerifiesIsolatedTarget));
+        await CreateProvisionContractTableAsync(targetLease.ConnectionString);
+        var target = new SyntheticCanonicalDatabase(targetLease.ConnectionString);
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var backup = await FullCanonicalRecoveryRehearsal.CaptureAsync(
+                confirmBackup: true,
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                source);
+            var receipt = await FullCanonicalRecoveryRehearsal.RestoreAsync(
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                backup,
+                target);
+
+            backup.FileName.Should().Be(Path.GetFileName(backupPath));
+            backup.Size.Should().Be(new FileInfo(backupPath).Length);
+            backup.Sha256.Should().Be(Convert.ToHexStringLower(SHA256.HashData(File.ReadAllBytes(backupPath))));
+            backup.Artifacts.Should().ContainSingle().Which.CriticalReads.Should().ContainSingle();
+            receipt.Status.Should().Be("rehearsed");
+            receipt.Classification.Should().Be("data-recovery");
+            receipt.ApplicationRollback.Should().Be("application-rollback-not-requested");
+            target.RestoreCalls.Should().Be(1);
+            (await target.CountRowsAsync(["quran_provision_contract"]))["quran_provision_contract"].Should().Be(2);
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RejectsCorruptedBackupBeforeRestore()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        repository.CopyToStaging(tamperPayload: false);
+        await source.RestoreAsync(
+            repository.Lock.Artifacts.Single(),
+            Path.Combine(repository.StagingRoot, repository.Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload").Path));
+        await using var targetLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_RejectsCorruptedBackupBeforeRestore));
+        await CreateProvisionContractTableAsync(targetLease.ConnectionString);
+        var target = new SyntheticCanonicalDatabase(targetLease.ConnectionString);
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var backup = await FullCanonicalRecoveryRehearsal.CaptureAsync(
+                confirmBackup: true,
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                source);
+            await File.AppendAllTextAsync(backupPath, "-- corrupted\n");
+
+            var restore = () => FullCanonicalRecoveryRehearsal.RestoreAsync(
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                backup,
+                target);
+
+            await restore.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*integrity metadata does not match*before restore*");
+            target.RestoreCalls.Should().Be(0);
+            (await target.CountRowsAsync(["quran_provision_contract"]))["quran_provision_contract"].Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RejectsCriticalReadMismatchBeforeCreatingBackup()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create(criticalReadSha256: new string('f', 64));
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        repository.CopyToStaging(tamperPayload: false);
+        await source.RestoreAsync(
+            repository.Lock.Artifacts.Single(),
+            Path.Combine(repository.StagingRoot, repository.Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload").Path));
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var capture = () => FullCanonicalRecoveryRehearsal.CaptureAsync(
+                confirmBackup: true,
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                source);
+
+            await capture.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*critical-read fingerprint*");
+            File.Exists(backupPath).Should().BeFalse();
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
     public void ProcessDatabase_MalformedConnectionDoesNotExposeItsContents()
     {
         const string secret = "recognizable-fake-secret";
@@ -272,6 +526,16 @@ public sealed class FullCanonicalArtifactProvisioningTests(
         {
             Directory.Delete(root, recursive: true);
         }
+    }
+
+    private static async Task CreateProvisionContractTableAsync(string connectionString)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            "CREATE TABLE public.quran_provision_contract (id integer PRIMARY KEY, value text NOT NULL);",
+            connection);
+        await command.ExecuteNonQueryAsync();
     }
 
     [Fact]
@@ -463,7 +727,8 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
         IReadOnlyList<string>? requiredLanes = null,
         bool includeRestoreContract = true,
         string? extraTable = null,
-        bool duplicateTableOwner = false)
+        bool duplicateTableOwner = false,
+        string? criticalReadSha256 = null)
     {
         var suffix = Guid.NewGuid().ToString("N");
         var root = Path.Combine(Path.GetTempPath(), $"quran-dashboard-full-canonical-lock-{suffix}");
@@ -524,7 +789,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
         };
         if (includeRestoreContract)
         {
-            manifest["restore"] = RestoreContract(sentinelExpectedCount);
+            manifest["restore"] = RestoreContract(sentinelExpectedCount, criticalReadSha256);
         }
         File.WriteAllText(Path.Combine(sourceRoot, ManifestRelativePath), manifest.ToJsonString());
 
@@ -605,7 +870,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
         };
         if (includeRestoreContract)
         {
-            artifactLock["artifacts"]!.AsArray()[0]!["restore"] = RestoreContract(sentinelExpectedCount);
+            artifactLock["artifacts"]!.AsArray()[0]!["restore"] = RestoreContract(sentinelExpectedCount, criticalReadSha256);
         }
         if (duplicateTableOwner)
         {
@@ -646,7 +911,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
         Directory.Delete(StagingRoot, recursive: true);
     }
 
-    private static JsonObject RestoreContract(long sentinelExpectedCount)
+    private static JsonObject RestoreContract(long sentinelExpectedCount, string? criticalReadSha256 = null)
     {
         return new JsonObject
         {
@@ -659,6 +924,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                     ["id"] = "synthetic-quran-sentinel",
                     ["table"] = "quran_provision_contract",
                     ["expectedCount"] = sentinelExpectedCount,
+                    ["criticalReadSha256"] = criticalReadSha256 ?? CriticalReadSha256(),
                 },
             },
         };
@@ -701,6 +967,11 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
         using var stream = File.OpenRead(path);
         return Convert.ToHexStringLower(SHA256.HashData(stream));
     }
+
+    private static string CriticalReadSha256()
+    {
+        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes("1:row-1,2:row-2")));
+    }
 }
 
 internal sealed class SyntheticFetcher(
@@ -720,8 +991,13 @@ internal sealed class SyntheticFetcher(
     }
 }
 
-internal sealed class SyntheticCanonicalDatabase(string connectionString) : IFullCanonicalArtifactDatabase
+internal sealed class SyntheticCanonicalDatabase(
+    string connectionString,
+    bool rejectDisposableSource = false,
+    bool rejectDisposableTarget = false) : IFullCanonicalRecoveryDatabase
 {
+    internal int BackupCalls { get; private set; }
+
     internal int RestoreCalls { get; private set; }
 
     public Task AssertPostgreSqlCompatibilityAsync(
@@ -761,11 +1037,7 @@ internal sealed class SyntheticCanonicalDatabase(string connectionString) : IFul
         string payloadPath,
         CancellationToken cancellationToken = default)
     {
-        RestoreCalls++;
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync(cancellationToken);
-        await using var command = new NpgsqlCommand(File.ReadAllText(payloadPath), connection);
-        await command.ExecuteNonQueryAsync(cancellationToken);
+        await RestorePayloadAsync(payloadPath, cancellationToken);
     }
 
     public async Task<IReadOnlyDictionary<string, long>> CountRowsAsync(
@@ -782,5 +1054,71 @@ internal sealed class SyntheticCanonicalDatabase(string connectionString) : IFul
         }
 
         return rows;
+    }
+
+    public async Task CreateBackupAsync(
+        IReadOnlyList<string> tables,
+        string backupPath,
+        CancellationToken cancellationToken = default)
+    {
+        BackupCalls++;
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT id, value FROM public.quran_provision_contract ORDER BY id;",
+            connection);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var rows = new List<string>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            rows.Add($"INSERT INTO public.quran_provision_contract (id, value) VALUES ({reader.GetInt32(0)}, '{reader.GetString(1)}');");
+        }
+
+        await File.WriteAllTextAsync(backupPath, string.Join(Environment.NewLine, rows), cancellationToken);
+    }
+
+    public Task RestoreBackupAsync(
+        IReadOnlyList<string> tables,
+        string backupPath,
+        CancellationToken cancellationToken = default)
+    {
+        return RestorePayloadAsync(backupPath, cancellationToken);
+    }
+
+    public Task AssertDisposableRecoveryTargetAsync(CancellationToken cancellationToken = default)
+    {
+        return rejectDisposableTarget
+            ? Task.FromException(new InvalidOperationException("The recovery target is not disposable."))
+            : Task.CompletedTask;
+    }
+
+    public Task AssertDisposableRecoverySourceAsync(CancellationToken cancellationToken = default)
+    {
+        return rejectDisposableSource
+            ? Task.FromException(new InvalidOperationException("The recovery source is not disposable."))
+            : Task.CompletedTask;
+    }
+
+    public async Task<IReadOnlyDictionary<string, string>> ReadCriticalFingerprintsAsync(
+        IReadOnlyList<ArtifactRestoreSentinel> sentinels,
+        CancellationToken cancellationToken = default)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(
+            "SELECT string_agg(id::text || ':' || value, ',' ORDER BY id) FROM public.quran_provision_contract;",
+            connection);
+        var value = Convert.ToString(await command.ExecuteScalarAsync(cancellationToken)) ?? string.Empty;
+        var fingerprint = Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+        return sentinels.ToDictionary(sentinel => sentinel.Id, _ => fingerprint, StringComparer.Ordinal);
+    }
+
+    private async Task RestorePayloadAsync(string payloadPath, CancellationToken cancellationToken)
+    {
+        RestoreCalls++;
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync(cancellationToken);
+        await using var command = new NpgsqlCommand(File.ReadAllText(payloadPath), connection);
+        await command.ExecuteNonQueryAsync(cancellationToken);
     }
 }

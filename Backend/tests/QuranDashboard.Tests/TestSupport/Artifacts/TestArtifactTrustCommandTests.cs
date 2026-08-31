@@ -6,6 +6,73 @@ namespace QuranDashboard.Tests.TestSupport.Artifacts;
 public sealed class TestArtifactTrustCommandTests
 {
     [Fact]
+    public void RecoveryRehearsal_RefusesBackupWithoutExplicitOperatorIntent()
+    {
+        using var repository = TemporaryRepository.CreateWithLock(
+            """
+            {
+              "$schema": "docs/testing/test-artifacts-lock.schema.json",
+              "contractVersion": 1,
+              "artifacts": []
+            }
+            """);
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = ArtifactTrustCommand.Execute(
+            ["rehearse-full-canonical-recovery", "--root", repository.Root],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("--confirm-backup");
+    }
+
+    [Fact]
+    public void RecoveryRehearsal_ReportsSanitizedAdoptionBlockerInsteadOfInventingArtifactInputs()
+    {
+        using var repository = TemporaryRepository.CreateWithLock(
+            """
+            {
+              "$schema": "docs/testing/test-artifacts-lock.schema.json",
+              "contractVersion": 1,
+              "artifacts": []
+            }
+            """);
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = ArtifactTrustCommand.Execute(
+            ["rehearse-full-canonical-recovery", "--confirm-backup", "--root", repository.Root],
+            output,
+            error);
+
+        exitCode.Should().Be(1);
+        output.ToString().Should().ContainAll("classification=data-recovery", "no-reviewed-full-canonical-artifact");
+        output.ToString().Should().NotContain(repository.Root);
+        error.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void RecoveryRehearsal_MissingLockProducesSanitizedFailureEvidence()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"quran-dashboard-missing-lock-{Guid.NewGuid():N}");
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = ArtifactTrustCommand.Execute(
+            ["rehearse-full-canonical-recovery", "--confirm-backup", "--root", root],
+            output,
+            error);
+
+        exitCode.Should().Be(1);
+        output.ToString().Should().ContainAll("classification=data-recovery", "artifact-lock-unavailable");
+        output.ToString().Should().NotContain(root);
+        error.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
     public void Verify_TableFamilyFlagsMustMatchDeclaredTables()
     {
         using var repository = TemporaryRepository.CreateWithTrustedArtifact();

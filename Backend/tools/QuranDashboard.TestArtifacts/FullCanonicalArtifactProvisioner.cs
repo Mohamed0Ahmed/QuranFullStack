@@ -85,7 +85,7 @@ internal static class FullCanonicalArtifactProvisioner
         }
     }
 
-    private static IReadOnlyList<LockedArtifact> SelectArtifacts(string runKind, ArtifactTrustLock artifactLock)
+    internal static IReadOnlyList<LockedArtifact> SelectArtifacts(string runKind, ArtifactTrustLock artifactLock)
     {
         if (runKind is not "scheduled" and not "release")
         {
