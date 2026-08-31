@@ -58,6 +58,7 @@
     "zone.js": "~0.15.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@angular/build": "^20.3.27",
     "@angular/cli": "^20.3.27",
     "@angular/compiler-cli": "^20.3.0",

@@ -133,6 +133,11 @@ assert.equal(
 const playwrightConfiguration = readFileSync(resolve(frontendRoot, 'playwright.config.ts'), 'utf8');
 assert.match(playwrightConfiguration, /E2E_PLAYWRIGHT_OUTPUT_DIRECTORY/);
 assert.doesNotMatch(playwrightConfiguration, /resolve\(evidenceDirectory, 'test-results'\)/);
+const accessibilityFixture = readFileSync(
+  resolve(frontendRoot, 'e2e/fixtures/accessibility.ts'),
+  'utf8',
+);
+assert.doesNotMatch(accessibilityFixture, /node\.html|\bhtml\s*:/);
 
 const reporterDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-e2e-reporter-contract-'));
 try {
@@ -166,13 +171,20 @@ try {
         body: Buffer.from('[{"type":"pageerror","name":"Error","text":"attachment-secret"}]'),
       },
       {
+        name: 'accessibility-observations',
+        contentType: 'application/json',
+        body: Buffer.from('[{"id":"color-contrast","impact":"serious","help":"Elements must meet minimum color contrast ratio thresholds","nodeCount":1,"targets":["[data-testid=sample]"]}]'),
+      },
+      {
         name: 'error-context',
         contentType: 'text/markdown',
         body: Buffer.from('raw page text'),
       },
     ],
     duration: 1,
-    errors: [{ message: 'expected failure' }],
+    errors: [{
+      message: 'serious/critical accessibility violations: [{"id":"color-contrast","impact":"serious","help":"Elements must meet contrast thresholds","nodeCount":1,"targets":["[data-testid=sample]"]}]',
+    }],
     retry: 0,
     status: 'failed',
   });
@@ -182,6 +194,7 @@ try {
   assert.equal(existsSync(resolve(diagnosticRoot, 'sanitized-screenshot.png')), true);
   assert.equal(existsSync(resolve(diagnosticRoot, 'request-metadata.json')), true);
   assert.equal(existsSync(resolve(diagnosticRoot, 'browser-console-errors.json')), true);
+  assert.equal(existsSync(resolve(diagnosticRoot, 'accessibility-observations.json')), true);
   assert.equal(existsSync(resolve(diagnosticRoot, 'error-context.md')), false);
   assert.doesNotMatch(
     readFileSync(resolve(diagnosticRoot, 'browser-console-errors.json'), 'utf8'),
@@ -192,8 +205,9 @@ try {
   );
   assert.deepEqual(
     reporterResults.tests[0].attachments.map((attachment) => attachment.name).sort(),
-    ['browser-console-errors', 'request-metadata', 'sanitized-screenshot'],
+    ['accessibility-observations', 'browser-console-errors', 'request-metadata', 'sanitized-screenshot'],
   );
+  assert.doesNotMatch(JSON.stringify(reporterResults.tests[0].errors), /<[^>]+>/);
 
   const rawPath = resolve(reporterDirectory, 'raw-request.json');
   writeFileSync(rawPath, '[{"event":"request","method":"GET","origin":"https://localhost:4200","path":"/"}]');
@@ -223,6 +237,14 @@ try {
         name: 'request-metadata',
         contentType: 'application/json',
         body: Buffer.from('[{"headers":{"authorization":"secret"}}]'),
+      }],
+    },
+    {
+      label: 'invalid accessibility observation schema',
+      attachments: [{
+        name: 'accessibility-observations',
+        contentType: 'application/json',
+        body: Buffer.from('[{"html":"raw page content"}]'),
       }],
     },
   ];

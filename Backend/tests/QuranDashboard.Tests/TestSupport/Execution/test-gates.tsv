@@ -42,6 +42,7 @@ QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pip
 QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline
 QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline
 QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Database	TierB
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline

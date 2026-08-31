@@ -1,3 +1,6 @@
+import { devices, type Page } from '@playwright/test';
+
+import { expectNoBlockingAccessibilityViolations } from './fixtures/accessibility';
 import { expect, test } from './fixtures/app-test';
 import { openReader } from './fixtures/mushaf';
 import oracleData from '../../../test-artifacts/compact-cross-stack-base/oracle.json';
@@ -12,9 +15,35 @@ interface OracleWord {
 }
 
 interface PageOneOracle {
+  contractVersion: number;
   artifactId: string;
   pageNumber: number;
-  verseKeys: string[];
+  study: {
+    verseKey: string;
+    tafsir: {
+      sourceKey: string;
+      displayNameAr: string;
+      text: string;
+    };
+    translation: {
+      sourceKey: string;
+      displayNameAr: string;
+      displayNameEn: string;
+      text: string;
+    };
+  };
+  ayahs: Array<{
+    verseKey: string;
+    textUthmani: string;
+    wordLocations: string[];
+  }>;
+  lines: Array<{
+    lineNumber: number;
+    lineType: string;
+    isCentered: boolean;
+    surahNumber: number | null;
+    wordLocations: string[];
+  }>;
   words: OracleWord[];
 }
 
@@ -23,6 +52,10 @@ interface MushafPageEnvelope {
   data: {
     pageNumber: number;
     lines: Array<{
+      lineNumber: number;
+      lineType: string;
+      isCentered: boolean;
+      surahNumber: number | null;
       words: Array<{
         wordLocation: string;
         verseKey: string;
@@ -34,6 +67,130 @@ interface MushafPageEnvelope {
 }
 
 const pageOneOracle = oracleData as PageOneOracle;
+const {
+  defaultBrowserType: _approvedBrowserType,
+  ...APPROVED_MUSHAF_MOBILE
+} = devices['Pixel 7'];
+const REPLACEMENT_GLYPH = '\uFFFD';
+
+async function expectRenderedOracle(page: Page): Promise<void> {
+  const words = page.locator('[data-word-location]');
+  await expect(words.first()).toBeVisible();
+  const renderedWords = await words.evaluateAll((elements) =>
+    elements.map((element) => ({
+      location: element.getAttribute('data-word-location'),
+      verseKey: element.getAttribute('data-verse-key'),
+      textUthmani: element.textContent?.trim() ?? null,
+      isAyahMarker: element.getAttribute('data-is-marker') === 'true',
+    })),
+  );
+  expect(renderedWords).toEqual(
+    pageOneOracle.words.map((word) => ({
+      location: word.location,
+      verseKey: word.verseKey,
+      textUthmani: word.textUthmani,
+      isAyahMarker: word.isAyahMarker,
+    })),
+  );
+  expect(renderedWords.map((word) => word.textUthmani).join('')).not.toContain(
+    REPLACEMENT_GLYPH,
+  );
+
+  const renderedLines = await page.getByTestId('mushaf-line').evaluateAll((elements) =>
+    elements.map((element) => ({
+      lineNumber: Number(element.getAttribute('data-line-number')),
+      lineType: element.getAttribute('data-line-type'),
+      isCentered: element.getAttribute('data-is-centered') === 'true',
+      surahNumber: element.hasAttribute('data-surah-number')
+        ? Number(element.getAttribute('data-surah-number'))
+        : null,
+      wordLocations: (element.getAttribute('data-word-locations') ?? '')
+        .split(' ')
+        .filter(Boolean),
+    })),
+  );
+  expect(renderedLines).toEqual(pageOneOracle.lines);
+}
+
+async function expectLocalMushafFontsReady(page: Page): Promise<void> {
+  const expectedFonts = [
+    {
+      selector: '[data-word-location][data-is-marker="false"]',
+      family: 'Amiri',
+      path: '/fonts/amiri-regular.woff2',
+    },
+    {
+      selector: '[data-word-location][data-is-marker="true"]',
+      family: 'Uthmanic Hafs',
+      path: '/assets/fonts/quran/UthmanicHafs_V22.ttf',
+    },
+    {
+      selector: '[data-testid="mushaf-page-surah-glyph"]',
+      family: 'Mushaf Surah Name',
+      path: '/fonts/mushaf/surah-name-v1.woff2',
+    },
+    {
+      selector: '[data-testid="mushaf-page-juz-glyph"]',
+      family: 'Mushaf Common',
+      path: '/fonts/mushaf/quran-common.woff2',
+    },
+  ] as const;
+
+  await page.evaluate(async () => {
+    await document.fonts.ready;
+  });
+  await expect
+    .poll(() => page.evaluate(() => document.fonts.status), {
+      message: 'local Mushaf fonts should finish loading',
+    })
+    .toBe('loaded');
+
+  for (const expectedFont of expectedFonts) {
+    const element = page.locator(expectedFont.selector).first();
+    await expect(element).toBeVisible();
+    const readiness = await element.evaluate((node, expected) => {
+      const loadedFaces = Array.from(document.fonts)
+        .filter((face) => face.status === 'loaded')
+        .map((face) => face.family.replaceAll(/["']/g, ''));
+      const fontResource = performance
+        .getEntriesByType('resource')
+        .filter((entry): entry is PerformanceResourceTiming => entry instanceof PerformanceResourceTiming)
+        .find((entry) => new URL(entry.name).pathname === expected.path);
+      return {
+        computedFamily: getComputedStyle(node).fontFamily,
+        glyphsCovered: document.fonts.check(
+          `16px "${expected.family}"`,
+          node.textContent ?? '',
+        ),
+        loadedFace: loadedFaces.includes(expected.family),
+        resourceOrigin: fontResource ? new URL(fontResource.name).origin : null,
+        resourceStatus: fontResource?.responseStatus ?? null,
+      };
+    }, expectedFont);
+    expect(readiness.computedFamily).toContain(expectedFont.family);
+    expect(readiness.loadedFace, `${expectedFont.family} FontFace should be loaded`).toBe(true);
+    expect(readiness.glyphsCovered, `${expectedFont.family} should cover rendered glyphs`).toBe(true);
+    expect(readiness.resourceOrigin).toBe(new URL(page.url()).origin);
+    expect(readiness.resourceStatus).toBe(200);
+  }
+}
+
+async function expectReviewedStudySourcesVisible(page: Page): Promise<void> {
+  await page.getByTestId('study-context-tab-sources').click();
+  await expect(page.getByTestId('selected-ayah-section')).toBeVisible();
+  await expect(page.getByTestId('source-single-option')).toHaveText(
+    pageOneOracle.study.tafsir.displayNameAr,
+  );
+  await expect(page.getByTestId('tafsir-card')).toContainText('أبتدئ قراءة القرآن باسم الله');
+
+  await page.getByRole('tab', { name: 'الترجمة', exact: true }).click();
+  await expect(page.getByTestId('source-single-option')).toHaveText(
+    `${pageOneOracle.study.translation.displayNameAr} (بملاحظات)`,
+  );
+  await expect(page.getByTestId('translation-card')).toHaveText(
+    pageOneOracle.study.translation.text,
+  );
+}
 
 test('the reader opens on page 1 and renders the Mushaf page', async ({ page }) => {
   await page.goto('/dashboard/mushaf');
@@ -105,7 +262,7 @@ test('the first word tap after a touch swipe selects the word on mobile and tabl
     await word.dispatchEvent('click');
 
     await expect(page).toHaveURL(/[?&]word=/);
-    await expect(word).toHaveClass(/mushaf-word--selected-word/);
+    await expect(word).toHaveAttribute('aria-current', 'true');
   }
 });
 
@@ -144,7 +301,7 @@ test(
       { type: 'journey', description: 'quran-fidelity.mushaf-font-rendering' },
     ],
   },
-  async ({ page, request }) => {
+  async ({ page, request }, testInfo) => {
     expect(pageOneOracle.artifactId).toBe('compact-cross-stack-base');
 
     const apiResponse = await request.get(
@@ -166,36 +323,119 @@ test(
       })),
     ).toEqual(pageOneOracle.words);
     expect([...new Set(apiWords.map((word) => word.verseKey))]).toEqual(
-      pageOneOracle.verseKeys,
+      pageOneOracle.ayahs.map((ayah) => ayah.verseKey),
     );
+    expect(
+      envelope.data?.lines.map((line) => ({
+        lineNumber: line.lineNumber,
+        lineType: line.lineType,
+        isCentered: line.isCentered,
+        surahNumber: line.surahNumber,
+        wordLocations: line.words.map((word) => word.wordLocation),
+      })),
+    ).toEqual(pageOneOracle.lines);
+
+    const studyApiResponse = await request.get(
+      `${API_ORIGIN}/api/mushaf/ayahs/${pageOneOracle.study.verseKey}/study`,
+      {
+        params: {
+          tafsirSource: pageOneOracle.study.tafsir.sourceKey,
+          translationSource: pageOneOracle.study.translation.sourceKey,
+        },
+      },
+    );
+    expect(studyApiResponse.status()).toBe(200);
+    const studyEnvelope = (await studyApiResponse.json()) as {
+      isSuccess: boolean;
+      data: {
+        selectedSources: { tafsirSource: string; translationSource: string };
+        tafsir: { sourceKey: string; displayNameAr: string; text: string };
+        translation: {
+          sourceKey: string;
+          displayNameAr: string;
+          displayNameEn: string;
+          text: string;
+        };
+      };
+    };
+    expect(studyEnvelope.isSuccess).toBe(true);
+    expect(studyEnvelope.data.selectedSources).toMatchObject({
+      tafsirSource: pageOneOracle.study.tafsir.sourceKey,
+      translationSource: pageOneOracle.study.translation.sourceKey,
+    });
+    expect(studyEnvelope.data.tafsir).toMatchObject(pageOneOracle.study.tafsir);
+    expect(studyEnvelope.data.translation).toMatchObject(pageOneOracle.study.translation);
 
     await openReader(page);
 
     await expect(page.getByTestId('mushaf-page-surah-glyph').first()).toBeVisible();
     await expect(page.getByTestId('mushaf-page-juz-glyph').first()).toBeVisible();
+    await expectRenderedOracle(page);
+    await expectLocalMushafFontsReady(page);
 
-    const words = page.locator('[data-word-location]');
-    await expect(words.first()).toBeVisible();
-    const renderedWords = await words.evaluateAll((elements) =>
-      elements.map((element) => ({
-        location: element.getAttribute('data-word-location'),
-        textUthmani: element.querySelector('.mushaf-word__text')?.textContent?.trim() ?? null,
-        isAyahMarker: element.getAttribute('data-is-marker') === 'true',
-      })),
+    const reviewedWord = page.locator(
+      `[data-word-location="${pageOneOracle.words[0].location}"]`,
     );
-    expect(renderedWords).toEqual(
-      pageOneOracle.words.map((word) => ({
-        location: word.location,
-        textUthmani: word.textUthmani,
-        isAyahMarker: word.isAyahMarker,
-      })),
+    await reviewedWord.focus();
+    await expect(reviewedWord).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect
+      .poll(() => {
+        const url = new URL(page.url());
+        return {
+          ayah: url.searchParams.get('ayah'),
+          word: url.searchParams.get('word'),
+        };
+      })
+      .toEqual({
+        ayah: pageOneOracle.words[0].verseKey,
+        word: pageOneOracle.words[0].location,
+      });
+    await expect(reviewedWord).toHaveAttribute('aria-current', 'true');
+    await expect(reviewedWord).toBeFocused();
+    await expect(page.getByTestId('word-analysis-error')).toHaveText(
+      'بيانات تحليل الكلمة غير مكتملة',
     );
+    await expectReviewedStudySourcesVisible(page);
 
-    // The reader must render in Amiri, never UthmanicHafs_V22, which mis-renders U+06DF
-    // (Frontend/quran-dashboard-ui/README.md).
-    const fontFamily = await words
-      .first()
-      .evaluate((element) => getComputedStyle(element).fontFamily);
-    expect(fontFamily).toContain('Amiri');
+    await expectNoBlockingAccessibilityViolations(page, testInfo);
+
+    await page.goto('/dashboard/mushaf?page=2');
+    await expect(page.getByTestId('mushaf-page-error')).toHaveText('المورد غير موجود');
+    await expect(page.getByTestId('mushaf-page-view')).toHaveCount(0);
   },
 );
+
+test.describe('approved Mushaf mobile variant', () => {
+  test.use({ ...APPROVED_MUSHAF_MOBILE });
+
+  test(
+    'the source-reviewed Quran oracle remains exact on the approved mobile reader',
+    {
+      annotation: [
+        { type: 'critical' },
+        { type: 'mobile' },
+        { type: 'read-only' },
+        { type: 'artifact', description: 'compact-cross-stack-base' },
+        { type: 'journey', description: 'quran-fidelity.mushaf-mobile' },
+      ],
+    },
+    async ({ page }, testInfo) => {
+      await openReader(page);
+      await expect(page.getByTestId('mushaf-reader-page')).toHaveAttribute('dir', 'rtl');
+      await expectRenderedOracle(page);
+      await expectLocalMushafFontsReady(page);
+
+      const reviewedWord = page.locator(
+        `[data-word-location="${pageOneOracle.words[0].location}"]`,
+      );
+      await reviewedWord.tap();
+      await expect(reviewedWord).toHaveAttribute('aria-current', 'true');
+      await expect(page.getByTestId('word-analysis-error')).toHaveText(
+        'بيانات تحليل الكلمة غير مكتملة',
+      );
+      await expectReviewedStudySourcesVisible(page);
+      await expectNoBlockingAccessibilityViolations(page, testInfo);
+    },
+  );
+});
