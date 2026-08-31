@@ -4,6 +4,7 @@ QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB	Schema
 QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests	Abwab	Process	TierB	Cli,Schema
 QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB
+QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests	Abwab	Database	TierB
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB
 QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB
