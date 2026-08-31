@@ -1,5 +1,5 @@
 import { createPrivateKey, sign } from 'node:crypto';
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import type { APIRequestContext, APIResponse, BrowserContext } from '@playwright/test';
 
 import { ABWAB_PERMISSION_CODES } from '../../src/app/core/auth/permission-codes.generated';
 import { environment } from '../../src/environments/environment.development';
@@ -89,7 +89,21 @@ interface AuthenticatedPersona {
   permission: typeof TEST_PERMISSION;
 }
 
-export const test = appTest.extend<{ authenticatedPersona: AuthenticatedPersona }>({
+interface DeviceSessionPersona {
+  subject: string;
+}
+
+export const test = appTest.extend<{
+  authenticatedPersona: AuthenticatedPersona;
+  deviceSessionPersona: DeviceSessionPersona;
+}>({
+  deviceSessionPersona: async ({ context }, use, testInfo) => {
+    const subject = `e2e-device-session-${testInfo.parallelIndex}`;
+    const tokens = mintTokenPair(subject);
+    await installOidcSession(context, tokens);
+
+    await use({ subject });
+  },
   authenticatedPersona: async ({ context, request }, use, testInfo) => {
     const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
     const personaSubject = `e2e-permission-author-${testInfo.parallelIndex}`;
@@ -105,13 +119,7 @@ export const test = appTest.extend<{ authenticatedPersona: AuthenticatedPersona 
 
       await provisionCurrentUser(request, personaTokens);
       await activatePersona(request, ownerTokens.accessToken, personaSubject);
-      await context.addInitScript(
-        ({ key, session }) => sessionStorage.setItem(key, JSON.stringify(session)),
-        {
-          key: OIDC_SESSION_KEY,
-          session: oidcSession(personaTokens),
-        },
-      );
+      await installOidcSession(context, personaTokens);
 
       await use({ subject: personaSubject, permission: TEST_PERMISSION });
     } finally {
@@ -170,6 +178,16 @@ function oidcSession(tokens: TokenPair): Record<string, unknown> {
     },
     access_token_expires_at: Date.now() + 3_600_000,
   };
+}
+
+async function installOidcSession(context: BrowserContext, tokens: TokenPair): Promise<void> {
+  await context.addInitScript(
+    ({ key, session }) => sessionStorage.setItem(key, JSON.stringify(session)),
+    {
+      key: OIDC_SESSION_KEY,
+      session: oidcSession(tokens),
+    },
+  );
 }
 
 async function provisionCurrentUser(
