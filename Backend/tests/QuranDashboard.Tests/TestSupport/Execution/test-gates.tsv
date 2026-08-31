@@ -64,6 +64,7 @@ QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests	Navigation	Databas
 QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline
+QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests	QuranTopicsBook	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB
 QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTests	Tafsirs	Database	Pipeline
