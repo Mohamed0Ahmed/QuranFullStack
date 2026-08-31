@@ -1,6 +1,6 @@
 # Test Artifact Contract
 
-**Status:** Accepted design; tracked lock contract and read-only verification implemented, artifact entries pending
+**Status:** Accepted design; compact cross-stack artifact locked and executable, larger artifact entries pending
 
 **Decision date:** 2026-08-30
 
@@ -44,8 +44,8 @@ validation. However:
 - There is no tracked fetch/provision command or immutable storage identifier.
 - A direct focused test can skip when an artifact is absent; the supported Backend `pre-pr` wrapper
   instead fails its canonical preflight.
-- The Frontend harness clones the currently configured local database rather than consuming a declared
-  artifact.
+- The Frontend harness now consumes the locked compact cross-stack artifact by default; its former
+  local-database clone behavior remains available only as explicit non-canonical `clone-local` mode.
 - Existing PhraseSearch-ready and Abwab operator snapshots are not sufficient trust contracts for
   deterministic testing.
 
@@ -198,15 +198,17 @@ identity/projection repair, exact results, and a post-operation API read.
 
 ## Local modes
 
-The target harness must expose two explicit modes; the current harness does not yet implement them:
+The Frontend Playwright harness exposes two explicit modes:
 
 - `artifact`: deterministic and canonical for the selected lane. This is the default for critical/full
   commands and the only mode accepted in target CI.
 - `clone-local`: opt-in developer convenience using a loopback-only database. It is non-canonical and
   cannot be cited as release evidence.
 
-The implemented harness must never infer `clone-local` from user secrets or an ambient connection
-string. Target CI must reject it. No mode may point at production or a shared staging database.
+The harness never infers `clone-local` from user secrets or an ambient connection string. CI rejects
+it before reading either. Clone-local enforces loopback access; artifact mode uses only its private
+internal Docker network. Artifact execution verifies the lock, requires the digest-pinned image to be
+preloaded, restores once for the Playwright command, and runs with Docker pulling disabled.
 
 ## Hermetic execution
 

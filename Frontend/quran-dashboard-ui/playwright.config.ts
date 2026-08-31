@@ -16,7 +16,7 @@ const API_HEALTH_URL = 'https://localhost:5015/api/health';
 // origin nor port is configurable here.
 const SHARED_WEB_SERVER_OPTIONS = {
   cwd: __dirname,
-  reuseExistingServer: true,
+  reuseExistingServer: false,
   ignoreHTTPSErrors: true,
   stdout: 'pipe',
   stderr: 'pipe',
@@ -38,9 +38,9 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'off',
   },
-  // Split so `npm run e2e` can run Abwab at --workers=1 (T502): a Global-scope reorder
-  // resequences every live root in the database, so two Abwab specs in different workers can
-  // race the same rows — see e2e/README.md. Every other spec stays read-only and unaffected.
+  // Projects retain their ownership boundary, while `npm run e2e` uses one worker and one shared
+  // provisioned stack. A Global-scope Abwab reorder resequences every live root, so two Abwab
+  // specs in different workers could race the same rows — see e2e/README.md.
   projects: [
     { name: 'default', testIgnore: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
     { name: 'abwab', testMatch: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
@@ -55,7 +55,6 @@ export default defineConfig({
     {
       ...SHARED_WEB_SERVER_OPTIONS,
       command: 'node e2e/run-backend.mjs',
-      reuseExistingServer: false,
       gracefulShutdown: { signal: 'SIGTERM', timeout: 60_000 },
       env: {
         ASPNETCORE_ENVIRONMENT: 'Testing',

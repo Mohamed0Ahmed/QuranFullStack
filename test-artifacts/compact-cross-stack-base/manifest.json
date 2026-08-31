@@ -1,0 +1,54 @@
+{
+  "contractVersion": 1,
+  "artifactId": "compact-cross-stack-base",
+  "artifactVersion": "2026.08.31.1",
+  "migration": {
+    "head": "20260826012918_AddQuranPhraseSearchIndex",
+    "count": 6
+  },
+  "postgresql": {
+    "producerVersion": "18.6"
+  },
+  "producer": {
+    "command": "dotnet ef migrations script; pg_restore --disable-triggers; retain page-1 Mushaf rows; pg_dump --format=custom",
+    "version": "1"
+  },
+  "tables": [
+    { "name": "quran_ayahs", "rows": 6236 },
+    { "name": "quran_hizbs", "rows": 60 },
+    { "name": "quran_juzs", "rows": 30 },
+    { "name": "quran_mushaf_lines", "rows": 8 },
+    { "name": "quran_mushaf_pages", "rows": 1 },
+    { "name": "quran_rubs", "rows": 240 },
+    { "name": "quran_sajdas", "rows": 15 },
+    { "name": "quran_surahs", "rows": 114 },
+    { "name": "quran_words", "rows": 36 }
+  ],
+  "sources": [
+    {
+      "id": "quran-canonical",
+      "version": "2026.08.26",
+      "sha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
+      "provenance": "Row-preserving selection from the verified local quran-canonical data-only dump."
+    },
+    {
+      "id": "quran-foundation-uthmani",
+      "version": "1",
+      "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+      "provenance": "Exact page-1 text and word locations originate from the curated Quran Foundation Uthmani source."
+    },
+    {
+      "id": "quran-foundation-layout",
+      "version": "1",
+      "sha256": "9d6cf089a40c8c8e17939631470aa93fa33aea07aac3fd5dc7f6519b94d40d53",
+      "provenance": "Exact page-1 line placement originates from the curated Quran Foundation QPC v4 layout source."
+    }
+  ],
+  "sentinels": [
+    {
+      "id": "quran-fidelity.page-1-words",
+      "expectedCount": 36,
+      "oracleSha256": "8d24afda3bcff11f0dc7b76ff6122e36289ee745c35e429f788d20ded76fed2f"
+    }
+  ]
+}

@@ -1,0 +1,235 @@
+{
+    "words": [
+        {
+            "location": "1:1:1",
+            "verseKey": "1:1",
+            "textUthmani": "بِسْمِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:1:2",
+            "verseKey": "1:1",
+            "textUthmani": "ٱللَّهِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:1:3",
+            "verseKey": "1:1",
+            "textUthmani": "ٱلرَّحْمَـٰنِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:1:4",
+            "verseKey": "1:1",
+            "textUthmani": "ٱلرَّحِيمِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:1:5",
+            "verseKey": "1:1",
+            "textUthmani": "١",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:2:1",
+            "verseKey": "1:2",
+            "textUthmani": "ٱلْحَمْدُ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:2:2",
+            "verseKey": "1:2",
+            "textUthmani": "لِلَّهِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:2:3",
+            "verseKey": "1:2",
+            "textUthmani": "رَبِّ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:2:4",
+            "verseKey": "1:2",
+            "textUthmani": "ٱلْعَـٰلَمِينَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:2:5",
+            "verseKey": "1:2",
+            "textUthmani": "٢",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:3:1",
+            "verseKey": "1:3",
+            "textUthmani": "ٱلرَّحْمَـٰنِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:3:2",
+            "verseKey": "1:3",
+            "textUthmani": "ٱلرَّحِيمِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:3:3",
+            "verseKey": "1:3",
+            "textUthmani": "٣",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:4:1",
+            "verseKey": "1:4",
+            "textUthmani": "مَـٰلِكِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:4:2",
+            "verseKey": "1:4",
+            "textUthmani": "يَوْمِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:4:3",
+            "verseKey": "1:4",
+            "textUthmani": "ٱلدِّينِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:4:4",
+            "verseKey": "1:4",
+            "textUthmani": "٤",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:5:1",
+            "verseKey": "1:5",
+            "textUthmani": "إِيَّاكَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:5:2",
+            "verseKey": "1:5",
+            "textUthmani": "نَعْبُدُ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:5:3",
+            "verseKey": "1:5",
+            "textUthmani": "وَإِيَّاكَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:5:4",
+            "verseKey": "1:5",
+            "textUthmani": "نَسْتَعِينُ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:5:5",
+            "verseKey": "1:5",
+            "textUthmani": "٥",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:6:1",
+            "verseKey": "1:6",
+            "textUthmani": "ٱهْدِنَا",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:6:2",
+            "verseKey": "1:6",
+            "textUthmani": "ٱلصِّرَٰطَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:6:3",
+            "verseKey": "1:6",
+            "textUthmani": "ٱلْمُسْتَقِيمَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:6:4",
+            "verseKey": "1:6",
+            "textUthmani": "٦",
+            "isAyahMarker": true
+        },
+        {
+            "location": "1:7:1",
+            "verseKey": "1:7",
+            "textUthmani": "صِرَٰطَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:2",
+            "verseKey": "1:7",
+            "textUthmani": "ٱلَّذِينَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:3",
+            "verseKey": "1:7",
+            "textUthmani": "أَنْعَمْتَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:4",
+            "verseKey": "1:7",
+            "textUthmani": "عَلَيْهِمْ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:5",
+            "verseKey": "1:7",
+            "textUthmani": "غَيْرِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:6",
+            "verseKey": "1:7",
+            "textUthmani": "ٱلْمَغْضُوبِ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:7",
+            "verseKey": "1:7",
+            "textUthmani": "عَلَيْهِمْ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:8",
+            "verseKey": "1:7",
+            "textUthmani": "وَلَا",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:9",
+            "verseKey": "1:7",
+            "textUthmani": "ٱلضَّآلِّينَ",
+            "isAyahMarker": false
+        },
+        {
+            "location": "1:7:10",
+            "verseKey": "1:7",
+            "textUthmani": "٧",
+            "isAyahMarker": true
+        }
+    ],
+    "verseKeys": [
+        "1:1",
+        "1:2",
+        "1:3",
+        "1:4",
+        "1:5",
+        "1:6",
+        "1:7"
+    ],
+    "artifactId": "compact-cross-stack-base",
+    "pageNumber": 1,
+    "canonicalSource": {
+        "dumpSha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
+        "manifestCreatedUtc": "2026-08-26T11:52:38Z"
+    }
+}

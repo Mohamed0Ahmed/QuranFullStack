@@ -105,14 +105,14 @@ Important limits remain:
 
 - There is no successful Linking, PhraseSearch, access-administration, or Abwab mutation journey.
 - Authentication setup injects local OIDC state and does not prove the real redirect/callback boundary.
-- Existing Quran assertions are generally visibility or non-empty checks, not an independent fidelity
-  oracle.
-- The current harness clones an arbitrary local developer database and is not deterministic in a clean
-  runner.
+- Most unannotated Quran assertions remain visibility or non-empty checks; the first critical
+  artifact-backed sentinel now compares page 1 with its locked independent oracle.
+- The current harness defaults to the verified compact artifact; arbitrary local data is available
+  only through explicit, loopback-only, non-canonical `clone-local` mode.
 - `test:pre-pr` does not include Playwright or `e2e:typecheck`.
-- The canonical `e2e` command starts two application stacks. Critical-journey discovery now validates
-  annotations and selects the declared browser evidence, but deterministic artifact-backed execution is
-  still pending.
+- The canonical `e2e` command provisions one application stack. Critical-journey discovery validates
+  annotations, selects the declared browser evidence, and executes it through the verified compact
+  artifact.
 
 ### Cross-stack and automation
 
@@ -400,9 +400,9 @@ artifact-bound full-canonical classes required in scheduled/release lanes. Do no
 reduced lane as the current full `pre-pr` command.
 
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
-includes `test:pre-pr` and `e2e:typecheck`. Critical Playwright discovery and annotation validation now
-exist, but no document may claim the critical browser gate is enforced until deterministic artifact
-execution and the observation job are implemented.
+includes `test:pre-pr` and `e2e:typecheck`. Critical Playwright discovery, annotation validation, and
+deterministic artifact execution now exist, but no document may claim the critical browser gate is
+enforced until the observation job is implemented and meets the activation criteria below.
 
 The 12-minute budget:
 

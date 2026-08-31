@@ -1,5 +1,39 @@
 import { expect, test } from './fixtures/app-test';
 import { openReader } from './fixtures/mushaf';
+import oracleData from '../../../test-artifacts/compact-cross-stack-base/oracle.json';
+
+const API_ORIGIN = 'https://localhost:5015';
+
+interface OracleWord {
+  location: string;
+  verseKey: string;
+  textUthmani: string;
+  isAyahMarker: boolean;
+}
+
+interface PageOneOracle {
+  artifactId: string;
+  pageNumber: number;
+  verseKeys: string[];
+  words: OracleWord[];
+}
+
+interface MushafPageEnvelope {
+  isSuccess: boolean;
+  data: {
+    pageNumber: number;
+    lines: Array<{
+      words: Array<{
+        wordLocation: string;
+        verseKey: string;
+        textUthmani: string;
+        isAyahMarker: boolean;
+      }>;
+    }>;
+  } | null;
+}
+
+const pageOneOracle = oracleData as PageOneOracle;
 
 test('the reader opens on page 1 and renders the Mushaf page', async ({ page }) => {
   await page.goto('/dashboard/mushaf');
@@ -101,7 +135,7 @@ test('the surah jump picker moves the reader to another page', async ({ page }) 
 });
 
 test(
-  'the Mushaf renders Uthmani chrome glyphs and Amiri Quran text',
+  'the real Mushaf stack renders the verified page-1 Quran oracle',
   {
     annotation: [
       { type: 'critical' },
@@ -110,7 +144,31 @@ test(
       { type: 'journey', description: 'quran-fidelity.mushaf-font-rendering' },
     ],
   },
-  async ({ page }) => {
+  async ({ page, request }) => {
+    expect(pageOneOracle.artifactId).toBe('compact-cross-stack-base');
+
+    const apiResponse = await request.get(
+      `${API_ORIGIN}/api/mushaf/pages/${pageOneOracle.pageNumber}`,
+    );
+    expect(apiResponse.status()).toBe(200);
+    const envelope = (await apiResponse.json()) as MushafPageEnvelope;
+    expect(envelope.isSuccess).toBe(true);
+    expect(envelope.data).not.toBeNull();
+    expect(envelope.data?.pageNumber).toBe(pageOneOracle.pageNumber);
+
+    const apiWords = envelope.data?.lines.flatMap((line) => line.words) ?? [];
+    expect(
+      apiWords.map((word) => ({
+        location: word.wordLocation,
+        verseKey: word.verseKey,
+        textUthmani: word.textUthmani,
+        isAyahMarker: word.isAyahMarker,
+      })),
+    ).toEqual(pageOneOracle.words);
+    expect([...new Set(apiWords.map((word) => word.verseKey))]).toEqual(
+      pageOneOracle.verseKeys,
+    );
+
     await openReader(page);
 
     await expect(page.getByTestId('mushaf-page-surah-glyph').first()).toBeVisible();
@@ -118,6 +176,20 @@ test(
 
     const words = page.locator('[data-word-location]');
     await expect(words.first()).toBeVisible();
+    const renderedWords = await words.evaluateAll((elements) =>
+      elements.map((element) => ({
+        location: element.getAttribute('data-word-location'),
+        textUthmani: element.querySelector('.mushaf-word__text')?.textContent?.trim() ?? null,
+        isAyahMarker: element.getAttribute('data-is-marker') === 'true',
+      })),
+    );
+    expect(renderedWords).toEqual(
+      pageOneOracle.words.map((word) => ({
+        location: word.location,
+        textUthmani: word.textUthmani,
+        isAyahMarker: word.isAyahMarker,
+      })),
+    );
 
     // The reader must render in Amiri, never UthmanicHafs_V22, which mis-renders U+06DF
     // (Frontend/quran-dashboard-ui/README.md).
