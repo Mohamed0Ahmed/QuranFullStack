@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
 import { dirname, resolve } from 'node:path';
 
+import { COMPACT_ARTIFACT_IDS } from './harness/artifact-contract.mjs';
 import {
   provisionDatabaseRuntime,
   readPreparedDatabaseRuntime,
@@ -39,7 +40,7 @@ try {
   writeDatabaseRuntimeState(databaseRuntime);
   console.log(
     databaseRuntime.mode === 'artifact'
-      ? '[e2e] database mode=artifact artifact=compact-cross-stack-base evidence=canonical'
+      ? `[e2e] database mode=artifact artifacts=${COMPACT_ARTIFACT_IDS.join(',')} evidence=canonical`
       : '[e2e] database mode=clone-local evidence=non-canonical',
   );
 

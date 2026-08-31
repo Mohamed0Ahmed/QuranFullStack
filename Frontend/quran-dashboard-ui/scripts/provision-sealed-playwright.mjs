@@ -9,6 +9,7 @@ import {
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { COMPACT_ARTIFACT_IDS } from '../e2e/harness/artifact-contract.mjs';
 import {
   findFiles,
   findFilesByExtension,
@@ -87,18 +88,20 @@ try {
       ],
       BACKEND_ROOT,
     );
-    run(
-      'dotnet',
-      [
-        'tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll',
-        'verify',
-        '--artifact',
-        'compact-cross-stack-base',
-        '--root',
-        REPOSITORY_ROOT,
-      ],
-      BACKEND_ROOT,
-    );
+    for (const artifactId of COMPACT_ARTIFACT_IDS) {
+      run(
+        'dotnet',
+        [
+          'tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll',
+          'verify',
+          '--artifact',
+          artifactId,
+          '--root',
+          REPOSITORY_ROOT,
+        ],
+        BACKEND_ROOT,
+      );
+    }
   });
 
   runPhase('certificateProvisioning', () => {
@@ -277,10 +280,17 @@ function readChromiumLock() {
 
 function readPostgresqlImage() {
   const lock = JSON.parse(readFileSync(ARTIFACT_LOCK_PATH, 'utf8'));
-  const matches = lock.artifacts?.filter((artifact) => artifact.id === 'compact-cross-stack-base') ?? [];
-  const digest = matches[0]?.postgresql?.containerDigest;
-  if (matches.length !== 1 || !/^sha256:[a-f0-9]{64}$/.test(digest)) {
-    throw new Error('The compact artifact must lock one PostgreSQL image digest.');
+  const artifacts = COMPACT_ARTIFACT_IDS.map((artifactId) => {
+    const matches = lock.artifacts?.filter((artifact) => artifact.id === artifactId) ?? [];
+    if (matches.length !== 1) {
+      throw new Error(`Expected one locked compact artifact named ${artifactId}.`);
+    }
+    return matches[0];
+  });
+  const digests = new Set(artifacts.map((artifact) => artifact.postgresql?.containerDigest));
+  const [digest] = digests;
+  if (digests.size !== 1 || !/^sha256:[a-f0-9]{64}$/.test(digest)) {
+    throw new Error('Composable compact artifacts must lock one PostgreSQL image digest.');
   }
   return `postgres@${digest}`;
 }

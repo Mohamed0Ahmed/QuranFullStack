@@ -1,6 +1,7 @@
 # Test Artifact Contract
 
-**Status:** Accepted design; compact cross-stack artifact locked and executable, larger artifact entries pending
+**Status:** Accepted design; compact cross-stack and PhraseSearch-ready artifacts locked and executable,
+larger artifact entries pending
 
 **Decision date:** 2026-08-30
 
@@ -46,8 +47,9 @@ validation. However:
   instead fails its canonical preflight.
 - The Frontend harness now consumes the locked compact cross-stack artifact by default; its former
   local-database clone behavior remains available only as explicit non-canonical `clone-local` mode.
-- Existing PhraseSearch-ready and Abwab operator snapshots are not sufficient trust contracts for
-  deterministic testing.
+- The compact PhraseSearch available-path snapshot is now adopted through a source-reviewed overlay,
+  hashed oracle and manifest, and tracked lock. Other PhraseSearch-ready and Abwab operator snapshots
+  remain insufficient trust contracts until separately reviewed and adopted.
 
 This document retains the existing safeguards and closes the acquisition, trust-root, fixture-size,
 and reset gaps.
@@ -151,7 +153,8 @@ The remaining target provisioning/maintenance commands are not part of this phas
 
 Required PR journeys do not restore or clone the full canonical/PhraseSearch database.
 
-- Provision each compact fixture once for a compatible isolated stack.
+- Provision the locked compact cross-stack base and compatible PhraseSearch-ready overlay once for an
+  isolated stack. Verify both before composition and require the same pinned PostgreSQL image digest.
 - Share immutable Quran and PhraseSearch tables across scenarios.
 - Keep mutable scenario tables explicitly identified and small.
 - Reset only those mutable tables between mutating scenarios.
@@ -190,7 +193,10 @@ proves:
 - Correct post-build reads.
 - Refusal to force or replace an already active build.
 
-All other PhraseSearch tests consume a ready artifact and must not rebuild it.
+All other PhraseSearch tests consume a ready artifact and must not rebuild it. The implemented PR
+available-path journey composes `compact-phrase-search-ready` over `compact-cross-stack-base`, asserts
+the runtime active build ID and readiness against the oracle, and proves unchanged capabilities after
+the browser flow.
 
 Destructive Abwab snapshot/topics imports receive their own small mutable target state and prove
 checksum validation, empty-table or other documented preconditions, transactionality, rollback,

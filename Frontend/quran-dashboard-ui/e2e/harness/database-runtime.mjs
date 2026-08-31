@@ -11,6 +11,11 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 
 import {
+  COMPACT_ARTIFACT_IDS,
+  COMPACT_BASE_ARTIFACT_ID,
+  COMPACT_PHRASE_READY_ARTIFACT_ID,
+} from './artifact-contract.mjs';
+import {
   assertLoopbackConnection,
   assertRuntimeConnection,
   parsePostgresConnectionString,
@@ -18,7 +23,6 @@ import {
   withDatabase,
 } from './database-contract.mjs';
 
-const ARTIFACT_ID = 'compact-cross-stack-base';
 const FRONTEND_ROOT = process.cwd();
 const REPOSITORY_ROOT = resolve(FRONTEND_ROOT, '../..');
 const ARTIFACT_TOOL = resolve(REPOSITORY_ROOT, 'Backend/scripts/test-artifacts');
@@ -123,8 +127,14 @@ export function immutableDatabaseFingerprint(connection) {
 async function provisionArtifactDatabase() {
   verifyArtifact();
 
-  const artifact = readLockedArtifact();
-  const image = `postgres@${artifact.postgresql.containerDigest}`;
+  const artifacts = COMPACT_ARTIFACT_IDS.map(readLockedArtifact);
+  const baseArtifact = readLockedArtifact(COMPACT_BASE_ARTIFACT_ID);
+  const phraseReadyArtifact = readLockedArtifact(COMPACT_PHRASE_READY_ARTIFACT_ID);
+  const digests = new Set(artifacts.map((artifact) => artifact.postgresql.containerDigest));
+  if (digests.size !== 1) {
+    throw new Error('Composable compact E2E artifacts must lock the same PostgreSQL image digest.');
+  }
+  const image = `postgres@${baseArtifact.postgresql.containerDigest}`;
   try {
     execFileSync('docker', ['image', 'inspect', image], { stdio: 'ignore' });
   } catch {
@@ -202,11 +212,26 @@ async function provisionArtifactDatabase() {
         '--exit-on-error',
         '--no-owner',
         '--no-privileges',
-        resolve(REPOSITORY_ROOT, artifactPayloadPath(artifact)),
+        resolve(REPOSITORY_ROOT, artifactPayloadPath(baseArtifact)),
       ],
       postgresEnvironment(connection),
-      'restore the verified compact E2E artifact',
+      'restore the verified compact cross-stack base artifact',
     );
+    runPostgresCommand(
+      'pg_restore',
+      [
+        ...connectionArguments(connection),
+        '--dbname',
+        database,
+        '--exit-on-error',
+        '--no-owner',
+        '--no-privileges',
+        resolve(REPOSITORY_ROOT, artifactPayloadPath(phraseReadyArtifact)),
+      ],
+      postgresEnvironment(connection),
+      'restore the verified compact PhraseSearch-ready overlay artifact',
+    );
+    verifyPhraseSearchRuntime(connection, phraseReadyArtifact);
 
     return {
       mode: 'artifact',
@@ -241,25 +266,29 @@ function verifyArtifact() {
     if (!verifierAssembly) {
       throw new Error('Sealed execution requires a receipt-bound artifact verifier assembly.');
     }
-    execFileSync(
-      'dotnet',
-      [
-        verifierAssembly,
-        'verify',
-        '--artifact',
-        ARTIFACT_ID,
-        '--root',
-        REPOSITORY_ROOT,
-      ],
-      { cwd: REPOSITORY_ROOT, stdio: 'inherit' },
-    );
+    for (const artifactId of COMPACT_ARTIFACT_IDS) {
+      execFileSync(
+        'dotnet',
+        [
+          verifierAssembly,
+          'verify',
+          '--artifact',
+          artifactId,
+          '--root',
+          REPOSITORY_ROOT,
+        ],
+        { cwd: REPOSITORY_ROOT, stdio: 'inherit' },
+      );
+    }
     return;
   }
 
-  execFileSync(ARTIFACT_TOOL, ['verify', '--artifact', ARTIFACT_ID], {
-    cwd: REPOSITORY_ROOT,
-    stdio: 'inherit',
-  });
+  for (const artifactId of COMPACT_ARTIFACT_IDS) {
+    execFileSync(ARTIFACT_TOOL, ['verify', '--artifact', artifactId], {
+      cwd: REPOSITORY_ROOT,
+      stdio: 'inherit',
+    });
+  }
 }
 
 function provisionCloneLocalDatabase(apiProject) {
@@ -370,12 +399,12 @@ function provisionCloneLocalDatabase(apiProject) {
   }
 }
 
-function readLockedArtifact() {
+function readLockedArtifact(artifactId) {
   const artifactLock = JSON.parse(readFileSync(ARTIFACT_LOCK, 'utf8'));
   const artifacts = Array.isArray(artifactLock.artifacts) ? artifactLock.artifacts : [];
-  const matches = artifacts.filter((artifact) => artifact.id === ARTIFACT_ID);
+  const matches = artifacts.filter((artifact) => artifact.id === artifactId);
   if (matches.length !== 1) {
-    throw new Error(`Expected one locked artifact named ${ARTIFACT_ID}.`);
+    throw new Error(`Expected one locked artifact named ${artifactId}.`);
   }
   return matches[0];
 }
@@ -383,9 +412,69 @@ function readLockedArtifact() {
 function artifactPayloadPath(artifact) {
   const payloads = artifact.stagedFiles.filter((file) => file.role === 'payload');
   if (payloads.length !== 1) {
-    throw new Error(`Artifact ${ARTIFACT_ID} must expose exactly one database payload.`);
+    throw new Error(`Artifact ${artifact.id} must expose exactly one database payload.`);
   }
   return payloads[0].path;
+}
+
+function verifyPhraseSearchRuntime(connection, artifact) {
+  const manifest = JSON.parse(
+    readFileSync(resolve(REPOSITORY_ROOT, artifact.manifestPath), 'utf8'),
+  );
+  const expected = manifest.phraseSearch;
+  if (
+    typeof expected?.activeBuildId !== 'string'
+    || typeof expected.sourceFingerprint !== 'string'
+    || expected.readiness !== 'available'
+  ) {
+    throw new Error('The PhraseSearch-ready manifest has no complete runtime expectation.');
+  }
+
+  let actual;
+  try {
+    actual = execFileSync(
+      'psql',
+      [
+        ...connectionArguments(connection),
+        '--dbname',
+        connection.database,
+        '--set',
+        'ON_ERROR_STOP=1',
+        '--tuples-only',
+        '--no-align',
+        '--command',
+        `SELECT concat_ws('|', state.active_build_id, state.source_fingerprint,
+          state.is_stale, build.source_fingerprint, build.status::int,
+          build.exact_ready, build.similarity_ready)
+         FROM quran_phrase_index_state AS state
+         INNER JOIN quran_phrase_index_builds AS build ON build.id = state.active_build_id
+         WHERE state.id = 1;`,
+      ],
+      {
+        encoding: 'utf8',
+        env: postgresEnvironment(connection),
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    ).trim();
+  } catch {
+    throw new Error('Failed to verify the composed PhraseSearch runtime identity.');
+  }
+
+  const expectedRuntime = [
+    expected.activeBuildId,
+    expected.sourceFingerprint,
+    'f',
+    expected.sourceFingerprint,
+    '3',
+    't',
+    't',
+  ].join('|');
+  if (actual !== expectedRuntime) {
+    throw new Error('The composed PhraseSearch runtime differs from the verified manifest.');
+  }
+  console.log(
+    `[e2e] PhraseSearch runtime verified activeBuildId=${expected.activeBuildId} sourceFingerprint=${expected.sourceFingerprint}`,
+  );
 }
 
 function loadBackendConnectionString(apiProject) {

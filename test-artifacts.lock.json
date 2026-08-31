@@ -131,6 +131,111 @@
         "reason": "Extend the source-reviewed Quran fidelity oracle and compact payload with exact ayah Unicode, page relationships, and 1:1 study-source associations for issue #83.",
         "ownerRole": "artifact-maintainer"
       }
+    },
+    {
+      "id": "compact-phrase-search-ready",
+      "version": "2026.08.31.1",
+      "requiredLanes": [
+        "critical",
+        "full"
+      ],
+      "stagedFiles": [
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/manifest.json",
+          "role": "manifest",
+          "size": 3173,
+          "sha256": "a216e809dd168852a35df25e38dab5e6acf5318cc5d2f85ec5b1439a76ff7de9"
+        },
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/oracle.json",
+          "role": "oracle",
+          "size": 4639,
+          "sha256": "5562ec216ec3dd87bda16034be97c8fac34577315c82f040ddc5d2c571677cb9"
+        },
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/compact-phrase-search-ready.dump",
+          "role": "payload",
+          "size": 8699,
+          "sha256": "de231a3f6aab423de3c898fa8550194606c5bb38b56fc80c5bebda0aeee1db11"
+        }
+      ],
+      "manifestPath": "test-artifacts/compact-phrase-search-ready/manifest.json",
+      "migration": {
+        "head": "20260826012918_AddQuranPhraseSearchIndex",
+        "count": 6
+      },
+      "tableScope": {
+        "quran": true,
+        "phraseSearch": true,
+        "abwab": false,
+        "access": false,
+        "linking": false,
+        "tables": [
+          "quran_mushaf_pages",
+          "quran_phrase_index_builds",
+          "quran_phrase_index_state",
+          "quran_phrase_occurrences",
+          "quran_phrase_search_tokens",
+          "quran_phrase_similarity_anchor_stats",
+          "quran_phrase_similarity_edges",
+          "quran_phrase_variants",
+          "quran_words",
+          "quran_words_unique_simple",
+          "quran_words_unique_tashkeel"
+        ]
+      },
+      "postgresql": {
+        "producerVersion": "18.6",
+        "containerDigest": "sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7"
+      },
+      "producer": {
+        "command": "verify the completed full-index report and snapshot; compare selected Quran words and unique-word first-occurrence closure with the pinned Uthmani source; extract two reviewed variants, three occurrences, and one real similarity edge; normalize compact build totals; pg_dump --data-only with the explicit 11-table manifest allowlist",
+        "version": "1"
+      },
+      "sources": [
+        {
+          "id": "compact-cross-stack-base",
+          "version": "2026.08.31.3",
+          "sha256": "cce855a3c76aa55af3a0d6203d4026d73655868a06354e051db71bd82e666a1f",
+          "provenance": "The overlay composes after the already locked compact cross-stack schema and source-reviewed page-1 Quran fixture."
+        },
+        {
+          "id": "quran-foundation-uthmani",
+          "version": "1",
+          "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+          "provenance": "Exact Quran word IDs, locations, and Uthmani text for 1:1, 11:41, 27:30, and every unique-word first-occurrence foreign-key closure row were compared with resources/import-sources/quran-foundation/words/uthmani.json."
+        },
+        {
+          "id": "phrase-search-full-build-report",
+          "version": "2026.08.29",
+          "sha256": "2010f1cd2c0fe7a23a55eea196902d6b0fa165abe2acf9db5a5ed6f7ff7f17e0",
+          "provenance": "The completed phrase-index-v2 report attests active build identity, source fingerprint, exact readiness, similarity readiness, and successful activation."
+        },
+        {
+          "id": "phrase-search-ready-source-snapshot",
+          "version": "2026.08.29",
+          "sha256": "b4be17fc52b8e2d89c273585ec762bab82e34fdf755e99dccf50d44d267e9d98",
+          "provenance": "Exact selected build, token, variant, occurrence, anchor-stat, similarity-edge, and derived word-identity rows were extracted from the PostgreSQL 18.6 data-only snapshot produced after that successful build."
+        }
+      ],
+      "sentinels": [
+        {
+          "id": "phrase-search.available-reviewed-subset",
+          "expectedCount": 3,
+          "oracleSha256": "5562ec216ec3dd87bda16034be97c8fac34577315c82f040ddc5d2c571677cb9"
+        }
+      ],
+      "immutableStorageId": "repo://test-artifacts/compact-phrase-search-ready@sha256:de231a3f6aab423de3c898fa8550194606c5bb38b56fc80c5bebda0aeee1db11",
+      "refresh": {
+        "date": "2026-08-31",
+        "reason": "Add the source-reviewed compact PhraseSearch available-path fixture for issue #88 without rebuilding the index during ordinary journeys.",
+        "ownerRole": "artifact-maintainer"
+      },
+      "phraseSearch": {
+        "manifestSha256": "a216e809dd168852a35df25e38dab5e6acf5318cc5d2f85ec5b1439a76ff7de9",
+        "sourceFingerprint": "6320611aa63d3ee757e4bc5a75fc19b5c5fd0e78a257be59e78aed7d5a145957",
+        "readinessExpectation": "available"
+      }
     }
   ]
 }
