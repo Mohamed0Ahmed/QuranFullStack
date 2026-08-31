@@ -246,11 +246,24 @@ internal static class ArtifactTrustLockValidator
             return "full-canonical restore contracts require exactly one payload file";
         }
 
-        var oracleFiles = artifact.StagedFiles.Where(file => file.Role == "oracle").ToArray();
-        if (oracleFiles.Length != 1
-            || artifact.Sentinels.Any(sentinel => sentinel.OracleSha256 != oracleFiles[0].Sha256))
+        if (!string.Equals(
+                artifact.ImmutableStorageId,
+                $"local://{artifact.Id}@sha256:{payloads[0].Sha256}",
+                StringComparison.Ordinal))
         {
-            return "full-canonical restore contracts require one staged oracle matching every sentinel hash";
+            return "full-canonical restore contracts require a local content-addressed identity matching the payload sha256";
+        }
+
+        if (artifact.TableCounts is null
+            || !artifact.TableCounts.Select(table => table.Name).SequenceEqual(artifact.TableScope.Tables, StringComparer.Ordinal)
+            || artifact.TableCounts.Any(table => table.Rows < 0 || !IsValidTableIdentifier(table.Name)))
+        {
+            return "full-canonical restore contracts require locked non-negative counts for every scoped table";
+        }
+
+        if (artifact.Sentinels.Any(sentinel => sentinel.OracleSha256 != payloads[0].Sha256))
+        {
+            return "full-canonical restore contracts require every sentinel hash to match the payload sha256";
         }
 
         if (artifact.Restore.SentinelTables.Count == 0
@@ -272,9 +285,9 @@ internal static class ArtifactTrustLockValidator
                 return "restore sentinel tables must map every locked sentinel to a scoped safe table and expected count";
             }
 
-            if (!IsSha256(sentinel.CriticalReadSha256))
+            if (sentinel.CriticalReadSha256 is not null && !IsSha256(sentinel.CriticalReadSha256))
             {
-                return "restore sentinel tables require a lowercase SHA-256 critical-read fingerprint";
+                return "restore sentinel tables require a lowercase SHA-256 critical-read fingerprint when supplied";
             }
         }
 

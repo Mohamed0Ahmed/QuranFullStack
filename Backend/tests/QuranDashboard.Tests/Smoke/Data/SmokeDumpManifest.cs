@@ -5,6 +5,7 @@ namespace QuranDashboard.Tests.Smoke.Data;
 // carried as properties nothing asserts.
 internal sealed record SmokeDumpManifest(
     string MigrationId,
+    int MigrationCount,
     string DumpSha256,
     string PgDumpVersion,
     IReadOnlyDictionary<string, int> Tables)

@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://quran-dashboard.local/schemas/test-artifact-manifest.schema.json",
-  "title": "Quran Dashboard external test artifact manifest",
+  "title": "Quran Dashboard test artifact manifest",
   "type": "object",
   "additionalProperties": false,
   "required": [

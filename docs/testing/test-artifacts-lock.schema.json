@@ -101,6 +101,19 @@
     "artifact": {
       "type": "object",
       "additionalProperties": false,
+      "allOf": [
+        {
+          "if": { "required": ["restore"] },
+          "then": {
+            "required": ["tableCounts"],
+            "properties": {
+              "immutableStorageId": {
+                "pattern": "^local://[^?#\\s]+@sha256:[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      ],
       "required": [
         "id",
         "version",
@@ -281,6 +294,19 @@
         },
         "restore": {
           "$ref": "#/$defs/restore"
+        },
+        "tableCounts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "rows"],
+            "properties": {
+              "name": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,62}$" },
+              "rows": { "type": "integer", "minimum": 0 }
+            }
+          }
         }
       }
     },
@@ -302,7 +328,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "table", "expectedCount", "criticalReadSha256"],
+            "required": ["id", "table", "expectedCount"],
             "properties": {
               "id": {
                 "$ref": "#/$defs/token"

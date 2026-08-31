@@ -82,7 +82,7 @@ internal static class FullCanonicalArtifactProvisioningCommand
                 artifactLock,
                 request.RepositoryRoot,
                 request.StagingRoot,
-                new ProcessFullCanonicalArtifactFetcher(request.FetchAdapterPath!),
+                new LocalFullCanonicalArtifactFetcher(request.ArtifactRoot!),
                 new ProcessFullCanonicalArtifactDatabase(
                     request.DatabaseConnectionFile,
                     request.DatabaseContainer,
@@ -185,7 +185,6 @@ internal static class FullCanonicalArtifactProvisioningCommand
             ? FullCanonicalProvisioningOperation.Provision
             : FullCanonicalProvisioningOperation.Verify;
         string? runKind = null;
-        string? fetchAdapterPath = null;
         string? databaseConnectionFile = null;
         string? databaseContainer = null;
         string? stagingRoot = null;
@@ -212,9 +211,6 @@ internal static class FullCanonicalArtifactProvisioningCommand
                 case "--run" when runKind is null:
                     runKind = value;
                     break;
-                case "--fetch-adapter" when fetchAdapterPath is null && operation == FullCanonicalProvisioningOperation.Provision:
-                    fetchAdapterPath = value;
-                    break;
                 case "--database-connection-file" when databaseConnectionFile is null:
                     databaseConnectionFile = value;
                     break;
@@ -240,14 +236,23 @@ internal static class FullCanonicalArtifactProvisioningCommand
             || databaseConnectionFile is null
             || databaseContainer is null
             || stagingRoot is null
-            || receiptPath is null
-            || (operation == FullCanonicalProvisioningOperation.Provision && fetchAdapterPath is null))
+            || receiptPath is null)
         {
             WriteUsage(error);
             return null;
         }
 
+        var artifactRoot = operation == FullCanonicalProvisioningOperation.Provision
+            ? Environment.GetEnvironmentVariable("QURAN_TEST_ARTIFACT_ROOT")
+            : null;
+        if (operation == FullCanonicalProvisioningOperation.Provision && string.IsNullOrWhiteSpace(artifactRoot))
+        {
+            error.WriteLine("Full-canonical local provisioning requires QURAN_TEST_ARTIFACT_ROOT.");
+            return null;
+        }
+
         var fullRepositoryRoot = Path.GetFullPath(repositoryRoot ?? Directory.GetCurrentDirectory());
+        var fullArtifactRoot = artifactRoot is null ? null : Path.GetFullPath(artifactRoot);
         var fullDatabaseConnectionFile = Path.GetFullPath(databaseConnectionFile);
         var fullStagingRoot = Path.GetFullPath(stagingRoot);
         var fullReceiptPath = Path.GetFullPath(receiptPath);
@@ -273,7 +278,7 @@ internal static class FullCanonicalArtifactProvisioningCommand
             fullRepositoryRoot,
             fullDatabaseConnectionFile,
             databaseContainer,
-            fetchAdapterPath is null ? null : Path.GetFullPath(fetchAdapterPath),
+            fullArtifactRoot,
             fullStagingRoot,
             fullReceiptPath);
     }
@@ -364,7 +369,7 @@ internal static class FullCanonicalArtifactProvisioningCommand
     private static void WriteUsage(TextWriter error)
     {
         error.WriteLine(
-            "Usage: test-artifacts provision-full-canonical --run scheduled|release --fetch-adapter PATH --database-connection-file PATH --database-container NAME --staging-root PATH --receipt PATH [--root ROOT]");
+            "Usage: QURAN_TEST_ARTIFACT_ROOT=PATH test-artifacts provision-full-canonical --run scheduled|release --database-connection-file PATH --database-container NAME --staging-root PATH --receipt PATH [--root ROOT]");
         error.WriteLine(
             "       test-artifacts verify-full-canonical --run scheduled|release --database-connection-file PATH --database-container NAME --staging-root PATH --receipt PATH [--root ROOT]");
     }
@@ -382,53 +387,49 @@ internal sealed record FullCanonicalProvisioningCommandRequest(
     string RepositoryRoot,
     string DatabaseConnectionFile,
     string DatabaseContainer,
-    string? FetchAdapterPath,
+    string? ArtifactRoot,
     string StagingRoot,
     string ReceiptPath);
 
-internal sealed class ProcessFullCanonicalArtifactFetcher(string adapterPath) : IFullCanonicalArtifactFetcher
+internal sealed class LocalFullCanonicalArtifactFetcher(string artifactRoot) : IFullCanonicalArtifactFetcher
 {
     public async Task FetchAsync(
         LockedArtifact artifact,
         string stagingRoot,
         CancellationToken cancellationToken = default)
     {
-        if (!File.Exists(adapterPath))
+        var payload = artifact.StagedFiles.Single(file => file.Role == "payload");
+        var storageIdentity = $"@sha256:{payload.Sha256}";
+        if (!artifact.ImmutableStorageId.StartsWith("local://", StringComparison.Ordinal)
+            || !artifact.ImmutableStorageId.EndsWith(storageIdentity, StringComparison.Ordinal))
         {
-            throw new FileNotFoundException("The full-canonical fetch adapter is missing.", adapterPath);
+            throw new InvalidOperationException(
+                "Local full-canonical provisioning requires a local immutable storage identity matching the payload SHA-256.");
         }
 
-        var startInfo = new ProcessStartInfo(adapterPath)
+        var contentRoot = Path.Combine(Path.GetFullPath(artifactRoot), "sha256", payload.Sha256);
+        if (!Directory.Exists(contentRoot))
         {
-            RedirectStandardError = true,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-        };
-        startInfo.ArgumentList.Add("--artifact-id");
-        startInfo.ArgumentList.Add(artifact.Id);
-        startInfo.ArgumentList.Add("--immutable-storage-id");
-        startInfo.ArgumentList.Add(artifact.ImmutableStorageId);
-        startInfo.ArgumentList.Add("--staging-root");
-        startInfo.ArgumentList.Add(stagingRoot);
-
-        await RunWithoutLoggingAsync(startInfo, cancellationToken, "fetch the full-canonical artifact");
-    }
-
-    private static async Task RunWithoutLoggingAsync(
-        ProcessStartInfo startInfo,
-        CancellationToken cancellationToken,
-        string operation)
-    {
-        using var process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException($"Could not start the process to {operation}.");
-        var discardOutput = process.StandardOutput.BaseStream.CopyToAsync(Stream.Null, cancellationToken);
-        var discardError = process.StandardError.BaseStream.CopyToAsync(Stream.Null, cancellationToken);
-        await process.WaitForExitAsync(cancellationToken);
-        await Task.WhenAll(discardOutput, discardError);
-        if (process.ExitCode != 0)
-        {
-            throw new InvalidOperationException($"The process to {operation} failed with exit code {process.ExitCode}.");
+            throw new FileNotFoundException(
+                $"The content-addressed artifact is missing beneath QURAN_TEST_ARTIFACT_ROOT: sha256/{payload.Sha256}.");
         }
+
+        foreach (var file in artifact.StagedFiles)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var source = Path.Combine(contentRoot, Path.GetFileName(file.Path));
+            if (!File.Exists(source))
+            {
+                throw new FileNotFoundException(
+                    $"The content-addressed artifact is missing beneath QURAN_TEST_ARTIFACT_ROOT: sha256/{payload.Sha256}/{Path.GetFileName(file.Path)}.");
+            }
+
+            var destination = Path.Combine(stagingRoot, file.Path);
+            Directory.CreateDirectory(Path.GetDirectoryName(destination)!);
+            File.Copy(source, destination, overwrite: true);
+        }
+
+        await Task.CompletedTask;
     }
 }
 

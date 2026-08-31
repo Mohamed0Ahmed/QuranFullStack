@@ -40,6 +40,97 @@ public sealed class FullCanonicalArtifactProvisioningTests(
     }
 
     [Fact]
+    public async Task Provision_LocalContentAddressedArtifactRootRestoresOnce_ThenExecutionOnlyVerifiesSharedState()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var artifactRoot = Path.Combine(repository.Root, ".pr-observation", "local-artifacts");
+        try
+        {
+            repository.CopyToLocalArtifactRoot(artifactRoot);
+            var database = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+
+            var receipt = await FullCanonicalArtifactProvisioner.ProvisionAsync(
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                new LocalFullCanonicalArtifactFetcher(artifactRoot),
+                database);
+
+            await FullCanonicalArtifactProvisioner.VerifyProvisionedStateAsync(
+                receipt,
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                database);
+
+            database.RestoreCalls.Should().Be(1);
+            receipt.Artifacts.Should().ContainSingle();
+        }
+        finally
+        {
+            if (Directory.Exists(artifactRoot))
+            {
+                Directory.Delete(artifactRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Provision_MissingLocalArtifactRootFailsClosedWithoutRepositoryFallbackOrRestore()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var missingRoot = Path.Combine(Path.GetTempPath(), $"quran-dashboard-missing-artifact-{Guid.NewGuid():N}");
+        var database = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+
+        var action = () => FullCanonicalArtifactProvisioner.ProvisionAsync(
+            "scheduled",
+            repository.Lock,
+            repository.Root,
+            repository.StagingRoot,
+            new LocalFullCanonicalArtifactFetcher(missingRoot),
+            database);
+
+        await action.Should().ThrowAsync<FileNotFoundException>()
+            .WithMessage("*QURAN_TEST_ARTIFACT_ROOT*");
+        database.RestoreCalls.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Provision_LocalArtifactOutsideContentAddressedLocationFailsClosedWithoutRestore()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var artifactRoot = Path.Combine(Path.GetTempPath(), $"quran-dashboard-local-artifact-{Guid.NewGuid():N}");
+        try
+        {
+            repository.CopyToLocalArtifactRoot(artifactRoot, useIncorrectContentAddress: true);
+            var database = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+
+            var action = () => FullCanonicalArtifactProvisioner.ProvisionAsync(
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                new LocalFullCanonicalArtifactFetcher(artifactRoot),
+                database);
+
+            await action.Should().ThrowAsync<FileNotFoundException>()
+                .WithMessage("*content-addressed artifact is missing*");
+            database.RestoreCalls.Should().Be(0);
+        }
+        finally
+        {
+            if (Directory.Exists(artifactRoot))
+            {
+                Directory.Delete(artifactRoot, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
     public async Task Provision_MismatchedFetchedPayloadFailsBeforeRestore()
     {
         await fixture.ResetAsync();
@@ -152,7 +243,7 @@ public sealed class FullCanonicalArtifactProvisioningTests(
     }
 
     [Fact]
-    public async Task Provision_PopulatedTargetFailsBeforeRestore()
+    public async Task Provision_PopulatedTargetFailsAfterArtifactVerificationBeforeRestore()
     {
         await fixture.ResetAsync();
         await fixture.InsertProvisionedRowAsync();
@@ -170,7 +261,7 @@ public sealed class FullCanonicalArtifactProvisioningTests(
 
         await action.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("*not empty*quran_provision_contract*");
-        fetcher.Calls.Should().Be(0);
+        fetcher.Calls.Should().Be(1);
         database.RestoreCalls.Should().Be(0);
     }
 
@@ -528,6 +619,63 @@ public sealed class FullCanonicalArtifactProvisioningTests(
         }
     }
 
+    [Fact]
+    public void CommandParse_RequiresAndUsesLocalArtifactRoot()
+    {
+        var original = Environment.GetEnvironmentVariable("QURAN_TEST_ARTIFACT_ROOT");
+        var root = Path.Combine(Path.GetTempPath(), $"quran-dashboard-artifact-root-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(root);
+        try
+        {
+            Environment.SetEnvironmentVariable("QURAN_TEST_ARTIFACT_ROOT", null);
+            using var missingError = new StringWriter();
+            var missing = FullCanonicalArtifactProvisioningCommand.Parse(
+                ProvisioningArguments(root),
+                missingError);
+
+            missing.Should().BeNull();
+            missingError.ToString().Should().Contain("QURAN_TEST_ARTIFACT_ROOT");
+
+            Environment.SetEnvironmentVariable("QURAN_TEST_ARTIFACT_ROOT", root);
+            using var presentError = new StringWriter();
+            var present = FullCanonicalArtifactProvisioningCommand.Parse(
+                ProvisioningArguments(root),
+                presentError);
+
+            present.Should().NotBeNull();
+            present!.ArtifactRoot.Should().Be(Path.GetFullPath(root));
+            presentError.ToString().Should().BeEmpty();
+
+            Environment.SetEnvironmentVariable(
+                "QURAN_TEST_ARTIFACT_ROOT",
+                Path.Combine(root, "repository"));
+            using var repositoryError = new StringWriter();
+            var repositoryRoot = FullCanonicalArtifactProvisioningCommand.Parse(
+                ProvisioningArguments(root),
+                repositoryError);
+
+            repositoryRoot.Should().NotBeNull();
+            repositoryRoot!.ArtifactRoot.Should().Be(Path.Combine(root, "repository"));
+            repositoryError.ToString().Should().BeEmpty();
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("QURAN_TEST_ARTIFACT_ROOT", original);
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    private static string[] ProvisioningArguments(string outsideRoot) =>
+    [
+        "provision-full-canonical",
+        "--run", "scheduled",
+        "--database-connection-file", Path.Combine(outsideRoot, "postgres.connection"),
+        "--database-container", "synthetic",
+        "--staging-root", Path.Combine(outsideRoot, "staging"),
+        "--receipt", Path.Combine(outsideRoot, "receipt.json"),
+        "--root", Path.Combine(outsideRoot, "repository"),
+    ];
+
     private static async Task CreateProvisionContractTableAsync(string connectionString)
     {
         await using var connection = new NpgsqlConnection(connectionString);
@@ -702,7 +850,6 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
 {
     private const string ArtifactDirectory = "artifacts/full-canonical";
     private const string ManifestRelativePath = $"{ArtifactDirectory}/manifest.json";
-    private const string OracleRelativePath = $"{ArtifactDirectory}/oracle.json";
     private const string PayloadRelativePath = $"{ArtifactDirectory}/full-canonical.sql";
 
     private readonly string sourceRoot;
@@ -744,9 +891,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
             Enumerable.Range(1, payloadRows)
                 .Select(index => $"INSERT INTO public.quran_provision_contract (id, value) VALUES ({index}, 'row-{index}');"));
         File.WriteAllText(Path.Combine(sourceRoot, PayloadRelativePath), payload);
-        File.WriteAllText(Path.Combine(sourceRoot, OracleRelativePath), "synthetic reviewed sentinel oracle\n");
-
-        var oracleHash = Sha256(Path.Combine(sourceRoot, OracleRelativePath));
+        var payloadHash = Sha256(Path.Combine(sourceRoot, PayloadRelativePath));
         var manifest = new JsonObject
         {
             ["contractVersion"] = 1,
@@ -783,7 +928,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                 {
                     ["id"] = "synthetic-quran-sentinel",
                     ["expectedCount"] = sentinelExpectedCount,
-                    ["oracleSha256"] = oracleHash,
+                    ["oracleSha256"] = payloadHash,
                 },
             },
         };
@@ -809,7 +954,6 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                     ["stagedFiles"] = new JsonArray(
                     [
                         StagedFile(ManifestRelativePath, "manifest", sourceRoot),
-                        StagedFile(OracleRelativePath, "oracle", sourceRoot),
                         StagedFile(PayloadRelativePath, "payload", sourceRoot),
                     ]),
                     ["manifestPath"] = ManifestRelativePath,
@@ -828,6 +972,10 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                         ["tables"] = extraTable is not null
                             ? new JsonArray("quran_provision_contract", extraTable)
                             : new JsonArray("quran_provision_contract"),
+                    },
+                    ["tableCounts"] = new JsonArray
+                    {
+                        new JsonObject { ["name"] = "quran_provision_contract", ["rows"] = 2 },
                     },
                     ["postgresql"] = new JsonObject
                     {
@@ -855,10 +1003,10 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                         {
                             ["id"] = "synthetic-quran-sentinel",
                             ["expectedCount"] = sentinelExpectedCount,
-                            ["oracleSha256"] = oracleHash,
+                            ["oracleSha256"] = payloadHash,
                         },
                     },
-                    ["immutableStorageId"] = $"test://full-canonical@sha256:{new string('c', 64)}",
+                    ["immutableStorageId"] = $"local://full-canonical@sha256:{Sha256(Path.Combine(sourceRoot, PayloadRelativePath))}",
                     ["refresh"] = new JsonObject
                     {
                         ["date"] = "2026-08-31",
@@ -877,6 +1025,7 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
             var duplicate = artifactLock["artifacts"]!.AsArray()[0]!.DeepClone().AsObject();
             duplicate["id"] = "full-canonical-second";
             duplicate["version"] = "synthetic-2";
+            duplicate["immutableStorageId"] = $"local://full-canonical-second@sha256:{Sha256(Path.Combine(sourceRoot, PayloadRelativePath))}";
             duplicate["restore"]!["order"] = 2;
             artifactLock["artifacts"]!.AsArray().Add(duplicate);
         }
@@ -901,6 +1050,21 @@ internal sealed class SyntheticCanonicalArtifactRepository : IDisposable
                 var content = File.ReadAllText(destination);
                 File.WriteAllText(destination, content.Replace("row-1", "row-x", StringComparison.Ordinal));
             }
+        }
+    }
+
+    internal void CopyToLocalArtifactRoot(string artifactRoot, bool useIncorrectContentAddress = false)
+    {
+        var payload = Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload");
+        var contentAddress = useIncorrectContentAddress ? new string('0', 64) : payload.Sha256;
+        var contentDirectory = Path.Combine(artifactRoot, "sha256", contentAddress);
+        Directory.CreateDirectory(contentDirectory);
+
+        foreach (var file in Lock.Artifacts.Single().StagedFiles)
+        {
+            File.Copy(
+                Path.Combine(sourceRoot, file.Path),
+                Path.Combine(contentDirectory, Path.GetFileName(file.Path)));
         }
     }
 

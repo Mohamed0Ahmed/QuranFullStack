@@ -106,9 +106,9 @@ internal static class FullCanonicalRecoveryRehearsal
         IFullCanonicalRecoveryDatabase database,
         CancellationToken cancellationToken)
     {
-        var manifest = TestArtifactManifest.ReadFrom(Path.Combine(stagingRoot, artifact.ManifestPath));
-        var counts = await database.CountRowsAsync(manifest.Tables.Select(table => table.Name).ToArray(), cancellationToken);
-        foreach (var table in manifest.Tables)
+        var manifest = ArtifactManifestReader.ReadTables(artifact, Path.Combine(stagingRoot, artifact.ManifestPath));
+        var counts = await database.CountRowsAsync(manifest.Select(table => table.Name).ToArray(), cancellationToken);
+        foreach (var table in manifest)
         {
             if (!counts.TryGetValue(table.Name, out var actual) || actual != table.Rows)
             {
@@ -132,6 +132,11 @@ internal static class FullCanonicalRecoveryRehearsal
 
             return new FullCanonicalSentinelResult(sentinel.Id, sentinel.Table, sentinel.ExpectedCount, actual);
         }).ToArray();
+        if (sentinels.Any(sentinel => sentinel.CriticalReadSha256 is null))
+        {
+            throw new InvalidOperationException("Recovery verification requires locked critical-read fingerprints.");
+        }
+
         var criticalReads = await database.ReadCriticalFingerprintsAsync(sentinels, cancellationToken);
         if (criticalReads.Count != sentinels.Count
             || sentinels.Any(sentinel => !criticalReads.ContainsKey(sentinel.Id)
@@ -144,7 +149,7 @@ internal static class FullCanonicalRecoveryRehearsal
         return new FullCanonicalRecoveredArtifact(
             artifact.Id,
             artifact.ImmutableStorageId,
-            manifest.Tables,
+            manifest,
             results,
             artifact.StagedFiles,
             artifact.Sources,
