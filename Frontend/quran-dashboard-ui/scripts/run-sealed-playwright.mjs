@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { COMPACT_ARTIFACT_IDS } from '../e2e/harness/artifact-contract.mjs';
 import {
   provisionDatabaseRuntime,
   removeDatabaseRuntimeState,
@@ -282,8 +283,16 @@ function validateReceiptAgainstWorkspace(receipt) {
   }
 
   const lock = JSON.parse(readFileSync(artifactLock, 'utf8'));
-  const artifact = lock.artifacts?.find((entry) => entry.id === 'compact-cross-stack-base');
-  if (`postgres@${artifact?.postgresql?.containerDigest}` !== receipt.inputs.postgresqlImage) {
+  const artifacts = COMPACT_ARTIFACT_IDS.map((artifactId) => {
+    const matches = lock.artifacts?.filter((entry) => entry.id === artifactId) ?? [];
+    if (matches.length !== 1) {
+      throw new Error(`Expected one locked compact artifact named ${artifactId}.`);
+    }
+    return matches[0];
+  });
+  if (artifacts.some(
+    (artifact) => `postgres@${artifact.postgresql?.containerDigest}` !== receipt.inputs.postgresqlImage,
+  )) {
     throw new Error('The provisioned PostgreSQL image differs from the artifact trust lock.');
   }
   execFileSync('docker', ['image', 'inspect', receipt.inputs.postgresqlImage], { stdio: 'ignore' });

@@ -1,6 +1,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
+import { COMPACT_ARTIFACT_IDS } from '../e2e/harness/artifact-contract.mjs';
+
 const playwright = resolve(process.cwd(), 'node_modules/.bin/playwright');
 const discovery = execFileSync(
   playwright,
@@ -11,7 +13,8 @@ const journeys = JSON.parse(discovery);
 if (!Array.isArray(journeys) || journeys.length === 0) {
   throw new Error('Critical Playwright execution received an empty discovery selection.');
 }
-if (journeys.some((journey) => journey.artifact !== 'compact-cross-stack-base')) {
+const supportedArtifacts = new Set(COMPACT_ARTIFACT_IDS);
+if (journeys.some((journey) => !supportedArtifacts.has(journey.artifact))) {
   throw new Error('Critical Playwright execution found an unsupported artifact selection.');
 }
 

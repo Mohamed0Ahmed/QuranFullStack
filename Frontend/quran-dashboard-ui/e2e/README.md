@@ -8,7 +8,8 @@ npm run e2e:provision
 ```
 
 This runs `npm ci`, locked NuGet restore, exact Playwright Chromium installation, digest-pinned
-PostgreSQL image acquisition, compact-artifact verification, ephemeral localhost certificate
+PostgreSQL image acquisition, verification of the compact base and PhraseSearch-ready overlay,
+ephemeral localhost certificate
 generation, and Backend/Frontend builds. It writes a credential-free receipt under
 `.playwright/provisioning/`; the receipt is rejected after any npm, NuGet, artifact-lock, browser, or
 image drift.
@@ -55,6 +56,11 @@ run places Playwright's unfiltered working output in a separate private temporar
 deleted before evidence inspection. It copies and hashes its immutable provisioning receipt, then
 validates retained diagnostic filenames, MIME contracts, JSON schemas, PNG signatures, and text
 redaction before declaring the evidence safe.
+
+Artifact execution restores `compact-cross-stack-base` and composes the verified
+`compact-phrase-search-ready` data-only overlay with foreign-key constraints active. It then validates
+the runtime active build, source fingerprint, non-stale state, succeeded status, and exact/similarity
+readiness against the verified manifest. Ordinary execution never runs the PhraseSearch builder.
 
 Tests annotated `mutating` reset state before and after their scenario. The reset truncates only the
 literal allowlist in `e2e/harness/database-contract.mjs`; `permissions`, every `quran_*` table, and
