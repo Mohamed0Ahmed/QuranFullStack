@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quran-dashboard.local/schemas/previous-release-migration-upgrade.schema.json",
+  "title": "Quran Dashboard previous-release migration upgrade adoption",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["$schema", "contractVersion", "status", "blockers"],
+  "properties": {
+    "$schema": {
+      "const": "docs/testing/previous-release-migration-upgrade.schema.json"
+    },
+    "contractVersion": { "const": 1 },
+    "status": { "const": "blocked" },
+    "blockers": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "enum": [
+          "authoritative-previous-release-ref",
+          "approved-prior-schema-representative-artifact"
+        ]
+      }
+    }
+  }
+}
