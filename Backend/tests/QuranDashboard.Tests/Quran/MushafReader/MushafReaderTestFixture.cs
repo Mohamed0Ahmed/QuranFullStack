@@ -1,3 +1,7 @@
+using Microsoft.AspNetCore.Mvc.Testing;
+using QuranDashboard.Api.Controllers.System;
+using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
@@ -9,6 +13,7 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
 
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
+    private WebApplicationFactory<HealthController>? apiFactory;
     private PostgreSqlDatabaseLease? databaseLease;
     private ServiceProvider? rootProvider;
 
@@ -46,6 +51,12 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
 
     public async Task DisposeAsync()
     {
+        if (apiFactory is not null)
+        {
+            await apiFactory.DisposeAsync();
+            apiFactory = null;
+        }
+
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
@@ -65,6 +76,15 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         }
 
         return rootProvider.CreateAsyncScope();
+    }
+
+    public HttpClient CreateClient()
+    {
+        apiFactory ??= SmokeApiHost.Build(
+            ConnectionString,
+            new FakeExternalUserProfileSource(),
+            new SmokeSqlCommandCapture());
+        return SmokeApiHost.CreateClient(apiFactory);
     }
 
     private ServiceProvider BuildServiceProvider()

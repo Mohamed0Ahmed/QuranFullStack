@@ -35,6 +35,10 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Quran\MushafReader\mushaf-reader-seed.sql" />
+    <EmbeddedResource Include="..\..\..\test-artifacts\compact-cross-stack-base\manifest.json"
+                      Link="Quran\MushafReader\compact-cross-stack-base-manifest.json" />
+    <EmbeddedResource Include="..\..\..\test-artifacts\compact-cross-stack-base\oracle.json"
+                      Link="Quran\MushafReader\quran-fidelity-oracle.json" />
     <EmbeddedResource Include="Quran\Words\unique-words-seed.sql" />
     <EmbeddedResource Include="Quran\WordsRoots\roots-explorer-seed.sql" />
     <EmbeddedResource Include="Quran\WordsMorphologyExplorers\morphology-explorers-seed.sql" />

@@ -149,6 +149,11 @@ export default class StructuredPlaywrightReporter {
 }
 
 const APPROVED_ATTACHMENTS = new Map([
+  ['accessibility-observations', {
+    contentType: 'application/json',
+    file: 'accessibility-observations.json',
+    maxBytes: 256 * 1024,
+  }],
   ['browser-console-errors', {
     contentType: 'application/json',
     file: 'browser-console-errors.json',
@@ -209,8 +214,33 @@ function validateDiagnosticBody(name, body) {
     throw new Error(`Approved diagnostic attachment ${name} must contain a JSON array.`);
   }
   if (name === 'request-metadata') validateRequestMetadata(parsed);
+  else if (name === 'accessibility-observations') validateAccessibilityObservations(parsed);
   else validateConsoleErrors(parsed);
   return parsed;
+}
+
+function validateAccessibilityObservations(entries) {
+  if (entries.length > 100) throw new Error('Accessibility observations exceed the retention limit.');
+  for (const entry of entries) {
+    requireRecord(entry, 'accessibility observation');
+    requireExactKeys(
+      entry,
+      new Set(['id', 'impact', 'help', 'nodeCount', 'targets']),
+      'accessibility observation',
+    );
+    requireShortString(entry.id, 'accessibility rule id', 256);
+    requireShortString(entry.impact, 'accessibility impact', 32);
+    requireShortString(entry.help, 'accessibility help', 1000);
+    if (!Number.isInteger(entry.nodeCount) || entry.nodeCount < 1 || entry.nodeCount > 1000) {
+      throw new Error('Accessibility node count must be a bounded positive integer.');
+    }
+    if (!Array.isArray(entry.targets) || entry.targets.length > 1000) {
+      throw new Error('Accessibility targets must be a bounded array.');
+    }
+    for (const target of entry.targets) {
+      requireShortString(target, 'accessibility target', 2000);
+    }
+  }
 }
 
 function validateRequestMetadata(entries) {

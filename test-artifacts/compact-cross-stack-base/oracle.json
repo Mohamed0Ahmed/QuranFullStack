@@ -1,4 +1,192 @@
 {
+    "contractVersion": 1,
+    "artifactId": "compact-cross-stack-base",
+    "pageNumber": 1,
+    "review": {
+        "reviewedOn": "2026-08-31",
+        "authority": "source-review",
+        "method": "Exact Unicode, relationship, and study-source review against the locked Quran Foundation, translation, and tafsir source identities; this oracle is not generated from the runtime database."
+    },
+    "sourceIdentities": [
+        {
+            "id": "quran-foundation-uthmani",
+            "version": "1",
+            "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+            "role": "word-text-and-locations",
+            "provenance": "Exact page-1 word text, verse keys, and word locations originate from resources/import-sources/quran-foundation/words/uthmani.json."
+        },
+        {
+            "id": "quran-foundation-ayah-metadata",
+            "version": "1",
+            "sha256": "bf1e0d24abf378acc7ebd35c4ecbcbf941057594fefa50322cc5c801565de0f4",
+            "role": "ayah-text",
+            "provenance": "Exact page-1 ayah Unicode originates from resources/import-sources/quran-foundation/metadata/quran-metadata-ayah.json."
+        },
+        {
+            "id": "quran-foundation-layout",
+            "version": "1",
+            "sha256": "9d6cf089a40c8c8e17939631470aa93fa33aea07aac3fd5dc7f6519b94d40d53",
+            "role": "mushaf-page-layout",
+            "provenance": "Exact page-1 line placement originates from resources/import-sources/quran-foundation/mushaf/qpc-v4-pages-layout.json."
+        },
+        {
+            "id": "translation-en-sahih-international",
+            "version": "1",
+            "sha256": "db544f7634cba2d69fdb9b0ccc43139a8784a8d8e33cb7802aefb0530614cb58",
+            "role": "translation-source-and-1:1-content",
+            "provenance": "Exact source identity and 1:1 content originate from resources/import-sources/quran-translations/sources/en-sahih-international.fn.json; the curated manifest records unknown license and provenance, so this fixture remains internal-only."
+        },
+        {
+            "id": "translation-source-manifest",
+            "version": "1",
+            "sha256": "f61cbcd36991cf88efdaaa835ff473aa85f4ac05edf3b8480a77ce3e2303ace9",
+            "role": "translation-source-provenance",
+            "provenance": "Source key, package path, content hash, coverage, and unknown license/provenance status originate from resources/import-sources/quran-translations/manifest.json."
+        },
+        {
+            "id": "translation-display-metadata",
+            "version": "1",
+            "sha256": "7f3c511d96412554b7383c9c02560fe5feeb7137f43dcc4884b8b7642d908d0a",
+            "role": "translation-visible-source-identity",
+            "provenance": "Reviewed Arabic and English display names for en-sahih-international originate from resources/import-sources/quran-translations/source-display-metadata.json."
+        },
+        {
+            "id": "tafsir-ar-muyassar",
+            "version": "1",
+            "sha256": "091e857e8f88142b20e7a38ffc0075cb9c3b92a07dcf66376dbe1cdd1fa2848e",
+            "role": "tafsir-source-and-1:1-content",
+            "provenance": "Exact source identity and 1:1 content originate from resources/import-sources/quran-tafsirs/sources/ar-muyassar.json; the curated manifest records unknown license and provenance, so this fixture remains internal-only."
+        },
+        {
+            "id": "tafsir-source-manifest",
+            "version": "1",
+            "sha256": "ae22b29e76eeac1789091d367382d3baa6291771c1f763c95ebd5f92a884daf8",
+            "role": "tafsir-source-provenance-and-visible-identity",
+            "provenance": "Source key, display names, contributor, package path, content hash, coverage, and unknown license/provenance status originate from resources/import-sources/quran-tafsirs/manifest.json."
+        }
+    ],
+    "study": {
+        "verseKey": "1:1",
+        "tafsir": {
+            "sourceKey": "ar-muyassar",
+            "displayNameAr": "التفسير الميسر",
+            "shortNameAr": "الميسر",
+            "languageCode": "ar",
+            "direction": "rtl",
+            "tafsirKind": "brief",
+            "sourceValueKind": "flat",
+            "sourceLeaderVerseKey": "1:1",
+            "isGroupLeader": true,
+            "coveredAyahCount": 1,
+            "coveredAyahKeys": ["1:1"],
+            "text": "<div class=ar lang=ar><h3>تسمية السورة</h3><p>• سميت الفاتحة؛ لأنها وقعت أول القرآن الكريم، فيفتتح بها المصحف كتابةً وقراءةً في الصلوات وغيرها.</p><h3>من مقاصد السورة</h3><p>• الثناءُ على الله بجميع المَحامِد، وتوحيدُه تعالى بالربوبية، وإفرادُه بالإلهية والعبادةِ بأنواعها، والإيمانُ بأسماء اللهِ - سبحانه وتعالى - وصفاتِه، وإثباتُ البعث والجزاء.</p><p>• التَّوجُّهُ إلى الله تعالى بطلبِ الهدايةِ إلى الدين الحق والصراط المستقيم، والتوفيقِ والتثبيتِ على الإيمانِ ونَهْجِ سبيل الصالحين، وتجنُّبِ طريق المغضوب عليهم والضالين.</p><h3>[التفسير]</h3><p>أبتدئ قراءة القرآن باسم الله مستعينًا به، <span class=\"qpc-hafs\">﴿ ٱللَّهِ﴾</span> علم على الرب -تبارك وتعالى- المعبود بحق دون سواه، وهو أخص أسماء الله تعالى، ولا يسمى به غيره سبحانه. <span class=\"qpc-hafs\">﴿ٱلرَّحۡمَٰنِ﴾</span> ذي الرحمة العامة الذي وسعت رحمته جميع الخلق، <span class=\"qpc-hafs\">﴿ٱلرَّحِيمِ﴾</span> بالمؤمنين، وهما اسمان من أسمائه تعالى، يتضمنان إثبات صفة الرحمة لله تعالى، كما يليق بجلاله.</p></div>"
+        },
+        "translation": {
+            "sourceKey": "en-sahih-international",
+            "displayNameAr": "صحيح إنترناشونال",
+            "displayNameEn": "Saheeh International",
+            "languageCode": "en",
+            "direction": "ltr",
+            "translationType": "with_footnotes",
+            "containsHtmlMarkup": true,
+            "text": "In the name of Allāh,[[Allāh is a proper name belonging only to the one Almighty God, Creator and Sustainer of the heavens and the earth and all that is within them, the Eternal and Absolute, to whom alone all worship is due.]] the Entirely Merciful, the Especially Merciful.[[Ar-Raḥmān and ar-Raḥeem are two names of Allāh derived from the word \"raḥmah\" (mercy) . In Arabic grammar both are intensive forms of \"merciful\" (i.e., extremely merciful) . A complimentary and comprehensive meaning is intended by using both together. Raḥmān is used only to describe Allāh, while raḥeem might be used to describe a person as well. The Prophet (ﷺ) was described in the Qur’ān as raḥeem. Raḥmān is above the human level (i.e., intensely merciful) . Since one usually understands intensity to be something of short duration, Allāh describes Himself also as raḥeem (i.e., continually merciful) . Raḥmān also carries a wider meaning - merciful to all creation. Justice is a part of this mercy. Raḥeem includes the concept of speciality - especially and specifically merciful to the believers. Forgiveness is a part of this mercy. In addition, Raḥmān is adjectival, referring to an attribute of Allāh and is part of His essence. Raḥeem is verbal, indicating what He does: i.e., bestowing and implementing mercy.]]"
+        }
+    },
+    "ayahs": [
+        {
+            "verseKey": "1:1",
+            "textUthmani": "بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ ١",
+            "wordLocations": ["1:1:1", "1:1:2", "1:1:3", "1:1:4", "1:1:5"]
+        },
+        {
+            "verseKey": "1:2",
+            "textUthmani": "ٱلۡحَمۡدُ لِلَّهِ رَبِّ ٱلۡعَٰلَمِينَ ٢",
+            "wordLocations": ["1:2:1", "1:2:2", "1:2:3", "1:2:4", "1:2:5"]
+        },
+        {
+            "verseKey": "1:3",
+            "textUthmani": "ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ ٣",
+            "wordLocations": ["1:3:1", "1:3:2", "1:3:3"]
+        },
+        {
+            "verseKey": "1:4",
+            "textUthmani": "مَٰلِكِ يَوۡمِ ٱلدِّينِ ٤",
+            "wordLocations": ["1:4:1", "1:4:2", "1:4:3", "1:4:4"]
+        },
+        {
+            "verseKey": "1:5",
+            "textUthmani": "إِيَّاكَ نَعۡبُدُ وَإِيَّاكَ نَسۡتَعِينُ ٥",
+            "wordLocations": ["1:5:1", "1:5:2", "1:5:3", "1:5:4", "1:5:5"]
+        },
+        {
+            "verseKey": "1:6",
+            "textUthmani": "ٱهۡدِنَا ٱلصِّرَٰطَ ٱلۡمُسۡتَقِيمَ ٦",
+            "wordLocations": ["1:6:1", "1:6:2", "1:6:3", "1:6:4"]
+        },
+        {
+            "verseKey": "1:7",
+            "textUthmani": "صِرَٰطَ ٱلَّذِينَ أَنۡعَمۡتَ عَلَيۡهِمۡ غَيۡرِ ٱلۡمَغۡضُوبِ عَلَيۡهِمۡ وَلَا ٱلضَّآلِّينَ ٧",
+            "wordLocations": ["1:7:1", "1:7:2", "1:7:3", "1:7:4", "1:7:5", "1:7:6", "1:7:7", "1:7:8", "1:7:9", "1:7:10"]
+        }
+    ],
+    "lines": [
+        {
+            "lineNumber": 1,
+            "lineType": "surah_name",
+            "isCentered": true,
+            "surahNumber": 1,
+            "wordLocations": []
+        },
+        {
+            "lineNumber": 2,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:1:1", "1:1:2", "1:1:3", "1:1:4", "1:1:5"]
+        },
+        {
+            "lineNumber": 3,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:2:1", "1:2:2", "1:2:3", "1:2:4", "1:2:5"]
+        },
+        {
+            "lineNumber": 4,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:3:1", "1:3:2", "1:3:3", "1:4:1", "1:4:2", "1:4:3", "1:4:4"]
+        },
+        {
+            "lineNumber": 5,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:5:1", "1:5:2", "1:5:3", "1:5:4", "1:5:5", "1:6:1"]
+        },
+        {
+            "lineNumber": 6,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:6:2", "1:6:3", "1:6:4", "1:7:1", "1:7:2", "1:7:3"]
+        },
+        {
+            "lineNumber": 7,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:7:4", "1:7:5", "1:7:6", "1:7:7"]
+        },
+        {
+            "lineNumber": 8,
+            "lineType": "ayah",
+            "isCentered": true,
+            "surahNumber": null,
+            "wordLocations": ["1:7:8", "1:7:9", "1:7:10"]
+        }
+    ],
     "words": [
         {
             "location": "1:1:1",
@@ -217,17 +405,6 @@
             "isAyahMarker": true
         }
     ],
-    "verseKeys": [
-        "1:1",
-        "1:2",
-        "1:3",
-        "1:4",
-        "1:5",
-        "1:6",
-        "1:7"
-    ],
-    "artifactId": "compact-cross-stack-base",
-    "pageNumber": 1,
     "canonicalSource": {
         "dumpSha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
         "manifestCreatedUtc": "2026-08-26T11:52:38Z"
