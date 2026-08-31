@@ -81,7 +81,9 @@ internal sealed record QuranTopicsBookAyahGroup(
 
 internal sealed record QuranTopicsBookSourcePackage(
     string SourcePath,
+    string ChecksumPath,
     string Sha256,
+    string ChecksumSha256,
     QuranTopicsBookDocument Document,
     QuranTopicsBookMetrics Metrics,
     IReadOnlyList<string> Checks,
