@@ -311,10 +311,12 @@ if [[ "${build_mode}" == "no-build" ]]; then
   requires_access_admin=false
   requires_data_importer=false
   for index in "${!selected_kinds[@]}"; do
+    feature="${selected_features[$index]}"
     kind="${selected_kinds[$index]}"
     gate="${selected_gates[$index]}"
-    [[ "${kind}" == "Migration" || "${kind}" == "Process" ]] && requires_access_admin=true
+    [[ "${feature}" == "Access" && ( "${kind}" == "Migration" || "${kind}" == "Process" ) ]] && requires_access_admin=true
     [[ "${gate}" == "Pipeline" || "${kind}" == "Canonical" ]] && requires_data_importer=true
+    [[ "${feature}" == "Abwab" && "${kind}" == "Process" ]] && requires_data_importer=true
   done
 
   if [[ "${requires_access_admin}" == true && ! -f "${ACCESS_ADMIN_OUTPUT}" ]]; then
