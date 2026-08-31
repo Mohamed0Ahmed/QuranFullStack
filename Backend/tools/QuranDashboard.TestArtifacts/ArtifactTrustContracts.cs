@@ -87,7 +87,8 @@ internal sealed record ArtifactRestoreContract(
 internal sealed record ArtifactRestoreSentinel(
     string Id,
     string Table,
-    long ExpectedCount);
+    long ExpectedCount,
+    string CriticalReadSha256);
 
 internal sealed record TestArtifactManifest(
     int ContractVersion,

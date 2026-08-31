@@ -19,6 +19,11 @@ internal static class ArtifactTrustCommand
             return PreviousReleaseMigrationUpgradeCommand.Execute(args, output, error);
         }
 
+        if (args.Count > 0 && args[0] == "rehearse-full-canonical-recovery")
+        {
+            return FullCanonicalRecoveryRehearsalCommand.Execute(args, output, error);
+        }
+
         var request = Parse(args, error);
         if (request is null)
         {

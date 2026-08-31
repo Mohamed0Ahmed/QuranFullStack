@@ -159,6 +159,12 @@ The implemented full-canonical controlled-provisioning surface is:
   receipt. An incomplete/failed receipt blocks automatic retry.
 - `verify-full-canonical`: sealed execution-side receipt and shared-state verifier. It has no fetch
   adapter, rejects artifact credentials in its environment, and performs no restore.
+- `rehearse-full-canonical-recovery`: an explicit-intent recovery contract. It captures integrity
+  metadata for a representative backup, verifies it before restoring only to an isolated disposable
+  target, and records sanitized data-recovery evidence distinct from application rollback. Full-canonical
+  sentinel declarations pin each critical read's SHA-256 in both the lock and external manifest, while
+  recovery evidence retains the locked staged hashes and source provenance. It remains fail-closed because
+  no reviewed full-canonical lock entry or immutable storage identity is adopted.
 
 The remaining target maintenance commands are not part of this phase:
 
