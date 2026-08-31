@@ -22,7 +22,12 @@
         (action)="dismissPersistenceWarning()"
       />
     }
-    <div #surfaceEntry class="linking-workspace-host__surface-entry" tabindex="-1">
+    <div
+      #surfaceEntry
+      class="linking-workspace-host__surface-entry"
+      data-testid="linking-workspace-surface-entry"
+      tabindex="-1"
+    >
       @defer (on idle) {
         @if (isWorkspace()) {
           <qd-linking-workspace />
