@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "id": "dependency-advisory-evaluation",
+  "triggers": [
+    {
+      "id": "weekly",
+      "intervalDays": 7,
+      "invocation": "node scripts/run-dependency-advisory-evaluation.mjs --trigger weekly"
+    },
+    {
+      "id": "lockfile-change",
+      "paths": [
+        "Backend/**/packages.lock.json",
+        "Frontend/quran-dashboard-ui/package-lock.json"
+      ],
+      "invocation": "node scripts/run-dependency-advisory-evaluation.mjs --trigger lockfile-change"
+    },
+    {
+      "id": "release",
+      "requiredBeforePromotion": true,
+      "invocation": "node scripts/run-dependency-advisory-evaluation.mjs --trigger release"
+    }
+  ],
+  "excludedLanes": ["nightly"],
+  "blockingPolicy": {
+    "severities": ["high", "critical"],
+    "productionExposure": true,
+    "confirmedReachability": "reachable",
+    "unassessedProductionExposure": "block",
+    "expiredWaiver": "block"
+  },
+  "ecosystems": {
+    "nuget": {
+      "solution": "Backend/QuranDashboard.sln",
+      "projectScopes": {
+        "production": [
+          "Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj",
+          "Backend/application/QuranDashboard.Application/QuranDashboard.Application.csproj",
+          "Backend/application/QuranDashboard.Application.Abstractions/QuranDashboard.Application.Abstractions.csproj",
+          "Backend/domain/QuranDashboard.Domain/QuranDashboard.Domain.csproj",
+          "Backend/infrastructure/QuranDashboard.Infrastructure/QuranDashboard.Infrastructure.csproj",
+          "Backend/shared/QuranDashboard.Shared/QuranDashboard.Shared.csproj",
+          "Backend/tools/QuranDashboard.AccessAdmin/QuranDashboard.AccessAdmin.csproj",
+          "Backend/tools/QuranDashboard.DataImporter/QuranDashboard.DataImporter.csproj"
+        ],
+        "development": [
+          "Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj",
+          "Backend/tools/QuranDashboard.TestArtifacts/QuranDashboard.TestArtifacts.csproj"
+        ]
+      }
+    },
+    "npm": {
+      "directory": "Frontend/quran-dashboard-ui",
+      "manifest": "Frontend/quran-dashboard-ui/package.json",
+      "lockfile": "Frontend/quran-dashboard-ui/package-lock.json"
+    }
+  },
+  "evidence": {
+    "resultFile": "evaluation.json",
+    "rawReports": [
+      "nuget.json",
+      "nuget-outdated.json",
+      "npm-production.json",
+      "npm-all.json"
+    ]
+  }
+}

@@ -491,6 +491,9 @@ implementation.
 Dependency advisories run when lockfiles change, on schedule, and before release. Confirmed high or
 critical production exposure blocks. An unreachable or development-only advisory requires analysis
 rather than automatic failure. Waivers identify package/path, rationale, owner, mitigation, and expiry.
+The provider-neutral [dependency advisory evaluation](./dependency-advisory-evaluation.md) implements
+those triggers, scope/path evidence, fail-closed waiver rules, and structured results. It is a distinct
+weekly/change/release contract and is deliberately unavailable as a nightly trigger.
 
 ## Accessibility, performance, RTL, and responsive behavior
 
