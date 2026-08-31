@@ -45,6 +45,11 @@ validation. However:
 - The provider-neutral full-canonical provisioner is tracked, but no approved full-canonical lock entry,
   reviewed sentinel set, or credential-free immutable storage identifier has been adopted for this local
   candidate. The command therefore fails closed before any fetch or restore.
+- Previous-release upgrade rehearsal is also intentionally blocked. Local history has no authoritative
+  release tag/ref for a prior migration head, and no approved representative artifact produced at a
+  prior schema. `previous-release-migration-upgrade.json` names both blockers; the read-only
+  `test-artifacts previous-release-upgrade` gate refuses before target selection or mutation. The locked
+  compact artifacts are current-head fixtures, not evidence of an earlier release.
 - A direct focused test can skip when an artifact is absent; the supported Backend `pre-pr` wrapper
   instead fails its canonical preflight.
 - The Frontend harness now consumes the locked compact cross-stack artifact by default; its former

@@ -1,0 +1,9 @@
+{
+  "$schema": "docs/testing/previous-release-migration-upgrade.schema.json",
+  "contractVersion": 1,
+  "status": "blocked",
+  "blockers": [
+    "authoritative-previous-release-ref",
+    "approved-prior-schema-representative-artifact"
+  ]
+}

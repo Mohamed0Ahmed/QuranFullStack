@@ -55,6 +55,15 @@ provider-owned: it receives an artifact ID, its credential-free immutable storag
 staging root, and must stage the exact lock-relative files. Neither the adapter nor its credentials are
 named in the receipt.
 
+`previous-release-upgrade` is currently a read-only fail-closed adoption gate. It verifies the tracked
+declaration at `docs/testing/previous-release-migration-upgrade.json` and reports the exact missing
+evidence before a PostgreSQL target can be selected or mutated. The repository has no authoritative
+previous release ref/tag and no approved representative prior-schema artifact: the current compact
+artifacts both declare the repository's current migration head. Do not replace that blocker with a
+guessed migration ID, a developer database, or a production-derived dump. Adoption must bind an
+authoritative released head and a reviewed, credential-free representative artifact before the
+scheduled/release disposable upgrade rehearsal can be enabled.
+
 For scheduled/release Backend canonical reads, set the seven non-secret path/run variables below before
 calling `Backend/scripts/test-backend canonical-data --no-build` (or a lane that includes the canonical
 class): `QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT`,
