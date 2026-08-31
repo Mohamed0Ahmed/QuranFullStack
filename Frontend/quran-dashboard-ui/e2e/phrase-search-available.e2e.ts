@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
-import type { APIRequestContext, Page, TestInfo } from '@playwright/test';
+import type { APIRequestContext, Page } from '@playwright/test';
 
 import oracleData from '../../../test-artifacts/compact-phrase-search-ready/oracle.json';
 import manifestData from '../../../test-artifacts/compact-phrase-search-ready/manifest.json';
@@ -12,7 +12,10 @@ import {
 } from '../src/app/core/navigation/route-paths';
 import { environment } from '../src/environments/environment.development';
 import { readApiData } from './fixtures/api-envelope';
-import { expectNoBlockingAccessibilityViolations } from './fixtures/accessibility';
+import {
+  createAccessibilityAudit,
+  type AccessibilityAudit,
+} from './fixtures/accessibility';
 import { expect, test } from './fixtures/auth';
 
 const API_ORIGIN = environment.apiBaseUrl;
@@ -94,44 +97,49 @@ test(
     ],
   },
   async ({ page, request, ownerPersona }, testInfo) => {
-    prepareLinking();
-    expect(oracle.artifactId).toBe('compact-phrase-search-ready');
-    expect(manifest.artifactId).toBe(oracle.artifactId);
-    expect(manifest.phraseSearch).toEqual({
-      activeBuildId: oracle.phraseSearch.activeBuildId,
-      sourceFingerprint: oracle.phraseSearch.sourceFingerprint,
-      readiness: oracle.phraseSearch.readiness,
-    });
+    const accessibility = createAccessibilityAudit(testInfo);
+    try {
+      prepareLinking();
+      expect(oracle.artifactId).toBe('compact-phrase-search-ready');
+      expect(manifest.artifactId).toBe(oracle.artifactId);
+      expect(manifest.phraseSearch).toEqual({
+        activeBuildId: oracle.phraseSearch.activeBuildId,
+        sourceFingerprint: oracle.phraseSearch.sourceFingerprint,
+        readiness: oracle.phraseSearch.readiness,
+      });
 
-    const capabilitiesBefore = await readPublicData<PhraseCapabilities>(
-      request,
-      '/api/quran/phrase-search/capabilities',
-      'ready PhraseSearch capabilities before the journey',
-    );
-    expect(capabilitiesBefore).toMatchObject({
-      activeBuildId: manifest.phraseSearch.activeBuildId,
-      exactReady: true,
-      similarityReady: true,
-    });
-    expect(capabilitiesBefore.modes).toContainEqual(
-      expect.objectContaining({
-        mode: 'simple',
-        supportedLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
-        similarityLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
-      }),
-    );
+      const capabilitiesBefore = await readPublicData<PhraseCapabilities>(
+        request,
+        '/api/quran/phrase-search/capabilities',
+        'ready PhraseSearch capabilities before the journey',
+      );
+      expect(capabilitiesBefore).toMatchObject({
+        activeBuildId: manifest.phraseSearch.activeBuildId,
+        exactReady: true,
+        similarityReady: true,
+      });
+      expect(capabilitiesBefore.modes).toContainEqual(
+        expect.objectContaining({
+          mode: 'simple',
+          supportedLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
+          similarityLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
+        }),
+      );
 
-    await exerciseRepetitions(page, testInfo);
-    await exerciseContextAndPersist(page, request, ownerPersona.accessToken, testInfo);
-    await exerciseSimilarity(page, testInfo);
+      await exerciseRepetitions(page, accessibility);
+      await exerciseContextAndPersist(page, request, ownerPersona.accessToken, accessibility);
+      await exerciseSimilarity(page, accessibility);
 
-    const capabilitiesAfter = await readPublicData<PhraseCapabilities>(
-      request,
-      '/api/quran/phrase-search/capabilities',
-      'ready PhraseSearch capabilities after the journey',
-    );
-    expect(capabilitiesAfter.activeBuildId).toBe(capabilitiesBefore.activeBuildId);
-    expect(capabilitiesAfter).toEqual(capabilitiesBefore);
+      const capabilitiesAfter = await readPublicData<PhraseCapabilities>(
+        request,
+        '/api/quran/phrase-search/capabilities',
+        'ready PhraseSearch capabilities after the journey',
+      );
+      expect(capabilitiesAfter.activeBuildId).toBe(capabilitiesBefore.activeBuildId);
+      expect(capabilitiesAfter).toEqual(capabilitiesBefore);
+    } finally {
+      await accessibility.attachObservations();
+    }
   },
 );
 
@@ -143,7 +151,7 @@ async function exerciseContextAndPersist(
   page: Page,
   request: APIRequestContext,
   ownerAccessToken: string,
-  testInfo: TestInfo,
+  accessibility: AccessibilityAudit,
 ): Promise<void> {
   await page.goto(phraseSearchRoutePath(WORDS_PHRASES_CONTEXT_SEGMENT));
   const query = page.getByRole('textbox', { name: 'العبارة المراد استكشاف سياقها' });
@@ -191,10 +199,10 @@ async function exerciseContextAndPersist(
   expect(
     workspace.sources[0]?.selectedWords.map((word) => word.quranWordId),
   ).toEqual(oracle.phraseSearch.context.selectedQuranWordIds);
-  await expectNoBlockingAccessibilityViolations(page, testInfo);
+  await accessibility.expectNoBlockingViolations(page);
 }
 
-async function exerciseRepetitions(page: Page, testInfo: TestInfo): Promise<void> {
+async function exerciseRepetitions(page: Page, accessibility: AccessibilityAudit): Promise<void> {
   const phraseLength = oracle.phraseSearch.query.exactTokenIds.length;
   await page.goto(
     `${phraseSearchRoutePath(WORDS_PHRASES_REPETITIONS_SEGMENT)}?length=${phraseLength}`,
@@ -212,10 +220,10 @@ async function exerciseRepetitions(page: Page, testInfo: TestInfo): Promise<void
   for (const verseKey of oracle.phraseSearch.repetitions.verseKeys) {
     await expect(page.getByRole('link', { name: `فتح الآية ${verseKey} في المصحف` })).toBeVisible();
   }
-  await expectNoBlockingAccessibilityViolations(page, testInfo);
+  await accessibility.expectNoBlockingViolations(page);
 }
 
-async function exerciseSimilarity(page: Page, testInfo: TestInfo): Promise<void> {
+async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit): Promise<void> {
   await page.goto(phraseSearchRoutePath(WORDS_PHRASES_SIMILARITY_SEGMENT));
   const query = page.getByRole('textbox', { name: 'العبارة المرجعية' });
   await query.fill(oracle.phraseSearch.query.raw);
@@ -234,7 +242,7 @@ async function exerciseSimilarity(page: Page, testInfo: TestInfo): Promise<void>
       name: `فتح الآية ${oracle.phraseSearch.similarity.nonIdenticalVerseKey} في المصحف`,
     }),
   ).toContainText('مَجْر۪ىٰهَا');
-  await expectNoBlockingAccessibilityViolations(page, testInfo);
+  await accessibility.expectNoBlockingViolations(page);
 }
 
 function readAuthorizedData<T>(
