@@ -21,7 +21,31 @@ internal static class SmokeDumpGate
 
     public static string ManifestFile => Path.Combine(DumpDirectory, "manifest.json");
 
-    public static bool IsAbsent => !File.Exists(DumpFile) || !File.Exists(ManifestFile);
+    public static string? ProvisioningReceiptFile => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT");
+
+    public static string? ProvisionedConnectionFile => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE");
+
+    public static string? ProvisionedStagingRoot => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT");
+
+    public static string? ProvisionedDatabaseContainer => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER");
+
+    public static string? ProvisionedRunKind => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_FULL_CANONICAL_RUN");
+
+    public static string ArtifactExecution => Environment.GetEnvironmentVariable(
+        "QURAN_DASHBOARD_ARTIFACT_EXECUTION") ?? "local";
+
+    public static bool RequiresProvisionedFullCanonicalState => ArtifactExecution is "scheduled" or "release";
+
+    public static bool UsesProvisionedFullCanonicalState =>
+        RequiresProvisionedFullCanonicalState || !string.IsNullOrWhiteSpace(ProvisioningReceiptFile);
+
+    public static bool IsAbsent => !UsesProvisionedFullCanonicalState
+        && (!File.Exists(DumpFile) || !File.Exists(ManifestFile));
 
     public static string AbsentReason =>
         $"Canonical smoke dump is absent ({DumpFile}). Generate it with {RegenerateCommand}.";

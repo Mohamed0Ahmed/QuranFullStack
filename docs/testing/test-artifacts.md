@@ -42,7 +42,9 @@ counts, temporary output files, hash verification, producer-major compatibility,
 validation. However:
 
 - All resources are gitignored and unavailable in a clean clone.
-- There is no tracked fetch/provision command or immutable storage identifier.
+- The provider-neutral full-canonical provisioner is tracked, but no approved full-canonical lock entry,
+  reviewed sentinel set, or credential-free immutable storage identifier has been adopted for this local
+  candidate. The command therefore fails closed before any fetch or restore.
 - A direct focused test can skip when an artifact is absent; the supported Backend `pre-pr` wrapper
   instead fails its canonical preflight.
 - The Frontend harness now consumes the locked compact cross-stack artifact by default; its former
@@ -143,9 +145,18 @@ checks lock shape, selection, staged presence/size, and migration freshness. `ve
 checks hashes, strict external-manifest shape, safe table identifiers, and lock/manifest agreement.
 Both are read-only and return non-zero for any required set that is missing, stale, or mismatched.
 
-The remaining target provisioning/maintenance commands are not part of this phase:
+The implemented full-canonical controlled-provisioning surface is:
 
-- `fetch`: acquire immutable content during controlled provisioning.
+- `provision-full-canonical`: scheduled/release-only provision-once command. A provider-owned adapter
+  fetches the immutable artifact into an isolated staging root exactly once, then the tool invokes the
+  same trust verifier, checks the private disposable PostgreSQL target's migration state, restores once,
+  validates every manifest row count and reviewed sentinel-table count, and writes a credential-free
+  receipt. An incomplete/failed receipt blocks automatic retry.
+- `verify-full-canonical`: sealed execution-side receipt and shared-state verifier. It has no fetch
+  adapter, rejects artifact credentials in its environment, and performs no restore.
+
+The remaining target maintenance commands are not part of this phase:
+
 - `refresh`: produce a candidate change report without accepting it.
 - `publish`: place an independently approved artifact at its immutable identifier.
 

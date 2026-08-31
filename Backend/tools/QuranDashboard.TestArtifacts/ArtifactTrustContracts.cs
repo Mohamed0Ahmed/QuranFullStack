@@ -31,7 +31,8 @@ internal sealed record LockedArtifact(
     IReadOnlyList<ArtifactSentinel> Sentinels,
     string ImmutableStorageId,
     ArtifactRefresh Refresh,
-    LockedPhraseSearchState? PhraseSearch = null);
+    LockedPhraseSearchState? PhraseSearch = null,
+    ArtifactRestoreContract? Restore = null);
 
 internal sealed record LockedArtifactFile(
     string Path,
@@ -78,6 +79,16 @@ internal sealed record LockedPhraseSearchState(
     string SourceFingerprint,
     string ReadinessExpectation);
 
+internal sealed record ArtifactRestoreContract(
+    string Kind,
+    int Order,
+    IReadOnlyList<ArtifactRestoreSentinel> SentinelTables);
+
+internal sealed record ArtifactRestoreSentinel(
+    string Id,
+    string Table,
+    long ExpectedCount);
+
 internal sealed record TestArtifactManifest(
     int ContractVersion,
     string ArtifactId,
@@ -88,7 +99,8 @@ internal sealed record TestArtifactManifest(
     IReadOnlyList<ArtifactManifestTable> Tables,
     IReadOnlyList<ArtifactSource> Sources,
     IReadOnlyList<ArtifactSentinel> Sentinels,
-    ManifestPhraseSearchState? PhraseSearch = null)
+    ManifestPhraseSearchState? PhraseSearch = null,
+    ArtifactRestoreContract? Restore = null)
 {
     internal static TestArtifactManifest ReadFrom(string path)
     {
