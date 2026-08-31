@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Hosting;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
+using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
@@ -11,7 +12,6 @@ namespace QuranDashboard.Tests.Api.Linking;
 
 public sealed class LinkingTestFixture : IAsyncLifetime
 {
-    private const string ConfirmationProcessorService = "LinkingConfirmationJobProcessorService";
     private const string SeedResourceSuffix = "mushaf-reader-seed.sql";
     private readonly FakeExternalUserProfileSource profileSource = new();
     private readonly SmokeSqlCommandCapture commandCapture = new();
@@ -66,7 +66,7 @@ public sealed class LinkingTestFixture : IAsyncLifetime
             {
                 var processor = services.Single(descriptor =>
                     descriptor.ServiceType == typeof(IHostedService)
-                    && descriptor.ImplementationType?.Name == ConfirmationProcessorService);
+                    && descriptor.ImplementationType == typeof(LinkingConfirmationJobProcessorService));
                 services.Remove(processor);
             }));
         return SmokeApiHost.CreateClient(pausedConfirmationFactory);

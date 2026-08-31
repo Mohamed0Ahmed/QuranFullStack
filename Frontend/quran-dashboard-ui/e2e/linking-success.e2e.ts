@@ -167,7 +167,8 @@ async function runSuccessfulLinkingJourney(
   mobile: boolean,
   variant: JourneyVariant,
 ): Promise<void> {
-  const targetDoor = await createTargetDoor(request, ownerAccessToken, variant.targetSuffix);
+  const targetDoorName = `${TARGET_DOOR_NAME} ${variant.targetSuffix}`;
+  const targetDoor = await createTargetDoor(request, ownerAccessToken, targetDoorName);
 
   await page.goto('/dashboard/mushaf');
   const selectionMode = page.getByRole('button', { name: 'تحديد آيات' });
@@ -190,7 +191,7 @@ async function runSuccessfulLinkingJourney(
   await expect(directLink).toBeFocused();
   await directLink.press('Enter');
 
-  const dialog = page.getByTestId('linking-workspace');
+  const dialog = page.getByRole('dialog', { name: 'ربط مباشر', exact: true });
   await expect(dialog).toBeVisible();
   const surfaceEntry = page.getByTestId('linking-workspace-surface-entry');
   await expect(surfaceEntry).toBeFocused();
@@ -202,8 +203,8 @@ async function runSuccessfulLinkingJourney(
   await expect(chooseDoor).toBeFocused();
   await chooseDoor.press('Enter');
 
-  const target = dialog.getByTestId(`abwab-tree-row-${targetDoor.id}`);
-  await expect(target).toContainText(TARGET_DOOR_NAME);
+  const target = dialog.getByRole('treeitem', { name: targetDoorName, exact: true });
+  await expect(target).toContainText(targetDoorName);
   await target.focus();
   await expect(target).toBeFocused();
   if (variant.confirmation === 'existing-job') {
@@ -473,11 +474,11 @@ function prepareLinking(): void {
 async function createTargetDoor(
   request: APIRequestContext,
   ownerAccessToken: string,
-  variant: string,
+  targetDoorName: string,
 ): Promise<AbwabDoor> {
   const sectionResponse = await request.post(`${API_ORIGIN}/api/abwab/sections`, {
     headers: bearerHeaders(ownerAccessToken),
-    data: { name: `قسم رحلة الربط الناجحة ${variant}` },
+    data: { name: `قسم ${targetDoorName}` },
   });
   const section = await readApiData<AbwabSection>(
     sectionResponse,
@@ -490,7 +491,7 @@ async function createTargetDoor(
     data: {
       sectionId: section.id,
       parentId: null,
-      name: TARGET_DOOR_NAME,
+      name: targetDoorName,
       description: null,
       representativeAyahText: null,
       aliases: [],
