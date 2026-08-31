@@ -1,0 +1,70 @@
+import { createHash } from 'node:crypto';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join, relative, resolve } from 'node:path';
+
+export function findFiles(directory, basename) {
+  return findMatchingFiles(directory, (entry) => entry.name === basename);
+}
+
+export function findFilesByExtension(directory, extension) {
+  return findMatchingFiles(directory, (entry) => entry.name.endsWith(extension));
+}
+
+function findMatchingFiles(directory, predicate) {
+  const matches = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === 'bin' || entry.name === 'obj') continue;
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) matches.push(...findMatchingFiles(path, predicate));
+    else if (entry.isFile() && predicate(entry)) matches.push(path);
+  }
+  return matches.sort();
+}
+
+export function findAllFiles(directory) {
+  const matches = [];
+  for (const entry of readdirSync(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) matches.push(...findAllFiles(path));
+    else if (entry.isFile()) matches.push(path);
+  }
+  return matches.sort();
+}
+
+export function sha256Files(paths, repositoryRoot) {
+  const hash = createHash('sha256');
+  for (const path of [...paths].sort()) {
+    hash.update(relative(repositoryRoot, path));
+    hash.update('\0');
+    hash.update(readFileSync(path));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
+export function sha256Path(path) {
+  const details = statSync(path);
+  const paths = details.isDirectory() ? findAllFiles(path) : [path];
+  const hash = createHash('sha256');
+  for (const file of paths) {
+    hash.update(relative(path, file));
+    hash.update('\0');
+    hash.update(readFileSync(file));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
+export function harnessSourceFiles(frontendRoot) {
+  return [
+    ...findAllFiles(resolve(frontendRoot, 'e2e')),
+    resolve(frontendRoot, 'package.json'),
+    resolve(frontendRoot, 'playwright.config.ts'),
+    resolve(frontendRoot, 'scripts/discover-playwright-journeys.mjs'),
+    resolve(frontendRoot, 'scripts/provision-sealed-playwright.mjs'),
+    resolve(frontendRoot, 'scripts/run-critical-playwright-journeys.mjs'),
+    resolve(frontendRoot, 'scripts/run-sealed-playwright.mjs'),
+    resolve(frontendRoot, 'scripts/structured-playwright-reporter.mjs'),
+    resolve(frontendRoot, 'scripts/verify-egress-guard-runtime.mjs'),
+  ].sort();
+}

@@ -53,6 +53,30 @@ export function writeDatabaseRuntimeState(runtime) {
   );
 }
 
+export function readPreparedDatabaseRuntime() {
+  let state;
+  try {
+    state = JSON.parse(readFileSync(RUNTIME_STATE_PATH, 'utf8'));
+  } catch {
+    throw new Error('Prepared E2E database state is missing or invalid.');
+  }
+  if (state.mode !== 'artifact' || typeof state.connectionString !== 'string') {
+    throw new Error('Sealed execution accepts only a prepared artifact database.');
+  }
+  const connection = parsePostgresConnectionString(state.connectionString);
+  assertRuntimeConnection(connection, state.mode);
+  if (!/^[a-f0-9]{64}$/.test(state.immutableSha256)) {
+    throw new Error('Prepared E2E database state has no valid immutable fingerprint.');
+  }
+  return {
+    mode: state.mode,
+    connection,
+    connectionString: state.connectionString,
+    immutableSha256: state.immutableSha256,
+    cleanup() {},
+  };
+}
+
 export function removeDatabaseRuntimeState() {
   rmSync(RUNTIME_STATE_PATH, { force: true });
 }
@@ -97,10 +121,7 @@ export function immutableDatabaseFingerprint(connection) {
 }
 
 async function provisionArtifactDatabase() {
-  execFileSync(ARTIFACT_TOOL, ['verify', '--artifact', ARTIFACT_ID], {
-    cwd: REPOSITORY_ROOT,
-    stdio: 'inherit',
-  });
+  verifyArtifact();
 
   const artifact = readLockedArtifact();
   const image = `postgres@${artifact.postgresql.containerDigest}`;
@@ -167,6 +188,9 @@ async function provisionArtifactDatabase() {
       username: 'postgres',
       password,
     };
+    if (process.env.E2E_SEALED_EXECUTION === '1') {
+      process.env.QDB_E2E_ALLOWED_IPV4 = containerHost;
+    }
     assertRuntimeConnection(connection, 'artifact');
     await waitForPostgres(connection);
     runPostgresCommand(
@@ -188,6 +212,7 @@ async function provisionArtifactDatabase() {
       mode: 'artifact',
       connection,
       connectionString: formatConnectionString(connection),
+      containerName,
       cleanup: once(() => {
         if (containerStarted) {
           tryCommand('docker', ['rm', '--force', containerName], process.env);
@@ -208,6 +233,33 @@ async function provisionArtifactDatabase() {
     }
     throw error;
   }
+}
+
+function verifyArtifact() {
+  if (process.env.E2E_SEALED_EXECUTION === '1') {
+    const verifierAssembly = process.env.E2E_ARTIFACT_VERIFIER_ASSEMBLY?.trim();
+    if (!verifierAssembly) {
+      throw new Error('Sealed execution requires a receipt-bound artifact verifier assembly.');
+    }
+    execFileSync(
+      'dotnet',
+      [
+        verifierAssembly,
+        'verify',
+        '--artifact',
+        ARTIFACT_ID,
+        '--root',
+        REPOSITORY_ROOT,
+      ],
+      { cwd: REPOSITORY_ROOT, stdio: 'inherit' },
+    );
+    return;
+  }
+
+  execFileSync(ARTIFACT_TOOL, ['verify', '--artifact', ARTIFACT_ID], {
+    cwd: REPOSITORY_ROOT,
+    stdio: 'inherit',
+  });
 }
 
 function provisionCloneLocalDatabase(apiProject) {

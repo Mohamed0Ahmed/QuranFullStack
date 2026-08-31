@@ -221,6 +221,23 @@ Acquisition is a controlled-egress provisioning concern. Target test execution m
 - Artifact credentials are absent.
 - Process/container network egress is denied.
 
+The implemented browser harness separates these phases as `npm run e2e:provision` followed by
+`npm run e2e:critical` or `npm run e2e`. Provisioning produces a credential-free receipt binding the
+npm and NuGet locks, artifact trust lock, exact Chromium revision, PostgreSQL digest, certificates,
+egress guard, and build outputs. Execution rejects stale/missing inputs, strips retrieval and package
+credentials, restores the already-verified fixture with pulling disabled, and starts prebuilt outputs.
+Only loopback and the exact private database address are permitted to execution processes; PostgreSQL
+uses an internal Docker network.
+
+Failed runs preserve sanitized application/container logs, step-event traces, text/media-masked
+screenshots, console errors, and request method/origin/path/status metadata under `.playwright/evidence/`. The evidence
+contract excludes request/response headers and bodies, credentials, private keys, database dumps, and
+query strings. Structured results carry the artifact, database, startup, and test durations plus the
+14-day failed-diagnostic and 30-day aggregate-timing retention requirements for later provider-neutral
+upload wiring. Playwright writes any unfiltered working files only to a private temporary directory
+outside the evidence tree; sealed teardown deletes that directory before the retained evidence is
+schema- and signature-validated.
+
 The staging Logto sentinel is a separate serialized provider-contract lane with a narrow allowlist and
 dedicated non-human identities. It does not reuse artifact retrieval credentials or mutate Abwab,
 Linking, PhraseSearch, or canonical Quran data.

@@ -40,6 +40,10 @@ discards canonical `quran_*` data, which then has to be re-imported.
 
 ## Verifying locked test artifacts
 
+Backend projects opt into NuGet lock files through `Directory.Build.props`. Controlled test
+provisioning uses `dotnet restore QuranDashboard.sln --locked-mode`; dependency changes therefore
+require reviewed `packages.lock.json` updates before sealed execution.
+
 The repository-root `test-artifacts.lock.json` and the schemas under `docs/testing/` are the tracked
 trust contract. These commands are read-only: they do not fetch, extract, restore, refresh, publish,
 or connect to PostgreSQL.

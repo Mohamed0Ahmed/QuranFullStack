@@ -1,10 +1,11 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { createServer } from 'node:http';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 
 import {
   provisionDatabaseRuntime,
+  readPreparedDatabaseRuntime,
   removeDatabaseRuntimeState,
   writeDatabaseRuntimeState,
 } from './harness/database-runtime.mjs';
@@ -26,7 +27,12 @@ process.once('SIGINT', () => stop('SIGINT'));
 process.once('SIGTERM', () => stop('SIGTERM'));
 
 try {
-  databaseRuntime = await provisionDatabaseRuntime(API_PROJECT);
+  if (process.env.E2E_SEALED_EXECUTION === '1' && process.env.E2E_PREPARED_DATABASE !== '1') {
+    throw new Error('Sealed execution requires database preparation before application startup.');
+  }
+  databaseRuntime = process.env.E2E_PREPARED_DATABASE === '1'
+    ? readPreparedDatabaseRuntime()
+    : await provisionDatabaseRuntime(API_PROJECT);
   const managementApi = await startManagementApiStub();
   managementServer = managementApi.server;
 
@@ -37,11 +43,14 @@ try {
       : '[e2e] database mode=clone-local evidence=non-canonical',
   );
 
+  const backendAssembly = process.env.E2E_BACKEND_ASSEMBLY;
   backendProcess = spawn(
     'dotnet',
-    ['run', '--project', API_PROJECT, '--no-build', '--no-launch-profile'],
+    backendAssembly
+      ? [backendAssembly]
+      : ['run', '--project', API_PROJECT, '--no-build', '--no-restore', '--no-launch-profile'],
     {
-      cwd: process.cwd(),
+      cwd: backendAssembly ? dirname(backendAssembly) : process.cwd(),
       env: {
         ...process.env,
         ConnectionStrings__QuranDashboardDb: databaseRuntime.connectionString,
@@ -89,7 +98,9 @@ function finish(exitCode, message) {
   databaseRuntime?.cleanup();
   managementServer?.closeAllConnections();
   managementServer?.close();
-  removeDatabaseRuntimeState();
+  if (process.env.E2E_PREPARED_DATABASE !== '1') {
+    removeDatabaseRuntimeState();
+  }
   if (message) {
     console.error(message);
   }

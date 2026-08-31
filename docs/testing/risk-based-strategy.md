@@ -110,9 +110,10 @@ Important limits remain:
 - The current harness defaults to the verified compact artifact; arbitrary local data is available
   only through explicit, loopback-only, non-canonical `clone-local` mode.
 - `test:pre-pr` does not include Playwright or `e2e:typecheck`.
-- The canonical `e2e` command provisions one application stack. Critical-journey discovery validates
-  annotations, selects the declared browser evidence, and executes it through the verified compact
-  artifact.
+- Controlled `e2e:provision` now locks and preloads dependencies, Chromium, the PostgreSQL image,
+  compact artifacts, ephemeral certificates, and build outputs. Canonical `e2e`/`e2e:critical`
+  consume the receipt under credential-free network sealing; explicit `*:local` commands retain the
+  developer path.
 
 ### Cross-stack and automation
 
@@ -452,6 +453,11 @@ Retain the browser request-leak detector and also enforce process/container egre
 credentials exist only during provisioning. Only the serialized staging Logto sentinel receives an
 explicit external allowlist.
 
+The implemented provider-neutral harness uses a preloaded system-call guard for the browser,
+Frontend server, API, and child processes. It admits only loopback plus the exact private PostgreSQL
+address; the database container remains on a Docker internal network. A stale provisioning receipt,
+missing output, missing browser/image, or credential-bearing child environment fails closed.
+
 Required infrastructure inputs are immutable and reviewed: PostgreSQL images are pinned by digest,
 NuGet uses locked restore, npm uses the committed lockfile, and the Playwright browser revision is part
 of cache identity. CI generates ephemeral HTTPS certificates; secure-cookie journeys never downgrade
@@ -530,6 +536,12 @@ application/container logs, Playwright trace, screenshot, console errors, and re
 Never retain credentials, tokens, raw production-derived databases, or sensitive response bodies.
 Retain failed diagnostics for at least 14 days and aggregate timing history for at least 30 days.
 Diagnostic database dumps are opt-in, sanitized, and checksummed.
+
+The sealed Playwright harness emits provider-neutral JSON for artifact provisioning, database
+preparation, application startup, and test execution. Failed-run evidence contains sanitized step
+events, text/media-masked screenshots, logs, console errors, and request method/origin/path/status only; it explicitly
+records that headers, bodies, and database dumps were not captured. Upload/retention wiring belongs to
+the observation jobs rather than to a specific CI provider here.
 
 A failed post-deploy smoke halts promotion. In production it opens an incident and triggers application
 rollback when evidence points to the new release. Database rollback is never automatic; data recovery
