@@ -17,16 +17,18 @@ internal static class ArtifactTrustVerifier
     internal static ArtifactTrustResult Verify(
         ArtifactTrustLock artifactLock,
         LockedArtifact artifact,
-        string repositoryRoot)
+        string repositoryRoot,
+        string? stagedRoot = null)
     {
-        var stagedFiles = InspectStagedFiles(artifact, repositoryRoot, verifyHashes: true);
+        var artifactRoot = stagedRoot ?? repositoryRoot;
+        var stagedFiles = InspectStagedFiles(artifact, artifactRoot, verifyHashes: true);
         if (stagedFiles.State != ArtifactTrustState.Present)
         {
             return stagedFiles;
         }
 
         var manifest = TestArtifactManifest.ReadFrom(
-            Path.Combine(repositoryRoot, artifact.ManifestPath));
+            Path.Combine(artifactRoot, artifact.ManifestPath));
         var mismatch = CompareManifest(artifactLock, artifact, manifest);
         if (mismatch is not null)
         {
@@ -173,7 +175,26 @@ internal static class ArtifactTrustVerifier
             }
         }
 
+        if (!RestoreContractsMatch(manifest.Restore, artifact.Restore))
+        {
+            return "manifest restore contract does not match the lock";
+        }
+
         return null;
+    }
+
+    private static bool RestoreContractsMatch(
+        ArtifactRestoreContract? manifest,
+        ArtifactRestoreContract? artifact)
+    {
+        if (manifest is null || artifact is null)
+        {
+            return manifest is null && artifact is null;
+        }
+
+        return manifest.Kind == artifact.Kind
+            && manifest.Order == artifact.Order
+            && manifest.SentinelTables.SequenceEqual(artifact.SentinelTables);
     }
 
     private static ArtifactTrustResult CheckMigrationState(

@@ -8,6 +8,7 @@ SOLUTION="${BACKEND_ROOT}/QuranDashboard.sln"
 TEST_PROJECT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj"
 CATALOG="${BACKEND_ROOT}/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv"
 TEST_OUTPUT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/bin/Debug/net10.0/QuranDashboard.Tests.dll"
+ARTIFACT_TOOL_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll"
 ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/net10.0/QuranDashboard.AccessAdmin.dll"
 DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
 CALLER_DIR="$(pwd -P)"
@@ -76,6 +77,13 @@ case "${lane}" in
     fail_usage "Unknown lane: ${lane}"
     ;;
 esac
+
+artifact_execution="${QURAN_DASHBOARD_ARTIFACT_EXECUTION:-local}"
+if [[ "${artifact_execution}" != "local" \
+  && "${artifact_execution}" != "scheduled" \
+  && "${artifact_execution}" != "release" ]]; then
+  fail_usage "QURAN_DASHBOARD_ARTIFACT_EXECUTION must be local, scheduled, or release."
+fi
 
 feature_selector=""
 class_selector=""
@@ -478,11 +486,15 @@ trap clean_up_run EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+full_canonical_execution=false
+
 canonical_preflight() {
   local missing=false
   local require_foundation=false
   local require_enriched=false
   local require_dump=false
+  local provisioned_full_canonical=false
+  local full_canonical_state_requested=false
 
   for class_name in "${selected_classes[@]}"; do
     [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* ]] && require_foundation=true
@@ -508,7 +520,63 @@ canonical_preflight() {
     echo "ERROR: canonical enriched morphology artifact is missing." >&2
     missing=true
   fi
-  if [[ "${require_dump}" == true ]]; then
+  if [[ "${require_dump}" == true ]] \
+    && { [[ "${artifact_execution}" != "local" ]] \
+      || [[ -n "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK:-}" ]]; }; then
+    full_canonical_state_requested=true
+    for variable in \
+      QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT \
+      QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE \
+      QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT \
+      QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER \
+      QURAN_DASHBOARD_FULL_CANONICAL_NETWORK \
+      QURAN_DASHBOARD_FULL_CANONICAL_RUN; do
+      if [[ -z "${!variable:-}" ]]; then
+        echo "ERROR: provisioned full-canonical execution is missing ${variable}." >&2
+        missing=true
+      fi
+    done
+
+    if [[ "${artifact_execution}" == "local" ]]; then
+      echo "ERROR: full-canonical execution requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+      missing=true
+    elif [[ "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" != "${artifact_execution}" ]]; then
+      echo "ERROR: scheduled/release execution requires QURAN_DASHBOARD_FULL_CANONICAL_RUN=${artifact_execution}." >&2
+      missing=true
+    fi
+
+    if [[ "${missing}" == false ]]; then
+      if [[ ! -f "${ARTIFACT_TOOL_OUTPUT}" ]]; then
+        echo "ERROR: sealed full-canonical verification requires existing artifact verifier output: ${ARTIFACT_TOOL_OUTPUT}" >&2
+        missing=true
+      elif ! env -i \
+        PATH="${PATH}" \
+        HOME="/tmp" \
+        QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
+        dotnet "${ARTIFACT_TOOL_OUTPUT}" verify-full-canonical \
+        --run "${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
+        --database-connection-file "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
+        --database-container "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
+        --staging-root "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
+        --receipt "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
+        --root "${REPO_ROOT}"; then
+        missing=true
+      else
+        provisioned_full_canonical=true
+        full_canonical_execution=true
+      fi
+    fi
+  fi
+  if [[ "${require_dump}" == true && "${provisioned_full_canonical}" == false ]]; then
+    if [[ "${full_canonical_state_requested}" == true ]]; then
+      echo "ERROR: scheduled/release full-canonical execution cannot fall back to the local ignored dump." >&2
+      missing=true
+    fi
     for path in \
       "${REPO_ROOT}/resources/db-dumps/quran-canonical/quran-canonical.dump" \
       "${REPO_ROOT}/resources/db-dumps/quran-canonical/manifest.json"; do
@@ -693,7 +761,23 @@ for index in "${!shard_filters[@]}"; do
 
   build_test_args "${shard_filters[$index]}"
   set +e
-  dotnet "${test_args[@]}"
+   if [[ "${full_canonical_execution}" == true ]]; then
+     env -i \
+       PATH="${PATH}" \
+       HOME="/tmp" \
+       QURAN_DASHBOARD_TEST_RUN_ID="${QURAN_DASHBOARD_TEST_RUN_ID}" \
+       QURAN_DASHBOARD_TEST_DB_PARALLELISM="${QURAN_DASHBOARD_TEST_DB_PARALLELISM}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT="${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE="${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT="${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER="${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_RUN="${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
+       QURAN_DASHBOARD_ARTIFACT_EXECUTION="${artifact_execution}" \
+       dotnet "${test_args[@]}"
+   else
+     dotnet "${test_args[@]}"
+   fi
   shard_status=$?
   set -e
 

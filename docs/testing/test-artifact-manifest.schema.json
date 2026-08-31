@@ -117,6 +117,29 @@
         "readiness": { "enum": ["available", "unavailable"] },
         "activeBuildId": { "type": "string", "minLength": 1 }
       }
+    },
+    "restore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "order", "sentinelTables"],
+      "properties": {
+        "kind": { "const": "full-canonical" },
+        "order": { "type": "integer", "minimum": 0 },
+        "sentinelTables": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "table", "expectedCount"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z][a-z0-9._-]{0,99}$" },
+              "table": { "type": "string", "pattern": "^[a-z][a-z0-9_]{0,62}$" },
+              "expectedCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
     }
   }
 }

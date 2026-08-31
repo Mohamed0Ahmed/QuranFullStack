@@ -206,7 +206,76 @@ internal static class ArtifactTrustLockValidator
             return "PhraseSearch manifest hash, fingerprint, or readiness expectation is invalid";
         }
 
+        var restoreIssue = ValidateRestoreContract(artifact);
+        if (restoreIssue is not null)
+        {
+            return restoreIssue;
+        }
+
         return null;
+    }
+
+    private static string? ValidateRestoreContract(LockedArtifact artifact)
+    {
+        var appliesOnlyToScheduledOrRelease = artifact.RequiredLanes.All(
+            lane => lane is "scheduled" or "release");
+        if (artifact.Restore is null)
+        {
+            return null;
+        }
+
+        if (artifact.Restore.Kind != "full-canonical" || artifact.Restore.Order < 0)
+        {
+            return "restore contract kind or order is invalid";
+        }
+
+        if (!artifact.TableScope.Quran
+            || artifact.TableScope.PhraseSearch
+            || artifact.TableScope.Abwab
+            || artifact.TableScope.Access
+            || artifact.TableScope.Linking
+            || artifact.TableScope.Tables.Any(table => !IsQuranTable(table) || IsPhraseSearchTable(table))
+            || !appliesOnlyToScheduledOrRelease)
+        {
+            return "full-canonical restore contracts require only Quran table scope and scheduled or release lanes";
+        }
+
+        var payloads = artifact.StagedFiles.Where(file => file.Role == "payload").ToArray();
+        if (payloads.Length != 1)
+        {
+            return "full-canonical restore contracts require exactly one payload file";
+        }
+
+        var oracleFiles = artifact.StagedFiles.Where(file => file.Role == "oracle").ToArray();
+        if (oracleFiles.Length != 1
+            || artifact.Sentinels.Any(sentinel => sentinel.OracleSha256 != oracleFiles[0].Sha256))
+        {
+            return "full-canonical restore contracts require one staged oracle matching every sentinel hash";
+        }
+
+        if (artifact.Restore.SentinelTables.Count == 0
+            || DuplicateOf(artifact.Restore.SentinelTables.Select(sentinel => sentinel.Id)) is not null)
+        {
+            return "restore sentinel tables must be non-empty and have unique identifiers";
+        }
+
+        var lockedSentinels = artifact.Sentinels.ToDictionary(sentinel => sentinel.Id, StringComparer.Ordinal);
+        foreach (var sentinel in artifact.Restore.SentinelTables)
+        {
+            if (!IsSafeToken(sentinel.Id)
+                || !IsValidTableIdentifier(sentinel.Table)
+                || !artifact.TableScope.Tables.Contains(sentinel.Table, StringComparer.Ordinal)
+                || !lockedSentinels.TryGetValue(sentinel.Id, out var locked)
+                || sentinel.ExpectedCount < 0
+                || sentinel.ExpectedCount != locked.ExpectedCount)
+            {
+                return "restore sentinel tables must map every locked sentinel to a scoped safe table and expected count";
+            }
+        }
+
+        return artifact.Restore.SentinelTables.Count == lockedSentinels.Count
+            ? null
+            : "restore sentinel tables must map every locked sentinel exactly once";
     }
 
     private static string? ValidateTableFamilyScope(LockedArtifact artifact)

@@ -9,6 +9,11 @@ internal static class ArtifactTrustCommand
         TextWriter output,
         TextWriter error)
     {
+        if (args.Count > 0 && args[0] is "provision-full-canonical" or "verify-full-canonical")
+        {
+            return FullCanonicalArtifactProvisioningCommand.Execute(args, output, error);
+        }
+
         var request = Parse(args, error);
         if (request is null)
         {
