@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
+using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
@@ -57,6 +58,26 @@ public sealed class LinkingTestFixture : IAsyncLifetime
             profileSource,
             commandCapture);
         return SmokeApiHost.CreateClient(standardFactory);
+    }
+
+    public async Task<(int UserId, uint Version)> CreateActiveNonOwnerAsync(string logtoSub)
+    {
+        _ = CreateClient();
+        await using var scope = standardFactory!.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var email = $"{logtoSub}@example.test";
+        var user = new User
+        {
+            LogtoSub = logtoSub,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        db.AccessUsers.Add(user);
+        await db.SaveChangesAsync();
+        return (user.Id, user.Version);
     }
 
     public HttpClient CreatePausedConfirmationClient()
