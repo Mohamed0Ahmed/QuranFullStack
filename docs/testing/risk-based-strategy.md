@@ -436,7 +436,7 @@ Current activation state:
 | Sessions and Permissions | Blocking | #103 shares the approved 20/20 full-catalogue first-attempt window, with 40/40 session/Permission journey passes, group p95 28,367 ms, and group maximum 29,345 ms. |
 | Linking | Blocking | #104 shares the approved 20/20 full-catalogue first-attempt window, with 40/40 Linking journey passes, group p95 24,032 ms, and group maximum 24,383 ms. |
 | PhraseSearch | Blocking | #105 accepted 20/20 first-attempt full-catalogue passes, five cold provisioning/cache runs, job p95 542,083 ms, job maximum 642,868 ms, and 40/40 PhraseSearch journey passes with group p95 14,274 ms and maximum 14,735 ms. |
-| Abwab projection | Observation | Awaiting its own ordered activation work. |
+| Abwab projection | Blocking | #106 shares the approved #105 window, with 20/20 first-attempt Abwab mutation/projection passes, group p95 16,687 ms, group maximum 18,048 ms, and the same five cold runs, 542,083 ms job p95, and 642,868 ms job maximum. |
 
 Every critical run continues to emit separate status and timing evidence for all five groups. Every
 configured journey must appear exactly once; missing, malformed, duplicated, undeclared, or retried

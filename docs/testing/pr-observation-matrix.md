@@ -30,9 +30,10 @@ remain observation-only. The critical Chromium job is now mixed-policy: it still
 nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
 group independently. Quran fidelity is blocking after its accepted #102 pilot, and sessions/Permissions
 is blocking after the accepted shared #103 pilot. Linking is blocking after the accepted shared #104
-pilot. PhraseSearch is blocking after the accepted shared #105 pilot. Abwab projection remains
-observation-only. A failure in an observation group does not hide or rewrite the failed catalogue
-status, but it does not fail the provider gate when every blocking group passed.
+pilot. PhraseSearch is blocking after the accepted shared #105 pilot, and Abwab projection is blocking
+after the accepted shared #106 pilot. All five groups are therefore enforced independently. The group
+contract still preserves complete first-attempt evidence and would retain any governed future
+observation failure without rewriting the failed catalogue status.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
 `enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must
@@ -72,6 +73,13 @@ passed 40/40; their per-run group maximum was 14,735 ms and nearest-rank p95 was
 Docker-registry attempt 11 and operator-aborted attempt 12 remain recorded and uncounted rather than
 being retried or relabeled as qualifying passes. PhraseSearch is now blocking while Abwab remains
 independently observable for #106.
+
+#106 reuses the same owner-approved window without claiming duplicate runs. The Abwab mutation and
+fresh projection journey ran once on every qualifying execution and passed 20/20. Its per-run group
+maximum was 18,048 ms and nearest-rank p95 was 16,687 ms. The shared job maximum and p95 remain 642,868
+ms and 542,083 ms respectively. The uncounted infrastructure failure and operator-aborted attempt remain
+recorded with #105; neither is relabeled as Abwab evidence. Abwab is now blocking independently of the
+other four journey-group decisions.
 
 Monitoring remains active because the full catalogue and per-group timing evidence continue on every
 run. Any emergency downgrade still requires the issue, owner, maintainer approval, rationale, affected

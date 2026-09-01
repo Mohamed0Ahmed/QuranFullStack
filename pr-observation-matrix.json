@@ -178,7 +178,7 @@
           },
           {
             "id": "abwab-projection",
-            "blocking": false,
+            "blocking": true,
             "journeys": [
               "abwab.inclusion-projection"
             ]

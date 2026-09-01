@@ -139,11 +139,11 @@ if (errors.length === 0) {
       },
       {
         id: 'abwab-projection',
-        blocking: false,
+        blocking: true,
         journeys: ['abwab.inclusion-projection'],
       },
     ]),
-    'Only Quran fidelity, sessions/Permissions, Linking, and PhraseSearch must be blocking after pilot #105.',
+    'All five critical journey groups must be blocking after pilot #106.',
   );
 
   verifyObservationFailureContract();
