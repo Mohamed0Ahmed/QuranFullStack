@@ -1,0 +1,306 @@
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  PREVIOUS_RELEASE_REFERENCE,
+  RELEASE_ARTIFACT_SHA256,
+  evaluateExternalEvidence,
+  loadReleaseCandidateManifest,
+  resolveAuthoritativePins,
+  validatePrimaryEvidence,
+} from './release-candidate-contract.mjs';
+import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
+
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const manifest = loadReleaseCandidateManifest(resolve(REPOSITORY_ROOT, 'release-candidate-lane.json'), REPOSITORY_ROOT);
+const now = new Date('2026-09-01T12:00:00.000Z');
+const candidate = '0123456789abcdef0123456789abcdef01234567';
+
+assert.equal(manifest.id, 'release-candidate');
+assert.equal(manifest.providerNeutral, true);
+assert.equal(manifest.artifact.sha256, RELEASE_ARTIFACT_SHA256);
+assert.equal(manifest.previousRelease.reference, PREVIOUS_RELEASE_REFERENCE);
+assert.deepEqual(manifest.commands.map((command) => command.id), [
+  'locked-backend-restore',
+  'no-restore-backend-build',
+  'verify-full-canonical-artifact',
+  'previous-release-upgrade',
+  'full-canonical-recovery',
+  'release-dependency-advisory',
+]);
+assert.deepEqual(manifest.commands.find((command) => command.id === 'release-dependency-advisory').arguments.slice(0, 3), [
+  'scripts/run-dependency-advisory-evaluation.mjs', '--trigger', 'release',
+]);
+
+const passing = evidenceSet('2026-09-01T11:30:00.000Z');
+assert.deepEqual(evaluateExternalEvidence(passing, { candidate, now, maxAgeHours: 24 }), {
+  status: 'passed',
+  components: [
+    { id: 'isolated-staging-critical-journeys', status: 'passed', checkId: 'evidence-current-and-complete' },
+    { id: 'real-logto-sentinel', status: 'passed', checkId: 'evidence-current-and-complete' },
+    { id: 'manual-release-charter', status: 'passed', checkId: 'evidence-current-and-complete' },
+  ],
+});
+
+const unavailable = evaluateExternalEvidence({}, { candidate, now, maxAgeHours: 24 });
+assert.equal(unavailable.status, 'unavailable');
+assert.equal(unavailable.components[1].checkId, 'evidence-missing');
+
+const stale = evaluateExternalEvidence(evidenceSet('2026-08-30T11:30:00.000Z'), { candidate, now, maxAgeHours: 24 });
+assert.equal(stale.status, 'stale');
+assert.equal(stale.components[0].checkId, 'evidence-stale');
+
+const staleButIncomplete = evidenceSet('2026-08-30T11:30:00.000Z');
+staleButIncomplete['real-logto-sentinel'].checks.logout = false;
+assert.equal(evaluateExternalEvidence(staleButIncomplete, { candidate, now, maxAgeHours: 24 }).components[1].checkId, 'evidence-contract-incomplete');
+
+const failed = evidenceSet('2026-09-01T11:30:00.000Z');
+failed['real-logto-sentinel'].checks.logout = false;
+const failedEvaluation = evaluateExternalEvidence(failed, { candidate, now, maxAgeHours: 24 });
+assert.equal(failedEvaluation.status, 'failed');
+assert.equal(failedEvaluation.components[1].checkId, 'evidence-contract-incomplete');
+
+const reportedFailure = evidenceSet('2026-09-01T11:30:00.000Z');
+reportedFailure['isolated-staging-critical-journeys'].status = 'failed';
+assert.equal(evaluateExternalEvidence(reportedFailure, { candidate, now, maxAgeHours: 24 }).components[0].checkId, 'evidence-reported-failure');
+
+const mixedFailure = evidenceSet('2026-09-01T11:30:00.000Z');
+mixedFailure['manual-release-charter'].manual.restore = false;
+delete mixedFailure['real-logto-sentinel'];
+assert.equal(evaluateExternalEvidence(mixedFailure, { candidate, now, maxAgeHours: 24 }).status, 'failed');
+
+const mismatchedCandidate = evidenceSet('2026-09-01T11:30:00.000Z');
+mismatchedCandidate['real-logto-sentinel'].candidate = 'fedcba9876543210fedcba9876543210fedcba98';
+assert.equal(evaluateExternalEvidence(mismatchedCandidate, { candidate, now, maxAgeHours: 24 }).components[1].checkId, 'candidate-binding-mismatch');
+
+for (const id of ['isolated-staging-critical-journeys', 'real-logto-sentinel', 'manual-release-charter']) {
+  const staleCandidate = evidenceSet('2026-09-01T11:30:00.000Z');
+  staleCandidate[id].candidate = 'fedcba9876543210fedcba9876543210fedcba98';
+  assert.equal(evaluateExternalEvidence(staleCandidate, { candidate, now, maxAgeHours: 24 }).components.find((component) => component.id === id).checkId, 'candidate-binding-mismatch');
+}
+for (const deployment of [undefined, { id: 'staging-deployment-fixture', immutable: false }, { id: 'bad url', immutable: true }]) {
+  const invalidDeployment = evidenceSet('2026-09-01T11:30:00.000Z');
+  invalidDeployment['isolated-staging-critical-journeys'].deployment = deployment;
+  assert.equal(evaluateExternalEvidence(invalidDeployment, { candidate, now, maxAgeHours: 24 }).components[0].status, 'failed');
+}
+
+const missingEvidence = mkdtempSync(resolve(tmpdir(), 'qdb-release-evidence-'));
+try {
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence).status, 'failed');
+  writeFileSync(resolve(missingEvidence, 'backend-tests.trx'), '<TestRun><ResultSummary><Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" inProgress="0" pending="0" /></ResultSummary><Results><UnitTestResult testName="QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests.Run" outcome="Passed" /></Results></TestRun>');
+  writeFileSync(resolve(missingEvidence, 'nightly-test-evidence.json'), '{"schemaVersion":1,"lane":"previous-release-upgrade","status":"passed"}');
+  writeFileSync(resolve(missingEvidence, 'rehearsal.json'), '{}');
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).status, 'failed');
+  writeFileSync(resolve(missingEvidence, 'extra.txt'), 'x');
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'rehearsal-evidence-inventory-invalid');
+  rmSync(resolve(missingEvidence, 'extra.txt'));
+  mkdirSync(resolve(missingEvidence, 'extra-directory'));
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'rehearsal-evidence-inventory-invalid');
+  rmSync(resolve(missingEvidence, 'extra-directory'), { recursive: true });
+  symlinkSync(resolve(missingEvidence, 'rehearsal.json'), resolve(missingEvidence, 'extra-link'));
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'rehearsal-evidence-inventory-invalid');
+} finally {
+  rmSync(missingEvidence, { force: true, recursive: true });
+}
+const pins = resolveAuthoritativePins(REPOSITORY_ROOT);
+assert.equal(pins.artifactSha256, RELEASE_ARTIFACT_SHA256);
+assert.equal(pins.previousReleaseReference, PREVIOUS_RELEASE_REFERENCE);
+verifyPrimaryEvidenceFixtures(pins);
+assert.equal(validateCheckoutState({ candidate, head: candidate, porcelain: '' }).status, 'passed');
+assert.equal(validateCheckoutState({ candidate, head: candidate, porcelain: ' M scripts/a.mjs' }).reason, 'candidate-worktree-dirty');
+assert.equal(validateCheckoutState({ candidate, head: candidate, porcelain: 'M  scripts/a.mjs' }).reason, 'candidate-worktree-dirty');
+assert.equal(validateCheckoutState({ candidate, head: candidate, porcelain: '?? release-candidate-lane.json' }).reason, 'candidate-worktree-dirty');
+assert.equal(validateCheckoutState({ candidate, head: 'fedcba9876543210fedcba9876543210fedcba98', porcelain: '' }).reason, 'candidate-head-changed');
+assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(REPOSITORY_ROOT, 'results') }).reason, 'results-directory-inside-candidate');
+assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(REPOSITORY_ROOT, '..results') }).reason, 'results-directory-inside-candidate');
+assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(tmpdir(), 'qdb-release-results') }).status, 'passed');
+const lateCancellation = createCancellationController();
+lateCancellation.cancel('SIGTERM');
+assert.equal(classifyReleaseCandidate({ primary: [{ status: 'passed' }], externalEvidence: { status: 'passed' }, cancellation: lateCancellation }), 'cancelled');
+await verifyFinalizerBoundaries();
+
+const invalidManifest = writeInvalidManifest();
+try {
+  assert.throws(() => loadReleaseCandidateManifest(invalidManifest.path, REPOSITORY_ROOT), /artifact SHA-256 does not match/);
+} finally {
+  rmSync(invalidManifest.directory, { force: true, recursive: true });
+}
+await import('./verify-release-candidate-runner.mjs');
+await import('./verify-release-candidate-cleanup.mjs');
+console.log('Release candidate lane contract passed.');
+
+function evidenceSet(completedAt) {
+  const sanitization = {
+    credentials: false,
+    rawUrls: false,
+    requestBodies: false,
+    responseBodies: false,
+    databaseDumps: false,
+  };
+  return {
+    'isolated-staging-critical-journeys': {
+      schemaVersion: 1,
+      id: 'isolated-staging-critical-journeys',
+      status: 'passed',
+      completedAt,
+      runId: 'staging-contract-fixture',
+      candidate,
+      sanitization,
+      isolation: { dedicatedState: true, sharedState: false },
+      deployment: { id: 'staging-deployment-fixture', immutable: true },
+      artifact: { sha256: RELEASE_ARTIFACT_SHA256, verification: 'passed' },
+      journeys: { catalogue: 'critical-playwright', allDeclared: true, firstAttempt: true, retryCount: 0 },
+    },
+    'real-logto-sentinel': {
+      schemaVersion: 1,
+      id: 'real-logto-sentinel',
+      status: 'passed',
+      completedAt,
+      runId: 'logto-contract-fixture',
+      candidate,
+      sanitization,
+      serialization: { serialized: true, concurrentRuns: 1 },
+      identities: { dedicated: true, count: 2 },
+      checks: {
+        redirect: true,
+        callback: true,
+        logout: true,
+        identityMapping: true,
+        sessionBootstrap: true,
+        approvedProfileReconciliation: true,
+      },
+    },
+    'manual-release-charter': {
+      schemaVersion: 1,
+      id: 'manual-release-charter',
+      status: 'passed',
+      completedAt,
+      runId: 'manual-contract-fixture',
+      candidate,
+      sanitization,
+      manual: { typography: true, assistiveTechnology: true, restore: true, providerConfiguration: true },
+    },
+  };
+}
+
+function writeInvalidManifest() {
+  const directory = mkdtempSync(resolve(tmpdir(), 'qdb-release-candidate-contract-'));
+  const path = resolve(directory, 'invalid-manifest.json');
+  const invalid = JSON.parse(readFileSync(resolve(REPOSITORY_ROOT, 'release-candidate-lane.json'), 'utf8'));
+  invalid.artifact.sha256 = '0'.repeat(64);
+  writeFileSync(path, JSON.stringify(invalid));
+  return { directory, path };
+}
+
+function verifyPrimaryEvidenceFixtures(authority) {
+  const directory = mkdtempSync(resolve(tmpdir(), 'qdb-release-primary-'));
+  try {
+    const previous = previousEvidence(authority.declaration);
+    writeRehearsal(directory, 'previous-release-upgrade', 'QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests', previous);
+    assert.equal(validatePrimaryEvidence('previous-release-upgrade', directory, REPOSITORY_ROOT).status, 'passed');
+    for (const mutate of [
+      (value) => { value.authoritativePreviousRelease.commit = '0'.repeat(40); },
+      (value) => { value.supplementalRehearsalBaseline.forwardMigrationIds = []; },
+      (value) => { value.payloadSha256 = '0'.repeat(64); },
+      (value) => { value.preUpgradeCanonicalSentinel.actualRows = 0; },
+      (value) => { value.phraseSearch.actualRows = 0; },
+      (value) => { value.phases.reverse(); },
+    ]) {
+      const invalid = clone(previous); mutate(invalid); writeRehearsal(directory, 'previous-release-upgrade', 'QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests', invalid);
+      assert.equal(validatePrimaryEvidence('previous-release-upgrade', directory, REPOSITORY_ROOT).status, 'failed');
+    }
+
+    const recovery = recoveryEvidence(authority.artifact);
+    writeRehearsal(directory, 'full-canonical-recovery', 'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests', recovery);
+    assert.equal(validatePrimaryEvidence('full-canonical-recovery', directory, REPOSITORY_ROOT).status, 'passed');
+    for (const mutate of [
+      (value) => { value.backup.artifacts[0].tables[0].rows = 0; },
+      (value) => { value.backup.artifacts[0].sentinels[0].actualCount = 0; },
+      (value) => { value.lockedOracles = []; },
+      (value) => { value.lockedOracles[0].oracleSha256 = '0'.repeat(64); },
+      (value) => { value.lockedOracles[0].extra = true; },
+      (value) => { value.lockedCriticalReads[0].sha256 = '0'.repeat(64); },
+      (value) => { value.targetCriticalReads[0].value = '0'.repeat(64); },
+      (value) => { value.targetSequences[0].ownership.name = 'other'; },
+      (value) => { value.backup.sequenceReconciliations[0].reconciled.nextValue += 1; },
+      (value) => { value.backup.artifacts[0].sequences[0].nextValue += 1; },
+      (value) => { value.targetSequences[0].nextValue = value.targetSequences[0].lastValue; },
+      (value) => { value.targetSequences[0].isCalled = false; value.targetSequences[0].nextValue += 1; },
+      (value) => { value.backup.sequenceReconciliations[0].reconciled.lastValue += 1; },
+      (value) => { value.targetSequences[0].incrementBy = 0; },
+      (value) => { value.targetSequences[0].incrementBy = -1; },
+      (value) => { value.targetSequences[0].nextValue = value.targetSequences[0].highWaterMark; },
+      (value) => { value.backup.sequenceReconciliations[0].reconciled.highWaterMark += 1; },
+      (value) => { value.source.imageDigest = 'sha256:0'.padEnd(71, '0'); },
+      (value) => { value.source.serverInstanceId = 'not-a-guid'; },
+      (value) => { value.source.postgreSqlVersion = '18.60 arbitrary'; },
+      (value) => { value.target.migrationHead = 'other'; },
+      (value) => { value.backup.fileName = '../recovery.dump'; },
+      (value) => { value.backup.extra = true; },
+      (value) => { value.durationMilliseconds = 0; },
+    ]) {
+      const invalid = clone(recovery); mutate(invalid); writeRehearsal(directory, 'full-canonical-recovery', 'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests', invalid);
+      assert.equal(validatePrimaryEvidence('full-canonical-recovery', directory, REPOSITORY_ROOT).status, 'failed');
+    }
+
+    rmSync(directory, { force: true, recursive: true }); mkdirSync(directory);
+    writeFileSync(resolve(directory, 'evaluation.json'), JSON.stringify({ schemaVersion: 1, policyId: 'dependency-advisory-evaluation', trigger: 'release', evaluatedAt: '2026-09-01T00:00:00.000Z', status: 'passed', summary: { total: 0, production: 0, development: 0, highCriticalProduction: 0, blocking: 0 }, findings: [], blockingFindings: [], expiredWaivers: [], scanErrors: [] }));
+    assert.equal(validatePrimaryEvidence('release-dependency-advisory', directory, REPOSITORY_ROOT).status, 'passed');
+  } finally { rmSync(directory, { force: true, recursive: true }); }
+}
+
+function writeRehearsal(directory, lane, className, evidence) {
+  rmSync(directory, { force: true, recursive: true }); mkdirSync(directory);
+  writeFileSync(resolve(directory, 'backend-tests.trx'), `<TestRun><ResultSummary><Counters total="1" executed="1" passed="1" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" inProgress="0" pending="0" /></ResultSummary><Results><UnitTestResult testName="${className}.Run" outcome="Passed" /></Results></TestRun>`);
+  writeFileSync(resolve(directory, 'nightly-test-evidence.json'), JSON.stringify({ schemaVersion: 1, lane, status: 'passed' }));
+  writeFileSync(resolve(directory, 'rehearsal.json'), JSON.stringify(evidence));
+}
+
+function previousEvidence(declaration) {
+  const sentinel = (expected) => ({ table: expected.table, expectedRows: expected.expectedCount, actualRows: expected.expectedCount });
+  return { status: 'passed', authoritativePreviousRelease: { commit: declaration.authoritativePreviousRelease.sha, forwardMigrationIds: declaration.expectations.authoritativeForwardMigrationIds }, supplementalRehearsalBaseline: { commit: declaration.supplementalRehearsalBaseline.sha, forwardMigrationIds: declaration.expectations.supplementalForwardMigrationIds }, payloadSha256: declaration.artifact.payloadSha256, manifestSha256: declaration.artifact.manifestSha256, preUpgradeCanonicalSentinel: sentinel(declaration.expectations.preUpgradeSentinel), postUpgradeCanonicalSentinel: sentinel(declaration.expectations.postUpgradeSentinel), phraseSearch: { stateTable: declaration.expectations.phraseSearch.stateTable, expectedRows: 1, expectedActiveBuild: 'none', actualRows: 1, actualActiveBuildRows: 0 }, applicationBoot: { expected: 'succeeded', actual: 'succeeded' }, criticalReadSentinels: { expected: 'succeeded', actual: 'succeeded' }, phases: ['artifact', 'historical-schema', 'restore', 'forward-migrations', 'application-boot', 'critical-read-sentinels', 'post-upgrade-sentinels'].map((name) => ({ name, status: 'passed', durationMilliseconds: 1, detail: 'completed' })) };
+}
+
+function recoveryEvidence(artifact) {
+  const states = artifact.tableScope.ownedSequences.map((ownership, index) => ({ ownership, highWaterMark: index + 1, lastValue: index + 1, isCalled: true, incrementBy: 1, nextValue: index + 2 }));
+  const reads = artifact.restore.sentinelTables.map((sentinel) => ({ id: sentinel.id, sha256: sentinel.criticalReadSha256 }));
+  const fingerprints = reads.map(({ id, sha256 }) => ({ key: id, value: sha256 }));
+  const descriptor = (role, instance) => ({ role, serverInstanceId: instance, imageDigest: artifact.postgresql.containerDigest, postgreSqlVersion: `${artifact.postgresql.producerVersion} (PostgreSQL)`, migrationHead: artifact.migration.head, migrationCount: artifact.migration.count });
+  const recovered = { id: artifact.id, immutableStorageId: artifact.immutableStorageId, tables: artifact.tableCounts, sentinels: artifact.restore.sentinelTables.map(({ id, table, expectedCount }) => ({ id, table, expectedCount, actualCount: expectedCount })), stagedFiles: artifact.stagedFiles, sources: artifact.sources, criticalReads: reads, sequences: states };
+  const originalStates = states.map((state) => ({ ...state, lastValue: state.highWaterMark - 1, isCalled: false, nextValue: state.highWaterMark - 1 }));
+  return { status: 'passed', classification: 'data-recovery', applicationRollback: 'application-rollback-not-requested', lockedCriticalReads: reads, lockedOracles: artifact.sentinels, backup: { fileName: 'quran-canonical-recovery.dump', size: 1, sha256: 'a'.repeat(64), repositoryMigration: artifact.migration, tables: artifact.tableScope.tables, ownedSequences: artifact.tableScope.ownedSequences, sequenceReconciliations: states.map((state, index) => ({ original: originalStates[index], reconciled: state })), artifacts: [recovered] }, receipt: { status: 'rehearsed', classification: 'data-recovery', applicationRollback: 'application-rollback-not-requested' }, source: descriptor('source', '0123456789abcdef0123456789abcdef'), target: descriptor('target', 'fedcba9876543210fedcba9876543210'), sourceCriticalReads: fingerprints, targetCriticalReads: fingerprints, targetSequences: states, durationMilliseconds: 1 };
+}
+
+function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
+async function verifyFinalizerBoundaries() {
+  const noSignal = await finalizeCase();
+  assert.equal(noSignal.writes.length, 1); assert.equal(noSignal.writes.at(-1).status, 'passed'); assert.equal(noSignal.exitCode, 0);
+
+  const queued = await finalizeCase((cancellation) => setImmediate(() => cancellation.cancel('SIGINT')));
+  assert.equal(queued.writes.at(-1).status, 'cancelled'); assert.equal(queued.exitCode, 1);
+
+  const afterWrite = await finalizeCase((_cancellation, finalizer, writes) => {
+    const original = writes.push.bind(writes);
+    writes.push = (value) => { original(value); if (value.status === 'passed') setImmediate(() => finalizer.cancel()); return writes.length; };
+  });
+  assert.equal(afterWrite.writes.at(-1).status, 'cancelled'); assert.equal(afterWrite.exitCode, 1);
+
+  const late = await finalizeCase();
+  late.finalizer.cancel();
+  assert.equal(late.writes.at(-1).status, 'cancelled'); assert.equal(late.exitCode, 1);
+}
+
+async function finalizeCase(schedule) {
+  const receipt = { status: 'passed', firstAttemptStatus: 'passed' };
+  const cancellation = createCancellationController();
+  const writes = [];
+  let exitCode;
+  const finalizer = createReleaseCandidateFinalizer(receipt, cancellation, (value) => writes.push({ ...value }), (code) => { exitCode = code; });
+  schedule?.(cancellation, finalizer, writes);
+  await finalizer.finalize();
+  return { get exitCode() { return exitCode; }, finalizer, writes };
+}

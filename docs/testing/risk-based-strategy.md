@@ -474,6 +474,14 @@ verification. It retains structured browser timing as non-blocking evidence and 
 advisory commands. This does not mean a nightly schedule, remote runner, artifact upload, or adoption
 exists: those provider and runner responsibilities remain unconfigured.
 
+The provider-neutral release-candidate contract is implemented in
+[`release-candidate-lane.json`](../../release-candidate-lane.json) and
+[`Release candidate lane`](./release-candidate-lane.md). It composes the existing content-addressed
+artifact verification, previous-release upgrade, backup/restore recovery, and release advisory seams.
+Isolated staging, real-Logto, and manual charter evidence are constrained to sanitized owner
+attestations and remain unavailable until the authorized owner supplies them; the contract never
+relabels those components as passing.
+
 ## Hermeticity and reproducible inputs
 
 Required PR jobs have two phases:

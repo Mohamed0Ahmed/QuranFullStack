@@ -486,7 +486,11 @@ else
   echo "resource needs: ${resource_summary}"
 fi
 
-run_id="$(tr -d '-' < /proc/sys/kernel/random/uuid)"
+run_id="${QURAN_DASHBOARD_TEST_RUN_ID:-$(tr -d '-' < /proc/sys/kernel/random/uuid)}"
+if [[ ! "${run_id}" =~ ^[0-9a-f]{32}$ ]]; then
+  echo "ERROR: QURAN_DASHBOARD_TEST_RUN_ID must be 32 lowercase hexadecimal characters." >&2
+  exit 1
+fi
 export QURAN_DASHBOARD_TEST_RUN_ID="${run_id}"
 export QURAN_DASHBOARD_TEST_DB_PARALLELISM=4
 unset MUSHAF_READER_REAL_DB_CONNECTION
