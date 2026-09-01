@@ -29,7 +29,7 @@ SHARD_HANDOVER_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|phrase-index-rehearsal
     --build|--no-build [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
@@ -72,7 +72,7 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|feature|pipeline|pre-pr)
+  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|phrase-index-rehearsal|feature|pipeline|pre-pr)
     ;;
   *)
     fail_usage "Unknown lane: ${lane}"
@@ -259,6 +259,9 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       ;;
     previous-release-upgrade)
       [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests ]] && selected=true
+      ;;
+    phrase-index-rehearsal)
+      [[ "${class_name}" == QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests ]] && selected=true
       ;;
     feature)
       if [[ "${kind}" != "Release" && -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
@@ -634,8 +637,23 @@ if [[ "${lane}" == "previous-release-upgrade" && "${list_tests}" == false ]]; th
   export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
 fi
 
+if [[ "${lane}" == "phrase-index-rehearsal" && "${list_tests}" == false ]]; then
+  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
+    echo "ERROR: phrase-index-rehearsal requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+    exit 1
+  fi
+  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+    echo "ERROR: phrase-index-rehearsal requires QURAN_TEST_ARTIFACT_ROOT." >&2
+    exit 1
+  fi
+  export QURAN_DASHBOARD_PHRASE_INDEX_REHEARSAL_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-phrase-index-rehearsal-evidence}"
+fi
+
 verbosity="normal"
 hang_timeout="20m"
+if [[ "${lane}" == "phrase-index-rehearsal" ]]; then
+  hang_timeout="45m"
+fi
 if [[ "${all_fast}" == true ]]; then
   verbosity="minimal"
   hang_timeout="5m"

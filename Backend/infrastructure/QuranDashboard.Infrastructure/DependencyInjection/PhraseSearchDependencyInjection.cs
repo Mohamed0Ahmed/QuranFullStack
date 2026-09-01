@@ -36,6 +36,8 @@ internal static class PhraseSearchDependencyInjection
         services.AddScoped<PhraseSimilarityCandidateGenerator>();
         services.AddScoped<PhraseSimilarityEdgeCopier>();
         services.AddScoped<PhraseSimilarityBuilder>();
+        services.AddScoped(_ => PhraseIndexBuildExpectations.Production);
+        services.AddScoped(_ => PhraseIndexBuildLifecycleTestHook.None);
         services.AddScoped<PhraseIndexValidator>();
         services.AddScoped<PhraseIndexGenerationVerifier>();
         services.AddScoped<PhraseIndexActivator>();

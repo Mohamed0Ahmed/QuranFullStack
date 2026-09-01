@@ -14,6 +14,8 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
     private readonly PhraseIndexActivator activator;
     private readonly PhraseIndexBuildFinalizer finalizer;
     private readonly PhraseIndexPreActivationFailureFinalizer failureFinalizer;
+    private readonly PhraseIndexBuildExpectations expectations;
+    private readonly PhraseIndexBuildLifecycleTestHook testHook;
 
     public EfPhraseIndexBuilder(
         QuranDashboardDbContext dbContext,
@@ -24,7 +26,9 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         PhraseIndexValidator validator,
         PhraseIndexActivator activator,
         PhraseIndexBuildFinalizer finalizer,
-        PhraseIndexPreActivationFailureFinalizer failureFinalizer)
+        PhraseIndexPreActivationFailureFinalizer failureFinalizer,
+        PhraseIndexBuildExpectations expectations,
+        PhraseIndexBuildLifecycleTestHook testHook)
     {
         this.dbContext = dbContext;
         this.sourceStateCoordinator = sourceStateCoordinator;
@@ -35,6 +39,8 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         this.activator = activator;
         this.finalizer = finalizer;
         this.failureFinalizer = failureFinalizer;
+        this.expectations = expectations;
+        this.testHook = testHook;
     }
 
     public async Task<PhraseIndexBuildExecution> BuildAsync(
@@ -135,8 +141,8 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                 run.CurrentStage = PhraseIndexBuildStage.BootstrapSource;
                 var bootstrap = await sourceStateCoordinator.BootstrapAsync(
                     connection,
-                    PhraseIndexBuildConstants.ApprovedSourceFingerprint,
-                    PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion,
+                    expectations.ApprovedSourceFingerprint,
+                    expectations.ApprovedSourceFingerprintVersion,
                     ct);
                 run.SourceRevision = bootstrap.State.SourceRevision;
                 run.SourceFingerprint = bootstrap.ComputedFingerprint;
@@ -157,16 +163,16 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
                 }
 
                 var sourceApproved =
-                    PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion
+                    expectations.ApprovedSourceFingerprintVersion
                         == PhraseIndexBuildConstants.SourceFingerprintVersion
                     && string.Equals(
-                        PhraseIndexBuildConstants.ApprovedSourceFingerprint,
+                        expectations.ApprovedSourceFingerprint,
                         bootstrap.ComputedFingerprint,
                         StringComparison.Ordinal);
                 AddOrReplaceCheck(run.Checks, new PhraseBuildCheck(
                     "SOURCE-APPROVAL",
                     "hard",
-                    $"v{PhraseIndexBuildConstants.ApprovedSourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{PhraseIndexBuildConstants.ApprovedSourceFingerprint}",
+                    $"v{expectations.ApprovedSourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{expectations.ApprovedSourceFingerprint}",
                     $"v{PhraseIndexBuildConstants.SourceFingerprintVersion.ToString(CultureInfo.InvariantCulture)}:{bootstrap.ComputedFingerprint}",
                     sourceApproved));
                 if (!sourceApproved)
@@ -367,6 +373,7 @@ internal sealed class EfPhraseIndexBuilder : IPhraseIndexBuilder
         };
 
         run.CurrentStage = PhraseIndexBuildStage.ValidateStagedIndex;
+        await testHook.AfterStagingAsync(run.BuildId, ct);
         var validation = await validator.ValidateAsync(
             connection,
             transaction,
