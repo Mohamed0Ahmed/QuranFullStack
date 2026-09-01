@@ -465,6 +465,15 @@ proves cookie-backed identity. If direct Railway-origin CORS is an intentional s
 it separately with a safe preflight/request carrying the deployed UI `Origin`. The smoke performs no
 production mutations.
 
+The provider-neutral nightly contract is now implemented in
+[`nightly-risk-lane.json`](../../nightly-risk-lane.json) and
+[`Nightly risk lane`](./nightly-risk-lane.md). It composes the sealed full Chromium command (including
+the designated Mushaf and Linking mobile variants), the isolated PhraseSearch build/activation
+rehearsal, Abwab snapshot protections, Quran topics import protections, and full-canonical artifact
+verification. It retains structured browser timing as non-blocking evidence and rejects dependency
+advisory commands. This does not mean a nightly schedule, remote runner, artifact upload, or adoption
+exists: those provider and runner responsibilities remain unconfigured.
+
 ## Hermeticity and reproducible inputs
 
 Required PR jobs have two phases:
@@ -554,7 +563,10 @@ stronger proof. Do not perform a wholesale rewrite.
 ## Failure, flakes, and evidence
 
 Required PR tests have no retry. Scheduled runs may retry once for classification, but the run remains
-failed and records both attempts. There is no silent quarantine.
+failed and records both attempts. The implemented nightly runner permits that optional retry only for
+its designated full Chromium command after the primary attempt fails or times out; its separate
+diagnostic evidence cannot change the primary status or successful-process decision. There is no silent
+quarantine.
 
 An emergency downgrade requires:
 
