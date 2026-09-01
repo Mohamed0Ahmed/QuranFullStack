@@ -94,6 +94,12 @@ try {
   writeFileSync(resolve(missingEvidence, 'nightly-test-evidence.json'), '{"schemaVersion":1,"lane":"previous-release-upgrade","status":"passed"}');
   writeFileSync(resolve(missingEvidence, 'rehearsal.json'), '{}');
   assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).status, 'failed');
+  const emptyBlameDirectory = resolve(missingEvidence, '31ac7138-b257-4571-9226-1f8824b4ef55');
+  mkdirSync(emptyBlameDirectory);
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'previous-release-evidence-invalid');
+  writeFileSync(resolve(emptyBlameDirectory, 'unexpected.txt'), 'x');
+  assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'rehearsal-evidence-inventory-invalid');
+  rmSync(emptyBlameDirectory, { recursive: true });
   writeFileSync(resolve(missingEvidence, 'extra.txt'), 'x');
   assert.equal(validatePrimaryEvidence('previous-release-upgrade', missingEvidence, REPOSITORY_ROOT).checkId, 'rehearsal-evidence-inventory-invalid');
   rmSync(resolve(missingEvidence, 'extra.txt'));

@@ -243,13 +243,22 @@ export function validatePrimaryEvidence(command, resultsDirectory, repositoryRoo
 function approvedRehearsalFiles(resultsDirectory) {
   try {
     const entries = readdirSync(resultsDirectory, { withFileTypes: true });
-    if (entries.length !== 3 || entries.some((entry) => !entry.isFile())) return null;
-    const files = entries.map((entry) => resolve(resultsDirectory, entry.name));
+    const fileEntries = entries.filter((entry) => entry.isFile());
+    const infrastructureEntries = entries.filter((entry) => !entry.isFile());
+    if (fileEntries.length !== 3 || infrastructureEntries.length > 1
+      || infrastructureEntries.some((entry) => !isEmptyVstestBlameDirectory(resultsDirectory, entry))) return null;
+    const files = fileEntries.map((entry) => resolve(resultsDirectory, entry.name));
     const trx = files.filter((file) => file.endsWith('.trx'));
     const receipt = files.filter((file) => file === resolve(resultsDirectory, 'nightly-test-evidence.json'));
     const evidence = files.filter((file) => file.endsWith('.json') && file !== resolve(resultsDirectory, 'nightly-test-evidence.json'));
     return trx.length === 1 && receipt.length === 1 && evidence.length === 1 ? files : null;
   } catch { return null; }
+}
+
+function isEmptyVstestBlameDirectory(resultsDirectory, entry) {
+  return entry.isDirectory()
+    && /^[a-f0-9]{8}(?:-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(entry.name)
+    && readdirSync(resolve(resultsDirectory, entry.name)).length === 0;
 }
 
 function validateAdvisoryEvidence(resultsDirectory) {

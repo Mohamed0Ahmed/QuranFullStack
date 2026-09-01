@@ -254,6 +254,7 @@ export function evaluateDependencyAdvisories({
     findings,
     blockingFindings,
     expiredWaivers: expiredWaivers.map(({ id, expiresAt, owner }) => ({ id, expiresAt, owner })),
+    scanErrors: null,
   };
 }
 
