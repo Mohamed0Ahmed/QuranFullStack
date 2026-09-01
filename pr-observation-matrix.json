@@ -154,7 +154,7 @@
           },
           {
             "id": "sessions-permissions",
-            "blocking": false,
+            "blocking": true,
             "journeys": [
               "device-session.lifecycle",
               "permission.lifecycle"

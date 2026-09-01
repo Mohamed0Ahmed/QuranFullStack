@@ -121,7 +121,7 @@ if (errors.length === 0) {
       },
       {
         id: 'sessions-permissions',
-        blocking: false,
+        blocking: true,
         journeys: ['device-session.lifecycle', 'permission.lifecycle'],
       },
       {
@@ -143,7 +143,7 @@ if (errors.length === 0) {
         journeys: ['abwab.inclusion-projection'],
       },
     ]),
-    'Only the Quran-fidelity journey group must be blocking after pilot #102.',
+    'Only Quran fidelity and sessions/Permissions must be blocking after pilot #103.',
   );
 
   verifyObservationFailureContract();
