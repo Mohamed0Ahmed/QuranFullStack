@@ -6,10 +6,8 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  evaluateExternalEvidence,
   loadReleaseCandidateManifest,
   materializeReleaseCandidateCommand,
-  readExternalEvidence,
   validatePrimaryEvidence,
 } from './release-candidate-contract.mjs';
 import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, isolatedTemporaryEnvironment, runDetachedCommand, runReleaseCandidateCommands, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
@@ -45,7 +43,7 @@ if (options.dryRun) {
   console.log(JSON.stringify({
     id: manifest.id,
     timeoutSeconds: manifest.timeoutSeconds,
-    externalEvidence: manifest.externalEvidence,
+    executionScope: manifest.executionScope,
     commands: commands.map(({ cwd: _cwd, arguments: _arguments, ...command }) => command),
   }, null, 2));
   process.exit(0);
@@ -93,14 +91,11 @@ if (cancellation.signal) {
   if (candidateCheck.status !== 'passed') primary.push({ id: 'candidate-check-after', status: 'failed', firstAttemptStatus: 'failed', attemptsExecuted: 1, maxAttempts: 1, durationMs: 0, exitCode: null, signal: null, reason: candidateCheck.reason });
 }
 
-const externalEvidence = evaluateExternalEvidence(readExternalEvidence(options.externalEvidenceDirectory), {
-  candidate,
-  maxAgeHours: manifest.externalEvidence.maxAgeHours,
-});
-const status = classifyReleaseCandidate({ primary, externalEvidence, cancellation });
+const status = classifyReleaseCandidate({ primary, cancellation });
 const receipt = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   laneId: manifest.id,
+  executionScope: manifest.executionScope,
   status,
   artifactSha256: manifest.artifact.sha256,
   previousReleaseReference: manifest.previousRelease.reference,
@@ -111,7 +106,6 @@ const receipt = {
   primary,
   databaseCleanup,
   candidateCheck,
-  externalEvidence,
 };
 activeFinalizer = createReleaseCandidateFinalizer(
   receipt,
@@ -120,16 +114,15 @@ activeFinalizer = createReleaseCandidateFinalizer(
   (code) => { process.exitCode = code; },
 );
 await activeFinalizer.finalize();
-console.log(`[release-candidate] status=${receipt.status} externalEvidence=${externalEvidence.status}`);
+console.log(`[release-candidate] status=${receipt.status}`);
 
 function parseArguments(arguments_) {
-  const parsed = { artifactRoot: '', candidate: '', confirmBackup: false, dryRun: false, externalEvidenceDirectory: '', resultsDirectory: '' };
+  const parsed = { artifactRoot: '', candidate: '', confirmBackup: false, dryRun: false, resultsDirectory: '' };
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
     if (argument === '--artifact-root') parsed.artifactRoot = requireValue(arguments_, ++index, argument);
     else if (argument === '--candidate') parsed.candidate = requireValue(arguments_, ++index, argument);
     else if (argument === '--confirm-backup') parsed.confirmBackup = true;
-    else if (argument === '--external-evidence-dir') parsed.externalEvidenceDirectory = resolve(process.cwd(), requireValue(arguments_, ++index, argument));
     else if (argument === '--results-dir') parsed.resultsDirectory = resolve(process.cwd(), requireValue(arguments_, ++index, argument));
     else if (argument === '--dry-run') parsed.dryRun = true;
     else if (argument === '--help' || argument === '-h') {
@@ -139,7 +132,6 @@ function parseArguments(arguments_) {
   }
   if (!parsed.resultsDirectory) throw new Error('--results-dir is required.');
   if (!parsed.dryRun && !parsed.artifactRoot) throw new Error('--artifact-root is required for execution.');
-  if (!parsed.dryRun && !parsed.externalEvidenceDirectory) throw new Error('--external-evidence-dir is required for execution.');
   if (!parsed.dryRun && !parsed.confirmBackup) throw new Error('--confirm-backup is required for the isolated recovery rehearsal.');
   if (validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: parsed.resultsDirectory }).status !== 'passed') {
     throw new Error('--results-dir must be outside the repository so candidate verification remains immutable.');
@@ -154,7 +146,7 @@ function requireValue(arguments_, index, option) {
 }
 
 function printUsage() {
-  console.log('Usage: node scripts/run-release-candidate-lane.mjs --artifact-root PATH --external-evidence-dir PATH --results-dir PATH --confirm-backup [--candidate SHA] [--dry-run]');
+  console.log('Usage: node scripts/run-release-candidate-lane.mjs --artifact-root PATH --results-dir PATH --confirm-backup [--candidate SHA] [--dry-run]');
 }
 
 function commandEnvironment(command, executionHome, runId) {

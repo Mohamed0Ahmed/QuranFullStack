@@ -7,7 +7,6 @@ import { fileURLToPath } from 'node:url';
 import {
   PREVIOUS_RELEASE_REFERENCE,
   RELEASE_ARTIFACT_SHA256,
-  evaluateExternalEvidence,
   loadReleaseCandidateManifest,
   resolveAuthoritativePins,
   validatePrimaryEvidence,
@@ -16,11 +15,13 @@ import { classifyReleaseCandidate, createCancellationController, createReleaseCa
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = loadReleaseCandidateManifest(resolve(REPOSITORY_ROOT, 'release-candidate-lane.json'), REPOSITORY_ROOT);
-const now = new Date('2026-09-01T12:00:00.000Z');
 const candidate = '0123456789abcdef0123456789abcdef01234567';
 
+assert.equal(manifest.schemaVersion, 2);
 assert.equal(manifest.id, 'release-candidate');
+assert.equal(manifest.executionScope, 'local-first-pre-merge');
 assert.equal(manifest.providerNeutral, true);
+assert.equal(manifest.externalEvidence, undefined);
 assert.equal(manifest.artifact.sha256, RELEASE_ARTIFACT_SHA256);
 assert.equal(manifest.previousRelease.reference, PREVIOUS_RELEASE_REFERENCE);
 assert.deepEqual(manifest.commands.map((command) => command.id), [
@@ -34,58 +35,6 @@ assert.deepEqual(manifest.commands.map((command) => command.id), [
 assert.deepEqual(manifest.commands.find((command) => command.id === 'release-dependency-advisory').arguments.slice(0, 3), [
   'scripts/run-dependency-advisory-evaluation.mjs', '--trigger', 'release',
 ]);
-
-const passing = evidenceSet('2026-09-01T11:30:00.000Z');
-assert.deepEqual(evaluateExternalEvidence(passing, { candidate, now, maxAgeHours: 24 }), {
-  status: 'passed',
-  components: [
-    { id: 'isolated-staging-critical-journeys', status: 'passed', checkId: 'evidence-current-and-complete' },
-    { id: 'real-logto-sentinel', status: 'passed', checkId: 'evidence-current-and-complete' },
-    { id: 'manual-release-charter', status: 'passed', checkId: 'evidence-current-and-complete' },
-  ],
-});
-
-const unavailable = evaluateExternalEvidence({}, { candidate, now, maxAgeHours: 24 });
-assert.equal(unavailable.status, 'unavailable');
-assert.equal(unavailable.components[1].checkId, 'evidence-missing');
-
-const stale = evaluateExternalEvidence(evidenceSet('2026-08-30T11:30:00.000Z'), { candidate, now, maxAgeHours: 24 });
-assert.equal(stale.status, 'stale');
-assert.equal(stale.components[0].checkId, 'evidence-stale');
-
-const staleButIncomplete = evidenceSet('2026-08-30T11:30:00.000Z');
-staleButIncomplete['real-logto-sentinel'].checks.logout = false;
-assert.equal(evaluateExternalEvidence(staleButIncomplete, { candidate, now, maxAgeHours: 24 }).components[1].checkId, 'evidence-contract-incomplete');
-
-const failed = evidenceSet('2026-09-01T11:30:00.000Z');
-failed['real-logto-sentinel'].checks.logout = false;
-const failedEvaluation = evaluateExternalEvidence(failed, { candidate, now, maxAgeHours: 24 });
-assert.equal(failedEvaluation.status, 'failed');
-assert.equal(failedEvaluation.components[1].checkId, 'evidence-contract-incomplete');
-
-const reportedFailure = evidenceSet('2026-09-01T11:30:00.000Z');
-reportedFailure['isolated-staging-critical-journeys'].status = 'failed';
-assert.equal(evaluateExternalEvidence(reportedFailure, { candidate, now, maxAgeHours: 24 }).components[0].checkId, 'evidence-reported-failure');
-
-const mixedFailure = evidenceSet('2026-09-01T11:30:00.000Z');
-mixedFailure['manual-release-charter'].manual.restore = false;
-delete mixedFailure['real-logto-sentinel'];
-assert.equal(evaluateExternalEvidence(mixedFailure, { candidate, now, maxAgeHours: 24 }).status, 'failed');
-
-const mismatchedCandidate = evidenceSet('2026-09-01T11:30:00.000Z');
-mismatchedCandidate['real-logto-sentinel'].candidate = 'fedcba9876543210fedcba9876543210fedcba98';
-assert.equal(evaluateExternalEvidence(mismatchedCandidate, { candidate, now, maxAgeHours: 24 }).components[1].checkId, 'candidate-binding-mismatch');
-
-for (const id of ['isolated-staging-critical-journeys', 'real-logto-sentinel', 'manual-release-charter']) {
-  const staleCandidate = evidenceSet('2026-09-01T11:30:00.000Z');
-  staleCandidate[id].candidate = 'fedcba9876543210fedcba9876543210fedcba98';
-  assert.equal(evaluateExternalEvidence(staleCandidate, { candidate, now, maxAgeHours: 24 }).components.find((component) => component.id === id).checkId, 'candidate-binding-mismatch');
-}
-for (const deployment of [undefined, { id: 'staging-deployment-fixture', immutable: false }, { id: 'bad url', immutable: true }]) {
-  const invalidDeployment = evidenceSet('2026-09-01T11:30:00.000Z');
-  invalidDeployment['isolated-staging-critical-journeys'].deployment = deployment;
-  assert.equal(evaluateExternalEvidence(invalidDeployment, { candidate, now, maxAgeHours: 24 }).components[0].status, 'failed');
-}
 
 const missingEvidence = mkdtempSync(resolve(tmpdir(), 'qdb-release-evidence-'));
 try {
@@ -130,7 +79,9 @@ assert.deepEqual(isolatedTemporaryEnvironment(resolve(tmpdir(), 'qdb-release-hom
 });
 const lateCancellation = createCancellationController();
 lateCancellation.cancel('SIGTERM');
-assert.equal(classifyReleaseCandidate({ primary: [{ status: 'passed' }], externalEvidence: { status: 'passed' }, cancellation: lateCancellation }), 'cancelled');
+assert.equal(classifyReleaseCandidate({ primary: [{ status: 'passed' }], cancellation: lateCancellation }), 'cancelled');
+assert.equal(classifyReleaseCandidate({ primary: [{ status: 'passed' }], cancellation: createCancellationController() }), 'passed');
+assert.equal(classifyReleaseCandidate({ primary: [{ status: 'failed' }], cancellation: createCancellationController() }), 'failed');
 await verifyFinalizerBoundaries();
 
 const invalidManifest = writeInvalidManifest();
@@ -142,60 +93,6 @@ try {
 await import('./verify-release-candidate-runner.mjs');
 await import('./verify-release-candidate-cleanup.mjs');
 console.log('Release candidate lane contract passed.');
-
-function evidenceSet(completedAt) {
-  const sanitization = {
-    credentials: false,
-    rawUrls: false,
-    requestBodies: false,
-    responseBodies: false,
-    databaseDumps: false,
-  };
-  return {
-    'isolated-staging-critical-journeys': {
-      schemaVersion: 1,
-      id: 'isolated-staging-critical-journeys',
-      status: 'passed',
-      completedAt,
-      runId: 'staging-contract-fixture',
-      candidate,
-      sanitization,
-      isolation: { dedicatedState: true, sharedState: false },
-      deployment: { id: 'staging-deployment-fixture', immutable: true },
-      artifact: { sha256: RELEASE_ARTIFACT_SHA256, verification: 'passed' },
-      journeys: { catalogue: 'critical-playwright', allDeclared: true, firstAttempt: true, retryCount: 0 },
-    },
-    'real-logto-sentinel': {
-      schemaVersion: 1,
-      id: 'real-logto-sentinel',
-      status: 'passed',
-      completedAt,
-      runId: 'logto-contract-fixture',
-      candidate,
-      sanitization,
-      serialization: { serialized: true, concurrentRuns: 1 },
-      identities: { dedicated: true, count: 2 },
-      checks: {
-        redirect: true,
-        callback: true,
-        logout: true,
-        identityMapping: true,
-        sessionBootstrap: true,
-        approvedProfileReconciliation: true,
-      },
-    },
-    'manual-release-charter': {
-      schemaVersion: 1,
-      id: 'manual-release-charter',
-      status: 'passed',
-      completedAt,
-      runId: 'manual-contract-fixture',
-      candidate,
-      sanitization,
-      manual: { typography: true, assistiveTechnology: true, restore: true, providerConfiguration: true },
-    },
-  };
-}
 
 function writeInvalidManifest() {
   const directory = mkdtempSync(resolve(tmpdir(), 'qdb-release-candidate-contract-'));

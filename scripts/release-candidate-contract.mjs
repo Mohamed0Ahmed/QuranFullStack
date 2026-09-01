@@ -1,14 +1,8 @@
-import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, relative, resolve, sep } from 'node:path';
 
 export const RELEASE_ARTIFACT_SHA256 = '3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d';
 export const PREVIOUS_RELEASE_REFERENCE = 'df07306b5a5ebe08ff205c0d2f6cd5a10af87f2d';
-export const EXTERNAL_EVIDENCE_DOCUMENTS = [
-  'isolated-staging-critical-journeys',
-  'real-logto-sentinel',
-  'manual-release-charter',
-];
-
 const RELEASE_RESULTS_PLACEHOLDER = '{RELEASE_RESULTS_DIR}';
 const REQUIRED_COMMANDS = new Map([
   ['locked-backend-restore', ['dotnet', ['restore', 'Backend/QuranDashboard.sln', '--locked-mode', '--disable-parallel', '-m:1', '-p:BuildInParallel=false', '-p:RestoreDisableParallel=true']]],
@@ -32,19 +26,16 @@ export function loadReleaseCandidateManifest(path, repositoryRoot) {
 
 export function validateReleaseCandidateManifest(manifest, repositoryRoot) {
   const pins = resolveAuthoritativePins(repositoryRoot);
-  requireCondition(manifest?.schemaVersion === 1, 'schemaVersion must be 1.');
+  requireCondition(manifest?.schemaVersion === 2, 'schemaVersion must be 2.');
   requireCondition(manifest.id === 'release-candidate', 'id must be release-candidate.');
   requireNonEmptyString(manifest.title, 'title');
+  requireCondition(manifest.executionScope === 'local-first-pre-merge', 'executionScope must be local-first-pre-merge.');
   requireCondition(manifest.providerNeutral === true, 'providerNeutral must be true.');
   requirePositiveInteger(manifest.timeoutSeconds, 'timeoutSeconds');
   requireCondition(manifest.artifact?.id === 'quran-canonical', 'artifact id must be quran-canonical.');
   requireCondition(manifest.artifact?.sha256 === pins.artifactSha256, 'artifact SHA-256 does not match the authoritative lock.');
   requireCondition(manifest.previousRelease?.reference === pins.previousReleaseReference, 'previous-release reference does not match the authoritative declaration.');
-  requirePositiveInteger(manifest.externalEvidence?.maxAgeHours, 'externalEvidence.maxAgeHours');
-  requireCondition(
-    JSON.stringify(manifest.externalEvidence?.documents) === JSON.stringify(EXTERNAL_EVIDENCE_DOCUMENTS),
-    'external evidence documents must be complete and ordered.',
-  );
+  requireCondition(manifest.externalEvidence === undefined, 'external evidence is not part of Local-first pre-merge verification.');
   requireCondition(Array.isArray(manifest.commands) && manifest.commands.length === REQUIRED_COMMANDS.size, 'commands are incomplete.');
 
   const ids = new Set();
@@ -115,106 +106,9 @@ export function materializeReleaseCandidateCommand(command, repositoryRoot, resu
   };
 }
 
-export function readExternalEvidence(directory) {
-  const documents = {};
-  if (!directory || !existsSync(directory) || !lstatSync(directory).isDirectory()) return documents;
-  const expectedFiles = new Set(EXTERNAL_EVIDENCE_DOCUMENTS.map((id) => `${id}.json`));
-  let entries;
-  try {
-    entries = readdirSync(directory, { withFileTypes: true });
-  } catch {
-    return documents;
-  }
-  for (const entry of entries) {
-    if (!entry.isFile() || !expectedFiles.has(entry.name)) {
-      documents.__invalid = 'external-evidence-directory-invalid';
-      return documents;
-    }
-  }
-  for (const id of EXTERNAL_EVIDENCE_DOCUMENTS) {
-    const path = resolve(directory, `${id}.json`);
-    if (!existsSync(path) || !lstatSync(path).isFile()) continue;
-    try {
-      documents[id] = JSON.parse(readFileSync(path, 'utf8'));
-    } catch {
-      documents[id] = null;
-    }
-  }
-  return documents;
-}
-
-export function evaluateExternalEvidence(documents, { candidate, now = new Date(), maxAgeHours = 24 } = {}) {
-  const nowMs = now.getTime();
-  const components = EXTERNAL_EVIDENCE_DOCUMENTS.map((id) => evaluateDocument(id, documents?.[id], candidate, nowMs, maxAgeHours));
-  if (documents?.__invalid) components.push({ id: 'external-evidence-directory', status: 'failed', checkId: documents.__invalid });
-  const status = components.every((component) => component.status === 'passed')
-    ? 'passed'
-    : components.some((component) => component.status === 'failed') ? 'failed'
-      : components.some((component) => component.status === 'stale') ? 'stale' : 'unavailable';
-  return { status, components };
-}
-
-function evaluateDocument(id, document, candidate, nowMs, maxAgeHours) {
-  if (document === undefined) return { id, status: 'unavailable', checkId: 'evidence-missing' };
-  if (!isValidBaseDocument(document, id)) return { id, status: 'failed', checkId: 'evidence-invalid-or-unsanitized' };
-  if (document.status !== 'passed') return { id, status: 'failed', checkId: 'evidence-reported-failure' };
-  if (!isCommit(candidate) || document.candidate !== candidate) return { id, status: 'failed', checkId: 'candidate-binding-mismatch' };
-  if (!isValidDocumentDetails(id, document)) return { id, status: 'failed', checkId: 'evidence-contract-incomplete' };
-  const completedAt = Date.parse(document.completedAt);
-  if (!Number.isFinite(completedAt) || completedAt > nowMs || nowMs - completedAt > maxAgeHours * 3_600_000) {
-    return { id, status: 'stale', checkId: 'evidence-stale' };
-  }
-  return { id, status: 'passed', checkId: 'evidence-current-and-complete' };
-}
-
-function isValidBaseDocument(document, id) {
-  if (!isExactObject(document, ['schemaVersion', 'id', 'status', 'completedAt', 'runId', 'candidate', 'sanitization', ...detailKeys(id)])) return false;
-  return document.schemaVersion === 1 && document.id === id && typeof document.status === 'string'
-    && isIdentifier(document.runId) && isCommit(document.candidate) && isIsoTimestamp(document.completedAt)
-    && isExactObject(document.sanitization, ['credentials', 'rawUrls', 'requestBodies', 'responseBodies', 'databaseDumps'])
-    && Object.values(document.sanitization).every((value) => value === false);
-}
-
-function detailKeys(id) {
-  if (id === 'isolated-staging-critical-journeys') return ['isolation', 'deployment', 'artifact', 'journeys'];
-  if (id === 'real-logto-sentinel') return ['serialization', 'identities', 'checks'];
-  return ['manual'];
-}
-
-function isValidDocumentDetails(id, document) {
-  if (id === 'isolated-staging-critical-journeys') {
-    return isExactObject(document.isolation, ['dedicatedState', 'sharedState'])
-      && document.isolation.dedicatedState === true && document.isolation.sharedState === false
-      && isExactObject(document.deployment, ['id', 'immutable']) && isIdentifier(document.deployment.id) && document.deployment.immutable === true
-      && isExactObject(document.artifact, ['sha256', 'verification'])
-      && document.artifact.sha256 === RELEASE_ARTIFACT_SHA256 && document.artifact.verification === 'passed'
-      && isExactObject(document.journeys, ['catalogue', 'allDeclared', 'firstAttempt', 'retryCount'])
-      && document.journeys.catalogue === 'critical-playwright' && document.journeys.allDeclared === true
-      && document.journeys.firstAttempt === true && document.journeys.retryCount === 0;
-  }
-  if (id === 'real-logto-sentinel') {
-    return isExactObject(document.serialization, ['serialized', 'concurrentRuns'])
-      && document.serialization.serialized === true && document.serialization.concurrentRuns === 1
-      && isExactObject(document.identities, ['dedicated', 'count'])
-      && document.identities.dedicated === true && Number.isInteger(document.identities.count) && document.identities.count >= 2
-      && isExactObject(document.checks, ['redirect', 'callback', 'logout', 'identityMapping', 'sessionBootstrap', 'approvedProfileReconciliation'])
-      && Object.values(document.checks).every((value) => value === true);
-  }
-  return isExactObject(document.manual, ['typography', 'assistiveTechnology', 'restore', 'providerConfiguration'])
-    && Object.values(document.manual).every((value) => value === true);
-}
-
 function isExactObject(value, keys) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
     && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
-}
-
-function isIdentifier(value) {
-  return typeof value === 'string' && /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/.test(value);
-}
-
-function isCommit(value) {
-  return typeof value === 'string' && /^[a-f0-9]{40}$/.test(value);
 }
 
 export function validatePrimaryEvidence(command, resultsDirectory, repositoryRoot) {
@@ -415,10 +309,6 @@ function readJsonOrNull(path) {
 
 function readJson(path, name) {
   try { return JSON.parse(readFileSync(path, 'utf8')); } catch { throw new Error(`Cannot read ${name}.`); }
-}
-
-function isIsoTimestamp(value) {
-  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value);
 }
 
 function isInside(parent, child) {

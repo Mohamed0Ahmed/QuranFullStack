@@ -15,11 +15,11 @@ export function createCancellationController() {
   };
 }
 
-export function classifyReleaseCandidate({ primary, externalEvidence, cancellation }) {
+export function classifyReleaseCandidate({ primary, cancellation }) {
   if (cancellation?.signal || primary.some((result) => result.status === 'cancelled')) return 'cancelled';
   if (primary.some((result) => result.status === 'timed-out' || result.firstAttemptStatus === 'timed-out')) return 'timed-out';
   if (!primary.every((result) => result.status === 'passed')) return 'failed';
-  return externalEvidence.status;
+  return 'passed';
 }
 
 export function validateResultsLocation({ repositoryRoot, resultsDirectory }) {

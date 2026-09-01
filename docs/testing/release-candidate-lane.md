@@ -1,50 +1,44 @@
-# Release candidate lane
+# Local-first pre-merge verification
 
-`release-candidate-lane.json` and `scripts/run-release-candidate-lane.mjs` define the
-provider-neutral release-candidate gate. They do not schedule work, configure a provider, contact a
-staging environment, or configure a Logto tenant.
+`release-candidate-lane.json` and `scripts/run-release-candidate-lane.mjs` define the final Local-first
+verification gate for a candidate branch before integration. The historical executable identifier
+remains `release-candidate`, while manifest schema version `2` declares the
+`local-first-pre-merge` execution scope.
 
-An authorized release operator supplies a lock-pinned local artifact root, a new local results
-directory outside the candidate repository, a capacity-backed `TMPDIR` outside the candidate
-repository, and a directory containing only the three sanitized attestation documents below. Keeping
-results and temporary database/recovery files outside the checkout lets the runner prove that the
-candidate stays clean before and after execution. The runner creates a private execution home beneath
-`TMPDIR`, propagates it as `TMPDIR`, `TMP`, and `TEMP` to every child, and removes it when execution
-finishes. The runner does not print those locations or their contents.
+The gate does not provision or contact staging, cloud, live Logto, deployment, or Production resources.
+It accepts no external attestations and runs no automated checks against Production. Live-provider and
+deployment verification are explicitly deferred owner concerns outside this regression-testing scope.
+
+The operator supplies the adopted content-addressed local artifact root, a new local results directory
+outside the candidate repository, and a capacity-backed `TMPDIR` outside the candidate repository.
+Keeping results and temporary database/recovery files outside the checkout lets the runner prove that
+the exact candidate stays clean before and after execution. The runner creates a private execution home
+beneath `TMPDIR`, propagates it as `TMPDIR`, `TMP`, and `TEMP` to every child, and removes it when
+execution finishes.
 
 ```bash
 TMPDIR=<capacity-backed-local-temp-root> node scripts/run-release-candidate-lane.mjs \
   --artifact-root <authorized-local-artifact-root> \
-  --external-evidence-dir <sanitized-owner-attestations> \
   --results-dir <new-local-results-directory> \
   --confirm-backup \
   --candidate <current-immutable-git-commit>
 ```
 
-The runner performs a locked restore followed by a no-restore build, then composes content-addressed full-canonical
-artifact verification, previous-release upgrade rehearsal, backup/restore recovery rehearsal, and
-`dependency-advisory-evaluation` with its existing `release` trigger. `--confirm-backup` is mandatory:
-the lane never infers backup intent. The two database rehearsals require the artifact verification to
-pass. Each command is a first attempt; no retry can convert a failed component into success.
+The runner executes exactly six existing gates:
 
-## Owner attestations
+1. Locked Backend restore.
+2. No-restore Backend build.
+3. Content-addressed full-canonical artifact verification.
+4. Previous-release upgrade rehearsal in isolated disposable PostgreSQL.
+5. Full-canonical backup/restore recovery rehearsal in isolated disposable PostgreSQL.
+6. Release-trigger dependency advisory evaluation.
 
-The external evidence directory must contain exactly these JSON files. Each uses schema version `1`, the
-immutable current Git candidate, a safe symbolic run ID, a UTC completion time, and a sanitization declaration that all five flags are
-`false`: `credentials`, `rawUrls`, `requestBodies`, `responseBodies`, and `databaseDumps`.
+`--confirm-backup` remains mandatory because backup intent is never inferred. The two database
+rehearsals depend on artifact verification, use project-owned disposable containers, and must prove
+cleanup. Every command is a single first attempt; there is no retry conversion. A candidate passes only
+when all six gates, their evidence validators, candidate checks, and required cleanup pass. Otherwise
+the receipt is `failed`, `timed-out`, or `cancelled`.
 
-| File | Required evidence |
-| --- | --- |
-| `isolated-staging-critical-journeys.json` | Dedicated non-shared staging state, an immutable deployment identity, the adopted canonical artifact SHA-256, complete first-attempt critical Playwright catalogue evidence, and artifact verification. |
-| `real-logto-sentinel.json` | One serialized run, at least two dedicated identities, and passed redirect, callback, logout, identity-mapping, session-bootstrap, and approved profile/reconciliation checks. |
-| `manual-release-charter.json` | Passed representative typography, assistive-technology, restore, and provider-configuration review. |
-
-Every attestation must bind the exact candidate supplied to the invocation; the staging deployment identity is also mandatory. The contract intentionally permits no URLs, identity values, credentials, request/response bodies,
-database artifacts, or free-form notes in these documents. The runner retains only component IDs and
-their `passed`, `failed`, `stale`, or `unavailable` classification in its result. Missing documents are
-`unavailable`; a reported failure or malformed/sensitive shape is `failed`; a passed but future or older
-than 24-hour document is `stale`. None is silently promoted to completion.
-
-The real Logto and manual steps remain owner-run evidence because this repository deliberately has no
-provider credentials or staging authorization. Their absence therefore blocks the lane rather than
-creating synthetic release evidence.
+Critical Playwright regression journeys retain their existing activated Local-first protection and
+evidence under the PR observation matrix. This gate does not duplicate their completed activation
+pilots or create another journey catalogue.

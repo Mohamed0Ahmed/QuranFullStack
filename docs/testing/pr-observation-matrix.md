@@ -1,7 +1,8 @@
 # Pull-request observation matrix
 
-`pr-observation-matrix.json` is the provider-neutral source of truth for four independent pull-request
-jobs. A CI provider should fan out one allocated runner per job and invoke the same repository command:
+`pr-observation-matrix.json` is the provider-neutral source of truth for four independent pre-merge
+jobs. Local operators invoke the repository commands directly; no CI provider, remote runner, or cloud
+resource is required for the adopted Local-first scope:
 
 ```bash
 node scripts/run-pr-observation-job.mjs --job backend-pr
@@ -18,10 +19,10 @@ node scripts/run-pr-observation-job.mjs --job critical-chromium --dry-run
 node scripts/verify-pr-observation-matrix.mjs
 ```
 
-The runner starts its clock after provider allocation, immediately before the first provisioning
-command. Its one outer 12-minute deadline therefore includes locked dependency and artifact
+The runner starts its clock immediately before the first provisioning command. Its one outer 12-minute
+deadline therefore includes locked dependency and artifact
 provisioning, database preparation, application startup, and test execution, but excludes provider
-queue time. It writes `job-result.json` under `.pr-observation/` by default. Providers may pass an
+queue time. It writes `job-result.json` under `.pr-observation/` by default. Callers may pass an
 artifact directory with `--results-dir`; Backend TRX and sealed Playwright evidence remain below that
 job directory or in their existing harness evidence directory.
 

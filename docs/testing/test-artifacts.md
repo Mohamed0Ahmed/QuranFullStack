@@ -290,15 +290,15 @@ uses an internal Docker network.
 Failed runs preserve sanitized application/container logs, step-event traces, text/media-masked
 screenshots, console errors, and request method/origin/path/status metadata under `.playwright/evidence/`. The evidence
 contract excludes request/response headers and bodies, credentials, private keys, database dumps, and
-query strings. Structured results carry the artifact, database, startup, and test durations plus the
-14-day failed-diagnostic and 30-day aggregate-timing retention requirements for later provider-neutral
-upload wiring. Playwright writes any unfiltered working files only to a private temporary directory
+query strings. Structured results carry the artifact, database, startup, and test durations and remain
+in the existing Local-first evidence outputs; no external upload or new evidence framework is in scope.
+Playwright writes any unfiltered working files only to a private temporary directory
 outside the evidence tree; sealed teardown deletes that directory before the retained evidence is
 schema- and signature-validated.
 
-The staging Logto sentinel is a separate serialized provider-contract lane with a narrow allowlist and
-dedicated non-human identities. It does not reuse artifact retrieval credentials or mutate Abwab,
-Linking, PhraseSearch, or canonical Quran data.
+Live Logto and deployment verification are deferred by owner decision. Local OIDC/JWKS and Logto
+Management API stubs remain the regression seams; their passing results are not represented as proof of
+live-provider compatibility.
 
 ## Refresh triggers
 

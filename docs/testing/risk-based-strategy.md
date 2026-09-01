@@ -1,6 +1,6 @@
 # Risk-Based Testing Strategy
 
-**Strategy designed; not yet adopted**
+**Adopted scope: Local-first regression protection**
 
 **Decision date:** 2026-08-30
 
@@ -8,8 +8,11 @@
 
 This strategy protects the failures that would harm users or Quran Dashboard data most. It favors a
 small number of trustworthy, cross-stack journeys over blanket line or branch coverage. It records
-both the repository's current protection and the target state; planned protection must not be reported
-as if it already exists.
+the repository's active Local-first protection for code, business rules, HTTP contracts, database
+invariants, destructive operations, and critical Playwright journeys. Live identity-provider,
+deployment, staging, cloud, and automated Production verification are deferred and are not adoption
+requirements. This declaration becomes project-wide when the implementing branch is integrated into
+`dev`.
 
 The Frontend testing decision is recorded separately in
 [ADR 0001](../adr/0001-playwright-only-frontend-testing.md). Artifact acquisition, trust, and reset
@@ -445,25 +448,21 @@ Present failures in observation-only groups remain visible without blocking. A d
 untracked configuration toggle: the emergency issue, named owner, maintainer approval, rationale, and
 seven-day maximum expiry below remain mandatory.
 
-### Scheduled, release, and post-deploy lanes
+### Local scheduled and pre-merge lanes
 
 | Lane | Distinct evidence |
 | --- | --- |
 | Nightly | Full Chromium Playwright suite, designated mobile variants, PhraseSearch build/activation, destructive importer/restore tests, artifact verification, accessibility scans, and non-blocking browser timing |
 | Weekly and lockfile changes | Risk-based NuGet/npm advisory evaluation |
-| Release candidate | Active previous-release migration upgrade rehearsal, isolated staging critical journeys, real Logto sentinel, complete artifact verification, and manual release charter |
-| Post-deploy | Read-only production smoke against declared environment expectations |
+| Local pre-merge verification | Locked Backend restore/build, complete artifact verification, previous-release upgrade, backup/restore recovery, and release advisory evaluation |
 
 Do not repeat work merely to fill a lane. A scheduled or release run provisions each required large
 artifact once and shares its immutable state; it never recopies that state per test.
 
-The production smoke verifies an exact Mushaf read, declared PhraseSearch state, and the deployed
-same-origin UI-to-API rewrite. Anonymous denial uses only a harmless protected read, such as
-`GET /api/access/me` returning `401`; production smoke never probes denial with
-`POST`/`PUT`/`PATCH`/`DELETE`. When a dedicated least-privilege canary exists, the same safe read also
-proves cookie-backed identity. If direct Railway-origin CORS is an intentional supported contract, test
-it separately with a safe preflight/request carrying the deployed UI `Origin`. The smoke performs no
-production mutations.
+Automated deployment and Production verification are deferred by owner decision. Repository test
+commands must not contact Production, create staging or cloud resources, or use live Logto. Any future
+deployment verification requires a separate owner decision and contract; it is not part of this
+Local-first strategy.
 
 The provider-neutral nightly contract is now implemented in
 [`nightly-risk-lane.json`](../../nightly-risk-lane.json) and
@@ -471,16 +470,14 @@ The provider-neutral nightly contract is now implemented in
 the designated Mushaf and Linking mobile variants), the isolated PhraseSearch build/activation
 rehearsal, Abwab snapshot protections, Quran topics import protections, and full-canonical artifact
 verification. It retains structured browser timing as non-blocking evidence and rejects dependency
-advisory commands. This does not mean a nightly schedule, remote runner, artifact upload, or adoption
-exists: those provider and runner responsibilities remain unconfigured.
+advisory commands. No nightly schedule, remote runner, or artifact upload is configured or required for
+Local-first adoption.
 
-The provider-neutral release-candidate contract is implemented in
+The Local-first pre-merge contract is implemented in
 [`release-candidate-lane.json`](../../release-candidate-lane.json) and
-[`Release candidate lane`](./release-candidate-lane.md). It composes the existing content-addressed
-artifact verification, previous-release upgrade, backup/restore recovery, and release advisory seams.
-Isolated staging, real-Logto, and manual charter evidence are constrained to sanitized owner
-attestations and remain unavailable until the authorized owner supplies them; the contract never
-relabels those components as passing.
+[`Local-first pre-merge verification`](./release-candidate-lane.md). It runs the six existing local
+restore, build, artifact, migration, recovery, and advisory gates against one immutable candidate. It
+accepts no staging, live-Logto, deployment, Production, or manual-attestation input.
 
 ## Hermeticity and reproducible inputs
 
@@ -492,8 +489,8 @@ Required PR jobs have two phases:
    Management API stubs, verified fixtures, and `--no-build`/`--no-restore` execution where supported.
 
 Retain the browser request-leak detector and also enforce process/container egress denial. Artifact
-credentials exist only during provisioning. Only the serialized staging Logto sentinel receives an
-explicit external allowlist.
+credentials exist only during provisioning. No Local-first execution command receives an external
+identity-provider allowlist.
 
 The implemented provider-neutral harness uses a preloaded system-call guard for the browser,
 Frontend server, API, and child processes. It admits only loopback plus the exact private PostgreSQL
@@ -598,54 +595,21 @@ events, text/media-masked screenshots, logs, console errors, and request method/
 records that headers, bodies, and database dumps were not captured. Upload/retention wiring belongs to
 the observation jobs rather than to a specific CI provider here.
 
-A failed post-deploy smoke halts promotion. In production it opens an incident and triggers application
-rollback when evidence points to the new release. Database rollback is never automatic; data recovery
-uses the verified restore procedure and explicit operator approval.
+Deployment verification, application rollback, and live-provider compatibility remain owner-operated
+concerns outside this testing contract. Database recovery continues to use the verified Local-first
+backup/restore procedure and explicit operator intent; no automated database rollback is introduced.
 
-## Manual release charter
+## Local evidence and maintenance
 
-Keep manual evidence short and limited to behavior automation cannot faithfully establish:
+Existing Backend, Playwright, PR-observation, nightly, artifact, migration, recovery, and advisory
+outputs remain the evidence for this strategy. They continue to record first-attempt status, timings,
+sanitized failures, artifact identity, and cleanup where their existing contracts require it. This
+adoption adds no new evidence root, recurring report, quarterly automation, or health-verifier
+framework.
 
-- Representative Arabic/Quran typography inspection.
-- Assistive-technology sampling beyond automated checks.
-- Restore rehearsal for destructive operational changes.
-- Staging real-Logto redirect/callback/logout and provider configuration review.
-
-Repeated defects found manually become candidates for automation at the narrowest faithful seam.
-
-## Strategy health
-
-Track risk and evidence, not blanket coverage:
-
-- 100% of P0 journeys mapped to success, failure/recovery, oracle, owning layer, cross-stack sentinel,
-  and required lane.
-- Every P1 risk protected or recorded with an owner and review date.
-- Required-lane p95 and maximum wall-clock.
-- First-attempt flake rate.
-- Escaped P0/P1 defects and the missing or ineffective protection.
-- Expired downgrades, dependency waivers, and stale artifact locks.
-- Artifact refresh frequency and unexplained oracle/count changes.
-
-Line or branch coverage may be used locally as diagnostic evidence. It is never a target or release
-gate.
-
-## Governance and review triggers
-
-The pull-request author declares risk impact; the reviewer validates it. Golden Quran oracle or
-artifact changes require an independent reviewer and explicit old/new hashes, counts, sentinels, and
-reasons. Emergency downgrades require maintainer approval.
-
-Review the journey map after:
-
-- An escaped P0/P1 defect.
-- A new Permission, Owner-only route, or destructive importer verb.
-- A migration, canonical source, or artifact refresh.
-- A PhraseSearch availability-policy change.
-- A repeated flake or material timing regression.
-- The lightweight quarterly review.
-
-CI integration remains provider-neutral. Scripts and job contracts define inputs, outputs, timeouts,
-and required results; CI-provider selection is a separate decision.
+Pull-request authors and reviewers continue to apply the existing risk annotations and independent
+artifact/Quran-oracle review rules. Emergency downgrades retain their existing explicit issue, owner,
+rationale, approval, and seven-day expiry contract. Line or branch coverage remains diagnostic only.
 
 ## Adoption roadmap
 
@@ -662,8 +626,8 @@ The cross-stack journey track follows the approved order:
 The operational track begins immediately with artifact trust, destructive imports/restores,
 PhraseSearch build safety, migration upgrades, and backup/restore proof.
 
-The strategy is **designed** when this document, the artifact document, and ADR 0001 accurately record
-the current state, gaps, decisions, and target rollout. It is **adopted** only when deterministic
-fixtures exist, operational P0 protection is enforced, all five journey groups have passed activation
-pilots and block appropriately, and release/post-deploy lanes are active. Until then, the open statuses
-in this document remain explicit work.
+The strategy is adopted for Local-first regression protection because deterministic fixtures exist,
+operational P0 protections are enforced, all five journey groups passed their activation pilots and
+block independently, and the six-gate Local-first pre-merge contract is active. Live-provider,
+staging/cloud, deployment, and automated Production verification remain explicitly deferred rather
+than being represented as passing evidence.

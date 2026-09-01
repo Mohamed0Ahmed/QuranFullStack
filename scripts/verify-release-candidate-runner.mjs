@@ -135,7 +135,7 @@ async function verifyCleanupBlocksDatabaseWork() {
   });
   assert.equal(result.primary[0].status, 'failed');
   assert.equal(result.primary[0].firstAttemptStatus, 'timed-out');
-  assert.equal(classifyReleaseCandidate({ primary: result.primary, externalEvidence: { status: 'passed' }, cancellation }), 'timed-out');
+  assert.equal(classifyReleaseCandidate({ primary: result.primary, cancellation }), 'timed-out');
   assert.equal(result.primary[1].reason, 'blocked-by-database-cleanup');
   assert.equal(result.primary[1].attemptsExecuted, 0);
   assert.equal(result.primary[2].status, 'passed');
