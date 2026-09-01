@@ -33,8 +33,13 @@ declared journey group independently. Quran fidelity is blocking after its accep
 sessions/Permissions is blocking after the accepted shared #103 pilot. Linking is blocking after the
 accepted shared #104 pilot. PhraseSearch is blocking after the accepted shared #105 pilot, and Abwab
 projection is blocking after the accepted shared #106 pilot. All five groups are therefore enforced
-independently. The group contract still preserves complete first-attempt evidence and would retain any governed future
-observation failure without rewriting the failed catalogue status.
+independently. The group contract still preserves complete first-attempt evidence and would retain any
+governed future observation failure without rewriting the failed catalogue status.
+
+The final owner scope makes the three unchanged non-browser jobs blocking without another activation
+pilot so failures in code, business logic, contracts, database invariants, policy, type-checking, or
+build cannot exit successfully. This narrow decision adds no commands or tests and does not waive the
+completed activation criteria for the five critical journey groups or for any future job.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
 `enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must

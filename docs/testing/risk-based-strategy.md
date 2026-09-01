@@ -400,18 +400,16 @@ After fresh measurement, every PR has four parallel, independently bounded jobs:
 3. Frontend policy checks, type-checking, and production build.
 4. Critical Chromium Playwright journeys, with mobile emulation only where tagged.
 
-The Backend candidate remains the full supported `Backend/scripts/test-backend pre-pr` lane unless
-fresh evidence proves it violates the 12-minute or artifact-cost contract. The current `pre-pr` command
-requires large canonical resources, while large resources are intentionally scheduled/release inputs.
-That incompatibility must be resolved explicitly during the activation pilot: retain all affordable
-Backend classes in the PR lane, supply compact faithful equivalents where possible, and keep the
-artifact-bound full-canonical classes required in scheduled/release lanes. Do not silently label a
-reduced lane as the current full `pre-pr` command.
+The Backend candidate remains the full supported `Backend/scripts/test-backend pre-pr` lane. Its
+current full-canonical requirement is explicit; no reduced lane is relabeled as the full command. The
+final owner scope makes this established job blocking without a new pilot and accepts its existing
+12-minute outer timeout as the fail-closed bound.
 
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
 includes `test:pre-pr` and `e2e:typecheck`. The provider-neutral
 [PR observation matrix](./pr-observation-matrix.md) exposes all four jobs with one attempt, an outer
-12-minute timeout, and structured end-to-end duration. The non-browser jobs remain observation-only.
+12-minute timeout, and structured end-to-end duration. The three established non-browser jobs are
+blocking by final owner decision without adding commands, tests, or pilots.
 The critical Chromium job runs the complete catalogue once and enforces only the journey groups whose
 own activation pilots have qualified; its full first-attempt status and every group result remain
 visible even when an observation-only group fails.
@@ -424,9 +422,12 @@ The 12-minute budget:
 - Uses an outer job timeout rather than relying only on per-test hang diagnostics.
 - Must not be met by silently removing critical evidence.
 
-Before enforcement, run a minimum activation pilot of 20 representative executions, including five
-cold artifact-cache runs. Every run must finish within 12 minutes, overall p95 must remain below 10.5
-minutes, and there must be no first-attempt flaky passes. Continue monitoring after enforcement.
+Before a critical Playwright journey group is enforced, run a minimum activation pilot of 20
+representative executions, including five cold artifact-cache runs. Every run must finish within 12
+minutes, overall p95 must remain below 10.5 minutes, and there must be no first-attempt flaky passes.
+All five groups satisfied that requirement. The final owner scope explicitly supersedes a new-pilot
+requirement for the three unchanged non-browser jobs so they cannot fail silently; this exception does
+not apply to future jobs or new journey groups.
 
 Each critical journey group enters observation mode, completes its own 20-run pilot, and becomes
 blocking independently. The four-job matrix is fully adopted only after all five groups are enforced.
