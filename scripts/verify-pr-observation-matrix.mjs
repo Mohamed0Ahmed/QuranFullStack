@@ -50,7 +50,11 @@ if (errors.length === 0) {
   );
 
   for (const job of matrix.jobs ?? []) {
-    check(job.policy?.blocking === false, `${job.id} must start as non-blocking.`);
+    const expectedBlocking = job.id !== 'critical-chromium';
+    check(
+      job.policy?.blocking === expectedBlocking,
+      `${job.id} blocking policy must match the adopted Local-first contract.`,
+    );
     check(job.policy?.timeoutSeconds === 720, `${job.id} must have a 12-minute outer timeout.`);
     check(
       job.commands?.some(({ phase }) => phase === 'provisioning'),
@@ -146,7 +150,7 @@ if (errors.length === 0) {
     'All five critical journey groups must be blocking after pilot #106.',
   );
 
-  verifyObservationFailureContract();
+  verifyBlockingFailureContract();
   verifyJourneyGroupEnforcementContract();
 }
 
@@ -179,7 +183,7 @@ function hasNpmScript(job, script) {
   return hasCommand(job, 'npm', ['run', script]);
 }
 
-function verifyObservationFailureContract() {
+function verifyBlockingFailureContract() {
   const temporaryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-pr-observation-'));
   const fixturePath = resolve(temporaryRoot, 'matrix.json');
   const resultsDirectory = resolve(temporaryRoot, 'results');
@@ -194,7 +198,7 @@ function verifyObservationFailureContract() {
         id: 'failure-probe',
         title: 'Failure probe',
         policy: {
-          blocking: false,
+          blocking: true,
           maxAttempts: 1,
           timeoutSeconds: 5,
           queueTimeIncluded: false,
@@ -214,32 +218,39 @@ function verifyObservationFailureContract() {
 
   try {
     writeFileSync(fixturePath, `${JSON.stringify(fixture, null, 2)}\n`);
-    execFileSync(
-      process.execPath,
-      [
-        RUNNER_PATH,
-        '--matrix',
-        fixturePath,
-        '--job',
-        'failure-probe',
-        '--results-dir',
-        resultsDirectory,
-      ],
-      { cwd: REPOSITORY_ROOT, stdio: 'pipe' },
-    );
+    let exitCode = 0;
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          RUNNER_PATH,
+          '--matrix',
+          fixturePath,
+          '--job',
+          'failure-probe',
+          '--results-dir',
+          resultsDirectory,
+        ],
+        { cwd: REPOSITORY_ROOT, stdio: 'pipe' },
+      );
+    } catch (error) {
+      exitCode = error.status ?? 1;
+    }
     const result = JSON.parse(readFileSync(resolve(resultsDirectory, 'job-result.json'), 'utf8'));
-    check(result.status === 'failed', 'Observation mode must retain a failed job status.');
+    check(exitCode === 1, 'A failed blocking regression job must return exit code 1.');
+    check(result.mode === 'blocking', 'The result must identify the regression job as blocking.');
+    check(result.status === 'failed', 'Blocking mode must retain a failed job status.');
     check(
       result.firstAttemptStatus === 'failed',
-      'Observation mode must retain the first-attempt failure.',
+      'Blocking mode must retain the first-attempt failure.',
     );
     check(
       result.maxAttempts === 1 && result.attemptsExecuted === 1,
-      'Observation mode must execute exactly one attempt.',
+      'Blocking mode must execute exactly one attempt.',
     );
     check(
       result.commands?.length === 1 && result.commands[0].exitCode === 7,
-      'Observation evidence must retain the original command exit code without retry.',
+      'Blocking evidence must retain the original command exit code without retry.',
     );
     let reuseExitCode = 0;
     try {
@@ -264,7 +275,7 @@ function verifyObservationFailureContract() {
       'The runner must refuse a non-empty results directory rather than reuse stale evidence.',
     );
   } catch (error) {
-    errors.push(`Observation runner failure probe failed: ${error.message}`);
+    errors.push(`Blocking runner failure probe failed: ${error.message}`);
   } finally {
     rmSync(temporaryRoot, { force: true, recursive: true });
   }

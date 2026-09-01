@@ -26,14 +26,14 @@ queue time. It writes `job-result.json` under `.pr-observation/` by default. Cal
 artifact directory with `--results-dir`; Backend TRX and sealed Playwright evidence remain below that
 job directory or in their existing harness evidence directory.
 
-All four jobs have exactly one attempt. The Backend, contract/model, and Frontend policy/build jobs
-remain observation-only. The critical Chromium job is now mixed-policy: it still executes the full
-nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
-group independently. Quran fidelity is blocking after its accepted #102 pilot, and sessions/Permissions
-is blocking after the accepted shared #103 pilot. Linking is blocking after the accepted shared #104
-pilot. PhraseSearch is blocking after the accepted shared #105 pilot, and Abwab projection is blocking
-after the accepted shared #106 pilot. All five groups are therefore enforced independently. The group
-contract still preserves complete first-attempt evidence and would retain any governed future
+All four jobs have exactly one attempt. The Backend, contract/model, and Frontend policy/build jobs are
+blocking Local-first regression gates. The critical Chromium job uses group-level enforcement: it still
+executes the full nine-journey catalogue once, records the full first-attempt result, and evaluates each
+declared journey group independently. Quran fidelity is blocking after its accepted #102 pilot, and
+sessions/Permissions is blocking after the accepted shared #103 pilot. Linking is blocking after the
+accepted shared #104 pilot. PhraseSearch is blocking after the accepted shared #105 pilot, and Abwab
+projection is blocking after the accepted shared #106 pilot. All five groups are therefore enforced
+independently. The group contract still preserves complete first-attempt evidence and would retain any governed future
 observation failure without rewriting the failed catalogue status.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds

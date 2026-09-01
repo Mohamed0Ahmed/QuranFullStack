@@ -14,7 +14,7 @@
       "id": "backend-pr",
       "title": "Backend PR lane",
       "policy": {
-        "blocking": false,
+        "blocking": true,
         "maxAttempts": 1,
         "timeoutSeconds": 720,
         "queueTimeIncluded": false
@@ -58,7 +58,7 @@
       "id": "api-contract-model",
       "title": "API contract and pending-model verification",
       "policy": {
-        "blocking": false,
+        "blocking": true,
         "maxAttempts": 1,
         "timeoutSeconds": 720,
         "queueTimeIncluded": false
@@ -106,7 +106,7 @@
       "id": "frontend-policy-build",
       "title": "Frontend policy, type, and build checks",
       "policy": {
-        "blocking": false,
+        "blocking": true,
         "maxAttempts": 1,
         "timeoutSeconds": 720,
         "queueTimeIncluded": false
