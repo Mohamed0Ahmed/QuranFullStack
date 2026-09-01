@@ -36,6 +36,10 @@ export class MushafLineComponent {
   readonly wordSelect = output<string>();
   readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
+  readonly lineWordLocations = computed(() =>
+    this.line().words.map((word) => word.wordLocation).join(' '),
+  );
+
   basmallahText(): string {
     return MUSHAF_BASMALLAH_DISPLAY_TEXT;
   }

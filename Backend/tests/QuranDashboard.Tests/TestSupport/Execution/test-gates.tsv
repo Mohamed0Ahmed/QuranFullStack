@@ -2,7 +2,9 @@ FullyQualifiedClassName	Feature	Kind	Gate	Concerns
 QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB
 QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB	Schema
+QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests	Abwab	Process	TierB	Cli,Schema
 QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB
+QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests	Abwab	Database	TierB
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB
 QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB
@@ -12,6 +14,7 @@ QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB	Schema
 QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema
+QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationBoundaryTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests	Access	Database	TierB
@@ -27,6 +30,13 @@ QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	
 QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast	TierB
 QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB
 QuranDashboard.Tests.Api.Middleware.GlobalExceptionHandlerTests	Middleware	Fast	TierB
+QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests	Linking	Database	TierB
+QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests	Linking	Database	TierB
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests	PhraseSearch	Fast	TierB
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests	PhraseSearch	Fast	TierB
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateTests	PhraseSearch	Database	TierB
+QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexBuildActivationTests	PhraseSearch	Database	TierB	Cli,Execution
+QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests	PhraseSearch	Release	Release	Cli,Execution
 QuranDashboard.Tests.Api.RateLimiting.RateLimitingIntegrationTests	RateLimiting	Fast	TierB
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	TierB
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline
@@ -42,6 +52,7 @@ QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pip
 QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline
 QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline
 QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Database	TierB
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Database	TierB
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline
@@ -56,6 +67,7 @@ QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests	Navigation	Databas
 QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline
 QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline
+QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests	QuranTopicsBook	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline
 QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB
 QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTests	Tafsirs	Database	Pipeline
@@ -116,6 +128,11 @@ QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke
 QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke
 QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB
+QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
+QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
+QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests	ApiBehavior	Release	Release	Cli,Execution,Schema
+QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeTests	ApiBehavior	Fast	TierB	Cli,Execution,Schema
+QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests	ApiBehavior	Release	Release	Cli,Execution,Schema
 QuranDashboard.Tests.TestSupport.DependencyInjection.OwnedServiceProviderRegistryTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlDatabaseSlotContractTests	ApiBehavior	Database	TierB	Execution

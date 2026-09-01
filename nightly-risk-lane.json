@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "id": "nightly-risk",
+  "title": "Nightly risk lane",
+  "providerNeutral": true,
+  "timeoutSeconds": 21600,
+  "inputContract": {
+    "artifactRoot": "An explicit local immutable artifact root. The existing artifact contract validates its locked content and never falls back to a developer, shared, staging, or production database.",
+    "resultsDirectory": "A new or empty local directory for sanitized structured results and approved reporter artifacts.",
+    "executionKind": "scheduled"
+  },
+  "evidenceRetention": {
+    "failedDiagnosticsDays": 14,
+    "aggregateTimingDays": 30,
+    "externalUploadConfigured": false
+  },
+  "excludedWork": ["dependency-advisory-evaluation"],
+  "requiredBrowserJourneys": [
+    "quran-fidelity.mushaf-mobile",
+    "linking.successful-owner-mobile"
+  ],
+  "commands": [
+    {
+      "id": "sealed-browser-provisioning",
+      "phase": "browser-provisioning",
+      "timeoutSeconds": 1800,
+      "cwd": "Frontend/quran-dashboard-ui",
+      "executable": "npm",
+      "arguments": ["run", "e2e:provision"],
+      "provides": ["backend-build"]
+    },
+    {
+      "id": "full-chromium-suite",
+      "phase": "browser-execution",
+      "timeoutSeconds": 3600,
+      "cwd": "Frontend/quran-dashboard-ui",
+      "executable": "npm",
+      "arguments": ["run", "e2e"],
+      "approvedReporterArtifacts": true,
+      "diagnosticRetry": true,
+      "dependsOn": ["sealed-browser-provisioning"],
+      "runtimeCleanup": true
+    },
+    {
+      "id": "verify-full-canonical-artifact",
+      "phase": "artifact-verification",
+      "timeoutSeconds": 900,
+      "cwd": ".",
+      "executable": "Backend/scripts/test-artifacts",
+      "arguments": ["verify-content-addressed", "--artifact", "quran-canonical"],
+      "dependsOn": ["sealed-browser-provisioning"]
+    },
+    {
+      "id": "phrase-index-build-activation",
+      "phase": "operational-risk",
+      "timeoutSeconds": 7200,
+      "cwd": ".",
+      "executable": "Backend/scripts/test-backend",
+      "arguments": ["phrase-index-rehearsal", "--no-build", "--results-dir", "{NIGHTLY_RESULTS_DIR}/phrase-index-rehearsal"],
+      "dependsOn": ["sealed-browser-provisioning", "verify-full-canonical-artifact"],
+      "databaseOwning": true,
+      "testEvidence": { "class": "QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests", "lane": "phrase-index-rehearsal" }
+    },
+    {
+      "id": "abwab-snapshot-protections",
+      "phase": "operational-risk",
+      "timeoutSeconds": 1800,
+      "cwd": ".",
+      "executable": "Backend/scripts/test-backend",
+      "arguments": ["feature", "--class", "QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests", "--no-build", "--results-dir", "{NIGHTLY_RESULTS_DIR}/abwab-snapshot"],
+      "dependsOn": ["sealed-browser-provisioning"],
+      "databaseOwning": true,
+      "testEvidence": { "class": "QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests", "lane": "feature" }
+    },
+    {
+      "id": "quran-topics-import-protections",
+      "phase": "operational-risk",
+      "timeoutSeconds": 1800,
+      "cwd": ".",
+      "executable": "Backend/scripts/test-backend",
+      "arguments": ["feature", "--class", "QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests", "--no-build", "--results-dir", "{NIGHTLY_RESULTS_DIR}/quran-topics"],
+      "dependsOn": ["sealed-browser-provisioning"],
+      "databaseOwning": true,
+      "testEvidence": { "class": "QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests", "lane": "feature" }
+    }
+  ]
+}

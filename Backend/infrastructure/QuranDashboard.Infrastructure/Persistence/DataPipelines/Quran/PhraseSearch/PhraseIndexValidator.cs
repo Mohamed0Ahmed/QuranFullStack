@@ -4,6 +4,8 @@ namespace QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSe
 
 internal sealed class PhraseIndexValidator
 {
+    private readonly PhraseIndexBuildExpectations expectations;
+
     private const string TotalsSql = """
         SELECT (SELECT COUNT(*) FROM quran_phrase_search_tokens WHERE build_id = @build_id),
                (SELECT COUNT(*) FROM quran_phrase_variants WHERE build_id = @build_id),
@@ -141,15 +143,10 @@ internal sealed class PhraseIndexValidator
              + (SELECT COUNT(*) FROM invalid_stats)
         """;
 
-    private static readonly IReadOnlyDictionary<short, long> ExpectedThresholdCounts =
-        new Dictionary<short, long>
-        {
-            [50] = 1_115_977,
-            [60] = 236_650,
-            [70] = 100_789,
-            [80] = 33_091,
-            [90] = 1_682,
-        };
+    public PhraseIndexValidator(PhraseIndexBuildExpectations expectations)
+    {
+        this.expectations = expectations;
+    }
 
     internal async Task<PhraseIndexValidationResult> ValidateAsync(
         NpgsqlConnection connection,
@@ -160,9 +157,9 @@ internal sealed class PhraseIndexValidator
     {
         var totals = await ReadTotalsAsync(connection, transaction, buildId, ct);
         var checks = new List<PhraseBuildCheck>(sourceChecks);
-        checks.Add(HardCheck("TOTAL-VARIANTS", PhraseIndexBuildConstants.ExpectedTotalVariants, totals.Variants));
-        checks.Add(HardCheck("TOTAL-OCCURRENCES", PhraseIndexBuildConstants.ExpectedTotalOccurrences, totals.Occurrences));
-        checks.Add(HardCheck("TOTAL-SIMILARITY-EDGES", PhraseIndexBuildConstants.ExpectedSimilarityEdges, totals.SimilarityEdges));
+        checks.Add(HardCheck("TOTAL-VARIANTS", expectations.ExpectedTotalVariants, totals.Variants));
+        checks.Add(HardCheck("TOTAL-OCCURRENCES", expectations.ExpectedTotalOccurrences, totals.Occurrences));
+        checks.Add(HardCheck("TOTAL-SIMILARITY-EDGES", expectations.ExpectedSimilarityEdges, totals.SimilarityEdges));
         checks.Add(new PhraseBuildCheck(
             "TOTAL-SEARCH-TOKENS",
             "hard",
@@ -190,7 +187,7 @@ internal sealed class PhraseIndexValidator
         return new PhraseIndexValidationResult(totals, checks);
     }
 
-    private static async Task AddBaselineChecksAsync(
+    private async Task AddBaselineChecksAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         Guid buildId,
@@ -204,14 +201,14 @@ internal sealed class PhraseIndexValidator
         command.Parameters.AddWithValue("build_id", buildId);
         await using var reader = await command.ExecuteReaderAsync(ct);
         await reader.ReadAsync(ct);
-        checks.Add(HardCheck("WINDOWS-SIMPLE-ALL", PhraseIndexBuildConstants.ExpectedWindowsPerMode, reader.GetInt64(0)));
-        checks.Add(HardCheck("WINDOWS-TASHKIL-ALL", PhraseIndexBuildConstants.ExpectedWindowsPerMode, reader.GetInt64(1)));
-        checks.Add(HardCheck("WINDOWS-SIMPLE-LENGTH-2-PLUS", PhraseIndexBuildConstants.ExpectedWindowsLengthTwoPlusPerMode, reader.GetInt64(2)));
-        checks.Add(HardCheck("WINDOWS-TASHKIL-LENGTH-2-PLUS", PhraseIndexBuildConstants.ExpectedWindowsLengthTwoPlusPerMode, reader.GetInt64(3)));
-        checks.Add(HardCheck("VARIANTS-SIMPLE-LENGTH-2-PLUS", PhraseIndexBuildConstants.ExpectedSimpleVariantsLengthTwoPlus, reader.GetInt64(4)));
-        checks.Add(HardCheck("VARIANTS-TASHKIL-LENGTH-2-PLUS", PhraseIndexBuildConstants.ExpectedTashkilVariantsLengthTwoPlus, reader.GetInt64(5)));
-        checks.Add(HardCheck("REPEATED-VARIANTS", PhraseIndexBuildConstants.ExpectedRepeatedVariants, reader.GetInt64(6)));
-        checks.Add(HardCheck("REPEATED-OCCURRENCES", PhraseIndexBuildConstants.ExpectedRepeatedOccurrences, reader.GetInt64(7)));
+        checks.Add(HardCheck("WINDOWS-SIMPLE-ALL", expectations.ExpectedWindowsPerMode, reader.GetInt64(0)));
+        checks.Add(HardCheck("WINDOWS-TASHKIL-ALL", expectations.ExpectedWindowsPerMode, reader.GetInt64(1)));
+        checks.Add(HardCheck("WINDOWS-SIMPLE-LENGTH-2-PLUS", expectations.ExpectedWindowsLengthTwoPlusPerMode, reader.GetInt64(2)));
+        checks.Add(HardCheck("WINDOWS-TASHKIL-LENGTH-2-PLUS", expectations.ExpectedWindowsLengthTwoPlusPerMode, reader.GetInt64(3)));
+        checks.Add(HardCheck("VARIANTS-SIMPLE-LENGTH-2-PLUS", expectations.ExpectedSimpleVariantsLengthTwoPlus, reader.GetInt64(4)));
+        checks.Add(HardCheck("VARIANTS-TASHKIL-LENGTH-2-PLUS", expectations.ExpectedTashkilVariantsLengthTwoPlus, reader.GetInt64(5)));
+        checks.Add(HardCheck("REPEATED-VARIANTS", expectations.ExpectedRepeatedVariants, reader.GetInt64(6)));
+        checks.Add(HardCheck("REPEATED-OCCURRENCES", expectations.ExpectedRepeatedOccurrences, reader.GetInt64(7)));
         checks.Add(HardCheck("MAX-REPEATED-SIMPLE-LENGTH", 24, reader.GetInt16(8)));
         checks.Add(HardCheck("MAX-REPEATED-TASHKIL-LENGTH", 23, reader.GetInt16(9)));
     }
@@ -256,7 +253,7 @@ internal sealed class PhraseIndexValidator
         checks.Add(HardCheck("SEARCH-TOKEN-DICTIONARY", 0, dictionaryViolations));
     }
 
-    private static async Task AddThresholdChecksAsync(
+    private async Task AddThresholdChecksAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         Guid buildId,
@@ -274,7 +271,7 @@ internal sealed class PhraseIndexValidator
             var threshold = reader.GetInt16(0);
             checks.Add(HardCheck(
                 $"SIMILARITY-THRESHOLD-{threshold}",
-                ExpectedThresholdCounts[threshold],
+                expectations.ExpectedThresholdCounts[threshold],
                 reader.GetInt64(1)));
         }
     }

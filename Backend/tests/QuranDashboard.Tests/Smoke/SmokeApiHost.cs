@@ -25,7 +25,8 @@ internal static class SmokeApiHost
     public static WebApplicationFactory<HealthController> Build(
         string connectionString,
         FakeExternalUserProfileSource profileSource,
-        SmokeSqlCommandCapture commandCapture)
+        SmokeSqlCommandCapture commandCapture,
+        bool readOnlySharedState = false)
     {
         return new WebApplicationFactory<HealthController>()
             .WithWebHostBuilder(builder =>
@@ -37,7 +38,8 @@ internal static class SmokeApiHost
                 builder.UseEnvironment("Testing");
 
                 builder.ConfigureAppConfiguration((_, configuration) =>
-                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    var settings = new Dictionary<string, string?>
                     {
                         ["ConnectionStrings:QuranDashboardDb"] = connectionString,
                         // A valid-shaped https authority the options validator accepts. No metadata is ever
@@ -52,7 +54,14 @@ internal static class SmokeApiHost
                         ["OwnerBootstrap:Emails:0"] = FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
                         // AddApiServices throws when the allowed-origins list is empty.
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
-                    }));
+                    };
+                    if (readOnlySharedState)
+                    {
+                        settings["Access:PermissionCatalogueStartupSync:Enabled"] = "false";
+                    }
+
+                    configuration.AddInMemoryCollection(settings);
+                });
 
                 builder.ConfigureTestServices(services =>
                 {

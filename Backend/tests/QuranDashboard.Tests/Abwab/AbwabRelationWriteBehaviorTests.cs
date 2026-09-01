@@ -29,4 +29,36 @@ public sealed class AbwabRelationWriteBehaviorTests(AbwabSchemaFixture fixture)
 
         await act.Should().ThrowAsync<ArgumentOutOfRangeException>();
     }
+
+    [Fact]
+    public async Task AddAsync_WhenOneOfMultipleTargetsAlreadyHasTheRelation_LeavesTheOtherTargetUnrelated()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var relations = scope.ServiceProvider.GetRequiredService<IAbwabRelationsWriter>();
+        var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
+        var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var section = (await sections.CreateAsync("سلوك: قسم تراجع علاقات متعددة", CancellationToken.None)).Id;
+        var anchor = await doors.CreateAsync(section, null, "سلوك: باب مرساة العلاقات", null, null, [], CancellationToken.None);
+        var existing = await doors.CreateAsync(section, null, "سلوك: باب العلاقة الموجودة", null, null, [], CancellationToken.None);
+        var otherwiseValid = await doors.CreateAsync(section, null, "سلوك: باب العلاقة التي يجب ألا تحفظ", null, null, [], CancellationToken.None);
+
+        await relations.AddAsync(
+            anchor.Id, AbwabRelationType.Similarity, null, [existing.Id], CancellationToken.None);
+
+        var act = async () => await relations.AddAsync(
+            anchor.Id,
+            AbwabRelationType.Similarity,
+            null,
+            [existing.Id, otherwiseValid.Id],
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabRelationDuplicateException>();
+        (await dbContext.AbwabDoorRelations.CountAsync(relation =>
+            relation.DeletedAtUtc == null
+            && relation.RelationType == AbwabRelationType.Similarity
+            && ((relation.DoorAId == anchor.Id && relation.DoorBId == otherwiseValid.Id)
+                || (relation.DoorAId == otherwiseValid.Id && relation.DoorBId == anchor.Id))))
+            .Should().Be(0, "a duplicate target rejects the entire requested relation set");
+    }
 }

@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using QuranDashboard.Domain.Quran.Words;
@@ -24,14 +25,8 @@ internal sealed partial class QuranTopicsBookSourceReader
 
         var sourceBytes = await File.ReadAllBytesAsync(sourcePath, cancellationToken);
         var sourceSha256 = Convert.ToHexStringLower(SHA256.HashData(sourceBytes));
-        var checksumText = (await File.ReadAllTextAsync(checksumPath, cancellationToken)).Trim();
-        var expectedSha256 = checksumText.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (expectedSha256 is null
-            || !Sha256Regex().IsMatch(expectedSha256)
-            || !string.Equals(sourceSha256, expectedSha256, StringComparison.OrdinalIgnoreCase))
-        {
-            throw new QuranTopicsBookImportException("The source SHA-256 does not match its adjacent checksum.");
-        }
+        var checksumBytes = await File.ReadAllBytesAsync(checksumPath, cancellationToken);
+        ValidateChecksumSidecar(checksumBytes, sourcePath, sourceSha256);
 
         QuranTopicsBookDocument document;
         try
@@ -66,7 +61,9 @@ internal sealed partial class QuranTopicsBookSourceReader
 
         return new QuranTopicsBookSourcePackage(
             sourcePath,
+            checksumPath,
             sourceSha256,
+            Convert.ToHexStringLower(SHA256.HashData(checksumBytes)),
             document,
             metrics,
             checks,
@@ -77,18 +74,48 @@ internal sealed partial class QuranTopicsBookSourceReader
         QuranTopicsBookSourcePackage package,
         CancellationToken cancellationToken)
     {
-        if (!File.Exists(package.SourcePath) || !File.Exists(package.SourcePath + ".sha256"))
+        if (!File.Exists(package.SourcePath) || !File.Exists(package.ChecksumPath))
         {
             return false;
         }
 
         var bytes = await File.ReadAllBytesAsync(package.SourcePath, cancellationToken);
-        return string.Equals(
-            Convert.ToHexStringLower(SHA256.HashData(bytes)),
-            package.Sha256,
-            StringComparison.Ordinal);
+        var checksumBytes = await File.ReadAllBytesAsync(package.ChecksumPath, cancellationToken);
+        return string.Equals(Convert.ToHexStringLower(SHA256.HashData(bytes)), package.Sha256, StringComparison.Ordinal)
+            && string.Equals(
+                Convert.ToHexStringLower(SHA256.HashData(checksumBytes)),
+                package.ChecksumSha256,
+                StringComparison.Ordinal);
     }
 
-    [GeneratedRegex("^[a-fA-F0-9]{64}$", RegexOptions.CultureInvariant)]
-    private static partial Regex Sha256Regex();
+    private static void ValidateChecksumSidecar(
+        byte[] checksumBytes,
+        string sourcePath,
+        string sourceSha256)
+    {
+        string checksumText;
+        try
+        {
+            checksumText = new UTF8Encoding(false, true).GetString(checksumBytes);
+        }
+        catch (DecoderFallbackException)
+        {
+            throw new QuranTopicsBookImportException("The source checksum sidecar is not valid UTF-8.");
+        }
+
+        var match = ChecksumPattern().Match(checksumText);
+        if (!match.Success
+            || !string.Equals(match.Groups["file"].Value, Path.GetFileName(sourcePath), StringComparison.Ordinal))
+        {
+            throw new QuranTopicsBookImportException("The source checksum sidecar has an invalid contract.");
+        }
+
+        if (!string.Equals(sourceSha256, match.Groups["sha"].Value, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new QuranTopicsBookImportException("The source SHA-256 does not match its adjacent checksum.");
+        }
+    }
+
+    [GeneratedRegex(@"\A(?<sha>[0-9a-fA-F]{64})  (?<file>[^\r\n]+)\r?\n?\z", RegexOptions.CultureInvariant)]
+    private static partial Regex ChecksumPattern();
 }

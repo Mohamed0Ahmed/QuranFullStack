@@ -18,7 +18,8 @@ public sealed class DeviceSessionAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IUserDeviceSessionStore sessionStore)
+    IUserDeviceSessionStore sessionStore,
+    TimeProvider timeProvider)
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     protected override async Task<AuthenticateResult> HandleAuthenticateAsync()
@@ -29,7 +30,7 @@ public sealed class DeviceSessionAuthenticationHandler(
             return AuthenticateResult.NoResult();
         }
 
-        var session = await sessionStore.ResolveAsync(token, DateTimeOffset.UtcNow, Context.RequestAborted);
+        var session = await sessionStore.ResolveAsync(token, timeProvider.GetUtcNow(), Context.RequestAborted);
         if (session is null)
         {
             return AuthenticateResult.Fail("The device session is invalid or expired.");

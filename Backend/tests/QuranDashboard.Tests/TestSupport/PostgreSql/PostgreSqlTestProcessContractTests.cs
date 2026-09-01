@@ -107,6 +107,20 @@ public sealed class PostgreSqlTestProcessContractTests
     }
 
     [Fact]
+    public async Task ExternalReadOnlyLease_RefusesDatabaseWrites()
+    {
+        await using var owned = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
+        await using var external = PostgreSqlTestProcess.UseExternalReadOnlyDatabase(owned.ConnectionString);
+
+        var write = () => PostgreSqlContractProbe.ExecuteAsync(
+            external.ConnectionString,
+            "CREATE TABLE external_read_only_probe (id integer)");
+
+        await write.Should().ThrowAsync<PostgresException>()
+            .WithMessage("*read-only transaction*");
+    }
+
+    [Fact]
     public void UseExternalReadOnlyDatabase_RefusesANonLocalHost()
     {
         var external = () => PostgreSqlTestProcess.UseExternalReadOnlyDatabase(

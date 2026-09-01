@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using QuranDashboard.Api.Access;
 using QuranDashboard.Api.RateLimiting;
 
 namespace QuranDashboard.Tests.Smoke;
@@ -48,6 +49,13 @@ public sealed class SmokeBootGuardTests(SmokeApiFixture fixture)
         // default and throttles the route sweep instead.
         fixture.ApiServices.GetRequiredService<IOptions<RateLimitingOptions>>().Value.Enabled
             .Should().BeFalse();
+    }
+
+    [Fact]
+    public void MutableSmokeHost_KeepsPermissionCatalogueStartupSynchronizationEnabled()
+    {
+        fixture.ApiServices.GetRequiredService<IOptions<PermissionCatalogueStartupOptions>>().Value.Enabled
+            .Should().BeTrue();
     }
 
     [Fact]

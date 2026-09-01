@@ -14,7 +14,10 @@ public sealed class DeviceSessionAntiforgeryMiddleware(RequestDelegate next)
         HttpMethods.Trace,
     };
 
-    public async Task InvokeAsync(HttpContext context, IUserDeviceSessionStore sessionStore)
+    public async Task InvokeAsync(
+        HttpContext context,
+        IUserDeviceSessionStore sessionStore,
+        TimeProvider timeProvider)
     {
         var sessionIdValue = context.User.FindFirst(DeviceSessionAuthentication.SessionIdClaim)?.Value;
         if (SafeMethods.Contains(context.Request.Method) || string.IsNullOrWhiteSpace(sessionIdValue))
@@ -30,7 +33,7 @@ public sealed class DeviceSessionAntiforgeryMiddleware(RequestDelegate next)
                     && await sessionStore.ValidateCsrfAsync(
                         sessionId,
                         headerToken,
-                        DateTimeOffset.UtcNow,
+                        timeProvider.GetUtcNow(),
                         context.RequestAborted);
         if (valid)
         {

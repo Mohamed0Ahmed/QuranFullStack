@@ -4,37 +4,44 @@ namespace QuranDashboard.Api.Authentication;
 
 public static class DeviceSessionCookieWriter
 {
-    public static void Write(HttpResponse response, IssuedUserDeviceSession session)
+    public static void Write(
+        HttpResponse response,
+        IssuedUserDeviceSession session,
+        DateTimeOffset nowUtc)
     {
         response.Cookies.Append(
             DeviceSessionAuthentication.SessionCookieName,
             session.Token,
-            CreateOptions(session.ExpiresAtUtc, httpOnly: true, path: "/api"));
+            CreateOptions(session.ExpiresAtUtc, nowUtc, httpOnly: true, path: "/api"));
         response.Cookies.Append(
             DeviceSessionAuthentication.CsrfCookieName,
             session.CsrfToken,
-            CreateOptions(session.ExpiresAtUtc, httpOnly: false, path: "/"));
+            CreateOptions(session.ExpiresAtUtc, nowUtc, httpOnly: false, path: "/"));
     }
 
-    public static void Delete(HttpResponse response)
+    public static void Delete(HttpResponse response, DateTimeOffset nowUtc)
     {
         response.Cookies.Delete(
             DeviceSessionAuthentication.SessionCookieName,
-            CreateOptions(DateTimeOffset.UnixEpoch, httpOnly: true, path: "/api"));
+            CreateOptions(DateTimeOffset.UnixEpoch, nowUtc, httpOnly: true, path: "/api"));
         response.Cookies.Delete(
             DeviceSessionAuthentication.CsrfCookieName,
-            CreateOptions(DateTimeOffset.UnixEpoch, httpOnly: false, path: "/"));
+            CreateOptions(DateTimeOffset.UnixEpoch, nowUtc, httpOnly: false, path: "/"));
     }
 
-    private static CookieOptions CreateOptions(DateTimeOffset expiresAtUtc, bool httpOnly, string path) => new()
+    private static CookieOptions CreateOptions(
+        DateTimeOffset expiresAtUtc,
+        DateTimeOffset nowUtc,
+        bool httpOnly,
+        string path) => new()
     {
         HttpOnly = httpOnly,
         Secure = true,
         SameSite = SameSiteMode.Lax,
         Path = path,
         Expires = expiresAtUtc,
-        MaxAge = expiresAtUtc > DateTimeOffset.UtcNow
-            ? expiresAtUtc - DateTimeOffset.UtcNow
+        MaxAge = expiresAtUtc > nowUtc
+            ? expiresAtUtc - nowUtc
             : TimeSpan.Zero,
         IsEssential = true,
     };

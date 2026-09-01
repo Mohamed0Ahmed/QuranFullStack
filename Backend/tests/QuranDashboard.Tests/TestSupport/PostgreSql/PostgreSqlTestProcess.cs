@@ -63,7 +63,11 @@ internal static class PostgreSqlTestProcess
                 + "Remote, shared, staging, and production targets are refused.");
         }
 
-        return PostgreSqlDatabaseLease.External(builder.Database!, connectionString);
+        builder.Options = string.Join(
+            ' ',
+            new[] { builder.Options, "-c", "default_transaction_read_only=on" }
+                .Where(option => !string.IsNullOrWhiteSpace(option)));
+        return PostgreSqlDatabaseLease.External(builder.Database!, builder.ConnectionString);
     }
 
     internal static async Task<ExclusivePostgreSqlLease> LeaseExclusiveServerAsync(

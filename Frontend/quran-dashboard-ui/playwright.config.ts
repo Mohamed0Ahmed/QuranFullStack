@@ -1,4 +1,5 @@
-import { defineConfig, devices } from '@playwright/test';
+import { defineConfig, devices, type ReporterDescription } from '@playwright/test';
+import { resolve } from 'node:path';
 
 import { environment } from './src/environments/environment.development';
 import {
@@ -10,13 +11,29 @@ import {
 
 const UI_ORIGIN = 'https://localhost:4200';
 const API_HEALTH_URL = 'https://localhost:5015/api/health';
+const evidenceDirectory = process.env['E2E_EVIDENCE_DIRECTORY'];
+const sealedExecution = process.env['E2E_SEALED_EXECUTION'] === '1';
+const playwrightOutputDirectory = process.env['E2E_PLAYWRIGHT_OUTPUT_DIRECTORY'];
+const tlsCertificate = process.env['E2E_TLS_CERTIFICATE'];
+const tlsPrivateKey = process.env['E2E_TLS_PRIVATE_KEY'];
+const chromiumExecutable = process.env['E2E_CHROMIUM_EXECUTABLE'];
+const frontendCommand = sealedExecution ? 'node e2e/run-frontend.mjs' : 'npm run start:https';
+if (sealedExecution && !playwrightOutputDirectory) {
+  throw new Error('Sealed execution requires a private Playwright output directory.');
+}
+const reporters: ReporterDescription[] = evidenceDirectory
+  ? [
+      ['list'],
+      ['./scripts/structured-playwright-reporter.mjs'],
+    ]
+  : [['list'], ['html', { open: 'never' }]];
 
 // Both servers are self-signed localhost, and the backend CORS policy admits exactly
 // https://localhost:4200 (Backend/api/QuranDashboard.Api/appsettings.Development.json), so neither
 // origin nor port is configurable here.
 const SHARED_WEB_SERVER_OPTIONS = {
   cwd: __dirname,
-  reuseExistingServer: true,
+  reuseExistingServer: false,
   ignoreHTTPSErrors: true,
   stdout: 'pipe',
   stderr: 'pipe',
@@ -30,17 +47,21 @@ export default defineConfig({
   retries: 0,
   timeout: 60_000,
   expect: { timeout: 15_000 },
-  reporter: [['list'], ['html', { open: 'never' }]],
+  reporter: reporters,
+  outputDir: playwrightOutputDirectory ? resolve(playwrightOutputDirectory) : undefined,
   use: {
     baseURL: UI_ORIGIN,
     ignoreHTTPSErrors: true,
-    trace: 'retain-on-failure',
-    screenshot: 'only-on-failure',
+    trace: sealedExecution ? 'off' : 'retain-on-failure',
+    screenshot: sealedExecution ? 'off' : 'only-on-failure',
     video: 'off',
+    ...(sealedExecution && chromiumExecutable
+      ? { launchOptions: { executablePath: chromiumExecutable } }
+      : {}),
   },
-  // Split so `npm run e2e` can run Abwab at --workers=1 (T502): a Global-scope reorder
-  // resequences every live root in the database, so two Abwab specs in different workers can
-  // race the same rows — see e2e/README.md. Every other spec stays read-only and unaffected.
+  // Projects retain their ownership boundary, while `npm run e2e` uses one worker and one shared
+  // provisioned stack. A Global-scope Abwab reorder resequences every live root, so two Abwab
+  // specs in different workers could race the same rows — see e2e/README.md.
   projects: [
     { name: 'default', testIgnore: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
     { name: 'abwab', testMatch: /abwab-.*\.e2e\.ts$/, use: { ...devices['Desktop Chrome'] } },
@@ -48,14 +69,13 @@ export default defineConfig({
   webServer: [
     {
       ...SHARED_WEB_SERVER_OPTIONS,
-      command: 'npm run start:https',
+      command: frontendCommand,
       url: UI_ORIGIN,
       timeout: 180_000,
     },
     {
       ...SHARED_WEB_SERVER_OPTIONS,
       command: 'node e2e/run-backend.mjs',
-      reuseExistingServer: false,
       gracefulShutdown: { signal: 'SIGTERM', timeout: 60_000 },
       env: {
         ASPNETCORE_ENVIRONMENT: 'Testing',
@@ -67,6 +87,12 @@ export default defineConfig({
         E2E__TestIssuer__Issuer: E2E_TEST_ISSUER,
         E2E__TestIssuer__Jwks: JSON.stringify(E2E_TEST_JWKS),
         OwnerBootstrap__Emails__0: e2eProfileEmail(E2E_OWNER_SUBJECT),
+        ...(tlsCertificate && tlsPrivateKey
+          ? {
+              ASPNETCORE_Kestrel__Certificates__Default__Path: tlsCertificate,
+              ASPNETCORE_Kestrel__Certificates__Default__KeyPath: tlsPrivateKey,
+            }
+          : {}),
       },
       url: API_HEALTH_URL,
       timeout: 300_000,

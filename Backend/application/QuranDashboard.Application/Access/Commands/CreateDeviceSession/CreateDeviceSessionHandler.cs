@@ -5,7 +5,8 @@ namespace QuranDashboard.Application.Access.Commands.CreateDeviceSession;
 
 public sealed class CreateDeviceSessionHandler(
     ProvisionCurrentUserHandler provisionCurrentUserHandler,
-    IUserDeviceSessionStore sessionStore)
+    IUserDeviceSessionStore sessionStore,
+    TimeProvider timeProvider)
 {
     private static readonly TimeSpan SessionLifetime = TimeSpan.FromDays(90);
 
@@ -15,7 +16,7 @@ public sealed class CreateDeviceSessionHandler(
         CancellationToken cancellationToken)
     {
         var user = await provisionCurrentUserHandler.HandleAsync(identityEvidenceToken, cancellationToken);
-        var createdAtUtc = DateTimeOffset.UtcNow;
+        var createdAtUtc = timeProvider.GetUtcNow();
 
         return await sessionStore.IssueAsync(
             user.Sub,
