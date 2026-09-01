@@ -25,10 +25,35 @@ queue time. It writes `job-result.json` under `.pr-observation/` by default. Pro
 artifact directory with `--results-dir`; Backend TRX and sealed Playwright evidence remain below that
 job directory or in their existing harness evidence directory.
 
-All four jobs are observation-only and have exactly one attempt. A failed command stops that job, is
-recorded as the first-attempt status, and is returned to the provider as non-blocking evidence. The
-runner does not retry or convert a failure to a pass. Enforcement is separate future activation work
-after the required timing and flake pilot.
+All four jobs have exactly one attempt. The Backend, contract/model, and Frontend policy/build jobs
+remain observation-only. The critical Chromium job is now mixed-policy: it still executes the full
+nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
+group independently. Quran fidelity is blocking after its accepted #102 pilot; sessions/Permissions,
+Linking, PhraseSearch, and Abwab projection remain observation-only. A failure in an observation group
+does not hide or rewrite the failed catalogue status, but it does not fail the provider gate when every
+blocking group passed.
+
+`job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
+`enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must
+produce exactly one result: missing, malformed, duplicated, undeclared, or retried evidence anywhere in
+the catalogue fails closed even when the affected group is still observation-only. Sealed infrastructure
+phases and the sanitized evidence inspection must also pass. Present test failures in observation groups
+remain visible but non-blocking. Provisioning or timeout failures block because the required Quran group
+and complete monitoring record were not proven. A results directory must be new or empty, so a later
+invocation cannot reuse stale Playwright evidence. The runner never retries or converts a failed first
+attempt into a flaky pass.
+
+The accepted #102 window covered 20 full-catalogue first-attempt passes at commit
+`e8ae1c3d92429f34bd03e13bac86362f3b2f1e04`, including five distinct initially empty provisioning/cache
+roots. Every job completed below 12 minutes; nearest-rank p95 was 544,813 ms and the maximum was 560,318
+ms. The two Quran journeys passed 40/40, with group p95 7,783 ms and maximum 8,400 ms. The repository has
+no remote artifact-fetch cache, so the five cold observations are accurately retained as fresh isolated
+dependency/browser provisioning and committed-artifact verification runs. The earlier failed candidate
+windows remain recorded on #102 and are not relabeled as qualifying evidence.
+
+Monitoring remains active because the full catalogue and per-group timing evidence continue on every
+run. Any emergency downgrade still requires the issue, owner, maintainer approval, rationale, affected
+risk, and maximum seven-day expiry defined by the strategy governance.
 
 The Backend job deliberately invokes the supported full `pre-pr` lane and names its current
 full-canonical input requirement. There is no compact-fixture exception. If measurement later requires

@@ -47,6 +47,7 @@ export function validateObservationMatrix(matrix, repositoryRoot) {
       job.policy?.queueTimeIncluded === false,
       `${job.id}.policy.queueTimeIncluded must be false.`,
     );
+    validateJourneyGroups(job);
     requireCondition(
       Array.isArray(job.commands) && job.commands.length > 0,
       `${job.id}.commands must be non-empty.`,
@@ -78,6 +79,52 @@ export function validateObservationMatrix(matrix, repositoryRoot) {
       );
     }
   }
+}
+
+function validateJourneyGroups(job) {
+  const groups = job.policy?.journeyGroups;
+  if (groups === undefined) {
+    return;
+  }
+
+  requireCondition(
+    job.policy.blocking === false,
+    `${job.id}.policy.blocking must be false when journeyGroups provide mixed enforcement.`,
+  );
+  requireCondition(
+    Array.isArray(groups) && groups.length > 0,
+    `${job.id}.policy.journeyGroups must be a non-empty array.`,
+  );
+  const groupIds = new Set();
+  const journeyIds = new Set();
+  for (const group of groups) {
+    requireNonEmptyString(group.id, `${job.id}.policy.journeyGroups.id`);
+    requireCondition(
+      !groupIds.has(group.id),
+      `${job.id}.policy.journeyGroups contains duplicate group ${group.id}.`,
+    );
+    groupIds.add(group.id);
+    requireCondition(
+      typeof group.blocking === 'boolean',
+      `${job.id}.${group.id}.blocking is required.`,
+    );
+    requireCondition(
+      Array.isArray(group.journeys) && group.journeys.length > 0,
+      `${job.id}.${group.id}.journeys must be a non-empty array.`,
+    );
+    for (const journey of group.journeys) {
+      requireNonEmptyString(journey, `${job.id}.${group.id}.journey`);
+      requireCondition(
+        !journeyIds.has(journey),
+        `${job.id}.policy.journeyGroups contains duplicate journey ${journey}.`,
+      );
+      journeyIds.add(journey);
+    }
+  }
+  requireCondition(
+    groups.some(({ blocking }) => blocking),
+    `${job.id}.policy.journeyGroups must activate at least one blocking group.`,
+  );
 }
 
 export function materializeCommand(command, repositoryRoot, jobResultsDirectory) {

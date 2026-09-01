@@ -408,8 +408,10 @@ reduced lane as the current full `pre-pr` command.
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
 includes `test:pre-pr` and `e2e:typecheck`. The provider-neutral
 [PR observation matrix](./pr-observation-matrix.md) exposes all four jobs with one attempt, an outer
-12-minute timeout, and structured end-to-end duration. The matrix is explicitly non-blocking; no
-document may claim the critical browser gate is enforced until it meets the activation criteria below.
+12-minute timeout, and structured end-to-end duration. The non-browser jobs remain observation-only.
+The critical Chromium job runs the complete catalogue once and enforces only the journey groups whose
+own activation pilots have qualified; its full first-attempt status and every group result remain
+visible even when an observation-only group fails.
 
 The 12-minute budget:
 
@@ -425,6 +427,23 @@ minutes, and there must be no first-attempt flaky passes. Continue monitoring af
 
 Each critical journey group enters observation mode, completes its own 20-run pilot, and becomes
 blocking independently. The four-job matrix is fully adopted only after all five groups are enforced.
+
+Current activation state:
+
+| Journey group | PR state | Activation evidence |
+| --- | --- | --- |
+| Quran fidelity | Blocking | #102 accepted 20/20 first-attempt full-catalogue passes, five fresh isolated provisioning/cache runs, job p95 544,813 ms, job maximum 560,318 ms, and 40/40 Quran journey passes. |
+| Sessions and Permissions | Observation | #103 pilot evidence is recorded; policy promotion remains separate. |
+| Linking | Observation | #104 pilot evidence is recorded; policy promotion remains separate. |
+| PhraseSearch | Observation | Awaiting its own ordered activation work. |
+| Abwab projection | Observation | Awaiting its own ordered activation work. |
+
+Every critical run continues to emit separate status and timing evidence for all five groups. Every
+configured journey must appear exactly once; missing, malformed, duplicated, undeclared, or retried
+catalogue evidence fails closed, as do failed sealed infrastructure phases or evidence inspection.
+Present failures in observation-only groups remain visible without blocking. A downgrade is never an
+untracked configuration toggle: the emergency issue, named owner, maintainer approval, rationale, and
+seven-day maximum expiry below remain mandatory.
 
 ### Scheduled, release, and post-deploy lanes
 

@@ -72,6 +72,7 @@ const sealed = createSealedEnvironment(
     RANDOM_PASSWORD: 'another-secret',
     SYSTEM_ACCESSTOKEN: 'system-token',
     DOCKER_AUTH_CONFIG: '{"auths":{"registry.test":{"auth":"private"}}}',
+    QDB_PR_OBSERVATION_RESULT_DIR: '/workspace/observation-results',
     SAFE_SETTING: 'retained',
   },
   {
@@ -93,6 +94,7 @@ assert.equal(sealed.E2E_PREPARED_DATABASE, '1');
 assert.equal(sealed.E2E_PLAYWRIGHT_OUTPUT_DIRECTORY, '/private/playwright-output');
 assert.equal(sealed.E2E_SEALED_EXECUTION, '1');
 assert.equal(sealed.QDB_E2E_ALLOWED_IPV4, '172.20.0.2');
+assert.equal(sealed.QDB_PR_OBSERVATION_RESULT_DIR, '/workspace/observation-results');
 assert.equal(sealed.LD_PRELOAD, '/workspace/egress-guard.so');
 assert.equal(sealed.ARTIFACT_DOWNLOAD_TOKEN, undefined);
 assert.equal(sealed.AWS_SECRET_ACCESS_KEY, undefined);
@@ -148,6 +150,7 @@ try {
   );
   const reporter = new StructuredPlaywrightReporter();
   const test = {
+    annotations: [{ type: 'journey', description: 'quran-fidelity.contract' }],
     id: 'contract-failure',
     location: { file: '/workspace/contract.e2e.ts', line: 1 },
     titlePath: () => ['', 'default', 'contract failure'],
@@ -207,6 +210,7 @@ try {
     reporterResults.tests[0].attachments.map((attachment) => attachment.name).sort(),
     ['accessibility-observations', 'browser-console-errors', 'request-metadata', 'sanitized-screenshot'],
   );
+  assert.equal(reporterResults.tests[0].journey, 'quran-fidelity.contract');
   assert.doesNotMatch(JSON.stringify(reporterResults.tests[0].errors), /<[^>]+>/);
 
   const rawPath = resolve(reporterDirectory, 'raw-request.json');

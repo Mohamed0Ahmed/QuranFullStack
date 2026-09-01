@@ -142,7 +142,48 @@
         "blocking": false,
         "maxAttempts": 1,
         "timeoutSeconds": 720,
-        "queueTimeIncluded": false
+        "queueTimeIncluded": false,
+        "journeyGroups": [
+          {
+            "id": "quran-fidelity",
+            "blocking": true,
+            "journeys": [
+              "quran-fidelity.mushaf-font-rendering",
+              "quran-fidelity.mushaf-mobile"
+            ]
+          },
+          {
+            "id": "sessions-permissions",
+            "blocking": false,
+            "journeys": [
+              "device-session.lifecycle",
+              "permission.lifecycle"
+            ]
+          },
+          {
+            "id": "linking",
+            "blocking": false,
+            "journeys": [
+              "linking.successful-owner",
+              "linking.successful-owner-mobile"
+            ]
+          },
+          {
+            "id": "phrase-search",
+            "blocking": false,
+            "journeys": [
+              "phrase-search.available-add-to-workspace",
+              "phrase-search.unavailable-stale"
+            ]
+          },
+          {
+            "id": "abwab-projection",
+            "blocking": false,
+            "journeys": [
+              "abwab.inclusion-projection"
+            ]
+          }
+        ]
       },
       "commands": [
         {

@@ -43,7 +43,10 @@ const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const FRONTEND_ROOT = resolve(dirname(SCRIPT_PATH), '..');
 const REPOSITORY_ROOT = resolve(FRONTEND_ROOT, '../..');
 const RECEIPT_PATH = resolve(FRONTEND_ROOT, '.playwright/provisioning/receipt.json');
-const EVIDENCE_ROOT = resolve(FRONTEND_ROOT, '.playwright/evidence');
+const observationResultsDirectory = process.env.QDB_PR_OBSERVATION_RESULT_DIR?.trim();
+const EVIDENCE_ROOT = observationResultsDirectory
+  ? resolve(observationResultsDirectory, 'playwright-evidence')
+  : resolve(FRONTEND_ROOT, '.playwright/evidence');
 const API_PROJECT = resolve(
   REPOSITORY_ROOT,
   'Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj',
