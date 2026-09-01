@@ -24,6 +24,11 @@ internal static class ArtifactTrustCommand
             return FullCanonicalRecoveryRehearsalCommand.Execute(args, output, error);
         }
 
+        if (args.Count > 0 && args[0] == "verify-content-addressed")
+        {
+            return VerifyContentAddressed(args, output, error);
+        }
+
         var request = Parse(args, error);
         if (request is null)
         {
@@ -73,6 +78,86 @@ internal static class ArtifactTrustCommand
             $"stale={results.Count(result => result.Trust.State == ArtifactTrustState.Stale)} " +
             $"mismatched={results.Count(result => result.Trust.State == ArtifactTrustState.Mismatched)}");
         return results.All(result => result.Trust.State == ArtifactTrustState.Present) ? 0 : 1;
+    }
+
+    private static int VerifyContentAddressed(
+        IReadOnlyList<string> args,
+        TextWriter output,
+        TextWriter error)
+    {
+        string? artifactId = null;
+        string? contentRoot = null;
+        string? repositoryRoot = null;
+        for (var index = 1; index < args.Count; index += 2)
+        {
+            if (index + 1 >= args.Count)
+            {
+                WriteContentAddressedUsage(error);
+                return 2;
+            }
+
+            switch (args[index])
+            {
+                case "--artifact" when artifactId is null:
+                    artifactId = args[index + 1];
+                    break;
+                case "--content-root" when contentRoot is null:
+                    contentRoot = args[index + 1];
+                    break;
+                case "--root" when repositoryRoot is null:
+                    repositoryRoot = args[index + 1];
+                    break;
+                default:
+                    WriteContentAddressedUsage(error);
+                    return 2;
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(artifactId)
+            || string.IsNullOrWhiteSpace(contentRoot)
+            || string.IsNullOrWhiteSpace(repositoryRoot))
+        {
+            WriteContentAddressedUsage(error);
+            return 2;
+        }
+
+        var root = Path.GetFullPath(repositoryRoot);
+        var source = Path.GetFullPath(contentRoot);
+        if (FullCanonicalArtifactProvisioningCommand.IsAtOrBelow(source, root))
+        {
+            output.WriteLine("artifact=content-addressed required=true state=mismatched detail=content root must stay outside the repository");
+            output.WriteLine("summary required=1 present=0 missing=0 stale=0 mismatched=1");
+            return 1;
+        }
+
+        try
+        {
+            var artifactLock = ArtifactTrustLock.ReadFrom(Path.Combine(root, ArtifactTrustLock.FileName));
+            var issue = ArtifactTrustLockValidator.Validate(artifactLock);
+            if (issue is not null)
+            {
+                WriteLockMismatch(output, issue);
+                return 1;
+            }
+
+            var artifact = artifactLock.Artifacts.SingleOrDefault(candidate => candidate.Id == artifactId);
+            if (artifact is null)
+            {
+                output.WriteLine("artifact=content-addressed required=true state=missing detail=artifact is not locked");
+                output.WriteLine("summary required=1 present=0 missing=1 stale=0 mismatched=0");
+                return 1;
+            }
+
+            var trust = ArtifactTrustVerifier.VerifyContentAddressed(artifactLock, artifact, root, source);
+            output.WriteLine($"artifact={artifact.Id} required=true state={ReportValue(trust.State)} detail={trust.Detail}");
+            output.WriteLine($"summary required=1 present={(trust.State == ArtifactTrustState.Present ? 1 : 0)} missing={(trust.State == ArtifactTrustState.Missing ? 1 : 0)} stale={(trust.State == ArtifactTrustState.Stale ? 1 : 0)} mismatched={(trust.State == ArtifactTrustState.Mismatched ? 1 : 0)}");
+            return trust.State == ArtifactTrustState.Present ? 0 : 1;
+        }
+        catch (Exception exception) when (IsContractReadException(exception))
+        {
+            WriteLockMismatch(output, "content-addressed verification could not read the locked contract");
+            return 1;
+        }
     }
 
     private static ArtifactCommandResult Evaluate(
@@ -228,6 +313,11 @@ internal static class ArtifactTrustCommand
     {
         error.WriteLine(
             "Usage: test-artifacts status|verify [--artifact ARTIFACT_ID | --lane LANE] [--root REPOSITORY_ROOT]");
+    }
+
+    private static void WriteContentAddressedUsage(TextWriter error)
+    {
+        error.WriteLine("Usage: test-artifacts verify-content-addressed --artifact ARTIFACT_ID --content-root ROOT --root REPOSITORY_ROOT");
     }
 }
 

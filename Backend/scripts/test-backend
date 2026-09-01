@@ -681,7 +681,9 @@ build_test_args() {
 
   [[ -n "${shard_filter}" ]] && test_args+=(--filter "${shard_filter}")
   [[ "${list_tests}" == true ]] && test_args+=(--list-tests)
-  [[ -n "${results_dir}" ]] && test_args+=(--results-directory "${results_dir}")
+  if [[ -n "${results_dir}" ]]; then
+    test_args+=(--results-directory "${results_dir}" --logger "trx;LogFileName=backend-tests.trx")
+  fi
   return 0
 }
 
@@ -873,6 +875,11 @@ if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
     echo "canonical data tier: failed" >&2
     echo "canonical shard status: ${canonical_shard_summary}" >&2
   fi
+fi
+
+if [[ -n "${results_dir}" && "${test_status}" -eq 0 ]]; then
+  printf '{"schemaVersion":1,"lane":"%s","status":"passed"}\n' "${lane}" \
+    > "${results_dir}/nightly-test-evidence.json"
 fi
 
 exit "${test_status}"

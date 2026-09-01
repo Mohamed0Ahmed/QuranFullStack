@@ -41,6 +41,50 @@ internal static class ArtifactTrustVerifier
             : migrationState;
     }
 
+    internal static ArtifactTrustResult VerifyContentAddressed(
+        ArtifactTrustLock artifactLock,
+        LockedArtifact artifact,
+        string repositoryRoot,
+        string contentAddressedRoot)
+    {
+        var payload = artifact.StagedFiles.Single(file => file.Role == "payload");
+        if (!artifact.ImmutableStorageId.StartsWith("local://", StringComparison.Ordinal)
+            || !artifact.ImmutableStorageId.EndsWith($"@sha256:{payload.Sha256}", StringComparison.Ordinal))
+        {
+            return new ArtifactTrustResult(
+                ArtifactTrustState.Mismatched,
+                "local immutable storage identity does not match the locked payload hash");
+        }
+
+        var artifactRoot = Path.Combine(Path.GetFullPath(contentAddressedRoot), "sha256", payload.Sha256);
+        foreach (var file in artifact.StagedFiles)
+        {
+            var source = Path.Combine(artifactRoot, Path.GetFileName(file.Path));
+            if (!File.Exists(source))
+            {
+                return new ArtifactTrustResult(ArtifactTrustState.Missing, "content-addressed staged file is missing");
+            }
+
+            if (new FileInfo(source).Length != file.Size || !string.Equals(
+                    ComputeSha256(source), file.Sha256, StringComparison.Ordinal))
+            {
+                return new ArtifactTrustResult(ArtifactTrustState.Mismatched, "content-addressed staged file differs from the lock");
+            }
+        }
+
+        var manifest = Path.Combine(artifactRoot, Path.GetFileName(artifact.ManifestPath));
+        var mismatch = CompareArtifactManifest(artifactLock, artifact, manifest);
+        if (mismatch is not null)
+        {
+            return new ArtifactTrustResult(ArtifactTrustState.Mismatched, mismatch);
+        }
+
+        var migrationState = CheckMigrationState(artifact, repositoryRoot);
+        return migrationState.State == ArtifactTrustState.Present
+            ? new ArtifactTrustResult(ArtifactTrustState.Present, "content-addressed artifact verified")
+            : migrationState;
+    }
+
     private static string? CompareArtifactManifest(
         ArtifactTrustLock artifactLock,
         LockedArtifact artifact,

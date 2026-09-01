@@ -6,6 +6,53 @@ namespace QuranDashboard.Tests.TestSupport.Artifacts;
 public sealed class TestArtifactTrustCommandTests
 {
     [Fact]
+    public void VerifyContentAddressed_AcceptsOnlyTheLockedLocalPayloadAndManifest()
+    {
+        using var repository = TemporaryRepository.CreateWithTrustedArtifact();
+        using var contentRoot = TemporaryContentRoot.Create();
+        repository.CopyToContentAddressedRoot(contentRoot.Path);
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = ArtifactTrustCommand.Execute(
+            [
+                "verify-content-addressed", "--artifact", "compact-cross-stack-base",
+                "--content-root", contentRoot.Path,
+                "--root", repository.Root,
+            ],
+            output,
+            error);
+
+        exitCode.Should().Be(0);
+        output.ToString().Should().Contain("state=present");
+        error.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
+    public void VerifyContentAddressed_RejectsMissingContentAddressedPayload()
+    {
+        using var repository = TemporaryRepository.CreateWithTrustedArtifact();
+        using var contentRoot = TemporaryContentRoot.Create();
+        repository.CopyToContentAddressedRoot(contentRoot.Path);
+        File.Delete(Directory.GetFiles(contentRoot.Path, "fixture.dump", SearchOption.AllDirectories).Single());
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = ArtifactTrustCommand.Execute(
+            [
+                "verify-content-addressed", "--artifact", "compact-cross-stack-base",
+                "--content-root", contentRoot.Path,
+                "--root", repository.Root,
+            ],
+            output,
+            error);
+
+        exitCode.Should().Be(1);
+        output.ToString().Should().Contain("state=missing");
+        error.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
     public void RecoveryRehearsal_RefusesBackupWithoutExplicitOperatorIntent()
     {
         using var repository = TemporaryRepository.CreateWithLock(
@@ -447,6 +494,25 @@ public sealed class TestArtifactTrustCommandTests
             File.WriteAllBytes(path, bytes);
         }
 
+        internal void CopyToContentAddressedRoot(string contentRoot)
+        {
+            var payloadPath = Path.Combine(Root, PayloadRelativePath);
+            var payloadHash = Sha256(payloadPath);
+            var destination = Path.Combine(contentRoot, "sha256", payloadHash);
+            Directory.CreateDirectory(destination);
+            File.Copy(payloadPath, Path.Combine(destination, Path.GetFileName(payloadPath)));
+            File.Copy(
+                Path.Combine(Root, ManifestRelativePath),
+                Path.Combine(destination, Path.GetFileName(ManifestRelativePath)));
+
+            var artifactLock = ReadObject("test-artifacts.lock.json");
+            artifactLock["artifacts"]!.AsArray()[0]!["immutableStorageId"] =
+                $"local://fixture@sha256:{payloadHash}";
+            File.WriteAllText(
+                Path.Combine(Root, "test-artifacts.lock.json"),
+                artifactLock.ToJsonString());
+        }
+
         internal void SetManifestTableAndRelock(string tableName)
         {
             var manifest = ReadObject(ManifestRelativePath);
@@ -774,6 +840,23 @@ public sealed class TestArtifactTrustCommandTests
         public void Dispose()
         {
             Directory.Delete(Root, recursive: true);
+        }
+    }
+
+    private sealed class TemporaryContentRoot(string path) : IDisposable
+    {
+        internal string Path { get; } = path;
+
+        internal static TemporaryContentRoot Create()
+        {
+            var path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"quran-dashboard-content-addressed-{Guid.NewGuid():N}");
+            Directory.CreateDirectory(path);
+            return new TemporaryContentRoot(path);
+        }
+
+        public void Dispose()
+        {
+            Directory.Delete(Path, recursive: true);
         }
     }
 }

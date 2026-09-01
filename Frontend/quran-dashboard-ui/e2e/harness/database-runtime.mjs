@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -28,6 +29,7 @@ const REPOSITORY_ROOT = resolve(FRONTEND_ROOT, '../..');
 const ARTIFACT_TOOL = resolve(REPOSITORY_ROOT, 'Backend/scripts/test-artifacts');
 const ARTIFACT_LOCK = resolve(REPOSITORY_ROOT, 'test-artifacts.lock.json');
 const RUNTIME_STATE_PATH = resolve(FRONTEND_ROOT, '.playwright/e2e-database.json');
+const RUNTIME_CLEANUP_PATH = resolve(FRONTEND_ROOT, '.playwright/e2e-runtime-cleanup.json');
 
 export async function provisionDatabaseRuntime(apiProject) {
   const mode = resolveDatabaseMode();
@@ -83,6 +85,47 @@ export function readPreparedDatabaseRuntime() {
 
 export function removeDatabaseRuntimeState() {
   rmSync(RUNTIME_STATE_PATH, { force: true });
+}
+
+export function cleanupOwnedDatabaseRuntime() {
+  let receipt;
+  try {
+    receipt = JSON.parse(readFileSync(RUNTIME_CLEANUP_PATH, 'utf8'));
+  } catch {
+    return { status: 'failed', state: 'ownership-receipt-missing' };
+  }
+  const receiptIssue = inspectRuntimeOwnershipReceipt(receipt, () => 'unknown');
+  if (receiptIssue.state === 'ownership-receipt-missing' || receiptIssue.state === 'invalid-owned-runtime-handle') return receiptIssue;
+  try {
+    if (!dockerDaemonReady()) return { status: 'failed', state: 'docker-daemon-unverified' };
+    writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleanup-started' });
+    tryCommand(dockerExecutable(), ['rm', '--force', receipt.containerName], process.env);
+    writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleanup-started', container: 'removed' });
+    tryCommand(dockerExecutable(), ['network', 'rm', receipt.networkName], process.env);
+    writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleanup-started', container: 'removed', network: 'removed' });
+    const proof = inspectRuntimeOwnershipReceipt(receipt, inspectExactDockerResource);
+    if (proof.status !== 'passed') {
+      writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleanup-failed', container: 'unknown', network: 'unknown' });
+      return { status: 'failed', state: 'owned-runtime-still-present' };
+    }
+    writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleaned', container: 'absent', network: 'absent' });
+    removeDatabaseRuntimeState();
+    return { status: 'passed', state: receipt.status === 'cleaned' ? 'owned-runtime-already-cleaned' : 'owned-runtime-removed' };
+  } catch {
+    writeRuntimeOwnershipReceipt({ ...receipt, status: 'cleanup-failed', container: 'unknown', network: 'unknown' });
+    return { status: 'failed', state: 'owned-runtime-cleanup-failed' };
+  }
+}
+
+export function inspectRuntimeOwnershipReceipt(receipt, inspect) {
+  if (!receipt) return { status: 'failed', state: 'ownership-receipt-missing' };
+  if (!validOwnershipReceipt(receipt)) return { status: 'failed', state: 'invalid-owned-runtime-handle' };
+  const container = inspect(['container', 'inspect', receipt.containerName]);
+  const network = inspect(['network', 'inspect', receipt.networkName]);
+  if (container !== 'absent' || network !== 'absent') {
+    return { status: 'failed', state: container === 'unknown' || network === 'unknown' ? 'owned-runtime-unverified' : 'owned-runtime-still-present' };
+  }
+  return { status: 'passed', state: receipt.status === 'cleaned' ? 'owned-runtime-already-cleaned' : 'owned-runtime-removed' };
 }
 
 export function immutableDatabaseFingerprint(connection) {
@@ -152,10 +195,22 @@ async function provisionArtifactDatabase() {
   let networkCreated = false;
 
   try {
+    prepareRuntimeOwnership(containerName, networkName);
+    writeRuntimeOwnershipReceipt({
+      schemaVersion: 1,
+      status: 'intent',
+      containerName,
+      networkName,
+      container: 'pending',
+      network: 'pending',
+    });
     execFileSync('docker', ['network', 'create', '--internal', networkName], {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     networkCreated = true;
+    writeRuntimeOwnershipReceipt({
+      schemaVersion: 1, status: 'intent', containerName, networkName, container: 'pending', network: 'created',
+    });
     execFileSync(
       'docker',
       [
@@ -176,6 +231,9 @@ async function provisionArtifactDatabase() {
       { stdio: ['ignore', 'pipe', 'pipe'] },
     );
     containerStarted = true;
+    writeRuntimeOwnershipReceipt({
+      schemaVersion: 1, status: 'active', containerName, networkName, container: 'created', network: 'created',
+    });
 
     const containerHost = execFileSync(
       'docker',
@@ -232,30 +290,19 @@ async function provisionArtifactDatabase() {
       'restore the verified compact PhraseSearch-ready overlay artifact',
     );
     verifyPhraseSearchRuntime(connection, phraseReadyArtifact);
-
     return {
       mode: 'artifact',
       connection,
       connectionString: formatConnectionString(connection),
       containerName,
       cleanup: once(() => {
-        if (containerStarted) {
-          tryCommand('docker', ['rm', '--force', containerName], process.env);
-          containerStarted = false;
-        }
-        if (networkCreated) {
-          tryCommand('docker', ['network', 'rm', networkName], process.env);
-          networkCreated = false;
-        }
+        cleanupOwnedDatabaseRuntime();
+        containerStarted = false;
+        networkCreated = false;
       }),
     };
   } catch (error) {
-    if (containerStarted) {
-      tryCommand('docker', ['rm', '--force', containerName], process.env);
-    }
-    if (networkCreated) {
-      tryCommand('docker', ['network', 'rm', networkName], process.env);
-    }
+    cleanupOwnedDatabaseRuntime();
     throw error;
   }
 }
@@ -583,6 +630,91 @@ function tryCommand(command, arguments_, environment) {
   } catch {
     return false;
   }
+}
+
+function writeRuntimeOwnershipReceipt(receipt) {
+  mkdirSync(dirname(RUNTIME_CLEANUP_PATH), { recursive: true });
+  const temporaryPath = `${RUNTIME_CLEANUP_PATH}.tmp-${process.pid}`;
+  writeFileSync(temporaryPath, `${JSON.stringify(receipt)}\n`, { encoding: 'utf8', mode: 0o600 });
+  renameSync(temporaryPath, RUNTIME_CLEANUP_PATH);
+}
+
+function validOwnershipReceipt(receipt) {
+  return receipt?.schemaVersion === 1
+    && ['intent', 'active', 'cleanup-started', 'cleanup-failed', 'cleaned'].includes(receipt.status)
+    && ['pending', 'created', 'removed', 'absent', 'unknown'].includes(receipt.container)
+    && ['pending', 'created', 'removed', 'absent', 'unknown'].includes(receipt.network)
+    && /^qdb-e2e-artifact-[A-Za-z0-9-]+$/.test(receipt.containerName ?? '')
+    && /^qdb-e2e-internal-[A-Za-z0-9-]+$/.test(receipt.networkName ?? '');
+}
+
+function inspectExactDockerResource(arguments_) {
+  const kind = arguments_[0] === 'network' ? 'network' : 'container';
+  const name = arguments_.at(-1);
+  try {
+    execFileSync(dockerExecutable(), arguments_, { env: dockerEnvironment(), stdio: ['ignore', 'pipe', 'pipe'] });
+    return 'present';
+  } catch (error) {
+    const message = Buffer.isBuffer(error?.stderr) ? error.stderr.toString('utf8').trim() : String(error?.stderr ?? '').trim();
+    return classifyExactDockerInspect({ daemonReady: true, kind, name, status: error?.status, standardError: message });
+  }
+}
+
+export function classifyExactDockerInspect({ daemonReady, kind, name, status, standardError }) {
+  if (!daemonReady || !['container', 'network'].includes(kind) || typeof name !== 'string') return 'unknown';
+  const escapedName = escapeRegularExpression(name);
+  const absent = kind === 'container'
+    ? new RegExp(`^(?:Error response from daemon: )?No such container: ${escapedName}$`).test(standardError)
+    : new RegExp(`^(?:Error response from daemon: )?network ${escapedName} not found$`).test(standardError);
+  return status === 1 && absent ? 'absent' : 'unknown';
+}
+
+function dockerDaemonReady() {
+  try {
+    execFileSync(dockerExecutable(), ['info', '--format', '{{.ServerVersion}}'], {
+      env: dockerEnvironment(),
+      stdio: ['ignore', 'pipe', 'pipe'],
+      timeout: 5_000,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function dockerEnvironment() {
+  return { ...process.env, LANG: 'C', LC_ALL: 'C' };
+}
+
+function dockerExecutable() {
+  return process.env.QDB_RUNTIME_CONTRACT_TEST === '1'
+    && process.env.QDB_RUNTIME_CONTRACT_DOCKER
+    ? process.env.QDB_RUNTIME_CONTRACT_DOCKER
+    : 'docker';
+}
+
+function escapeRegularExpression(value) {
+  return value.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function prepareRuntimeOwnership(containerName, networkName) {
+  let existing;
+  try {
+    existing = JSON.parse(readFileSync(RUNTIME_CLEANUP_PATH, 'utf8'));
+  } catch (error) {
+    if (error?.code !== 'ENOENT') throw new Error('Existing runtime ownership receipt is unreadable.');
+  }
+  if (existing) {
+    if (!validOwnershipReceipt(existing)) throw new Error('Existing runtime ownership receipt is invalid.');
+    const cleanup = cleanupOwnedDatabaseRuntime();
+    if (cleanup.status !== 'passed') throw new Error('Existing runtime ownership cannot be verified clean.');
+  }
+  if (!dockerDaemonReady()) throw new Error('Docker daemon availability cannot be verified for runtime ownership.');
+  const proof = inspectRuntimeOwnershipReceipt(
+    { schemaVersion: 1, status: 'intent', containerName, networkName, container: 'pending', network: 'pending' },
+    inspectExactDockerResource,
+  );
+  if (proof.status !== 'passed') throw new Error('New runtime ownership names cannot be verified absent.');
 }
 
 function once(action) {

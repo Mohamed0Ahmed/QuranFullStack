@@ -116,6 +116,7 @@ export default class StructuredPlaywrightReporter {
     const applicationsReadyAt = this.applicationsReadyAt ?? completedAt;
     const output = {
       schemaVersion: 1,
+      runId: basename(this.evidenceDirectory),
       status: result.status,
       applicationsReadyAt,
       completedAt,
