@@ -532,6 +532,183 @@ public sealed class FullCanonicalArtifactProvisioningTests(
     }
 
     [Fact]
+    public async Task RecoveryRehearsal_RejectsBackupWithTamperedTableScopeBeforeRestore()
+    {
+        await fixture.ResetAsync();
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var source = new SyntheticCanonicalDatabase(fixture.ConnectionString);
+        repository.CopyToStaging(tamperPayload: false);
+        await source.RestoreAsync(
+            repository.Lock.Artifacts.Single(),
+            Path.Combine(repository.StagingRoot, repository.Lock.Artifacts.Single().StagedFiles.Single(file => file.Role == "payload").Path));
+        await using var targetLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_RejectsBackupWithTamperedTableScopeBeforeRestore));
+        await CreateProvisionContractTableAsync(targetLease.ConnectionString);
+        var target = new SyntheticCanonicalDatabase(targetLease.ConnectionString);
+        var backupPath = Path.Combine(Path.GetTempPath(), $"quran-dashboard-recovery-{Guid.NewGuid():N}.sql");
+        try
+        {
+            var backup = await FullCanonicalRecoveryRehearsal.CaptureAsync(
+                true, "scheduled", repository.Lock, repository.Root, repository.StagingRoot, backupPath, source);
+            var restore = () => FullCanonicalRecoveryRehearsal.RestoreAsync(
+                "scheduled",
+                repository.Lock,
+                repository.Root,
+                repository.StagingRoot,
+                backupPath,
+                backup with { Tables = ["quran_tampered_scope"] },
+                target);
+
+            await restore.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*backup artifact set does not match*");
+            target.RestoreCalls.Should().Be(0);
+        }
+        finally
+        {
+            File.Delete(backupPath);
+        }
+    }
+
+    [Fact]
+    public void RecoveryRehearsal_LockSchemaAndRuntimeBothRequireCriticalReadFingerprint()
+    {
+        using var repository = SyntheticCanonicalArtifactRepository.Create();
+        var artifact = repository.Lock.Artifacts.Single();
+        var lockWithoutFingerprint = repository.Lock with
+        {
+            Artifacts =
+            [
+                artifact with
+                {
+                    Restore = artifact.Restore! with
+                    {
+                        SentinelTables = [artifact.Restore.SentinelTables.Single() with { CriticalReadSha256 = null }],
+                    },
+                },
+            ],
+        };
+        var repositoryRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", ".."));
+        var schema = JsonNode.Parse(File.ReadAllText(Path.Combine(
+            repositoryRoot,
+            "docs/testing/test-artifacts-lock.schema.json")))!.AsObject();
+        var required = schema["$defs"]!["restore"]!["properties"]!["sentinelTables"]!["items"]!["required"]!
+            .AsArray()
+            .Select(value => value!.GetValue<string>());
+
+        required.Should().Contain("criticalReadSha256");
+        ArtifactTrustLockValidator.Validate(lockWithoutFingerprint)
+            .Should().Contain("restore sentinel tables require a lowercase SHA-256 critical-read fingerprint");
+    }
+
+    [Fact]
+    public void RecoveryRehearsal_RejectsPrefixedUnapprovedSequenceValueArchiveTocEntry()
+    {
+        var action = () => FullCanonicalRecoveryRehearsalTests.AssertArchiveTableOfContentsScope(
+            ["quran_ayahs"],
+            ["quran_ayahs_id_seq"],
+            "1; 0 1 TABLE DATA public quran_ayahs postgres\n2; 0 2 SEQUENCE SET public quran_ayahs_unapproved postgres");
+
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*unapproved sequence value entry*");
+    }
+
+    [Fact]
+    public void RecoveryRehearsal_RejectsMissingDeclaredSequenceValueArchiveTocEntry()
+    {
+        var action = () => FullCanonicalRecoveryRehearsalTests.AssertArchiveTableOfContentsScope(
+            ["quran_ayahs"],
+            ["quran_ayahs_id_seq", "quran_ayahs_revision_id_seq"],
+            "1; 0 1 TABLE DATA public quran_ayahs postgres\n2; 0 2 SEQUENCE SET public quran_ayahs_id_seq postgres");
+
+        action.Should().Throw<InvalidOperationException>()
+            .WithMessage("*sequence value entries do not exactly match the locked scope*");
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_TransactionalSequenceRestartRollsBackAfterMidListFailure()
+    {
+        await using var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_TransactionalSequenceRestartRollsBackAfterMidListFailure));
+        await using var connection = new NpgsqlConnection(lease.ConnectionString);
+        await connection.OpenAsync();
+        await using (var setup = new NpgsqlCommand(
+            """
+            CREATE TABLE public.quran_recovery_rollback_first (
+                id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY);
+            CREATE TABLE public.quran_recovery_rollback_second (
+                id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY);
+            INSERT INTO public.quran_recovery_rollback_first (id) VALUES (10);
+            INSERT INTO public.quran_recovery_rollback_second (id) VALUES (9223372036854775807);
+            """,
+            connection))
+        {
+            await setup.ExecuteNonQueryAsync();
+        }
+        var tables = new[] { "quran_recovery_rollback_first", "quran_recovery_rollback_second" };
+        var ownedSequences = new[]
+        {
+            new ArtifactOwnedSequence("quran_recovery_rollback_first_id_seq", tables[0], "id"),
+            new ArtifactOwnedSequence("quran_recovery_rollback_second_id_seq", tables[1], "id"),
+        };
+
+        var action = () => FullCanonicalRecoveryRehearsalTests.ReconcileOwnedSequencesInTransactionAsync(
+            connection,
+            tables,
+            ownedSequences);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*safe restart value overflows bigint*");
+        await using var state = new NpgsqlCommand(
+            "SELECT last_value, is_called FROM public.quran_recovery_rollback_first_id_seq;",
+            connection);
+        await using var reader = await state.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        reader.GetInt64(0).Should().Be(1);
+        reader.GetBoolean(1).Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task RecoveryRehearsal_RejectsOmittedOwnedSequenceBeforeAnyRestart()
+    {
+        await using var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
+            nameof(RecoveryRehearsal_RejectsOmittedOwnedSequenceBeforeAnyRestart));
+        await using var connection = new NpgsqlConnection(lease.ConnectionString);
+        await connection.OpenAsync();
+        await using (var setup = new NpgsqlCommand(
+            """
+            CREATE TABLE public.quran_recovery_scope_first (
+                id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY);
+            CREATE TABLE public.quran_recovery_scope_second (
+                id bigint GENERATED BY DEFAULT AS IDENTITY PRIMARY KEY);
+            INSERT INTO public.quran_recovery_scope_first (id) VALUES (10);
+            """,
+            connection))
+        {
+            await setup.ExecuteNonQueryAsync();
+        }
+        var tables = new[] { "quran_recovery_scope_first", "quran_recovery_scope_second" };
+        var incompleteLock = new[]
+        {
+            new ArtifactOwnedSequence("quran_recovery_scope_first_id_seq", tables[0], "id"),
+        };
+
+        var action = () => FullCanonicalRecoveryRehearsalTests.ReconcileOwnedSequencesInTransactionAsync(
+            connection,
+            tables,
+            incompleteLock);
+
+        await action.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("*owned-sequence set does not exactly match*");
+        await using var state = new NpgsqlCommand(
+            "SELECT last_value, is_called FROM public.quran_recovery_scope_first_id_seq;",
+            connection);
+        await using var reader = await state.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        reader.GetInt64(0).Should().Be(1);
+        reader.GetBoolean(1).Should().BeFalse();
+    }
+
+    [Fact]
     public async Task RecoveryRehearsal_RejectsCriticalReadMismatchBeforeCreatingBackup()
     {
         await fixture.ResetAsync();
@@ -1222,6 +1399,7 @@ internal sealed class SyntheticCanonicalDatabase(
 
     public async Task CreateBackupAsync(
         IReadOnlyList<string> tables,
+        IReadOnlyList<string> sequences,
         string backupPath,
         CancellationToken cancellationToken = default)
     {
@@ -1243,6 +1421,7 @@ internal sealed class SyntheticCanonicalDatabase(
 
     public Task RestoreBackupAsync(
         IReadOnlyList<string> tables,
+        IReadOnlyList<string> sequences,
         string backupPath,
         CancellationToken cancellationToken = default)
     {
@@ -1261,6 +1440,24 @@ internal sealed class SyntheticCanonicalDatabase(
         return rejectDisposableSource
             ? Task.FromException(new InvalidOperationException("The recovery source is not disposable."))
             : Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<FullCanonicalSequenceReconciliation>> ReconcileOwnedSequencesAsync(
+        IReadOnlyList<string> tables,
+        IReadOnlyList<ArtifactOwnedSequence> ownedSequences,
+        CancellationToken cancellationToken = default)
+    {
+        ownedSequences.Should().BeEmpty();
+        return Task.FromResult<IReadOnlyList<FullCanonicalSequenceReconciliation>>([]);
+    }
+
+    public Task<IReadOnlyList<FullCanonicalSequenceState>> ReadSequenceStatesAsync(
+        IReadOnlyList<string> tables,
+        IReadOnlyList<ArtifactOwnedSequence> ownedSequences,
+        CancellationToken cancellationToken = default)
+    {
+        ownedSequences.Should().BeEmpty();
+        return Task.FromResult<IReadOnlyList<FullCanonicalSequenceState>>([]);
     }
 
     public async Task<IReadOnlyDictionary<string, string>> ReadCriticalFingerprintsAsync(

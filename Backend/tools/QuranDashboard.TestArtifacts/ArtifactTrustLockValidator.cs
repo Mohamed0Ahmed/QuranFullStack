@@ -139,6 +139,18 @@ internal static class ArtifactTrustLockValidator
             return "tableScope must name unique tables and at least one present data family";
         }
 
+        var ownedSequences = artifact.TableScope.OwnedSequences ?? [];
+        if (DuplicateOf(ownedSequences.Select(sequence => sequence.Name)) is not null
+            || DuplicateOf(ownedSequences.Select(sequence => $"{sequence.Table}.{sequence.Column}")) is not null
+            || ownedSequences.Any(sequence =>
+                !IsValidTableIdentifier(sequence.Name)
+                || !IsValidTableIdentifier(sequence.Table)
+                || !IsValidTableIdentifier(sequence.Column)
+                || !artifact.TableScope.Tables.Contains(sequence.Table, StringComparer.Ordinal)))
+        {
+            return "tableScope ownedSequences must uniquely map safe sequence names to scoped table columns";
+        }
+
         var scopeIssue = ValidateTableFamilyScope(artifact);
         if (scopeIssue is not null)
         {
@@ -285,9 +297,9 @@ internal static class ArtifactTrustLockValidator
                 return "restore sentinel tables must map every locked sentinel to a scoped safe table and expected count";
             }
 
-            if (sentinel.CriticalReadSha256 is not null && !IsSha256(sentinel.CriticalReadSha256))
+            if (sentinel.CriticalReadSha256 is null || !IsSha256(sentinel.CriticalReadSha256))
             {
-                return "restore sentinel tables require a lowercase SHA-256 critical-read fingerprint when supplied";
+                return "restore sentinel tables require a lowercase SHA-256 critical-read fingerprint";
             }
         }
 

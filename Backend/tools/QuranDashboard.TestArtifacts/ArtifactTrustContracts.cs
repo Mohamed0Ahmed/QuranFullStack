@@ -49,7 +49,13 @@ internal sealed record ArtifactTableScope(
     bool Abwab,
     bool Access,
     bool Linking,
-    IReadOnlyList<string> Tables);
+    IReadOnlyList<string> Tables,
+    IReadOnlyList<ArtifactOwnedSequence>? OwnedSequences = null);
+
+internal sealed record ArtifactOwnedSequence(
+    string Name,
+    string Table,
+    string Column);
 
 internal sealed record LockedPostgreSqlState(
     string ProducerVersion,

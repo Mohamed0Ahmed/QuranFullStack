@@ -81,21 +81,35 @@ timings only) outside the worktree; no connection string, password, dump, or raw
 
 ## Recovery rehearsal
 
-`rehearse-full-canonical-recovery --confirm-backup` reserves the controlled mutation seam for a
-representative backup/recovery rehearsal. Backup creation is refused unless the operator supplies the
-exact confirmation. The reusable contract records only the backup filename, byte size, SHA-256,
-migration state, locked manifest/payload/oracle hashes, source provenance, table counts, sentinel counts,
-and the lock-pinned SHA-256 critical-read fingerprints. It verifies the backup before touching an empty
-disposable target, then verifies target migration compatibility, counts, sentinels, and critical reads.
-The backup output must be a new private file outside the worktree. The adapter accepts an explicit Quran-
-table allowlist for both backup and restore and attests that both source and target are disposable. Its
-receipt classifies the operation as
-`data-recovery` and explicitly records that application rollback was not requested.
+Run the representative recovery proof only in a scheduled or release job:
 
-The approved `quran-canonical` lock entry records the exact 32 companion-manifest table counts, payload
-and manifest hashes, migration state, and local immutable identity. Historical source-package hashes and
-critical-read fingerprints remain unavailable, so recovery rehearsal fails closed rather than inventing
-them. Do not substitute a developer, shared, staging, or production database, a mutable storage alias,
+```bash
+QURAN_DASHBOARD_ARTIFACT_EXECUTION=release \
+QURAN_TEST_ARTIFACT_ROOT=/private/qdb-artifacts \
+QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes \
+Backend/scripts/test-backend full-canonical-recovery --build --results-dir /private/qdb-recovery-evidence
+```
+
+The lane restores only the adopted content-addressed artifact into a digest-pinned disposable
+PostgreSQL 18 source. It finishes immutable trust, migration, all-table count, sentinel, and critical-read
+verification before its one permitted source mutation: a transaction locks every declared owner table,
+verifies each sequence's exact `public` table/column ownership from PostgreSQL metadata, and reconciles
+its next value. Non-empty tables use their current high-water mark; empty tables use the sequence start
+with `is_called=false`. Positive increment and a next value strictly above every non-empty high-water
+mark are required.
+
+Backup creation is refused unless the operator supplies the exact confirmation. The private custom
+archive contains only the 32 locked Quran tables and the 18 explicitly mapped sequence values. Its TOC,
+filename, byte size, and SHA-256 are checked before a separate digest-pinned disposable target is touched.
+The target must be empty, receives no application rollback, and must reproduce migration state, all
+counts, sentinels, critical reads, and reconciled sequence states. Sanitized evidence records original,
+reconciled, and restored sequence high-water/next-value states plus the locked hashes and provenance; it
+never records connection strings, credentials, dump contents, or arbitrary database paths.
+
+The approved `quran-canonical` lock entry records the exact 32 companion-manifest table counts, 18 owned
+sequence mappings, payload and manifest hashes, migration state, local immutable identity, and the
+reviewed canonical critical-read SHA-256. Historical source-package hashes remain unavailable and are
+reported as such. Do not substitute a developer, shared, staging, or production database, a mutable storage alias,
 or a made-up artifact identity. External storage is deferred until remote CI, a second machine, or
 another developer requires it; no provider integration, credentials, or uploads are configured here.
 

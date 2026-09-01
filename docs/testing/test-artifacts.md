@@ -122,6 +122,8 @@ Each locked artifact records at least:
   are unavailable.
 - Table scope, including explicit presence/absence of Quran, PhraseSearch, Abwab, Access, and Linking
   data.
+- Exact owned-sequence mappings, including sequence, scoped owner table, and owner column, when a
+  recovery archive must preserve generated-key state.
 - Reviewed Quran sentinels, expected counts, and oracle hash where applicable.
 - PhraseSearch manifest hash, source fingerprint, and readiness expectations where applicable. The
   volatile active build ID remains inside the immutable artifact manifest and is compared with runtime
@@ -189,9 +191,10 @@ The implemented full-canonical controlled-provisioning surface is:
 - `rehearse-full-canonical-recovery`: an explicit-intent recovery contract. It captures integrity
   metadata for a representative backup, verifies it before restoring only to an isolated disposable
   target, and records sanitized data-recovery evidence distinct from application rollback. Full-canonical
-  sentinel declarations pin each critical read's SHA-256 in both the lock and artifact manifest, while
-  recovery evidence retains the locked staged hashes and source provenance. It remains fail-closed when a
-  critical-read fingerprint is unavailable from the approved artifact.
+  sentinel declarations pin each critical read's SHA-256 in the lock, while recovery evidence retains the
+  locked staged hashes and source provenance. The lock also maps every preserved sequence to its exact
+  scoped table/column owner. After all immutable checks pass, the disposable restored source reconciles
+  those sequences transactionally; the private backup and separate target must preserve safe next values.
 
 External storage is explicitly deferred. Revisit it only when a remote CI provider, second machine, or
 additional developer needs the artifact. That decision must add a reviewed provider-neutral acquisition

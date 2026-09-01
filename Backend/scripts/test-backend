@@ -29,7 +29,7 @@ SHARD_HANDOVER_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|phrase-index-rehearsal
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal
     --build|--no-build [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
@@ -72,7 +72,7 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|phrase-index-rehearsal|feature|pipeline|pre-pr)
+  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal|feature|pipeline|pre-pr)
     ;;
   *)
     fail_usage "Unknown lane: ${lane}"
@@ -256,6 +256,9 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       ;;
     full-canonical)
       [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests ]] && selected=true
+      ;;
+    full-canonical-recovery)
+      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests ]] && selected=true
       ;;
     previous-release-upgrade)
       [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests ]] && selected=true
@@ -625,16 +628,24 @@ else
   echo "canonical data tier: not selected"
 fi
 
-if [[ "${lane}" == "previous-release-upgrade" && "${list_tests}" == false ]]; then
+if [[ "${lane}" == "previous-release-upgrade" || "${lane}" == "full-canonical-recovery" ]] && [[ "${list_tests}" == false ]]; then
   if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
-    echo "ERROR: previous-release-upgrade requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+    echo "ERROR: ${lane} requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
     exit 1
   fi
   if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
-    echo "ERROR: previous-release-upgrade requires QURAN_TEST_ARTIFACT_ROOT." >&2
+    echo "ERROR: ${lane} requires QURAN_TEST_ARTIFACT_ROOT." >&2
     exit 1
   fi
-  export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
+  if [[ "${lane}" == "full-canonical-recovery" && "${QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP:-}" != "yes" ]]; then
+    echo "ERROR: full-canonical-recovery requires QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes." >&2
+    exit 1
+  fi
+  if [[ "${lane}" == "previous-release-upgrade" ]]; then
+    export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
+  else
+    export QURAN_DASHBOARD_FULL_CANONICAL_RECOVERY_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-full-canonical-recovery-evidence}"
+  fi
 fi
 
 if [[ "${lane}" == "phrase-index-rehearsal" && "${list_tests}" == false ]]; then
@@ -651,7 +662,7 @@ fi
 
 verbosity="normal"
 hang_timeout="20m"
-if [[ "${lane}" == "phrase-index-rehearsal" ]]; then
+if [[ "${lane}" == "phrase-index-rehearsal" || "${lane}" == "full-canonical-recovery" ]]; then
   hang_timeout="45m"
 fi
 if [[ "${all_fast}" == true ]]; then

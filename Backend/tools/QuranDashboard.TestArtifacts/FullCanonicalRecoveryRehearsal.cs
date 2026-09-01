@@ -28,18 +28,43 @@ internal static class FullCanonicalRecoveryRehearsal
             throw new InvalidOperationException("Recovery backup output must be a new private file outside the repository worktree.");
         }
 
+        ValidateLock(artifactLock);
         var artifacts = FullCanonicalArtifactProvisioner.SelectArtifacts(runKind, artifactLock);
+        var tables = artifacts.SelectMany(artifact => artifact.TableScope.Tables).ToArray();
+        var ownedSequences = artifacts.SelectMany(artifact => artifact.TableScope.OwnedSequences ?? []).ToArray();
         await source.AssertDisposableRecoverySourceAsync(cancellationToken);
-        var recoveredArtifacts = new List<FullCanonicalRecoveredArtifact>();
+
+        // All immutable artifact, database-version, migration, count, and critical-read checks finish
+        // before sequence state is mutated in the disposable restored source.
+        var content = new List<FullCanonicalRecoveredContent>();
         foreach (var artifact in artifacts)
         {
             VerifyArtifactTrust(artifactLock, artifact, repositoryRoot, stagingRoot);
             await source.AssertPostgreSqlCompatibilityAsync(artifact.PostgreSql, cancellationToken);
             await source.AssertMigrationAsync(artifact.Migration, cancellationToken);
-            recoveredArtifacts.Add(await ReadExpectedStateAsync(artifact, stagingRoot, source, cancellationToken));
+            content.Add(await ReadExpectedContentAsync(artifact, stagingRoot, source, cancellationToken));
         }
 
-        await source.CreateBackupAsync(artifacts.SelectMany(artifact => artifact.TableScope.Tables).ToArray(), backupPath, cancellationToken);
+        var reconciliations = await source.ReconcileOwnedSequencesAsync(tables, ownedSequences, cancellationToken);
+        ValidateReconciliations(ownedSequences, reconciliations);
+        var reconciledStates = await source.ReadSequenceStatesAsync(tables, ownedSequences, cancellationToken);
+        ValidateSequenceStates(ownedSequences, reconciledStates);
+        if (!reconciledStates.SequenceEqual(reconciliations.Select(result => result.Reconciled)))
+        {
+            throw new InvalidOperationException("Recovery source sequence state changed after transactional reconciliation.");
+        }
+
+        var recoveredArtifacts = artifacts.Select((artifact, index) =>
+            ToRecoveredArtifact(
+                content[index],
+                SelectSequenceStates(artifact.TableScope.OwnedSequences ?? [], reconciledStates)))
+            .ToArray();
+
+        await source.CreateBackupAsync(
+            tables,
+            ownedSequences.Select(sequence => sequence.Name).ToArray(),
+            backupPath,
+            cancellationToken);
         if (!File.Exists(backupPath))
         {
             throw new InvalidOperationException("The recovery backup was not produced.");
@@ -50,6 +75,9 @@ internal static class FullCanonicalRecoveryRehearsal
             new FileInfo(backupPath).Length,
             Sha256(backupPath),
             RepositoryMigrationState.Read(repositoryRoot),
+            tables,
+            ownedSequences,
+            reconciliations,
             recoveredArtifacts);
     }
 
@@ -63,12 +91,18 @@ internal static class FullCanonicalRecoveryRehearsal
         IFullCanonicalRecoveryDatabase target,
         CancellationToken cancellationToken = default)
     {
+        ValidateLock(artifactLock);
         var artifacts = FullCanonicalArtifactProvisioner.SelectArtifacts(runKind, artifactLock);
+        var tables = artifacts.SelectMany(artifact => artifact.TableScope.Tables).ToArray();
+        var ownedSequences = artifacts.SelectMany(artifact => artifact.TableScope.OwnedSequences ?? []).ToArray();
         VerifyBackupIntegrity(backupPath, backup, repositoryRoot);
-        if (backup.Artifacts.Count != artifacts.Count)
+        if (backup.Artifacts.Count != artifacts.Count
+            || !backup.Tables.SequenceEqual(tables, StringComparer.Ordinal)
+            || !backup.OwnedSequences.SequenceEqual(ownedSequences))
         {
             throw new InvalidOperationException("The recovery backup artifact set does not match the locked restore contract.");
         }
+        ValidateReconciliations(ownedSequences, backup.SequenceReconciliations);
 
         foreach (var artifact in artifacts)
         {
@@ -78,14 +112,24 @@ internal static class FullCanonicalRecoveryRehearsal
         }
 
         await target.AssertDisposableRecoveryTargetAsync(cancellationToken);
-        await target.AssertRestoreTargetIsEmptyAsync(
-            artifacts.SelectMany(artifact => artifact.TableScope.Tables).ToArray(),
+        await target.AssertRestoreTargetIsEmptyAsync(tables, cancellationToken);
+        // Recheck at the last possible point before the only target mutation.
+        VerifyBackupIntegrity(backupPath, backup, repositoryRoot);
+        await target.RestoreBackupAsync(
+            tables,
+            ownedSequences.Select(sequence => sequence.Name).ToArray(),
+            backupPath,
             cancellationToken);
-        await target.RestoreBackupAsync(artifacts.SelectMany(artifact => artifact.TableScope.Tables).ToArray(), backupPath, cancellationToken);
 
         for (var index = 0; index < artifacts.Count; index++)
         {
-            var actual = await ReadExpectedStateAsync(artifacts[index], stagingRoot, target, cancellationToken);
+            var content = await ReadExpectedContentAsync(artifacts[index], stagingRoot, target, cancellationToken);
+            var sequenceStates = await target.ReadSequenceStatesAsync(
+                artifacts[index].TableScope.Tables,
+                artifacts[index].TableScope.OwnedSequences ?? [],
+                cancellationToken);
+            ValidateSequenceStates(artifacts[index].TableScope.OwnedSequences ?? [], sequenceStates);
+            var actual = ToRecoveredArtifact(content, sequenceStates);
             if (!RecoveredArtifactsMatch(actual, backup.Artifacts[index]))
             {
                 throw new InvalidOperationException(
@@ -100,7 +144,7 @@ internal static class FullCanonicalRecoveryRehearsal
             backup);
     }
 
-    private static async Task<FullCanonicalRecoveredArtifact> ReadExpectedStateAsync(
+    private static async Task<FullCanonicalRecoveredContent> ReadExpectedContentAsync(
         LockedArtifact artifact,
         string stagingRoot,
         IFullCanonicalRecoveryDatabase database,
@@ -146,7 +190,7 @@ internal static class FullCanonicalRecoveryRehearsal
             throw new InvalidOperationException("Recovery verification critical-read fingerprint does not match the locked contract.");
         }
 
-        return new FullCanonicalRecoveredArtifact(
+        return new FullCanonicalRecoveredContent(
             artifact.Id,
             artifact.ImmutableStorageId,
             manifest,
@@ -156,6 +200,64 @@ internal static class FullCanonicalRecoveryRehearsal
             criticalReads.OrderBy(entry => entry.Key, StringComparer.Ordinal)
                 .Select(entry => new FullCanonicalCriticalRead(entry.Key, entry.Value))
                 .ToArray());
+    }
+
+    private static FullCanonicalRecoveredArtifact ToRecoveredArtifact(
+        FullCanonicalRecoveredContent content,
+        IReadOnlyList<FullCanonicalSequenceState> sequences) =>
+        new(
+            content.Id,
+            content.ImmutableStorageId,
+            content.Tables,
+            content.Sentinels,
+            content.StagedFiles,
+            content.Sources,
+            content.CriticalReads,
+            sequences);
+
+    private static IReadOnlyList<FullCanonicalSequenceState> SelectSequenceStates(
+        IReadOnlyList<ArtifactOwnedSequence> expected,
+        IReadOnlyList<FullCanonicalSequenceState> actual)
+    {
+        var byName = actual.ToDictionary(state => state.Name, StringComparer.Ordinal);
+        return expected.Select(sequence => byName[sequence.Name]).ToArray();
+    }
+
+    private static void ValidateReconciliations(
+        IReadOnlyList<ArtifactOwnedSequence> expected,
+        IReadOnlyList<FullCanonicalSequenceReconciliation> actual)
+    {
+        if (!actual.Select(result => result.Original.Ownership).SequenceEqual(expected)
+            || !actual.Select(result => result.Reconciled.Ownership).SequenceEqual(expected))
+        {
+            throw new InvalidOperationException("Recovery sequence reconciliation does not exactly match the locked ownership contract.");
+        }
+
+        for (var index = 0; index < actual.Count; index++)
+        {
+            if (actual[index].Original.HighWaterMark != actual[index].Reconciled.HighWaterMark)
+            {
+                throw new InvalidOperationException("Recovery sequence reconciliation changed the owned table high-water mark.");
+            }
+        }
+
+        ValidateSequenceStates(expected, actual.Select(result => result.Reconciled).ToArray());
+    }
+
+    private static void ValidateSequenceStates(
+        IReadOnlyList<ArtifactOwnedSequence> expected,
+        IReadOnlyList<FullCanonicalSequenceState> actual)
+    {
+        if (!actual.Select(state => state.Ownership).SequenceEqual(expected))
+        {
+            throw new InvalidOperationException("Recovery sequence state does not exactly match the locked ownership contract.");
+        }
+
+        if (actual.Any(state => state.IncrementBy <= 0
+            || state.HighWaterMark is long highWaterMark && state.NextValue <= highWaterMark))
+        {
+            throw new InvalidOperationException("Recovery sequence next value is not strictly above its owned table high-water mark.");
+        }
     }
 
     private static void VerifyArtifactTrust(
@@ -181,7 +283,17 @@ internal static class FullCanonicalRecoveryRehearsal
             && actual.Sentinels.SequenceEqual(expected.Sentinels)
             && actual.StagedFiles.SequenceEqual(expected.StagedFiles)
             && actual.Sources.SequenceEqual(expected.Sources)
-            && actual.CriticalReads.SequenceEqual(expected.CriticalReads);
+            && actual.CriticalReads.SequenceEqual(expected.CriticalReads)
+            && actual.Sequences.SequenceEqual(expected.Sequences);
+    }
+
+    private static void ValidateLock(ArtifactTrustLock artifactLock)
+    {
+        var issue = ArtifactTrustLockValidator.Validate(artifactLock);
+        if (issue is not null)
+        {
+            throw new InvalidOperationException($"Recovery artifact lock is invalid: {issue}");
+        }
     }
 
     private static void VerifyBackupIntegrity(
@@ -210,6 +322,15 @@ internal static class FullCanonicalRecoveryRehearsal
         return value.Length == 64
             && value.All(character => character is >= '0' and <= '9' || character is >= 'a' and <= 'f');
     }
+
+    private sealed record FullCanonicalRecoveredContent(
+        string Id,
+        string ImmutableStorageId,
+        IReadOnlyList<ArtifactManifestTable> Tables,
+        IReadOnlyList<FullCanonicalSentinelResult> Sentinels,
+        IReadOnlyList<LockedArtifactFile> StagedFiles,
+        IReadOnlyList<ArtifactSource> Sources,
+        IReadOnlyList<FullCanonicalCriticalRead> CriticalReads);
 }
 
 internal interface IFullCanonicalRecoveryDatabase : IFullCanonicalArtifactDatabase
@@ -218,13 +339,25 @@ internal interface IFullCanonicalRecoveryDatabase : IFullCanonicalArtifactDataba
 
     Task AssertDisposableRecoveryTargetAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<FullCanonicalSequenceReconciliation>> ReconcileOwnedSequencesAsync(
+        IReadOnlyList<string> tables,
+        IReadOnlyList<ArtifactOwnedSequence> ownedSequences,
+        CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<FullCanonicalSequenceState>> ReadSequenceStatesAsync(
+        IReadOnlyList<string> tables,
+        IReadOnlyList<ArtifactOwnedSequence> ownedSequences,
+        CancellationToken cancellationToken = default);
+
     Task CreateBackupAsync(
         IReadOnlyList<string> tables,
+        IReadOnlyList<string> sequences,
         string backupPath,
         CancellationToken cancellationToken = default);
 
     Task RestoreBackupAsync(
         IReadOnlyList<string> tables,
+        IReadOnlyList<string> sequences,
         string backupPath,
         CancellationToken cancellationToken = default);
 
@@ -238,6 +371,9 @@ internal sealed record FullCanonicalRecoveryBackup(
     long Size,
     string Sha256,
     ArtifactMigrationState RepositoryMigration,
+    IReadOnlyList<string> Tables,
+    IReadOnlyList<ArtifactOwnedSequence> OwnedSequences,
+    IReadOnlyList<FullCanonicalSequenceReconciliation> SequenceReconciliations,
     IReadOnlyList<FullCanonicalRecoveredArtifact> Artifacts);
 
 internal sealed record FullCanonicalRecoveredArtifact(
@@ -247,9 +383,25 @@ internal sealed record FullCanonicalRecoveredArtifact(
     IReadOnlyList<FullCanonicalSentinelResult> Sentinels,
     IReadOnlyList<LockedArtifactFile> StagedFiles,
     IReadOnlyList<ArtifactSource> Sources,
-    IReadOnlyList<FullCanonicalCriticalRead> CriticalReads);
+    IReadOnlyList<FullCanonicalCriticalRead> CriticalReads,
+    IReadOnlyList<FullCanonicalSequenceState> Sequences);
 
 internal sealed record FullCanonicalCriticalRead(string Id, string Sha256);
+
+internal sealed record FullCanonicalSequenceState(
+    ArtifactOwnedSequence Ownership,
+    long? HighWaterMark,
+    long LastValue,
+    bool IsCalled,
+    long IncrementBy,
+    long NextValue)
+{
+    internal string Name => Ownership.Name;
+}
+
+internal sealed record FullCanonicalSequenceReconciliation(
+    FullCanonicalSequenceState Original,
+    FullCanonicalSequenceState Reconciled);
 
 internal sealed record FullCanonicalRecoveryReceipt(
     string Status,

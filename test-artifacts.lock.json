@@ -268,6 +268,26 @@
         "linking": false,
         "tables": [
           "quran_ayahs", "quran_full_i3rab_ayah_entries", "quran_full_i3rab_entries", "quran_full_i3rab_sources", "quran_hizbs", "quran_i3rab_rules", "quran_juzs", "quran_lemma_analyses", "quran_lemmas", "quran_mushaf_lines", "quran_mushaf_pages", "quran_mutashabihat_groups", "quran_mutashabihat_occurrences", "quran_pos_tags", "quran_roots", "quran_rubs", "quran_sajdas", "quran_similar_ayah_links", "quran_stems", "quran_surahs", "quran_tafsir_ayah_entries", "quran_tafsir_entries", "quran_tafsir_sources", "quran_translation_ayah_entries", "quran_translation_sources", "quran_word_morphology", "quran_word_morphology_segments", "quran_words", "quran_words_ordered_simple", "quran_words_ordered_tashkeel", "quran_words_unique_simple", "quran_words_unique_tashkeel"
+        ],
+        "ownedSequences": [
+          { "name": "quran_full_i3rab_ayah_entries_id_seq", "table": "quran_full_i3rab_ayah_entries", "column": "id" },
+          { "name": "quran_full_i3rab_entries_id_seq", "table": "quran_full_i3rab_entries", "column": "id" },
+          { "name": "quran_full_i3rab_sources_id_seq", "table": "quran_full_i3rab_sources", "column": "id" },
+          { "name": "quran_i3rab_rules_id_seq", "table": "quran_i3rab_rules", "column": "id" },
+          { "name": "quran_lemma_analyses_id_seq", "table": "quran_lemma_analyses", "column": "id" },
+          { "name": "quran_lemmas_id_seq", "table": "quran_lemmas", "column": "id" },
+          { "name": "quran_mushaf_lines_id_seq", "table": "quran_mushaf_lines", "column": "id" },
+          { "name": "quran_mutashabihat_groups_id_seq", "table": "quran_mutashabihat_groups", "column": "id" },
+          { "name": "quran_mutashabihat_occurrences_id_seq", "table": "quran_mutashabihat_occurrences", "column": "id" },
+          { "name": "quran_roots_id_seq", "table": "quran_roots", "column": "id" },
+          { "name": "quran_similar_ayah_links_id_seq", "table": "quran_similar_ayah_links", "column": "id" },
+          { "name": "quran_stems_id_seq", "table": "quran_stems", "column": "id" },
+          { "name": "quran_tafsir_ayah_entries_id_seq", "table": "quran_tafsir_ayah_entries", "column": "id" },
+          { "name": "quran_tafsir_entries_id_seq", "table": "quran_tafsir_entries", "column": "id" },
+          { "name": "quran_tafsir_sources_id_seq", "table": "quran_tafsir_sources", "column": "id" },
+          { "name": "quran_translation_ayah_entries_id_seq", "table": "quran_translation_ayah_entries", "column": "id" },
+          { "name": "quran_translation_sources_id_seq", "table": "quran_translation_sources", "column": "id" },
+          { "name": "quran_word_morphology_segments_id_seq", "table": "quran_word_morphology_segments", "column": "id" }
         ]
       },
       "tableCounts": [
@@ -306,7 +326,7 @@
         "kind": "full-canonical",
         "order": 1,
         "sentinelTables": [
-          { "id": "quran-canonical.ayahs-count", "table": "quran_ayahs", "expectedCount": 6236 }
+          { "id": "quran-canonical.ayahs-count", "table": "quran_ayahs", "expectedCount": 6236, "criticalReadSha256": "3bd86e744827b2f7b7121d89c6f3dd6fe943b4e5b30e4118f7e8a0e9cdd2ece8" }
         ]
       }
     }

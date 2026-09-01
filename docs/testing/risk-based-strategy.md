@@ -523,7 +523,10 @@ PostgreSQL 18 target, applies the actual historical five-migration chain, restor
 Quran-only data-only artifact, applies migration six, boots the application, and reruns canonical and
 critical sentinels. The supplemental historical reference is never relabeled as the previous release.
 Forward-only recovery is proven through verified backup/restore rather than requiring a potentially unsafe
-`Down` implementation.
+`Down` implementation. The active recovery lane accepts only the lock-pinned local artifact and two
+separate digest-pinned disposable PostgreSQL 18 instances. Before backup it transactionally reconciles
+only lock-declared owned sequences in the disposable source, retaining original and reconciled high-water
+evidence; the isolated target must reproduce all counts, critical reads, and safe next-sequence values.
 
 Dependency advisories run when lockfiles change, on schedule, and before release. Confirmed high or
 critical production exposure blocks. An unreachable or development-only advisory requires analysis

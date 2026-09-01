@@ -217,6 +217,29 @@
                 "type": "string",
                 "pattern": "^[a-z][a-z0-9_]{0,62}$"
               }
+            },
+            "ownedSequences": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "table", "column"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                  },
+                  "table": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                  },
+                  "column": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9_]{0,62}$"
+                  }
+                }
+              }
             }
           }
         },
@@ -328,7 +351,7 @@
           "items": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["id", "table", "expectedCount"],
+            "required": ["id", "table", "expectedCount", "criticalReadSha256"],
             "properties": {
               "id": {
                 "$ref": "#/$defs/token"
