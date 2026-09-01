@@ -131,7 +131,7 @@ if (errors.length === 0) {
       },
       {
         id: 'phrase-search',
-        blocking: false,
+        blocking: true,
         journeys: [
           'phrase-search.available-add-to-workspace',
           'phrase-search.unavailable-stale',
@@ -143,7 +143,7 @@ if (errors.length === 0) {
         journeys: ['abwab.inclusion-projection'],
       },
     ]),
-    'Only Quran fidelity, sessions/Permissions, and Linking must be blocking after pilot #104.',
+    'Only Quran fidelity, sessions/Permissions, Linking, and PhraseSearch must be blocking after pilot #105.',
   );
 
   verifyObservationFailureContract();

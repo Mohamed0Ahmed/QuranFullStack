@@ -170,7 +170,7 @@
           },
           {
             "id": "phrase-search",
-            "blocking": false,
+            "blocking": true,
             "journeys": [
               "phrase-search.available-add-to-workspace",
               "phrase-search.unavailable-stale"

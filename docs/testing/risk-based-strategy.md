@@ -435,7 +435,7 @@ Current activation state:
 | Quran fidelity | Blocking | #102 accepted 20/20 first-attempt full-catalogue passes, five fresh isolated provisioning/cache runs, job p95 544,813 ms, job maximum 560,318 ms, and 40/40 Quran journey passes. |
 | Sessions and Permissions | Blocking | #103 shares the approved 20/20 full-catalogue first-attempt window, with 40/40 session/Permission journey passes, group p95 28,367 ms, and group maximum 29,345 ms. |
 | Linking | Blocking | #104 shares the approved 20/20 full-catalogue first-attempt window, with 40/40 Linking journey passes, group p95 24,032 ms, and group maximum 24,383 ms. |
-| PhraseSearch | Observation | Awaiting its own ordered activation work. |
+| PhraseSearch | Blocking | #105 accepted 20/20 first-attempt full-catalogue passes, five cold provisioning/cache runs, job p95 542,083 ms, job maximum 642,868 ms, and 40/40 PhraseSearch journey passes with group p95 14,274 ms and maximum 14,735 ms. |
 | Abwab projection | Observation | Awaiting its own ordered activation work. |
 
 Every critical run continues to emit separate status and timing evidence for all five groups. Every

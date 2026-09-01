@@ -30,9 +30,9 @@ remain observation-only. The critical Chromium job is now mixed-policy: it still
 nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
 group independently. Quran fidelity is blocking after its accepted #102 pilot, and sessions/Permissions
 is blocking after the accepted shared #103 pilot. Linking is blocking after the accepted shared #104
-pilot. PhraseSearch and Abwab projection remain observation-only. A failure in an observation group does
-not hide or rewrite the failed catalogue status, but it does not fail the provider gate when every
-blocking group passed.
+pilot. PhraseSearch is blocking after the accepted shared #105 pilot. Abwab projection remains
+observation-only. A failure in an observation group does not hide or rewrite the failed catalogue
+status, but it does not fail the provider gate when every blocking group passed.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
 `enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must
@@ -63,6 +63,15 @@ without depending on Quran's activation decision.
 group maximum was 24,383 ms and nearest-rank p95 was 24,032 ms. The shared job maximum and p95 remain
 560,318 ms and 544,813 ms respectively, so Linking is now blocking without depending on either earlier
 journey-group activation decision.
+
+#105 uses one owner-approved 20-run full-catalogue window at commit
+`38abe5bd345888a28dcc7b95e89a602a9aa422e0`, including five initially empty provisioning/cache roots.
+All 20 qualifying runs passed on their first attempt with no retry, each finished below 12 minutes, and
+the shared job maximum and nearest-rank p95 were 642,868 ms and 542,083 ms. Both PhraseSearch journeys
+passed 40/40; their per-run group maximum was 14,735 ms and nearest-rank p95 was 14,274 ms. The failed
+Docker-registry attempt 11 and operator-aborted attempt 12 remain recorded and uncounted rather than
+being retried or relabeled as qualifying passes. PhraseSearch is now blocking while Abwab remains
+independently observable for #106.
 
 Monitoring remains active because the full catalogue and per-group timing evidence continue on every
 run. Any emergency downgrade still requires the issue, owner, maintainer approval, rationale, affected
