@@ -148,11 +148,15 @@ public sealed class TestGateCatalogTests
         var tierB = TestGateCatalog.SelectPrimaryGate("TierB").ToHashSet(StringComparer.Ordinal);
         var pipeline = TestGateCatalog.SelectPrimaryGate("Pipeline").ToHashSet(StringComparer.Ordinal);
         var smoke = TestGateCatalog.SelectPrimaryGate("Smoke").ToHashSet(StringComparer.Ordinal);
+        var release = TestGateCatalog.SelectPrimaryGate("Release").ToHashSet(StringComparer.Ordinal);
 
         tierB.Should().NotIntersectWith(pipeline);
         tierB.Should().NotIntersectWith(smoke);
+        tierB.Should().NotIntersectWith(release);
         pipeline.Should().NotIntersectWith(smoke);
-        tierB.Concat(pipeline).Concat(smoke)
+        pipeline.Should().NotIntersectWith(release);
+        smoke.Should().NotIntersectWith(release);
+        tierB.Concat(pipeline).Concat(smoke).Concat(release)
             .Should()
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
     }
@@ -197,7 +201,8 @@ public sealed class TestGateCatalogTests
     {
         var laneClasses = lane == "canonical-data"
             ? TestGateCatalog.SelectKind("Canonical")
-            : TestGateCatalog.SelectFullBackend();
+            : TestGateCatalog.SelectFullBackend()
+                .Where(className => TestGateCatalog.GateEntries.Single(entry => entry.ClassName == className).Kind != "Release");
 
         var shards = TestGateCatalog.ShardByPostgreSqlOwnership(laneClasses);
 

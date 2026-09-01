@@ -54,14 +54,30 @@ attestation, not a network control. It rechecks the receipt, trust contract, pin
 migration, table counts, and reviewed sentinels against the already restored shared state. It never uses
 an ambient developer, shared, staging, or production database as a fallback.
 
-`previous-release-upgrade` is currently a read-only fail-closed adoption gate. It verifies the tracked
-declaration at `docs/testing/previous-release-migration-upgrade.json` and reports the exact missing
-evidence before a PostgreSQL target can be selected or mutated. The repository has no authoritative
-previous release ref/tag and no approved representative prior-schema artifact: the current compact
-artifacts both declare the repository's current migration head. Do not replace that blocker with a
-guessed migration ID, a developer database, or a production-derived dump. Adoption must bind an
-authoritative released head and a reviewed, credential-free representative artifact before the
-scheduled/release disposable upgrade rehearsal can be enabled.
+`previous-release-upgrade` is the read-only adoption verifier. Before any rehearsal target is created or
+selected, it validates the strict declaration at `docs/testing/previous-release-migration-upgrade.json`,
+both local Git commit objects and migration inventories, the current inventory, and the lock-pinned
+`quran-canonical` identity, scope, counts, and hashes. It performs no network lookup and never opens a
+database. The authoritative previous release is `df07306b5a5ebe08ff205c0d2f6cd5a10af87f2d` (Production
+deployment `6158870536`, successful status `17506058851`): its six-migration head is the current head,
+so its forward delta is honestly empty. `08b161f4f41c390c8332cd1842e3bdec6c03e322` is only supplemental
+historical five-to-six rehearsal evidence (deployment `6074244346`, status `17279084675`); it is never
+relabeled as the previous release.
+
+Run the actual supplemental rehearsal only in a scheduled or release job:
+
+```bash
+QURAN_DASHBOARD_ARTIFACT_EXECUTION=release \
+QURAN_TEST_ARTIFACT_ROOT=/private/qdb-artifacts \
+Backend/scripts/test-backend previous-release-upgrade --build
+```
+
+The test verifies adoption before leasing an exclusive private `postgres:18-alpine` target, applies the
+current chain through migration five, resolves `quran-canonical` only beneath
+`$QURAN_TEST_ARTIFACT_ROOT/sha256/<payload-sha256>/`, restores and counts all locked Quran tables, applies
+the forward migration to six, boots the real API, and verifies a canonical read plus unavailable
+PhraseSearch state. It writes a sanitized JSON phase receipt (heads, artifact hashes, phase status, and
+timings only) outside the worktree; no connection string, password, dump, or raw URL is retained.
 
 ## Recovery rehearsal
 

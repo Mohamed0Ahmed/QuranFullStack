@@ -4,24 +4,24 @@
   "title": "Quran Dashboard previous-release migration upgrade adoption",
   "type": "object",
   "additionalProperties": false,
-  "required": ["$schema", "contractVersion", "status", "blockers"],
+  "required": ["$schema", "contractVersion", "status", "authoritativePreviousRelease", "supplementalRehearsalBaseline", "artifact", "expectations"],
   "properties": {
-    "$schema": {
-      "const": "docs/testing/previous-release-migration-upgrade.schema.json"
-    },
-    "contractVersion": { "const": 1 },
-    "status": { "const": "blocked" },
-    "blockers": {
-      "type": "array",
-      "minItems": 2,
-      "uniqueItems": true,
-      "items": {
-        "type": "string",
-        "enum": [
-          "authoritative-previous-release-ref",
-          "approved-prior-schema-representative-artifact"
-        ]
-      }
-    }
+    "$schema": { "const": "docs/testing/previous-release-migration-upgrade.schema.json" },
+    "contractVersion": { "const": 2 },
+    "status": { "const": "adopted" },
+    "authoritativePreviousRelease": { "$ref": "#/$defs/release" },
+    "supplementalRehearsalBaseline": { "$ref": "#/$defs/release" },
+    "artifact": { "$ref": "#/$defs/artifact" },
+    "expectations": { "$ref": "#/$defs/expectations" }
+  },
+  "$defs": {
+    "release": { "type": "object", "additionalProperties": false, "required": ["sha", "role", "deployment", "migration"], "properties": { "sha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }, "role": { "type": "string" }, "deployment": { "$ref": "#/$defs/deployment" }, "migration": { "$ref": "#/$defs/migration" } } },
+    "deployment": { "type": "object", "additionalProperties": false, "required": ["id", "statusId", "state", "completedAtUtc"], "properties": { "id": { "type": "string", "pattern": "^[0-9]+$" }, "statusId": { "type": "string", "pattern": "^[0-9]+$" }, "state": { "const": "success" }, "completedAtUtc": { "type": "string", "format": "date-time" } } },
+    "migration": { "type": "object", "additionalProperties": false, "required": ["head", "count", "inventory"], "properties": { "head": { "type": "string", "pattern": "^[0-9]{14}_[A-Za-z0-9]+$" }, "count": { "type": "integer", "minimum": 1 }, "inventory": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[0-9]{14}_[A-Za-z0-9]+$" } } } },
+    "artifact": { "type": "object", "additionalProperties": false, "required": ["id", "payloadSha256", "payloadSize", "manifestSha256", "manifestSize", "migration", "tableScope", "tableCounts"], "properties": { "id": { "const": "quran-canonical" }, "payloadSha256": { "$ref": "#/$defs/sha" }, "payloadSize": { "type": "integer", "minimum": 1 }, "manifestSha256": { "$ref": "#/$defs/sha" }, "manifestSize": { "type": "integer", "minimum": 1 }, "migration": { "$ref": "#/$defs/migration" }, "tableScope": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^quran_[a-z0-9_]+$" } }, "tableCounts": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/tableCount" } } } },
+    "tableCount": { "type": "object", "additionalProperties": false, "required": ["name", "rows"], "properties": { "name": { "type": "string", "pattern": "^quran_[a-z0-9_]+$" }, "rows": { "type": "integer", "minimum": 0 } } },
+    "expectations": { "type": "object", "additionalProperties": false, "required": ["authoritativeForwardMigrationIds", "supplementalForwardMigrationIds", "preUpgradeSentinel", "postUpgradeSentinel", "phraseSearch"], "properties": { "authoritativeForwardMigrationIds": { "type": "array", "maxItems": 0 }, "supplementalForwardMigrationIds": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "type": "string", "pattern": "^[0-9]{14}_[A-Za-z0-9]+$" } }, "preUpgradeSentinel": { "$ref": "#/$defs/sentinel" }, "postUpgradeSentinel": { "$ref": "#/$defs/sentinel" }, "phraseSearch": { "type": "object", "additionalProperties": false, "required": ["stateTable", "expectedRows", "activeBuild"], "properties": { "stateTable": { "const": "quran_phrase_index_state" }, "expectedRows": { "const": 1 }, "activeBuild": { "const": "none" } } } } },
+    "sentinel": { "type": "object", "additionalProperties": false, "required": ["table", "expectedCount"], "properties": { "table": { "const": "quran_ayahs" }, "expectedCount": { "const": 6236 } } },
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
   }
 }

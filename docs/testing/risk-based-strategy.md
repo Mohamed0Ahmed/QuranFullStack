@@ -432,7 +432,7 @@ blocking independently. The four-job matrix is fully adopted only after all five
 | --- | --- |
 | Nightly | Full Chromium Playwright suite, designated mobile variants, PhraseSearch build/activation, destructive importer/restore tests, artifact verification, accessibility scans, and non-blocking browser timing |
 | Weekly and lockfile changes | Risk-based NuGet/npm advisory evaluation |
-| Release candidate | Previous-release migration upgrade, isolated staging critical journeys, real Logto sentinel, complete artifact verification, and manual release charter |
+| Release candidate | Active previous-release migration upgrade rehearsal, isolated staging critical journeys, real Logto sentinel, complete artifact verification, and manual release charter |
 | Post-deploy | Read-only production smoke against declared environment expectations |
 
 Do not repeat work merely to fill a lane. A scheduled or release run provisions each required large
@@ -488,10 +488,14 @@ The operational P0 track runs in parallel with the journey roadmap:
 - Previous-release database upgrade testing.
 - Verified backup/restore rehearsal.
 
-A schema release restores the previous released database shape and representative data, applies
-migrations forward, boots the application, and reruns canonical and critical sentinels. Forward-only
-recovery is proven through verified backup/restore rather than requiring a potentially unsafe `Down`
-implementation.
+A schema release verifies the authoritative previous-release declaration and local Git inventory before
+any target is selected. The current authoritative reference has the same six-migration head as this branch,
+so its forward delta is recorded as empty. The active supplemental five-to-six rehearsal creates a private
+PostgreSQL 18 target, applies the actual historical five-migration chain, restores the lock-pinned
+Quran-only data-only artifact, applies migration six, boots the application, and reruns canonical and
+critical sentinels. The supplemental historical reference is never relabeled as the previous release.
+Forward-only recovery is proven through verified backup/restore rather than requiring a potentially unsafe
+`Down` implementation.
 
 Dependency advisories run when lockfiles change, on schedule, and before release. Confirmed high or
 critical production exposure blocks. An unreachable or development-only advisory requires analysis
