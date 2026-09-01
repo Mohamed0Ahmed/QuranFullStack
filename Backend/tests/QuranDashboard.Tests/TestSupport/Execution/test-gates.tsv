@@ -130,6 +130,7 @@ QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	F
 QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
 QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
 QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeTests	ApiBehavior	Fast	TierB	Cli,Execution,Schema
+QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests	ApiBehavior	Release	Release	Cli,Execution,Schema
 QuranDashboard.Tests.TestSupport.DependencyInjection.OwnedServiceProviderRegistryTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.Execution.TestGateCatalogTests	ApiBehavior	Fast	TierB	Execution
 QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlDatabaseSlotContractTests	ApiBehavior	Database	TierB	Execution

@@ -29,7 +29,7 @@ SHARD_HANDOVER_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade
     --build|--no-build [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
@@ -72,7 +72,7 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|feature|pipeline|pre-pr)
+  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|previous-release-upgrade|feature|pipeline|pre-pr)
     ;;
   *)
     fail_usage "Unknown lane: ${lane}"
@@ -191,6 +191,7 @@ declare -a selected_features=()
 declare -a selected_kinds=()
 declare -a selected_gates=()
 declare -a selected_concerns=()
+declare -a release_classes=()
 
 add_selected_row() {
   selected_classes+=("$1")
@@ -210,6 +211,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
   [[ -n "${class_name}" ]] || continue
 
   [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_class_cataloged=true
+  [[ "${kind}" == "Release" ]] && release_classes+=("${class_name}")
 
   if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
     feature_exists=true
@@ -247,7 +249,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       [[ "${gate}" == "TierB" && -z "${concerns}" ]] && selected=true
       ;;
     gate-contract)
-      [[ -n "${concerns}" ]] && selected=true
+      [[ "${kind}" != "Release" && -n "${concerns}" ]] && selected=true
       ;;
     canonical-data)
       [[ "${kind}" == "Canonical" ]] && selected=true
@@ -255,12 +257,15 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
     full-canonical)
       [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests ]] && selected=true
       ;;
+    previous-release-upgrade)
+      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests ]] && selected=true
+      ;;
     feature)
-      if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
+      if [[ "${kind}" != "Release" && -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
         selected=true
-      elif [[ -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
+      elif [[ "${kind}" != "Release" && -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
         selected=true
-      elif [[ -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
+      elif [[ "${kind}" != "Release" && -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
         selected=true
       fi
       ;;
@@ -271,7 +276,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       fi
       ;;
     pre-pr)
-      selected=true
+      [[ "${kind}" != "Release" ]] && selected=true
       ;;
   esac
 
@@ -385,6 +390,10 @@ fi
 filter=""
 if [[ -n "${test_selector}" ]]; then
   filter="FullyQualifiedName=${test_selector}"
+elif [[ "${lane}" == "pre-pr" ]]; then
+  for class_name in "${release_classes[@]}"; do
+    filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
+  done
 elif [[ "${lane}" != "pre-pr" ]]; then
   for class_name in "${selected_classes[@]}"; do
     term="(FullyQualifiedName~${class_name}.)"
@@ -405,9 +414,12 @@ declare -a shard_filters=()
 if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selected_classes[@]}" -gt 1 ]]; then
   shared_filter=""
   if [[ "${lane}" == "pre-pr" ]]; then
-    # A negative term rather than an enumeration: the Full Backend gate discovers its own classes, so a
-    # class added without a catalog row still runs here and still fails TestGateCatalogTests.
+    # Negative terms retain the Full Backend gate's discovery of uncataloged non-release classes while
+    # ensuring a cataloged scheduled/release-only class cannot enter the ordinary PR execution path.
     shared_filter="FullyQualifiedName!~${EXCLUSIVE_POSTGRES_CLASS}."
+    for class_name in "${release_classes[@]}"; do
+      shared_filter+="&FullyQualifiedName!~${class_name}."
+    done
   else
     for class_name in "${selected_classes[@]}"; do
       [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && continue
@@ -460,7 +472,7 @@ if [[ "${#resource_kinds[@]}" -eq 0 ]]; then
   echo "resource needs: none"
 else
   resource_summary=""
-  for kind in Database Migration Process Canonical; do
+  for kind in Database Migration Process Canonical Release; do
     if [[ -n "${resource_kinds[${kind}]:-}" ]]; then
       resource_summary="${resource_summary:+${resource_summary},}${kind}"
     fi
@@ -608,6 +620,18 @@ elif [[ "${list_tests}" == true && "${canonical_selected}" == true ]]; then
   echo "canonical data tier: discovery only"
 else
   echo "canonical data tier: not selected"
+fi
+
+if [[ "${lane}" == "previous-release-upgrade" && "${list_tests}" == false ]]; then
+  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
+    echo "ERROR: previous-release-upgrade requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+    exit 1
+  fi
+  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+    echo "ERROR: previous-release-upgrade requires QURAN_TEST_ARTIFACT_ROOT." >&2
+    exit 1
+  fi
+  export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
 fi
 
 verbosity="normal"

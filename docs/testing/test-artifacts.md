@@ -1,7 +1,7 @@
 # Test Artifact Contract
 
 **Status:** Accepted design; compact artifacts and the approved full-canonical Quran-only artifact are
-locked. Full-canonical execution is Local-first and fail-closed.
+locked. Full-canonical execution and the previous-release upgrade rehearsal are Local-first and fail-closed.
 
 **Decision date:** 2026-08-30
 
@@ -52,11 +52,17 @@ hash verification, producer-major compatibility, and restored row-count validati
 - Historical provenance is limited: the current manifest has no source-package hashes and no remote
   immutable-storage ID. The local content-addressed dump identity is the trusted-runner boundary for now;
   unavailable source-package hashes remain explicitly unavailable rather than being reconstructed.
-- Previous-release upgrade rehearsal is also intentionally blocked. Local history has no authoritative
-  release tag/ref for a prior migration head, and no approved representative artifact produced at a
-  prior schema. `previous-release-migration-upgrade.json` names both blockers; the read-only
-  `test-artifacts previous-release-upgrade` gate refuses before target selection or mutation. The locked
-  compact artifacts are current-head fixtures, not evidence of an earlier release.
+- Previous-release upgrade rehearsal is active in the explicit scheduled/release Backend lane. Its adopted
+  declaration verifies local Git evidence before target selection: authoritative previous release
+  `df07306b5a5ebe08ff205c0d2f6cd5a10af87f2d` is the successful Production deployment `6158870536` / status
+  `17506058851`, with the same six-migration head as this branch and therefore zero forward migrations.
+  Supplemental commit `08b161f4f41c390c8332cd1842e3bdec6c03e322` is successful Production deployment
+  `6074244346` / status `17279084675` with five migrations; it is historical five-to-six rehearsal evidence,
+  not the authoritative previous release. The lane creates a private disposable PostgreSQL 18 target,
+  restores the current-head Quran-only `quran-canonical` payload into the historical five-migration schema,
+  proves all 32 locked counts, advances through migration six, boots the API, and checks canonical and
+  unavailable-PhraseSearch sentinels. This restore compatibility proof does not claim the artifact was
+  produced at schema five.
 - A direct focused test can skip when an artifact is absent; the supported Backend `pre-pr` wrapper
   instead fails its canonical preflight.
 - The Frontend harness now consumes the locked compact cross-stack artifact by default; its former
