@@ -12,7 +12,7 @@ import {
   readExternalEvidence,
   validatePrimaryEvidence,
 } from './release-candidate-contract.mjs';
-import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, runDetachedCommand, runReleaseCandidateCommands, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
+import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, isolatedTemporaryEnvironment, runDetachedCommand, runReleaseCandidateCommands, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = resolve(REPOSITORY_ROOT, 'release-candidate-lane.json');
@@ -159,6 +159,7 @@ function printUsage() {
 
 function commandEnvironment(command, executionHome, runId) {
   const environment = {
+    ...isolatedTemporaryEnvironment(executionHome),
     HOME: executionHome,
     PATH: process.env.PATH ?? '',
     DOTNET_CLI_HOME: resolve(executionHome, 'dotnet'),

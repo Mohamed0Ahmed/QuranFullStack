@@ -31,6 +31,15 @@ export function validateResultsLocation({ repositoryRoot, resultsDirectory }) {
     : { status: 'passed' };
 }
 
+export function isolatedTemporaryEnvironment(executionHome) {
+  const temporaryDirectory = resolve(executionHome);
+  return {
+    TMPDIR: temporaryDirectory,
+    TMP: temporaryDirectory,
+    TEMP: temporaryDirectory,
+  };
+}
+
 export function validateCheckoutState({ candidate, head, porcelain }) {
   if (!/^[a-f0-9]{40}$/.test(candidate) || head !== candidate) return { status: 'failed', reason: 'candidate-head-changed' };
   return porcelain === '' ? { status: 'passed' } : { status: 'failed', reason: 'candidate-worktree-dirty' };

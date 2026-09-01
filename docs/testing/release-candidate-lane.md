@@ -5,13 +5,15 @@ provider-neutral release-candidate gate. They do not schedule work, configure a 
 staging environment, or configure a Logto tenant.
 
 An authorized release operator supplies a lock-pinned local artifact root, a new local results
-directory outside the candidate repository, and a directory containing only the three sanitized
-attestation documents below. Keeping results outside the checkout lets the runner prove that the
-candidate stays clean before and after execution. The runner does not print those locations or their
-contents.
+directory outside the candidate repository, a capacity-backed `TMPDIR` outside the candidate
+repository, and a directory containing only the three sanitized attestation documents below. Keeping
+results and temporary database/recovery files outside the checkout lets the runner prove that the
+candidate stays clean before and after execution. The runner creates a private execution home beneath
+`TMPDIR`, propagates it as `TMPDIR`, `TMP`, and `TEMP` to every child, and removes it when execution
+finishes. The runner does not print those locations or their contents.
 
 ```bash
-node scripts/run-release-candidate-lane.mjs \
+TMPDIR=<capacity-backed-local-temp-root> node scripts/run-release-candidate-lane.mjs \
   --artifact-root <authorized-local-artifact-root> \
   --external-evidence-dir <sanitized-owner-attestations> \
   --results-dir <new-local-results-directory> \

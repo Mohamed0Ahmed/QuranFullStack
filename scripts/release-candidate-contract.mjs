@@ -261,7 +261,7 @@ function validateAdvisoryEvidence(resultsDirectory) {
     && Array.isArray(evaluation.findings) && evaluation.summary.total === evaluation.findings.length && evaluation.summary.blocking === 0
     && Array.isArray(evaluation.blockingFindings) && evaluation.blockingFindings.length === 0
     && Array.isArray(evaluation.expiredWaivers) && evaluation.expiredWaivers.length === 0
-    && Array.isArray(evaluation.scanErrors) && evaluation.scanErrors.length === 0
+    && evaluation.scanErrors === null
     ? { status: 'passed', checkId: 'release-advisory-evaluation-validated' }
     : { status: 'failed', checkId: 'release-advisory-evaluation-missing-or-invalid' };
 }

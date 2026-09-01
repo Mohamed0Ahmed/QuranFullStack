@@ -12,7 +12,7 @@ import {
   resolveAuthoritativePins,
   validatePrimaryEvidence,
 } from './release-candidate-contract.mjs';
-import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
+import { classifyReleaseCandidate, createCancellationController, createReleaseCandidateFinalizer, isolatedTemporaryEnvironment, validateCheckoutState, validateResultsLocation } from './release-candidate-orchestration.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const manifest = loadReleaseCandidateManifest(resolve(REPOSITORY_ROOT, 'release-candidate-lane.json'), REPOSITORY_ROOT);
@@ -117,6 +117,11 @@ assert.equal(validateCheckoutState({ candidate, head: 'fedcba9876543210fedcba987
 assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(REPOSITORY_ROOT, 'results') }).reason, 'results-directory-inside-candidate');
 assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(REPOSITORY_ROOT, '..results') }).reason, 'results-directory-inside-candidate');
 assert.equal(validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: resolve(tmpdir(), 'qdb-release-results') }).status, 'passed');
+assert.deepEqual(isolatedTemporaryEnvironment(resolve(tmpdir(), 'qdb-release-home')), {
+  TMPDIR: resolve(tmpdir(), 'qdb-release-home'),
+  TMP: resolve(tmpdir(), 'qdb-release-home'),
+  TEMP: resolve(tmpdir(), 'qdb-release-home'),
+});
 const lateCancellation = createCancellationController();
 lateCancellation.cancel('SIGTERM');
 assert.equal(classifyReleaseCandidate({ primary: [{ status: 'passed' }], externalEvidence: { status: 'passed' }, cancellation: lateCancellation }), 'cancelled');
@@ -247,8 +252,11 @@ function verifyPrimaryEvidenceFixtures(authority) {
     }
 
     rmSync(directory, { force: true, recursive: true }); mkdirSync(directory);
-    writeFileSync(resolve(directory, 'evaluation.json'), JSON.stringify({ schemaVersion: 1, policyId: 'dependency-advisory-evaluation', trigger: 'release', evaluatedAt: '2026-09-01T00:00:00.000Z', status: 'passed', summary: { total: 0, production: 0, development: 0, highCriticalProduction: 0, blocking: 0 }, findings: [], blockingFindings: [], expiredWaivers: [], scanErrors: [] }));
+    const advisory = { schemaVersion: 1, policyId: 'dependency-advisory-evaluation', trigger: 'release', evaluatedAt: '2026-09-01T00:00:00.000Z', status: 'passed', summary: { total: 0, production: 0, development: 0, highCriticalProduction: 0, blocking: 0 }, findings: [], blockingFindings: [], expiredWaivers: [], scanErrors: null };
+    writeFileSync(resolve(directory, 'evaluation.json'), JSON.stringify(advisory));
     assert.equal(validatePrimaryEvidence('release-dependency-advisory', directory, REPOSITORY_ROOT).status, 'passed');
+    writeFileSync(resolve(directory, 'evaluation.json'), JSON.stringify({ ...advisory, scanErrors: [{ commandId: 'synthetic' }] }));
+    assert.equal(validatePrimaryEvidence('release-dependency-advisory', directory, REPOSITORY_ROOT).status, 'failed');
   } finally { rmSync(directory, { force: true, recursive: true }); }
 }
 
