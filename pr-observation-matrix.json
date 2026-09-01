@@ -162,7 +162,7 @@
           },
           {
             "id": "linking",
-            "blocking": false,
+            "blocking": true,
             "journeys": [
               "linking.successful-owner",
               "linking.successful-owner-mobile"

@@ -29,9 +29,10 @@ All four jobs have exactly one attempt. The Backend, contract/model, and Fronten
 remain observation-only. The critical Chromium job is now mixed-policy: it still executes the full
 nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
 group independently. Quran fidelity is blocking after its accepted #102 pilot, and sessions/Permissions
-is blocking after the accepted shared #103 pilot. Linking, PhraseSearch, and Abwab projection remain
-observation-only. A failure in an observation group does not hide or rewrite the failed catalogue status,
-but it does not fail the provider gate when every blocking group passed.
+is blocking after the accepted shared #103 pilot. Linking is blocking after the accepted shared #104
+pilot. PhraseSearch and Abwab projection remain observation-only. A failure in an observation group does
+not hide or rewrite the failed catalogue status, but it does not fail the provider gate when every
+blocking group passed.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
 `enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must
@@ -56,6 +57,12 @@ Both `device-session.lifecycle` and `permission.lifecycle` ran on every executio
 aggregate. Their per-run group maximum was 29,345 ms and nearest-rank p95 was 28,367 ms. The shared job
 maximum and p95 remain 560,318 ms and 544,813 ms respectively, so sessions/Permissions is now blocking
 without depending on Quran's activation decision.
+
+#104 also reuses the same owner-approved window without claiming duplicate runs. Both
+`linking.successful-owner` variants ran on every execution and passed 40/40 in aggregate. Their per-run
+group maximum was 24,383 ms and nearest-rank p95 was 24,032 ms. The shared job maximum and p95 remain
+560,318 ms and 544,813 ms respectively, so Linking is now blocking without depending on either earlier
+journey-group activation decision.
 
 Monitoring remains active because the full catalogue and per-group timing evidence continue on every
 run. Any emergency downgrade still requires the issue, owner, maintainer approval, rationale, affected

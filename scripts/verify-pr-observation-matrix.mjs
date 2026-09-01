@@ -126,7 +126,7 @@ if (errors.length === 0) {
       },
       {
         id: 'linking',
-        blocking: false,
+        blocking: true,
         journeys: ['linking.successful-owner', 'linking.successful-owner-mobile'],
       },
       {
@@ -143,7 +143,7 @@ if (errors.length === 0) {
         journeys: ['abwab.inclusion-projection'],
       },
     ]),
-    'Only Quran fidelity and sessions/Permissions must be blocking after pilot #103.',
+    'Only Quran fidelity, sessions/Permissions, and Linking must be blocking after pilot #104.',
   );
 
   verifyObservationFailureContract();
