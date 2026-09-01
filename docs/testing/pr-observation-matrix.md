@@ -28,10 +28,10 @@ job directory or in their existing harness evidence directory.
 All four jobs have exactly one attempt. The Backend, contract/model, and Frontend policy/build jobs
 remain observation-only. The critical Chromium job is now mixed-policy: it still executes the full
 nine-journey catalogue once, records the full first-attempt result, and evaluates each declared journey
-group independently. Quran fidelity is blocking after its accepted #102 pilot; sessions/Permissions,
-Linking, PhraseSearch, and Abwab projection remain observation-only. A failure in an observation group
-does not hide or rewrite the failed catalogue status, but it does not fail the provider gate when every
-blocking group passed.
+group independently. Quran fidelity is blocking after its accepted #102 pilot, and sessions/Permissions
+is blocking after the accepted shared #103 pilot. Linking, PhraseSearch, and Abwab projection remain
+observation-only. A failure in an observation group does not hide or rewrite the failed catalogue status,
+but it does not fail the provider gate when every blocking group passed.
 
 `job-result.json` therefore keeps `status` and `firstAttemptStatus` for the full catalogue and adds
 `enforcementStatus` plus separate `journeyGroups` timing/status evidence. Every configured journey must
@@ -50,6 +50,12 @@ ms. The two Quran journeys passed 40/40, with group p95 7,783 ms and maximum 8,4
 no remote artifact-fetch cache, so the five cold observations are accurately retained as fresh isolated
 dependency/browser provisioning and committed-artifact verification runs. The earlier failed candidate
 windows remain recorded on #102 and are not relabeled as qualifying evidence.
+
+#103 reuses that same owner-approved 20-run full-catalogue window rather than claiming duplicate runs.
+Both `device-session.lifecycle` and `permission.lifecycle` ran on every execution and passed 40/40 in
+aggregate. Their per-run group maximum was 29,345 ms and nearest-rank p95 was 28,367 ms. The shared job
+maximum and p95 remain 560,318 ms and 544,813 ms respectively, so sessions/Permissions is now blocking
+without depending on Quran's activation decision.
 
 Monitoring remains active because the full catalogue and per-group timing evidence continue on every
 run. Any emergency downgrade still requires the issue, owner, maintainer approval, rationale, affected
