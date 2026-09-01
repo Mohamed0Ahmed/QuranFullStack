@@ -109,8 +109,45 @@ if (errors.length === 0) {
     hasNpmScript(browser, 'e2e:critical'),
     'The critical Chromium job must run sealed critical journeys.',
   );
+  check(
+    JSON.stringify(browser?.policy?.journeyGroups) === JSON.stringify([
+      {
+        id: 'quran-fidelity',
+        blocking: true,
+        journeys: [
+          'quran-fidelity.mushaf-font-rendering',
+          'quran-fidelity.mushaf-mobile',
+        ],
+      },
+      {
+        id: 'sessions-permissions',
+        blocking: false,
+        journeys: ['device-session.lifecycle', 'permission.lifecycle'],
+      },
+      {
+        id: 'linking',
+        blocking: false,
+        journeys: ['linking.successful-owner', 'linking.successful-owner-mobile'],
+      },
+      {
+        id: 'phrase-search',
+        blocking: false,
+        journeys: [
+          'phrase-search.available-add-to-workspace',
+          'phrase-search.unavailable-stale',
+        ],
+      },
+      {
+        id: 'abwab-projection',
+        blocking: false,
+        journeys: ['abwab.inclusion-projection'],
+      },
+    ]),
+    'Only the Quran-fidelity journey group must be blocking after pilot #102.',
+  );
 
   verifyObservationFailureContract();
+  verifyJourneyGroupEnforcementContract();
 }
 
 if (errors.length > 0) {
@@ -204,8 +241,201 @@ function verifyObservationFailureContract() {
       result.commands?.length === 1 && result.commands[0].exitCode === 7,
       'Observation evidence must retain the original command exit code without retry.',
     );
+    let reuseExitCode = 0;
+    try {
+      execFileSync(
+        process.execPath,
+        [
+          RUNNER_PATH,
+          '--matrix',
+          fixturePath,
+          '--job',
+          'failure-probe',
+          '--results-dir',
+          resultsDirectory,
+        ],
+        { cwd: REPOSITORY_ROOT, stdio: 'pipe' },
+      );
+    } catch (error) {
+      reuseExitCode = error.status ?? 1;
+    }
+    check(
+      reuseExitCode === 2,
+      'The runner must refuse a non-empty results directory rather than reuse stale evidence.',
+    );
   } catch (error) {
     errors.push(`Observation runner failure probe failed: ${error.message}`);
+  } finally {
+    rmSync(temporaryRoot, { force: true, recursive: true });
+  }
+}
+
+function verifyJourneyGroupEnforcementContract() {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-pr-journey-enforcement-'));
+  const fixturePath = resolve(temporaryRoot, 'matrix.json');
+  const probePath = resolve(temporaryRoot, 'write-playwright-evidence.mjs');
+  const fixture = {
+    schemaVersion: 1,
+    id: 'journey-enforcement-probe',
+    scheduling: 'parallel',
+    durationScope: 'probe duration with queue time excluded',
+    durationComponents: ['provisioning', 'testExecution'],
+    jobs: [
+      {
+        id: 'critical-probe',
+        title: 'Critical journey probe',
+        policy: {
+          blocking: false,
+          maxAttempts: 1,
+          timeoutSeconds: 5,
+          queueTimeIncluded: false,
+          journeyGroups: [
+            {
+              id: 'quran-fidelity',
+              blocking: true,
+              journeys: ['quran-fidelity.reader'],
+            },
+            {
+              id: 'sessions-permissions',
+              blocking: false,
+              journeys: ['device-session.lifecycle'],
+            },
+          ],
+        },
+        commands: [
+          {
+            id: 'critical-journeys',
+            phase: 'execution',
+            cwd: '.',
+            executable: process.execPath,
+            arguments: [probePath, '{SCENARIO}'],
+          },
+        ],
+      },
+    ],
+  };
+  const probe = `
+import { mkdirSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+const scenario = process.argv[2];
+const evidence = resolve(process.env.QDB_PR_OBSERVATION_RESULT_DIR, 'playwright-evidence', 'probe');
+if (scenario === 'missing-evidence') process.exit(7);
+mkdirSync(evidence, { recursive: true });
+const quranStatus = scenario === 'blocking-failure' ? 'failed' : 'passed';
+const quranRetry = scenario === 'retried-blocker' ? 1 : 0;
+const sessionRetry = scenario === 'retried-observation' ? 1 : 0;
+const tests = [
+  { id: 'quran', journey: 'quran-fidelity.reader', status: quranStatus, durationMs: 5, retry: quranRetry },
+  ...(scenario === 'missing-observation'
+    ? []
+    : [{ id: 'session', journey: 'device-session.lifecycle', status: 'failed', durationMs: 7, retry: sessionRetry }]),
+];
+writeFileSync(resolve(evidence, 'playwright-results.json'), JSON.stringify({
+  schemaVersion: 1,
+  status: 'failed',
+  declaredTestCount: 2,
+  tests,
+}));
+writeFileSync(resolve(evidence, 'structured-results.json'), JSON.stringify({
+  schemaVersion: 1,
+  runId: 'probe',
+  status: 'failed',
+  phases: [
+    { name: 'artifactProvisioning', status: 'passed', durationMs: 1 },
+    { name: 'databasePreparation', status: 'passed', durationMs: 1 },
+    { name: 'applicationStartup', status: 'passed', durationMs: 1 },
+    { name: 'testExecution', status: 'failed', durationMs: 1 },
+  ],
+}));
+writeFileSync(resolve(evidence, 'evidence-manifest.json'), JSON.stringify({
+  schemaVersion: 1,
+  runId: 'probe',
+  status: 'failed',
+  containsDatabaseDump: false,
+  capturesRequestHeaders: false,
+  capturesRequestBodies: false,
+  traceFormat: 'sanitized-step-events-v1',
+  screenshotPolicy: 'text-media-masked-v1',
+  inspection: {
+    status: scenario === 'failed-inspection' ? 'failed' : 'passed',
+    invalidDiagnosticFiles: scenario === 'failed-inspection' ? ['unsafe.txt'] : [],
+    unsafeScreenshot: false,
+  },
+  files: ['evidence-manifest.json', 'playwright-results.json', 'structured-results.json'],
+}));
+process.exit(7);
+`;
+
+  try {
+    writeFileSync(probePath, probe);
+    for (const scenario of [
+      'observation-failure',
+      'blocking-failure',
+      'retried-blocker',
+      'retried-observation',
+      'missing-observation',
+      'failed-inspection',
+      'missing-evidence',
+    ]) {
+      const resultsDirectory = resolve(temporaryRoot, scenario);
+      const scenarioFixture = structuredClone(fixture);
+      scenarioFixture.jobs[0].commands[0].arguments[1] = scenario;
+      writeFileSync(fixturePath, `${JSON.stringify(scenarioFixture, null, 2)}\n`);
+      let exitCode = 0;
+      try {
+        execFileSync(
+          process.execPath,
+          [
+            RUNNER_PATH,
+            '--matrix',
+            fixturePath,
+            '--job',
+            'critical-probe',
+            '--results-dir',
+            resultsDirectory,
+          ],
+          { cwd: REPOSITORY_ROOT, stdio: 'pipe' },
+        );
+      } catch (error) {
+        exitCode = error.status ?? 1;
+      }
+
+      const result = JSON.parse(readFileSync(resolve(resultsDirectory, 'job-result.json'), 'utf8'));
+      const shouldBlock = scenario !== 'observation-failure';
+      check(result.status === 'failed', `${scenario} must retain the failed full-catalogue status.`);
+      check(
+        result.enforcementStatus === (shouldBlock ? 'failed' : 'passed'),
+        `${scenario} must report the blocking journey decision separately.`,
+      );
+      check(
+        exitCode === (shouldBlock ? 1 : 0),
+        `${scenario} must return the blocking journey decision to the provider.`,
+      );
+      check(
+        result.journeyGroups?.find(({ id }) => id === 'quran-fidelity')?.status
+          === (scenario === 'missing-evidence'
+            ? 'not-run'
+            : scenario === 'blocking-failure' || scenario === 'retried-blocker'
+              ? 'failed'
+              : 'passed'),
+        `${scenario} must retain Quran-fidelity group evidence.`,
+      );
+      check(
+        result.journeyGroups?.find(({ id }) => id === 'sessions-permissions')?.status
+          === (scenario === 'missing-evidence' || scenario === 'missing-observation'
+            ? 'not-run'
+            : 'failed'),
+        `${scenario} must retain non-blocking session failure evidence.`,
+      );
+      if (scenario === 'failed-inspection') {
+        check(
+          result.journeyContractErrors?.includes('evidence-inspection-failed'),
+          'A failed sealed-evidence inspection must be retained as the blocking reason.',
+        );
+      }
+    }
+  } catch (error) {
+    errors.push(`Journey-group enforcement probe failed: ${error.message}`);
   } finally {
     rmSync(temporaryRoot, { force: true, recursive: true });
   }

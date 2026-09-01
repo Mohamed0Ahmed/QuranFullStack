@@ -35,8 +35,10 @@ export default class StructuredPlaywrightReporter {
       throw new Error('Each approved diagnostic attachment may appear at most once per test result.');
     }
     const attachments = approved.map((attachment) => this.persistAttachment(test, attachment));
+    const journey = test.annotations?.find((annotation) => annotation.type === 'journey');
     this.tests.push({
       id: test.id,
+      journey: journey?.description ?? null,
       title: test.titlePath().join(' > '),
       file: test.location.file,
       line: test.location.line,
