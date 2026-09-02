@@ -21,7 +21,9 @@ internal static class PhraseSearchContextLinkingSelectionBodyMapper
         out ResolvePhraseContextLinkingSelectionQuery query)
     {
         query = null!;
-        if (body?.AyahIds is null || !TryParseSelectionMode(body.SelectionMode, out var selectionMode))
+        if (body is null
+            || !PhraseLinkingAyahSelectionModeParser.TryParse(body.SelectionMode, out var selectionMode)
+            || !PhraseLinkingAyahSelection.TryCreate(selectionMode, body.AyahIds, out var selection))
         {
             return false;
         }
@@ -32,28 +34,7 @@ internal static class PhraseSearchContextLinkingSelectionBodyMapper
             body.FollowingRef,
             body.PreviousAlternativesRef,
             body.FollowingAlternativesRef,
-            selectionMode,
-            body.AyahIds);
+            selection!);
         return true;
-    }
-
-    private static bool TryParseSelectionMode(
-        string? value,
-        out PhraseContextAyahSelectionMode selectionMode)
-    {
-        selectionMode = default;
-        if (string.Equals(value, "only", StringComparison.Ordinal))
-        {
-            selectionMode = PhraseContextAyahSelectionMode.Only;
-            return true;
-        }
-
-        if (string.Equals(value, "all-except", StringComparison.Ordinal))
-        {
-            selectionMode = PhraseContextAyahSelectionMode.AllExcept;
-            return true;
-        }
-
-        return false;
     }
 }

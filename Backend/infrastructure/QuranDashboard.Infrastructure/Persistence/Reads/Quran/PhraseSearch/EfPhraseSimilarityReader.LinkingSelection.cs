@@ -60,16 +60,9 @@ public sealed partial class EfPhraseSimilarityReader
     public async Task<PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>> GetLinkingSelectionAsync(
         PhraseResolutionReference resolution,
         short minimumMatchedWords,
-        PhraseSimilarityLinkingSelection selection,
+        PhraseLinkingAyahSelection selection,
         CancellationToken cancellationToken)
     {
-        if (!Enum.IsDefined(selection.Mode)
-            || selection.AyahIds.Any(ayahId => ayahId <= 0)
-            || selection.AyahIds.Distinct().Count() != selection.AyahIds.Count)
-        {
-            return new PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>.InvalidSelection();
-        }
-
         await using var snapshot = await PhraseSearchReadSnapshot.OpenAsync(db, cancellationToken);
         if (snapshot is null)
         {
@@ -100,25 +93,8 @@ public sealed partial class EfPhraseSimilarityReader
             minimumMatchedWords,
             manualCandidates,
             cancellationToken);
-        var populationAyahIdSet = populationAyahIds.ToHashSet();
-        var submittedAyahIds = selection.AyahIds.ToHashSet();
-        if (submittedAyahIds.Any(ayahId => !populationAyahIdSet.Contains(ayahId)))
-        {
-            await snapshot.CompleteAsync(cancellationToken);
-            return new PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>.InvalidSelection();
-        }
-
-        var selectedAyahIds = selection.Mode switch
-        {
-            PhraseSimilarityAyahSelectionMode.Only => populationAyahIds
-                .Where(submittedAyahIds.Contains)
-                .ToList(),
-            PhraseSimilarityAyahSelectionMode.AllExcept => populationAyahIds
-                .Where(ayahId => !submittedAyahIds.Contains(ayahId))
-                .ToList(),
-            _ => [],
-        };
-        if (selectedAyahIds.Count == 0)
+        var selectedAyahIds = PhraseLinkingSelectionResolver.ResolveAyahIds(selection, populationAyahIds);
+        if (selectedAyahIds is null)
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>.InvalidSelection();
@@ -268,7 +244,7 @@ public sealed partial class EfPhraseSimilarityReader
         return command;
     }
 
-    private static PhraseSimilarityLinkingSelectionAyahDto CreateSimilarityLinkingAyah(
+    private PhraseSimilarityLinkingSelectionAyahDto CreateSimilarityLinkingAyah(
         SimilarityVariantRow anchor,
         short minimumMatchedWords,
         IReadOnlyList<SimilarityLinkingOccurrenceRow> occurrences,
@@ -300,17 +276,9 @@ public sealed partial class EfPhraseSimilarityReader
             }
         }
 
-        var canonicalWordIds = words
-            .Where(word => selectedWordIds.Contains(word.QuranWordId))
-            .Select(word => word.QuranWordId)
-            .ToList();
-        if (canonicalWordIds.Count == 0
-            || canonicalWordIds.Count != selectedWordIds.Count
-            || canonicalWordIds.Any(wordId => wordId <= 0)
-            || canonicalWordIds.Distinct().Count() != canonicalWordIds.Count)
-        {
-            throw new InvalidDataException("PhraseSearch linking selection contains an invalid Quran word.");
-        }
+        var canonicalWordIds = PhraseLinkingSelectionResolver.OrderSelectedWords(
+            words.Select(word => word.QuranWordId).ToList(),
+            selectedWordIds);
 
         return new PhraseSimilarityLinkingSelectionAyahDto(
             first.AyahId,

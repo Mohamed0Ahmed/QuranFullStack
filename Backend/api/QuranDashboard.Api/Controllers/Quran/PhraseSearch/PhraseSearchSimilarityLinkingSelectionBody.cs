@@ -18,7 +18,9 @@ internal static class PhraseSearchSimilarityLinkingSelectionBodyMapper
         out ResolvePhraseSimilarityLinkingSelectionQuery query)
     {
         query = null!;
-        if (body?.AyahIds is null || !TryParseSelectionMode(body.SelectionMode, out var selectionMode))
+        if (body is null
+            || !PhraseLinkingAyahSelectionModeParser.TryParse(body.SelectionMode, out var selectionMode)
+            || !PhraseLinkingAyahSelection.TryCreate(selectionMode, body.AyahIds, out var selection))
         {
             return false;
         }
@@ -26,28 +28,7 @@ internal static class PhraseSearchSimilarityLinkingSelectionBodyMapper
         query = new ResolvePhraseSimilarityLinkingSelectionQuery(
             body.ResolutionRef,
             body.MinimumMatchedWords,
-            selectionMode,
-            body.AyahIds);
+            selection!);
         return true;
-    }
-
-    private static bool TryParseSelectionMode(
-        string? value,
-        out PhraseSimilarityAyahSelectionMode selectionMode)
-    {
-        selectionMode = default;
-        if (string.Equals(value, "only", StringComparison.Ordinal))
-        {
-            selectionMode = PhraseSimilarityAyahSelectionMode.Only;
-            return true;
-        }
-
-        if (string.Equals(value, "all-except", StringComparison.Ordinal))
-        {
-            selectionMode = PhraseSimilarityAyahSelectionMode.AllExcept;
-            return true;
-        }
-
-        return false;
     }
 }

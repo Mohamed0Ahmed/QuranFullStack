@@ -5,5 +5,4 @@ namespace QuranDashboard.Application.Quran.PhraseSearch.Queries.ResolvePhraseSim
 public sealed record ResolvePhraseSimilarityLinkingSelectionQuery(
     string? ResolutionRef,
     int? MinimumMatchedWords,
-    PhraseSimilarityAyahSelectionMode? SelectionMode,
-    IReadOnlyList<int>? AyahIds);
+    PhraseLinkingAyahSelection Selection);

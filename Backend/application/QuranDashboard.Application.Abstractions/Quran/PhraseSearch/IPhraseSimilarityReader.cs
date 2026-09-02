@@ -16,7 +16,7 @@ public interface IPhraseSimilarityReader
     Task<PhraseSearchReadResult<PhraseSimilarityLinkingSelectionResponse>> GetLinkingSelectionAsync(
         PhraseResolutionReference resolution,
         short minimumMatchedWords,
-        PhraseSimilarityLinkingSelection selection,
+        PhraseLinkingAyahSelection selection,
         CancellationToken cancellationToken);
 
     Task<PhraseSearchReadResult<PhraseSimilarityGroupsResponse>> GetGroupsAsync(

@@ -12,16 +12,6 @@ public sealed class ResolvePhraseSimilarityLinkingSelectionHandler(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (query.SelectionMode is null
-            || !Enum.IsDefined(query.SelectionMode.Value)
-            || query.AyahIds is null
-            || query.AyahIds.Any(ayahId => ayahId <= 0)
-            || query.AyahIds.Distinct().Count() != query.AyahIds.Count)
-        {
-            return new PhraseReadOutcome<PhraseSimilarityLinkingSelectionResponse>.Invalid(
-                PhraseRequestInvalidKind.Selection);
-        }
-
         if (!codec.TryDecodeResolution(query.ResolutionRef, out var resolution)
             || resolution is null)
         {
@@ -41,7 +31,7 @@ public sealed class ResolvePhraseSimilarityLinkingSelectionHandler(
         var result = await reader.GetLinkingSelectionAsync(
             resolution,
             minimumMatchedWords,
-            new PhraseSimilarityLinkingSelection(query.SelectionMode.Value, query.AyahIds),
+            query.Selection,
             cancellationToken);
         return result switch
         {
