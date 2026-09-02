@@ -10,16 +10,14 @@ public interface IWordTypesReader
     Task<PagedResult<WordTypeRowDto>> GetRowsAsync(
         WordTypeFilter filter,
         WordTypeSortSpec sort,
-        int page,
-        int pageSize,
+        WordTypeListPaging paging,
         CancellationToken cancellationToken);
 
     Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
         WordTypeFilter filter,
         WordTypeTableView tableView,
         WordTypeSortSpec sort,
-        int page,
-        int pageSize,
+        WordTypeListPaging paging,
         CancellationToken cancellationToken);
 
     // Each count equals the corresponding tableView's TotalCount for the identical scope; a valid scope
@@ -34,8 +32,7 @@ public interface IWordTypesReader
 
     Task<PagedResult<WordTypeAyahMatchDto>?> GetAyahMatchesAsync(
         WordTypeRowIdentity identity,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken);
 
     Task<WordTypeSurahsResponse?> GetSurahsAsync(
@@ -53,8 +50,7 @@ public interface IWordTypesReader
     // selection returns a non-null empty page carrying the correct TotalCount.
     Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
         WordTypeGroupedSelection selection,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken);
 
     // Distinct ayahs paged in Mushaf order and hydrated with canonical quran_words.text_uthmani plus the
@@ -62,8 +58,7 @@ public interface IWordTypesReader
     // out-of-range page on an existing selection returns a non-null empty page carrying the correct TotalCount.
     Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
         WordTypeGroupedSelection selection,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken);
 
     // Occurrence counts are aggregated inside the database over the same dimension-filtered base; the

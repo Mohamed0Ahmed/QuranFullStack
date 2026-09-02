@@ -1,7 +1,5 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
@@ -16,19 +14,17 @@ public sealed partial class WordTypesController
         [FromQuery] string? voice,
         CancellationToken cancellationToken)
     {
-        var outcome = await summaryHandler.HandleAsync(
-            new GetWordTypeSummaryQuery(tashkeelWordId, contextCode, caseFilter, tense, voice),
-            cancellationToken);
+        var outcome = await wordExplorer.GetSummaryAsync(tashkeelWordId, contextCode, caseFilter, tense, voice, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeSummaryOutcome.Success success =>
-                Ok(ApiResponse<WordTypeSummaryDto>.Ok(success.Summary, ApiMessages.WordTypeSummaryLoaded)),
-            GetWordTypeSummaryOutcome.InvalidIdentity =>
+            WordTypeWordResult.Summary.Success success =>
+                Ok(ApiResponse<WordTypeSummaryDto>.Ok(success.Value, ApiMessages.WordTypeSummaryLoaded)),
+            WordTypeWordResult.Summary.InvalidIdentity =>
                 BadRequest(ApiResponse<WordTypeSummaryDto>.Fail(ApiMessages.WordTypesInvalidIdentity)),
-            GetWordTypeSummaryOutcome.NotFound =>
+            WordTypeWordResult.Summary.NotFound =>
                 NotFound(ApiResponse<WordTypeSummaryDto>.Fail(ApiMessages.WordTypeNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeSummaryOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeWordResult.Summary)} variant."),
         };
     }
 
@@ -43,21 +39,21 @@ public sealed partial class WordTypesController
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
-        var outcome = await ayahsHandler.HandleAsync(
-            new GetWordTypeAyahsQuery(tashkeelWordId, contextCode, caseFilter, tense, voice, page ?? DefaultPage, pageSize ?? DefaultDetailPageSize),
-            cancellationToken);
+        var outcome = await wordExplorer.GetAyahsAsync(
+            tashkeelWordId, contextCode, caseFilter, tense, voice,
+            page ?? DefaultPage, pageSize ?? DefaultDetailPageSize, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeAyahsOutcome.Success success =>
+            WordTypeWordResult.Ayahs.Success success =>
                 Ok(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Ok(success.Page, ApiMessages.WordTypeAyahsLoaded)),
-            GetWordTypeAyahsOutcome.InvalidIdentity =>
+            WordTypeWordResult.Ayahs.InvalidIdentity =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidIdentity)),
-            GetWordTypeAyahsOutcome.InvalidPaging =>
+            WordTypeWordResult.Ayahs.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
-            GetWordTypeAyahsOutcome.NotFound =>
+            WordTypeWordResult.Ayahs.NotFound =>
                 NotFound(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypeNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeAyahsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeWordResult.Ayahs)} variant."),
         };
     }
 
@@ -70,19 +66,17 @@ public sealed partial class WordTypesController
         [FromQuery] string? voice,
         CancellationToken cancellationToken)
     {
-        var outcome = await surahsHandler.HandleAsync(
-            new GetWordTypeSurahsQuery(tashkeelWordId, contextCode, caseFilter, tense, voice),
-            cancellationToken);
+        var outcome = await wordExplorer.GetSurahsAsync(tashkeelWordId, contextCode, caseFilter, tense, voice, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeSurahsOutcome.Success success =>
-                Ok(ApiResponse<WordTypeSurahsResponse>.Ok(success.Surahs, ApiMessages.WordTypeSurahsLoaded)),
-            GetWordTypeSurahsOutcome.InvalidIdentity =>
+            WordTypeWordResult.Surahs.Success success =>
+                Ok(ApiResponse<WordTypeSurahsResponse>.Ok(success.Value, ApiMessages.WordTypeSurahsLoaded)),
+            WordTypeWordResult.Surahs.InvalidIdentity =>
                 BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidIdentity)),
-            GetWordTypeSurahsOutcome.NotFound =>
+            WordTypeWordResult.Surahs.NotFound =>
                 NotFound(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypeNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeSurahsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeWordResult.Surahs)} variant."),
         };
     }
 }

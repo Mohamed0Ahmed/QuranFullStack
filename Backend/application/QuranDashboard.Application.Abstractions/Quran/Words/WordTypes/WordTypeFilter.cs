@@ -1,17 +1,39 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-// Search is the raw, trimmed word-identity term (never logged); infrastructure normalizes it
-// (ArabicSearchQueryNormalizer) for both the SQL predicate and the cache key.
-// HasRoot/HasStem/HasLemma are tri-state presence flags: null = any, true = must have, false = must be missing.
-// Search and the presence flags belong to the shared list scope but are never set on grouped-detail
-// reads; absent values keep the pre-feature cache key unchanged.
-public sealed record WordTypeFilter(
-    string? Type,
-    string? ChildCode,
-    string? Case,
-    string? Tense,
-    string? Voice,
-    string? Search = null,
-    bool? HasRoot = null,
-    bool? HasStem = null,
-    bool? HasLemma = null);
+public sealed class WordTypeFilter
+{
+    private const int MaxSearchLength = 64;
+
+    private WordTypeFilter(WordTypeScope scope, string? search, bool? hasRoot, bool? hasStem, bool? hasLemma)
+    {
+        Scope = scope;
+        Search = search;
+        HasRoot = hasRoot;
+        HasStem = hasStem;
+        HasLemma = hasLemma;
+    }
+
+    public WordTypeScope Scope { get; }
+    public string? Search { get; }
+    public bool? HasRoot { get; }
+    public bool? HasStem { get; }
+    public bool? HasLemma { get; }
+
+    public static WordTypeFilter? Create(
+        string? type,
+        string? childCode,
+        string? @case,
+        string? tense,
+        string? voice,
+        string? search,
+        bool? hasRoot,
+        bool? hasStem,
+        bool? hasLemma)
+    {
+        var scope = WordTypeScope.Create(type, childCode, @case, tense, voice);
+        var normalizedSearch = WordTypeScope.NormalizeOptional(search);
+        return scope is null || normalizedSearch?.Length > MaxSearchLength
+            ? null
+            : new WordTypeFilter(scope, normalizedSearch, hasRoot, hasStem, hasLemma);
+    }
+}

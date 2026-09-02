@@ -1,51 +1,29 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-public enum WordTypeTableView
+public sealed class WordTypeTableView
 {
-    Words,
-    Roots,
-    Stems,
-    Lemmas,
-}
+    private const string Words = "words";
+    private const string Roots = "roots";
+    private const string Stems = "stems";
+    private const string Lemmas = "lemmas";
 
-public static class WordTypeTableViewKeys
-{
-    public const string Words = "words";
-    public const string Roots = "roots";
-    public const string Stems = "stems";
-    public const string Lemmas = "lemmas";
-}
+    private WordTypeTableView(string key) => Key = key;
 
-public static class WordTypeTableViewParser
-{
-    // Missing/blank tableView defaults to Words; only a non-blank unknown value is a controlled failure.
-    public static bool TryParse(string? value, out WordTypeTableView tableView)
+    public string Key { get; }
+
+    public static WordTypeTableView? Create(string? value)
     {
         if (string.IsNullOrWhiteSpace(value))
         {
-            tableView = WordTypeTableView.Words;
-            return true;
+            return new WordTypeTableView(Words);
         }
 
-        switch (value.Trim().ToLowerInvariant())
+        var key = value.Trim().ToLowerInvariant();
+        return key switch
         {
-            case WordTypeTableViewKeys.Words:
-                tableView = WordTypeTableView.Words;
-                return true;
-            case WordTypeTableViewKeys.Roots:
-                tableView = WordTypeTableView.Roots;
-                return true;
-            case WordTypeTableViewKeys.Stems:
-                tableView = WordTypeTableView.Stems;
-                return true;
-            case WordTypeTableViewKeys.Lemmas:
-                tableView = WordTypeTableView.Lemmas;
-                return true;
-            default:
-                // Same contract as WordTypeSortParser: callers MUST check the bool. `tableView` on
-                // failure is unspecified (currently Words, the enum's default) and must not be read.
-                tableView = default;
-                return false;
-        }
+            Words or Roots or Stems or Lemmas =>
+                new WordTypeTableView(key),
+            _ => null,
+        };
     }
 }

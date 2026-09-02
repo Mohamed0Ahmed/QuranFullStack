@@ -21,28 +21,37 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return tree;
     }
 
-    public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(WordTypeFilter filter, WordTypeSortSpec sort, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(
+        WordTypeFilter filter,
+        WordTypeSortSpec sort,
+        WordTypeListPaging paging,
+        CancellationToken cancellationToken)
     {
-        var key = WordTypesCacheKeys.Rows(filter, sort, page, pageSize);
+        var key = WordTypesCacheKeys.Rows(filter, sort, paging);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeRowDto>? cached))
         {
             return cached!;
         }
 
-        var rows = await _ef.GetRowsAsync(filter, sort, page, pageSize, cancellationToken);
+        var rows = await _ef.GetRowsAsync(filter, sort, paging, cancellationToken);
         _cache.Set(key, rows, WordTypesCacheEntryOptions.PagedRows());
         return rows;
     }
 
-    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeTableRowDto>> GetTableRowsAsync(
+        WordTypeFilter filter,
+        WordTypeTableView tableView,
+        WordTypeSortSpec sort,
+        WordTypeListPaging paging,
+        CancellationToken cancellationToken)
     {
-        var key = WordTypesCacheKeys.Table(filter, tableView, sort, page, pageSize);
+        var key = WordTypesCacheKeys.Table(filter, tableView, sort, paging);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeTableRowDto>? cached))
         {
             return cached!;
         }
 
-        var rows = await _ef.GetTableRowsAsync(filter, tableView, sort, page, pageSize, cancellationToken);
+        var rows = await _ef.GetTableRowsAsync(filter, tableView, sort, paging, cancellationToken);
         _cache.Set(key, rows, WordTypesCacheEntryOptions.PagedRows());
         return rows;
     }
@@ -79,15 +88,18 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return summary;
     }
 
-    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetAyahMatchesAsync(WordTypeRowIdentity identity, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetAyahMatchesAsync(
+        WordTypeRowIdentity identity,
+        WordTypeDetailPaging paging,
+        CancellationToken cancellationToken)
     {
-        var key = WordTypesCacheKeys.Ayahs(identity, page, pageSize);
+        var key = WordTypesCacheKeys.Ayahs(identity, paging);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeAyahMatchDto>? cached))
         {
             return cached;
         }
 
-        var ayahs = await _ef.GetAyahMatchesAsync(identity, page, pageSize, cancellationToken);
+        var ayahs = await _ef.GetAyahMatchesAsync(identity, paging, cancellationToken);
         if (ayahs is not null)
         {
             _cache.Set(key, ayahs, WordTypesCacheEntryOptions.Detail());
@@ -130,15 +142,18 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return summary;
     }
 
-    public async Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
+        WordTypeGroupedSelection selection,
+        WordTypeDetailPaging paging,
+        CancellationToken cancellationToken)
     {
-        var key = WordTypesCacheKeys.GroupedWords(selection, page, pageSize);
+        var key = WordTypesCacheKeys.GroupedWords(selection, paging);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeGroupedMemberWordDto>? cached))
         {
             return cached;
         }
 
-        var words = await _ef.GetGroupedMemberWordsAsync(selection, page, pageSize, cancellationToken);
+        var words = await _ef.GetGroupedMemberWordsAsync(selection, paging, cancellationToken);
         if (words is not null)
         {
             _cache.Set(key, words, WordTypesCacheEntryOptions.Detail());
@@ -147,15 +162,18 @@ public sealed class CachedWordTypesReader(EfWordTypesReader efReader, IMemoryCac
         return words;
     }
 
-    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(WordTypeGroupedSelection selection, int page, int pageSize, CancellationToken cancellationToken)
+    public async Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
+        WordTypeGroupedSelection selection,
+        WordTypeDetailPaging paging,
+        CancellationToken cancellationToken)
     {
-        var key = WordTypesCacheKeys.GroupedAyahs(selection, page, pageSize);
+        var key = WordTypesCacheKeys.GroupedAyahs(selection, paging);
         if (_cache.TryGetValue(key, out PagedResult<WordTypeAyahMatchDto>? cached))
         {
             return cached;
         }
 
-        var ayahs = await _ef.GetGroupedAyahMatchesAsync(selection, page, pageSize, cancellationToken);
+        var ayahs = await _ef.GetGroupedAyahMatchesAsync(selection, paging, cancellationToken);
         if (ayahs is not null)
         {
             _cache.Set(key, ayahs, WordTypesCacheEntryOptions.Detail());

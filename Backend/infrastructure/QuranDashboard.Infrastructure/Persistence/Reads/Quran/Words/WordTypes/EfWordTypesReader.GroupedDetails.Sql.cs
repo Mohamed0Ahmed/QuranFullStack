@@ -27,23 +27,15 @@ public sealed partial class EfWordTypesReader
 
     // Allowlisted numeric membership columns. The text columns are projection-only display fields and
     // never participate in the membership predicate. Delegates to the shared DimensionColumns mapping
-    // (keyed by WordTypeTableView) so the root/stem/lemma column names live in exactly one place.
+    // (keyed by WordTypeTableView.Key) so the root/stem/lemma column names live in exactly one place.
     private static (string IdColumn, string TextColumn) GroupedDimensionColumns(WordTypeGroupedDimensionKind kind) =>
-        DimensionColumns(ToTableView(kind));
-
-    private static WordTypeTableView ToTableView(WordTypeGroupedDimensionKind kind) => kind switch
-    {
-        WordTypeGroupedDimensionKind.Root => WordTypeTableView.Roots,
-        WordTypeGroupedDimensionKind.Stem => WordTypeTableView.Stems,
-        WordTypeGroupedDimensionKind.Lemma => WordTypeTableView.Lemmas,
-        _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, "Grouped dimension columns are only defined for root/stem/lemma."),
-    };
+        DimensionColumns(kind.RouteKey);
 
     // Grouped detail reads apply the identical five-field scope as the table row, so they build the
     // same WordTypeReadContext the list SQL uses — deliberately search-free: detail identity is the
     // numeric dimension id, so the list-scope search never narrows grouped detail reads.
-    internal static WordTypeReadContext ToGroupedReadContext(WordTypeFilter filter) =>
-        new(NormalizeType(filter.Type), NormalizeChildCode(filter.ChildCode), filter.Case, filter.Tense, filter.Voice);
+    internal static WordTypeReadContext ToGroupedReadContext(WordTypeScope scope) =>
+        new(NormalizeType(scope.Type), NormalizeChildCode(scope.ChildCode), scope.Case, scope.Tense, scope.Voice);
 
     internal static object[] BuildGroupedDetailParameters(WordTypeReadContext context, int dimensionId)
     {
@@ -128,7 +120,7 @@ public sealed partial class EfWordTypesReader
         int SurahsCount)
     {
         public WordTypeGroupedSummaryDto ToDto(WordTypeGroupedDimensionKind kind) => new(
-            kind.ToDtoKind(),
+            kind.DtoKind,
             DimensionId,
             DisplayText,
             OccurrencesCount,

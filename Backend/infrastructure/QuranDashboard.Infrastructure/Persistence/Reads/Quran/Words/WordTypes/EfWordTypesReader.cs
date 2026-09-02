@@ -72,36 +72,33 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     public async Task<PagedResult<WordTypeRowDto>> GetRowsAsync(
         WordTypeFilter filter,
         WordTypeSortSpec sort,
-        int page,
-        int pageSize,
+        WordTypeListPaging paging,
         CancellationToken cancellationToken)
     {
-        var type = NormalizeType(filter.Type);
-        var childCode = NormalizeChildCode(filter.ChildCode);
-        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
+        var context = ToReadContext(filter);
 
         // B1: page + total come from ONE scoped command via COUNT(*) OVER(). The count-only fallback runs
         // only for an empty page (out-of-range or empty scope), where the window count has no row to carry it.
-        var offset = ReadPaging.CalculatePageOffset(page, pageSize);
+        var offset = ReadPaging.CalculatePageOffset(paging.Page, paging.PageSize);
         if (offset is null)
         {
-            return new PagedResult<WordTypeRowDto>(page, pageSize, await CountRowsAsync(context, cancellationToken), []);
+            return new PagedResult<WordTypeRowDto>(paging.Page, paging.PageSize, await CountRowsAsync(context, cancellationToken), []);
         }
 
-        var parameters = BuildRowsParameters(context, offset.Value, pageSize);
+        var parameters = BuildRowsParameters(context, offset.Value, paging.PageSize);
         var rows = await _dbContext.Database.SqlQueryRaw<WordTypeRowSqlResult>(
-            RowsSql(context, sort),
+            RowsSql(context, sort.CanonicalToken()),
             parameters)
             .ToListAsync(cancellationToken);
 
         if (rows.Count == 0)
         {
-            return new PagedResult<WordTypeRowDto>(page, pageSize, await CountRowsAsync(context, cancellationToken), []);
+            return new PagedResult<WordTypeRowDto>(paging.Page, paging.PageSize, await CountRowsAsync(context, cancellationToken), []);
         }
 
         return new PagedResult<WordTypeRowDto>(
-            page,
-            pageSize,
+            paging.Page,
+            paging.PageSize,
             rows[0].TotalCount,
             rows.Select(row => row.ToDto()).ToList());
     }
@@ -110,13 +107,12 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         WordTypeFilter filter,
         WordTypeTableView tableView,
         WordTypeSortSpec sort,
-        int page,
-        int pageSize,
+        WordTypeListPaging paging,
         CancellationToken cancellationToken)
     {
-        if (tableView == WordTypeTableView.Words)
+        if (tableView.Key == "words")
         {
-            var wordPage = await GetRowsAsync(filter, sort, page, pageSize, cancellationToken);
+            var wordPage = await GetRowsAsync(filter, sort, paging, cancellationToken);
             return new PagedResult<WordTypeTableRowDto>(
                 wordPage.Page,
                 wordPage.PageSize,
@@ -124,32 +120,31 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                 wordPage.Items.Select(row => ToWordTableRowDto(row, filter)).ToList());
         }
 
-        var type = NormalizeType(filter.Type);
-        var childCode = NormalizeChildCode(filter.ChildCode);
-        var context = new WordTypeReadContext(type, childCode, filter.Case, filter.Tense, filter.Voice, ArabicSearchQueryNormalizer.Normalize(filter.Search), filter.HasRoot, filter.HasStem, filter.HasLemma);
+        var context = ToReadContext(filter);
+        var sortToken = sort.CanonicalToken();
 
         // B1: same single-command window-count path as the words view, with the count-only fallback reserved
         // for the exceptional empty page.
-        var offset = ReadPaging.CalculatePageOffset(page, pageSize);
+        var offset = ReadPaging.CalculatePageOffset(paging.Page, paging.PageSize);
         if (offset is null)
         {
-            return new PagedResult<WordTypeTableRowDto>(page, pageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
+            return new PagedResult<WordTypeTableRowDto>(paging.Page, paging.PageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
         }
 
-        var parameters = BuildGroupedRowsParameters(context, sort, offset.Value, pageSize);
+        var parameters = BuildGroupedRowsParameters(context, sortToken, offset.Value, paging.PageSize);
         var rows = await _dbContext.Database.SqlQueryRaw<GroupedRowSqlResult>(
-            GroupedRowsSql(context, tableView, sort),
+            GroupedRowsSql(context, tableView, sortToken),
             parameters)
             .ToListAsync(cancellationToken);
 
         if (rows.Count == 0)
         {
-            return new PagedResult<WordTypeTableRowDto>(page, pageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
+            return new PagedResult<WordTypeTableRowDto>(paging.Page, paging.PageSize, await CountGroupedRowsAsync(context, tableView, cancellationToken), []);
         }
 
         return new PagedResult<WordTypeTableRowDto>(
-            page,
-            pageSize,
+            paging.Page,
+            paging.PageSize,
             rows[0].TotalCount,
             rows.Select(row => row.ToDto(tableView)).ToList());
     }
@@ -168,9 +163,9 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     private static WordTableRowDto ToWordTableRowDto(WordTypeRowDto row, WordTypeFilter filter) => new(
         row.TashkeelWordId,
         row.ContextCode,
-        filter.Case,
-        filter.Tense,
-        filter.Voice,
+        filter.Scope.Case,
+        filter.Scope.Tense,
+        filter.Scope.Voice,
         row.DisplayText,
         row.TypeCode,
         row.TypeLabel,
@@ -187,11 +182,6 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken)
     {
-        if (!identity.IsValid)
-        {
-            return null;
-        }
-
         var rows = await (
                 from morphology in MatchedMorphologyQuery(_dbContext, identity)
                 join word in _dbContext.QuranWords.AsNoTracking() on morphology.QuranWordId equals word.Id
@@ -251,15 +241,9 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
 
     public async Task<PagedResult<WordTypeAyahMatchDto>?> GetAyahMatchesAsync(
         WordTypeRowIdentity identity,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken)
     {
-        if (!identity.IsValid)
-        {
-            return null;
-        }
-
         // One matched-word projection, reused for the distinct-ayah set and the page's matched rows.
         var matchedWords = MatchedWordsQuery(identity);
         var matchedAyahIds = matchedWords.Select(word => word.AyahId).Distinct();
@@ -272,10 +256,10 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             return null;
         }
 
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        var skip = ReadPaging.CalculateSafeSkip(paging.Page, paging.PageSize, totalCount);
         if (skip is null)
         {
-            return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeAyahMatchDto>(paging.Page, paging.PageSize, totalCount, []);
         }
 
         var pageAyahs = await (
@@ -291,12 +275,12 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
                     ayah.AyahNumber,
                     surah.NameArabic))
             .Skip(skip.Value)
-            .Take(pageSize)
+            .Take(paging.PageSize)
             .ToListAsync(cancellationToken);
 
         if (pageAyahs.Count == 0)
         {
-            return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeAyahMatchDto>(paging.Page, paging.PageSize, totalCount, []);
         }
 
         var ayahIds = pageAyahs.Select(ayah => ayah.AyahId).ToList();
@@ -338,18 +322,13 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
             },
             cancellationToken);
 
-        return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, items);
+        return new PagedResult<WordTypeAyahMatchDto>(paging.Page, paging.PageSize, totalCount, items);
     }
 
     public async Task<WordTypeSurahsResponse?> GetSurahsAsync(
         WordTypeRowIdentity identity,
         CancellationToken cancellationToken)
     {
-        if (!identity.IsValid)
-        {
-            return null;
-        }
-
         // B3: mirror the grouped surahs read. One server-side aggregate groups the scoped occurrences by
         // surah; zero rows means the identity is absent from the scope (not found) and short-circuits before
         // the catalogue read — the aggregate doubles as the existence check, replacing the AnyAsync probe.
@@ -520,6 +499,17 @@ public sealed partial class EfWordTypesReader(QuranDashboardDbContext dbContext)
     // Preserve the raw value rather than lower-casing so noun POS codes like "PN" survive.
     private static string? NormalizeChildCode(string? childCode) =>
         string.IsNullOrWhiteSpace(childCode) ? null : childCode.Trim();
+
+    private static WordTypeReadContext ToReadContext(WordTypeFilter filter) => new(
+        NormalizeType(filter.Scope.Type),
+        NormalizeChildCode(filter.Scope.ChildCode),
+        filter.Scope.Case,
+        filter.Scope.Tense,
+        filter.Scope.Voice,
+        ArabicSearchQueryNormalizer.Normalize(filter.Search),
+        filter.HasRoot,
+        filter.HasStem,
+        filter.HasLemma);
 
     private sealed record SummarySourceRow(
         int QuranWordId,
