@@ -15,7 +15,7 @@ import { EntityDetailOverlayHostComponent } from './features/words/entity-detail
       [attr.inert]="hasForegroundDialog() ? '' : null"
       [attr.aria-hidden]="hasForegroundDialog() ? true : null"
     />
-    @defer (when overlayOpen(); prefetch on idle) {
+    @defer (when overlayActive(); prefetch on idle) {
       <qd-entity-detail-overlay-host
         [attr.inert]="linkingOpen() ? '' : null"
         [attr.aria-hidden]="linkingOpen() ? true : null"
@@ -32,6 +32,7 @@ export class App {
   private readonly linkingWorkspace = inject(LinkingWorkspaceStore);
 
   protected readonly overlayOpen = this.overlay.isOpen;
+  protected readonly overlayActive = computed(() => this.overlay.state().stack.length > 0);
   protected readonly linkingOpen = this.linkingWorkspace.isOpen;
   protected readonly hasForegroundDialog = computed(() => this.overlayOpen() || this.linkingOpen());
 

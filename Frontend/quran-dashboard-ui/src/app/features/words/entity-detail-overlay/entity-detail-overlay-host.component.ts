@@ -107,7 +107,7 @@ export class EntityDetailOverlayHostComponent {
   });
 
   protected readonly capStatus = computed(() =>
-    this.overlay.capRejectionCount() > 0 ? ENTITY_DETAIL_CAP_STATUS_MESSAGE : '',
+    this.overlay.capRejected() ? ENTITY_DETAIL_CAP_STATUS_MESSAGE : '',
   );
 
   protected get backLabel() {
