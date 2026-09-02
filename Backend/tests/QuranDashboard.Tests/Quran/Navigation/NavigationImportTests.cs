@@ -1,5 +1,7 @@
 using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Navigation;
+using QuranDashboard.Application.Quran.DataPipelines.Navigation;
 using QuranDashboard.Domain.Quran.Navigation;
+using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.Navigation;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
@@ -15,10 +17,59 @@ public sealed class NavigationImportTests(NavigationImportTestFixture fixture)
         var packageDir = await fixture.WriteSyntheticPackageAsync(NavigationSyntheticSeed.DefaultTestExpectedCounts);
         var reportDir = Path.Combine(Path.GetTempPath(), $"navigation-report-{Guid.NewGuid():N}");
 
-        var result = await fixture.RunImportAsync(
-            packageDir,
-            NavigationSyntheticSeed.DefaultTestExpectedCounts,
-            reportDir);
+        var reportWriter = new CommitOrderingReportWriter();
+        await using var provider = fixture.CreateCallerDisposedServiceProvider(services =>
+            services.AddSingleton<INavigationMetadataReportWriter>(reportWriter));
+        await using var importScope = provider.CreateAsyncScope();
+        var handler = importScope.ServiceProvider.GetRequiredService<ImportNavigationMetadataHandler>();
+        var importTask = handler.HandleAsync(
+            new ImportNavigationMetadataCommand(
+                packageDir,
+                Force: false,
+                NavigationSyntheticSeed.DefaultTestExpectedCounts,
+                reportDir),
+            CancellationToken.None);
+
+        ImportNavigationMetadataResult result;
+        try
+        {
+            await reportWriter.ProvisionalWriteStarted;
+            reportWriter.ProvisionalReport!.Persisted.Should().BeFalse();
+            var provisionalSnapshot = await fixture.CaptureNavigationSnapshotAsync();
+            provisionalSnapshot.Should().Be(new NavigationTableSnapshot(0, 0, 0, 0, 0));
+
+            var provisionalJson = await File.ReadAllTextAsync(
+                Path.Combine(reportDir, NavigationImportConstants.JsonReportFileName));
+            using (var provisionalDocument = JsonDocument.Parse(provisionalJson))
+            {
+                provisionalDocument.RootElement.GetProperty("persisted").GetBoolean().Should().BeFalse();
+            }
+
+            reportWriter.ReleaseProvisionalWrite();
+            await reportWriter.FinalWriteStarted;
+            reportWriter.FinalReport!.Persisted.Should().BeTrue();
+            var committedSnapshot = await fixture.CaptureNavigationSnapshotAsync();
+            committedSnapshot.Should().Be(new NavigationTableSnapshot(2, 2, 4, 2, 6));
+
+            reportWriter.ReleaseFinalWrite();
+            result = await importTask;
+        }
+        finally
+        {
+            reportWriter.ReleaseProvisionalWrite();
+            reportWriter.ReleaseFinalWrite();
+            if (!importTask.IsCompleted)
+            {
+                try
+                {
+                    await importTask;
+                }
+                catch
+                {
+                    // Preserve the assertion or read failure that triggered cleanup.
+                }
+            }
+        }
 
         result.Succeeded.Should().BeTrue(result.Message);
         result.Totals.Should().NotBeNull();
@@ -74,5 +125,49 @@ public sealed class NavigationImportTests(NavigationImportTestFixture fixture)
         reportDocument.RootElement.GetProperty("verdict").GetString().Should().Be(NavigationImportConstants.AcceptedVerdict);
         reportDocument.RootElement.GetProperty("persisted").GetBoolean().Should().BeTrue();
         reportDocument.RootElement.GetProperty("noQuranAyahTextReadOrStored").GetBoolean().Should().BeTrue();
+    }
+
+    private sealed class CommitOrderingReportWriter : INavigationMetadataReportWriter
+    {
+        private readonly MarkdownJsonNavigationMetadataReportWriter inner = new();
+        private readonly TaskCompletionSource provisionalWriteStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource releaseProvisionalWrite =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource finalWriteStarted =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource releaseFinalWrite =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int writeCount;
+
+        public Task ProvisionalWriteStarted => provisionalWriteStarted.Task;
+        public Task FinalWriteStarted => finalWriteStarted.Task;
+        public NavigationMetadataImportReport? ProvisionalReport { get; private set; }
+        public NavigationMetadataImportReport? FinalReport { get; private set; }
+
+        public async Task WriteAsync(
+            NavigationMetadataImportReport report,
+            string reportOutDir,
+            CancellationToken ct)
+        {
+            var currentWrite = Interlocked.Increment(ref writeCount);
+            if (currentWrite == 1)
+            {
+                ProvisionalReport = report;
+                await inner.WriteAsync(report, reportOutDir, ct);
+                provisionalWriteStarted.SetResult();
+                await releaseProvisionalWrite.Task.WaitAsync(ct);
+                return;
+            }
+
+            FinalReport = report;
+            finalWriteStarted.SetResult();
+            await releaseFinalWrite.Task.WaitAsync(ct);
+            await inner.WriteAsync(report, reportOutDir, ct);
+        }
+
+        public void ReleaseProvisionalWrite() => releaseProvisionalWrite.TrySetResult();
+
+        public void ReleaseFinalWrite() => releaseFinalWrite.TrySetResult();
     }
 }

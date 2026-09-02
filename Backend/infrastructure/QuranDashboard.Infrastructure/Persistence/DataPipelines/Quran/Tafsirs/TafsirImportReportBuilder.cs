@@ -55,6 +55,7 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
         string profile,
         TafsirSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         TafsirImportTotals totals,
         IReadOnlyList<TafsirCheckResult> postCopyChecks,
@@ -71,12 +72,14 @@ public sealed class TafsirImportReportBuilder : ITafsirImportReportBuilder
             source,
             runAtUtc,
             TafsirImportConstants.PassVerdict,
-            persisted: true,
+            persisted,
             forced,
             totals,
             allChecks,
             errors: [],
-            infoNotes: ["Tafsir import passed validation; acceptance reports written before commit."]);
+            infoNotes: persisted
+                ? ["Tafsir import committed; all hard checks passed."]
+                : ["Tafsir import passed validation; database commit is not yet proven."]);
     }
 
     private static TafsirImportReport Build(
