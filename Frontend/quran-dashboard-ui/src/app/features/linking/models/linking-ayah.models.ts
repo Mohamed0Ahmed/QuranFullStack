@@ -1,5 +1,7 @@
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
+
 export interface LinkingAyah {
-  verseKey: string;
+  verseKey: QuranVerseKey;
   ayahId: number;
   surahNumber: number;
   surahNameArabic: string;

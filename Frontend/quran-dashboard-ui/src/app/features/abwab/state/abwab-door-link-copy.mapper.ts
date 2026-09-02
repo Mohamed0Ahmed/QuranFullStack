@@ -1,5 +1,7 @@
 import { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
 import { AbwabDoorLinkCopyRecord } from '../models/abwab-door-links.models';
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 interface CopySourceGroup {
   readonly records: AbwabDoorLinkCopyRecord[];
@@ -12,7 +14,9 @@ export function mapAbwabDoorLinkCopyRecords(
   records: readonly AbwabDoorLinkCopyRecord[],
   sourceLabel: string,
 ): readonly LinkingOperationSourceDraft[] {
-  return buildSourceGroups(records).map((group) => toOperationDraft(group, sourceLabel));
+  return buildSourceGroups(records)
+    .map((group) => toOperationDraft(group, sourceLabel))
+    .filter((draft): draft is LinkingOperationSourceDraft => draft !== null);
 }
 
 function buildSourceGroups(records: readonly AbwabDoorLinkCopyRecord[]): readonly CopySourceGroup[] {
@@ -50,8 +54,24 @@ function buildSourceGroups(records: readonly AbwabDoorLinkCopyRecord[]): readonl
   return groups;
 }
 
-function toOperationDraft(group: CopySourceGroup, sourceLabel: string): LinkingOperationSourceDraft {
+function toOperationDraft(
+  group: CopySourceGroup,
+  sourceLabel: string,
+): LinkingOperationSourceDraft | null {
   const ayahs = group.records.flatMap((record) => record.ayahs);
+  const parsedAyahs = ayahs.map((ayah) => {
+    const parsed = parseQuranVerseKey(ayah.verseKey);
+    return parsed && parsed.key === ayah.verseKey
+      ? { ayah, verseKey: parsed.key }
+      : null;
+  });
+  if (parsedAyahs.some((entry) => entry === null)) {
+    return null;
+  }
+  const canonicalAyahs = parsedAyahs.filter(
+    (entry): entry is { ayah: AbwabDoorLinkCopyRecord['ayahs'][number]; verseKey: QuranVerseKey } =>
+      entry !== null,
+  );
   const unitIds = group.records.map((record) => record.unitId);
   return {
     sourceKey: `abwab-copy:${group.isGrouped ? 'grouped' : 'independent'}:${unitIds.join('-')}`,
@@ -62,8 +82,8 @@ function toOperationDraft(group: CopySourceGroup, sourceLabel: string): LinkingO
       kind: 'manual-mushaf-ayahs',
       label: sourceLabel,
       contextKey: null,
-      manualAyahs: ayahs.map((ayah) => ({
-        verseKey: ayah.verseKey,
+      manualAyahs: canonicalAyahs.map(({ ayah, verseKey }) => ({
+        verseKey,
         pageNumber: ayah.pageFrom,
         displayHint: null,
       })),

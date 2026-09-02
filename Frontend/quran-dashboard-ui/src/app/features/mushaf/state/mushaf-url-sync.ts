@@ -1,6 +1,13 @@
 import { ParamMap } from '@angular/router';
 
 import { MUSHAF_ROUTE_PATH } from '../../../core/navigation/route-paths';
+import {
+  QuranVerseKey,
+  QuranWordLocation,
+  parseQuranVerseKey,
+  parseQuranWordLocation,
+  quranVerseKeyFromWordLocation,
+} from '../../../shared/quran/quran-location';
 
 import {
   AyahStudyTab,
@@ -10,7 +17,6 @@ import {
   PanelMode,
   WordAnalysisTab,
 } from '../models/mushaf.models';
-import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
 
 const VALID_PANELS: ReadonlySet<string> = new Set(['ayah', 'word', 'doors', 'none']);
 const VALID_AYAH_TABS: ReadonlySet<string> = new Set([
@@ -24,9 +30,9 @@ const VALID_WORD_TABS: ReadonlySet<string> = new Set(['morphology', 'segments', 
 
 export interface MushafUrlSnapshot {
   pageNumber: number;
-  ayah: string | null;
-  focusAyah: string | null;
-  word: string | null;
+  ayah: QuranVerseKey | null;
+  focusAyah: QuranVerseKey | null;
+  word: QuranWordLocation | null;
   segment: string | null;
   panel: PanelMode;
   ayahTab: AyahStudyTab;
@@ -66,16 +72,18 @@ export function normalizeWordTab(value: string | null): WordAnalysisTab {
 }
 
 export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
-  const word = params.get(MUSHAF_URL_KEYS.word);
-  const ayahParam = params.get(MUSHAF_URL_KEYS.ayah);
-  const ayah = ayahParam ?? (word ? verseKeyFromWordLocation(word) : null);
+  const locations = sanitizeMushafQuranLocations(
+    params.get(MUSHAF_URL_KEYS.ayah),
+    params.get(MUSHAF_URL_KEYS.word),
+    params.get(MUSHAF_URL_KEYS.segment),
+  );
 
   return {
     pageNumber: clampMushafPageNumber(params.get(MUSHAF_URL_KEYS.page)),
-    ayah,
-    focusAyah: params.get(MUSHAF_URL_KEYS.focusAyah),
-    word,
-    segment: params.get(MUSHAF_URL_KEYS.segment),
+    ayah: locations.ayah,
+    focusAyah: parseQuranVerseKey(params.get(MUSHAF_URL_KEYS.focusAyah))?.key ?? null,
+    word: locations.word,
+    segment: locations.segment,
     panel: normalizePanelMode(params.get(MUSHAF_URL_KEYS.panel)),
     ayahTab: normalizeAyahTab(params.get(MUSHAF_URL_KEYS.ayahTab)),
     wordTab: normalizeWordTab(params.get(MUSHAF_URL_KEYS.wordTab)),
@@ -88,8 +96,8 @@ export function parseMushafUrlParams(params: ParamMap): MushafUrlSnapshot {
 }
 
 export function buildMushafWordSelectionQuery(
-  wordLocation: string,
-  currentWordLocation: string | null,
+  wordLocation: QuranWordLocation,
+  currentWordLocation: QuranWordLocation | null,
 ): Partial<
   Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
 > {
@@ -102,15 +110,15 @@ export function buildMushafWordSelectionQuery(
     };
   }
 
-  const verseKey = verseKeyFromWordLocation(wordLocation);
+  const verseKey = quranVerseKeyFromWordLocation(wordLocation);
   return {
     [MUSHAF_URL_KEYS.word]: wordLocation,
     [MUSHAF_URL_KEYS.focusAyah]: null,
-    ...(verseKey ? { [MUSHAF_URL_KEYS.ayah]: verseKey } : {}),
+    [MUSHAF_URL_KEYS.ayah]: verseKey,
   };
 }
 
-export function buildUrlEnumCorrections(
+export function buildMushafUrlCorrections(
   raw: ParamMap,
   snapshot: MushafUrlSnapshot,
 ): Partial<Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>> {
@@ -142,14 +150,67 @@ export function buildUrlEnumCorrections(
     corrections[MUSHAF_URL_KEYS.wordTab] = snapshot.wordTab;
   }
 
+  const rawAyah = raw.get(MUSHAF_URL_KEYS.ayah);
+  const rawWord = raw.get(MUSHAF_URL_KEYS.word);
+  setCanonicalLocationCorrection(corrections, MUSHAF_URL_KEYS.ayah, rawAyah, snapshot.ayah);
+  if (rawAyah === null && rawWord !== null && snapshot.ayah !== null) {
+    corrections[MUSHAF_URL_KEYS.ayah] = snapshot.ayah;
+  }
+  setCanonicalLocationCorrection(
+    corrections,
+    MUSHAF_URL_KEYS.focusAyah,
+    raw.get(MUSHAF_URL_KEYS.focusAyah),
+    snapshot.focusAyah,
+  );
+  setCanonicalLocationCorrection(corrections, MUSHAF_URL_KEYS.word, rawWord, snapshot.word);
+
+  const rawSegment = raw.get(MUSHAF_URL_KEYS.segment);
+  if (rawSegment !== null && snapshot.segment === null) {
+    corrections[MUSHAF_URL_KEYS.segment] = null;
+  }
+
   return corrections;
 }
 
 export interface MushafDeepLinkOptions {
   pageNumber: number;
-  ayah: string;
-  focusAyah: string;
+  ayah: QuranVerseKey;
+  focusAyah: QuranVerseKey;
   panel: PanelMode;
+}
+
+export function sanitizeMushafQuranLocations(
+  ayahValue: unknown,
+  wordValue: unknown,
+  segmentValue: unknown,
+): Pick<MushafUrlSnapshot, 'ayah' | 'word' | 'segment'> {
+  const parsedAyah = parseQuranVerseKey(ayahValue);
+  const parsedWord = parseQuranWordLocation(wordValue);
+  const wordParent = parsedWord ? quranVerseKeyFromWordLocation(parsedWord.location) : null;
+  const matchingWord = parsedWord && (!parsedAyah || parsedAyah.key === wordParent)
+    ? parsedWord.location
+    : null;
+
+  return {
+    ayah: parsedAyah?.key ?? wordParent,
+    word: matchingWord,
+    segment: matchingWord && typeof segmentValue === 'string' && segmentValue.length > 0
+      ? segmentValue
+      : null,
+  };
+}
+
+function setCanonicalLocationCorrection(
+  corrections: Partial<
+    Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
+  >,
+  key: typeof MUSHAF_URL_KEYS.ayah | typeof MUSHAF_URL_KEYS.focusAyah | typeof MUSHAF_URL_KEYS.word,
+  rawValue: string | null,
+  canonicalValue: QuranVerseKey | QuranWordLocation | null,
+): void {
+  if (rawValue !== null && rawValue !== canonicalValue) {
+    corrections[key] = canonicalValue;
+  }
 }
 
 export interface MushafDeepLinkTarget {

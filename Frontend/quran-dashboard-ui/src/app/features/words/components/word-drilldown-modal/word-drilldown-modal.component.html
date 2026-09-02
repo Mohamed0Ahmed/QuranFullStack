@@ -126,7 +126,7 @@
                     }
                   }
                   @default {
-                    @if (state().ayahs; as ayahs) {
+                    @if (ayahsPage(); as ayahs) {
                       <qd-ayah-matches-list
                         [page]="ayahs"
                         [currentPage]="state().ayahPage"

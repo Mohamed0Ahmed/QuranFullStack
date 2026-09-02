@@ -5,6 +5,7 @@ import { DoorLinkRecordSummaryDto } from '../../../../core/api/generated/models/
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { LinkingAyahCardComponent } from '../../../linking/components/linking-ayah-card/linking-ayah-card.component';
+import { LinkingAyah } from '../../../linking/models/linking-ayah.models';
 import { ABWAB_LABELS } from '../../models/abwab.labels';
 import { toAbwabLinkingAyah } from '../abwab-door-link-editor/abwab-door-link-ayah.mapper';
 import { AbwabDoorLinkEditorComponent } from '../abwab-door-link-editor/abwab-door-link-editor.component';
@@ -37,8 +38,10 @@ export class AbwabDoorLinkRecordComponent {
   readonly selectionToggled = output<number>();
   readonly editRequested = output<number>();
 
-  protected readonly displayAyahs = computed<readonly ReturnType<typeof toAbwabLinkingAyah>[]>(() =>
-    this.ayahs().map((ayah) => toAbwabLinkingAyah(ayah)),
+  protected readonly displayAyahs = computed<readonly LinkingAyah[]>(() =>
+    this.ayahs()
+      .map((ayah) => toAbwabLinkingAyah(ayah))
+      .filter((ayah): ayah is LinkingAyah => ayah !== null),
   );
 
   protected get emptyLabel(): string { return ABWAB_LABELS.doorLinksAyahsEmpty; }

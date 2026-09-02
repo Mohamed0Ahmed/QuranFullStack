@@ -8,7 +8,7 @@ export interface LinkingQuranWordEntity {
 
 export interface LinkingQuranAyahEntity {
   id: number;
-  verseKey: string;
+  verseKey: QuranVerseKey;
   surahNumber: number;
   surahNameArabic: string;
   ayahNumber: number;
@@ -24,3 +24,4 @@ export interface LinkingSourceAyahOverlay {
 export function linkingEntityKey(linkingDataRevision: number, entityId: number): string {
   return `${linkingDataRevision}:${entityId}`;
 }
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';

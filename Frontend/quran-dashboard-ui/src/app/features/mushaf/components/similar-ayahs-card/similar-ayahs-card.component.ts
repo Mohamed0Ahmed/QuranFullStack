@@ -24,11 +24,13 @@ import {
   SimilarAyahItemDto,
   SimilarAyahsDto,
 } from '../../models/mushaf.models';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../../shared/quran/quran-location';
 import { createSimilarAyahsLinkingLaunch } from '../../utils/mushaf-related-linking-source';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
 import { StudyAyahResultComponent } from '../study-ayah-result/study-ayah-result.component';
 
-type SimilarAyahDisplayItem = SimilarAyahItemDto & {
+type CanonicalSimilarAyahItem = SimilarAyahItemDto & { targetVerseKey: QuranVerseKey };
+type SimilarAyahDisplayItem = CanonicalSimilarAyahItem & {
   displayText: string;
   linkingSelected: boolean;
   linkingSelectionLabel: string;
@@ -75,7 +77,7 @@ export class SimilarAyahsCardComponent {
       canUseLinking: boolean;
       isAvailable: boolean;
     },
-    ReadonlySet<string>
+    ReadonlySet<QuranVerseKey>
   >({
     source: () => {
       const selectedAyah = this.selectedAyah();
@@ -145,7 +147,7 @@ export class SimilarAyahsCardComponent {
       : createSimilarAyahsLinkingLaunch(selectedAyah, this.selectedRelatedAyahs());
   });
 
-  private readonly availableRelatedAyahs = computed<readonly SimilarAyahItemDto[]>(() => {
+  private readonly availableRelatedAyahs = computed<readonly CanonicalSimilarAyahItem[]>(() => {
     const selectedAyah = this.selectedAyah();
     const similarAyahs = this.similarAyahs();
     const loadState = this.loadState();
@@ -159,16 +161,22 @@ export class SimilarAyahsCardComponent {
       return [];
     }
 
-    const verseKeys = new Set<string>();
-    return similarAyahs.items.filter((item) => {
+    const selectedVerse = parseQuranVerseKey(selectedAyah.verseKey);
+    if (!selectedVerse) {
+      return [];
+    }
+    const verseKeys = new Set<QuranVerseKey>();
+    return similarAyahs.items.flatMap((item) => {
+      const targetVerse = parseQuranVerseKey(item.targetVerseKey);
       if (
-        item.targetVerseKey === selectedAyah.verseKey ||
-        verseKeys.has(item.targetVerseKey)
+        !targetVerse ||
+        targetVerse.key === selectedVerse.key ||
+        verseKeys.has(targetVerse.key)
       ) {
-        return false;
+        return [];
       }
-      verseKeys.add(item.targetVerseKey);
-      return true;
+      verseKeys.add(targetVerse.key);
+      return [{ ...item, targetVerseKey: targetVerse.key }];
     });
   });
 
@@ -187,7 +195,7 @@ export class SimilarAyahsCardComponent {
     }
   }
 
-  protected toggleRelatedAyah(verseKey: string): void {
+  protected toggleRelatedAyah(verseKey: QuranVerseKey): void {
     if (
       !this.canUseLinking() ||
       !this.availableRelatedAyahs().some((item) => item.targetVerseKey === verseKey)
@@ -203,16 +211,20 @@ export class SimilarAyahsCardComponent {
   }
 
   protected onAyahNavigate(item: SimilarAyahItemDto): void {
+    const verse = parseQuranVerseKey(item.targetVerseKey);
+    if (!verse) {
+      return;
+    }
     this.ayahNavigate.emit({
-      verseKey: item.targetVerseKey,
+      verseKey: verse.key,
       pageNumber: item.pageNumber,
     });
   }
 }
 
 function selectionLabel(
-  item: SimilarAyahItemDto,
-  selectedVerseKeys: ReadonlySet<string>,
+  item: CanonicalSimilarAyahItem,
+  selectedVerseKeys: ReadonlySet<QuranVerseKey>,
   canUseLinking: boolean,
 ): string {
   const action = canUseLinking && selectedVerseKeys.has(item.targetVerseKey)

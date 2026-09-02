@@ -1,14 +1,10 @@
 
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
+
 export function formatCoverageAyahNumbers(verseKeys: string[]): string {
   return verseKeys
-    .map((key) => {
-      const colonIndex = key.indexOf(':');
-      if (colonIndex === -1) {
-        return key;
-      }
-
-      return key.slice(colonIndex + 1);
-    })
+    .map((key) => parseQuranVerseKey(key)?.ayahNumber ?? null)
+    .filter((ayahNumber): ayahNumber is number => ayahNumber !== null)
     .join('، ');
 }
 

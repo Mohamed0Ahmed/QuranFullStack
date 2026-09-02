@@ -132,7 +132,9 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly defaultView: LemmaView = DEFAULT_LEMMA_VIEW;
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
   protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
     const state = this.panelState();
@@ -316,4 +318,8 @@ export class LemmasExplorerPageComponent implements OnInit, OnDestroy {
   private defaultColumnForEvent(view: LemmaView, wordView: LemmaWordView | undefined): LemmaTableColumnKey {
     return this.defaultColumnForView(view, wordView ?? 'simple');
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }

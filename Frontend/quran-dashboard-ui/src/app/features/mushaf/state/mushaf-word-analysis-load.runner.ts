@@ -7,6 +7,7 @@ import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache'
 import { isAyahMarkerOnMushafPage } from './mushaf-reader-page.helpers';
 import { toWordAnalysisViewModel } from './mushaf-reader-view-mappers';
 import type { MushafPageViewModel } from '../models/mushaf.models';
+import type { QuranWordLocation } from '../../../shared/quran/quran-location';
 
 export interface WordAnalysisLoadBindings {
   getPage(): MushafPageViewModel | null;
@@ -23,13 +24,13 @@ export class WordAnalysisLoadRunner {
 
   constructor(private readonly bindings: WordAnalysisLoadBindings) {}
 
-  loadImmediate(wordLocation: string): void {
+  loadImmediate(wordLocation: QuranWordLocation): void {
     this.clearPending();
     const requestToken = this.bindings.bumpRequestToken();
     this.runLoad(wordLocation, requestToken);
   }
 
-  schedule(wordLocation: string): void {
+  schedule(wordLocation: QuranWordLocation): void {
     this.clearPending();
 
     if (this.applyCached(wordLocation)) {
@@ -49,7 +50,7 @@ export class WordAnalysisLoadRunner {
     this.bindings.bumpRequestToken();
   }
 
-  private applyCached(wordLocation: string): boolean {
+  private applyCached(wordLocation: QuranWordLocation): boolean {
     if (isAyahMarkerOnMushafPage(this.bindings.getPage(), wordLocation)) {
       return false;
     }
@@ -66,7 +67,7 @@ export class WordAnalysisLoadRunner {
     return true;
   }
 
-  private runLoad(wordLocation: string, requestToken: number): void {
+  private runLoad(wordLocation: QuranWordLocation, requestToken: number): void {
     if (isAyahMarkerOnMushafPage(this.bindings.getPage(), wordLocation)) {
       this.bindings.setAnalysis(null);
       this.bindings.setLoadState({

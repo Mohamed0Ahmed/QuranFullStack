@@ -25,6 +25,7 @@ import { LinkingAccessService } from '../../../linking/state/linking-access.serv
 import { ManualMushafSelectionStore } from '../../../linking/state/manual-mushaf-selection.store';
 import { QdContextMenuComponent } from '../../../../shared/ui/context-menu/context-menu.component';
 import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 @Component({
   selector: 'qd-mushaf-reader-page',
@@ -119,7 +120,7 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
     this.facade.jumpToSurah(surahNumber);
   }
 
-  protected onAyahSelect(verseKey: string): void {
+  protected onAyahSelect(verseKey: QuranVerseKey): void {
     if (!this.ayahSelection.active()) {
       return;
     }
@@ -128,7 +129,7 @@ export class MushafReaderPageComponent implements OnInit, OnDestroy {
     this.ayahSelection.toggle(verseKey);
   }
 
-  protected onWordSelect(wordLocation: string): void {
+  protected onWordSelect(wordLocation: QuranWordLocation): void {
     if (this.ignoreNextWordSelection) {
       this.ignoreNextWordSelection = false;
       return;

@@ -14,6 +14,7 @@ import {
 } from '../models/linking-page.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import { LinkingAyah } from '../models/linking-ayah.models';
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
 import { linkingSourceKey } from '../utils/linking-source-key';
 import { LinkingPageCache } from './linking-page-cache';
 import { LinkingPageRequestScheduler } from './linking-page-request.scheduler';
@@ -317,7 +318,10 @@ function validatePage(dto: LinkingResolvedSourcePageDto, request: LinkingSourceP
     dto.availableTypes.some(
       (type) => !type.code.trim() || !type.arabicLabel.trim() || type.occurrencesCount < 0,
     ) ||
-    dto.items.some((ayah) => ayah.ayahId <= 0 || !ayah.verseKey || ayah.words.length === 0)
+    dto.items.some((ayah) => {
+      const verse = parseQuranVerseKey(ayah.verseKey);
+      return ayah.ayahId <= 0 || !verse || verse.key !== ayah.verseKey || ayah.words.length === 0;
+    })
   ) {
     throw new Error('استجابة صفحة المصدر غير صالحة.');
   }

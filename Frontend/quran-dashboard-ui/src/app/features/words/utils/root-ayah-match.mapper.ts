@@ -1,9 +1,12 @@
 import { AyahMatchDto } from '../models/unique-words.models';
 import { RootAyahMatchDto } from '../models/roots.models';
-import { parseVerseKey } from './verse-key';
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
 
-export function mapRootAyahMatchToShared(match: RootAyahMatchDto): AyahMatchDto {
-  const { ayahNumber } = parseVerseKey(match.verseKey);
+export function mapRootAyahMatchToShared(match: RootAyahMatchDto): AyahMatchDto | null {
+  const verse = parseQuranVerseKey(match.verseKey);
+  if (!verse) {
+    return null;
+  }
   const matchedQuranWordIds = match.words.reduce<number[]>((ids, word, index) => {
     if (word.isMatched) {
       ids.push(index);
@@ -14,9 +17,9 @@ export function mapRootAyahMatchToShared(match: RootAyahMatchDto): AyahMatchDto 
 
   return {
     ayahId: match.ayahId,
-    verseKey: match.verseKey,
+    verseKey: verse.key,
     surahNameArabic: match.surahNameArabic,
-    ayahNumber,
+    ayahNumber: verse.ayahNumber,
     pageNumber: match.pageNumber,
     matchedQuranWordIds,
     words: match.words.map((word, index) => ({

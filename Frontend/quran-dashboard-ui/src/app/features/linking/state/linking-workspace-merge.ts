@@ -2,6 +2,7 @@ import {
   LinkingWorkspaceItem,
   LinkingWorkspaceSnapshot,
 } from '../models/linking-workspace.models';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export function mergeWorkspaceSnapshot(
   snapshot: LinkingWorkspaceSnapshot,
@@ -44,17 +45,20 @@ export function mergeWorkspaceSnapshot(
 export function toVerseKeys(
   ayahIds: readonly number[],
   ayahIdByVerseKey: Readonly<Record<string, number>>,
-): readonly string[] {
+): readonly QuranVerseKey[] {
   const verseKeyByAyahId = new Map(
-    Object.entries(ayahIdByVerseKey).map(([verseKey, ayahId]) => [ayahId, verseKey]),
+    Object.entries(ayahIdByVerseKey).flatMap(([verseKey, ayahId]) => {
+      const parsed = parseQuranVerseKey(verseKey);
+      return parsed ? [[ayahId, parsed.key] as const] : [];
+    }),
   );
   return ayahIds
     .map((ayahId) => verseKeyByAyahId.get(ayahId))
-    .filter((verseKey): verseKey is string => verseKey !== undefined);
+    .filter((verseKey): verseKey is QuranVerseKey => verseKey !== undefined);
 }
 
 export function toAyahIds(
-  verseKeys: readonly string[],
+  verseKeys: readonly QuranVerseKey[],
   ayahIdByVerseKey: Readonly<Record<string, number>>,
 ): readonly number[] {
   return verseKeys

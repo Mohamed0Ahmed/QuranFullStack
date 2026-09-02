@@ -8,7 +8,7 @@ import type {
   MushafPageResponse as MushafPageWireDto,
   MushafStudySourceCatalogResponse as MushafStudySourceCatalogDto,
   MushafSurahCatalogItem as MushafSurahCatalogItemDto,
-  MushafWordDto,
+  MushafWordDto as MushafWordWireDto,
   MutashabihatGroupDto,
   MutashabihatOccurrenceDto,
   MutashabihatSelectedOccurrenceDto,
@@ -33,6 +33,7 @@ import type {
   WordOccurrenceDto,
   AyahRange as AyahRangeDto,
 } from '../../../core/api/generated/models';
+import type { QuranVerseKey, QuranWordLocation } from '../../../shared/quran/quran-location';
 
 export type {
   AyahCoreDto,
@@ -42,7 +43,6 @@ export type {
   LocalizedLabel,
   MushafStudySourceCatalogDto,
   MushafSurahCatalogItemDto,
-  MushafWordDto,
   MutashabihatGroupDto,
   MutashabihatOccurrenceDto,
   MutashabihatSelectedOccurrenceDto,
@@ -59,12 +59,20 @@ export type {
   WordOccurrenceDto,
 };
 
-export interface MushafLineDto extends Omit<MushafLineWireDto, 'lineType'> {
-  lineType: 'ayah' | 'surah_name' | 'basmallah';
+export interface MushafWordDto extends Omit<MushafWordWireDto, 'verseKey' | 'wordLocation'> {
+  verseKey: QuranVerseKey;
+  wordLocation: QuranWordLocation;
 }
 
-export interface PageMarkerDto extends Omit<PageMarkerWireDto, 'markerType'> {
+export interface MushafLineDto extends Omit<MushafLineWireDto, 'lineType' | 'words'> {
+  lineType: 'ayah' | 'surah_name' | 'basmallah';
+  words: MushafWordDto[];
+}
+
+export interface PageMarkerDto extends Omit<PageMarkerWireDto, 'markerType' | 'verseKey' | 'wordLocation'> {
   markerType: 'juz' | 'hizb' | 'rub' | 'sajda';
+  verseKey: QuranVerseKey;
+  wordLocation: QuranWordLocation;
 }
 
 export interface MushafPageDto extends Omit<MushafPageWireDto, 'lines' | 'markers'> {
@@ -102,7 +110,7 @@ export interface SimilarAyahsDto extends Omit<SimilarAyahsWireDto, 'items'> {
 }
 
 export interface AyahNavigationTarget {
-  verseKey: string;
+  verseKey: QuranVerseKey;
   pageNumber: number;
 }
 
@@ -212,8 +220,8 @@ export interface MushafReaderSources {
 
 export interface MushafReaderState {
   pageNumber: number;
-  selectedAyahKey: string | null;
-  selectedWordLocation: string | null;
+  selectedAyahKey: QuranVerseKey | null;
+  selectedWordLocation: QuranWordLocation | null;
   selectedSegmentLocation: string | null;
   panel: PanelMode;
   ayahTab: AyahStudyTab;

@@ -127,21 +127,6 @@ export function isLinkingWordTypeScope(value: unknown): value is LinkingWordType
   );
 }
 
-export function isVerseKey(value: unknown): value is string {
-  if (typeof value !== 'string') {
-    return false;
-  }
-
-  const match = /^(\d{1,3}):(\d{1,3})$/.exec(value);
-  if (!match) {
-    return false;
-  }
-
-  const surahNumber = Number(match[1]);
-  const ayahNumber = Number(match[2]);
-  return surahNumber >= 1 && surahNumber <= 114 && ayahNumber >= 1 && ayahNumber <= 286;
-}
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }

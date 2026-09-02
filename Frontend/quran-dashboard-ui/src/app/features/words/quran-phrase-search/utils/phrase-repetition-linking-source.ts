@@ -5,7 +5,10 @@ import {
   LinkingManualMushafAyahReference,
 } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
-import { isVerseKey } from '../../../linking/models/linking-source.models';
+import {
+  compareQuranVerseKeys,
+  parseQuranVerseKey,
+} from '../../../../shared/quran/quran-location';
 
 interface CollectedPhraseAyah {
   readonly reference: LinkingManualMushafAyahReference;
@@ -31,6 +34,10 @@ export function createPhraseRepetitionLinkingLaunch(
     }
 
     occurrenceIds.add(occurrence.occurrenceId);
+    const verse = parseQuranVerseKey(occurrence.verseKey);
+    if (!verse || verse.key !== occurrence.verseKey) {
+      return null;
+    }
     const existing = ayahs.get(occurrence.ayahId);
     if (
       existing !== undefined &&
@@ -42,7 +49,7 @@ export function createPhraseRepetitionLinkingLaunch(
 
     const collected = existing ?? {
       reference: {
-        verseKey: occurrence.verseKey,
+        verseKey: verse.key,
         pageNumber: occurrence.pageFrom,
         displayHint: occurrence.verseKey,
       },
@@ -56,9 +63,11 @@ export function createPhraseRepetitionLinkingLaunch(
     return null;
   }
 
-  const manualAyahs = [...ayahs.values()].map((ayah) => ayah.reference);
-  const selectedWords = [...ayahs.entries()]
-    .sort(([leftAyahId], [rightAyahId]) => leftAyahId - rightAyahId)
+  const orderedAyahs = [...ayahs.entries()].sort(([, left], [, right]) =>
+    compareQuranVerseKeys(left.reference.verseKey, right.reference.verseKey),
+  );
+  const manualAyahs = orderedAyahs.map(([, ayah]) => ayah.reference);
+  const selectedWords = orderedAyahs
     .flatMap(([ayahId, ayah]) =>
       [...ayah.wordIds]
         .sort((leftWordId, rightWordId) => leftWordId - rightWordId)
@@ -113,7 +122,7 @@ function isValidOccurrence(occurrence: PhraseOccurrenceDto, phraseWordCount: num
     occurrence.occurrenceId > 0 &&
     Number.isSafeInteger(occurrence.ayahId) &&
     occurrence.ayahId > 0 &&
-    isVerseKey(occurrence.verseKey) &&
+    isCanonicalVerseKey(occurrence.verseKey) &&
     Number.isSafeInteger(occurrence.pageFrom) &&
     occurrence.pageFrom >= 1 &&
     occurrence.pageFrom <= 604 &&
@@ -128,4 +137,9 @@ function isValidOccurrence(occurrence: PhraseOccurrenceDto, phraseWordCount: num
       (wordId) => isCanonicalQuranWordId(wordId) && canonicalWordIds.has(wordId),
     )
   );
+}
+
+function isCanonicalVerseKey(value: unknown): boolean {
+  const parsed = parseQuranVerseKey(value);
+  return parsed !== null && parsed.key === value;
 }

@@ -9,6 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 import { SessionScrollStateDirective } from '../../../../shared/navigation/session-scroll-state/session-scroll-state.directive';
 import { MushafPageViewModel } from '../../models/mushaf.models';
@@ -38,15 +39,15 @@ import {
 })
 export class MushafPageViewComponent {
   readonly page = input.required<MushafPageViewModel>();
-  readonly highlightedVerseKey = input<string | null>(null);
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly highlightedVerseKey = input<QuranVerseKey | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
   readonly wordDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
   readonly ayahDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
 
-  readonly ayahSelect = output<string>();
-  readonly wordSelect = output<string>();
+  readonly ayahSelect = output<QuranVerseKey>();
+  readonly wordSelect = output<QuranWordLocation>();
   readonly pageChange = output<number>();
   readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 

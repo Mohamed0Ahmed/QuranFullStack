@@ -18,6 +18,7 @@ import {
 import { AyahMatchDto, PagedResultDto } from '../../models/unique-words.models';
 import { buildMushafDeepLink } from '../../../mushaf/state/mushaf-url-sync';
 import { pageRelativeRowNumber } from '../../utils/unique-words-pagination-display';
+import { parseQuranVerseKey } from '../../../../shared/quran/quran-location';
 
 interface AyahMatchRowViewModel {
   match: AyahMatchDto;
@@ -46,17 +47,21 @@ export class AyahMatchesListComponent {
   protected readonly loadingCardPlaceholders = Array.from({ length: 4 });
 
   protected readonly rows = computed((): readonly AyahMatchRowViewModel[] =>
-    this.page().items.map((match) => {
+    this.page().items.flatMap((match) => {
+      const verse = parseQuranVerseKey(match.verseKey);
+      if (!verse) {
+        return [];
+      }
       const deepLink = buildMushafDeepLink({
         pageNumber: match.pageNumber,
-        ayah: match.verseKey,
-        focusAyah: match.verseKey,
+        ayah: verse.key,
+        focusAyah: verse.key,
         panel: 'ayah',
       });
-      return {
+      return [{
         match,
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
-      };
+      }];
     }),
   );
 

@@ -2,6 +2,7 @@ import { MushafAyahMutashabihatApi } from '../data-access/mushaf-ayah-mutashabih
 import { AyahMutashabihatDto, ResourceLoadState } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export interface MutashabihatLoadBindings {
   setMutashabihat(value: AyahMutashabihatDto | null): void;
@@ -17,7 +18,7 @@ export class MutashabihatLoadRunner {
 
   constructor(private readonly bindings: MutashabihatLoadBindings) {}
 
-  loadImmediate(verseKey: string): void {
+  loadImmediate(verseKey: QuranVerseKey): void {
     this.clearPending();
     const requestToken = this.bindings.bumpRequestToken();
     this.runLoad(verseKey, requestToken);
@@ -38,7 +39,7 @@ export class MutashabihatLoadRunner {
     this.bindings.setLoadState({ isLoading: false, isEmpty: false, errorMessage: null });
   }
 
-  private applyCached(verseKey: string): boolean {
+  private applyCached(verseKey: QuranVerseKey): boolean {
     const cached = this.bindings.readerCache.peek<AyahMutashabihatDto>(
       MushafReaderCacheKeys.ayahMutashabihat(verseKey),
     );
@@ -51,7 +52,7 @@ export class MutashabihatLoadRunner {
     return true;
   }
 
-  private runLoad(verseKey: string, requestToken: number): void {
+  private runLoad(verseKey: QuranVerseKey, requestToken: number): void {
     if (this.applyCached(verseKey)) {
       return;
     }

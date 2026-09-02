@@ -118,7 +118,9 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly defaultView: RootView = DEFAULT_ROOT_VIEW;
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapRootAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapRootAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
   protected readonly linkingSource = computed<LinkingSourceDescriptor | null>(() => {
     const state = this.panelState();
@@ -286,4 +288,8 @@ export class RootsExplorerPageComponent implements OnInit, OnDestroy {
   private defaultColumnForEvent(view: RootView, wordView: RootWordView | undefined): RootTableColumnKey {
     return this.defaultColumnForView(view, wordView ?? 'simple');
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }

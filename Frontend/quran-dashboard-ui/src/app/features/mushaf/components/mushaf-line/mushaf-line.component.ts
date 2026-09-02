@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 import { MushafLineDto, PageMarkerDto } from '../../models/mushaf.models';
 import {
@@ -24,16 +25,16 @@ import { mushafSurahNameLigature } from './mushaf-surah-name-ligature';
 export class MushafLineComponent {
   readonly line = input.required<MushafLineDto>();
   readonly markers = input<PageMarkerDto[]>([]);
-  readonly highlightedVerseKey = input<string | null>(null);
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly highlightedVerseKey = input<QuranVerseKey | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
   readonly surahNameArabic = input<string | null>(null);
   readonly wordDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
   readonly ayahDoorHighlights = input<ReadonlyMap<string, MushafDoorResolvedHighlight>>(new Map());
 
-  readonly ayahSelect = output<string>();
-  readonly wordSelect = output<string>();
+  readonly ayahSelect = output<QuranVerseKey>();
+  readonly wordSelect = output<QuranWordLocation>();
   readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
   readonly lineWordLocations = computed(() =>
