@@ -10,7 +10,7 @@ internal sealed partial class EfLinkingConfirmationJobStore
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(ClaimLockNamespace, 1, cancellationToken);
+        await lockProtocol.AcquireConfirmationWorkerClaimAsync(cancellationToken);
         var activeCount = await db.LinkingConfirmationJobs.CountAsync(
             job => (job.Status == LinkingConfirmationJobStatus.Running
                     || job.Status == LinkingConfirmationJobStatus.Finalizing)
@@ -121,8 +121,7 @@ internal sealed partial class EfLinkingConfirmationJobStore
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(JobLockNamespace, LockKey(lease.JobId), cancellationToken);
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        await lockProtocol.AcquireConfirmationFinalizingAsync(lease.JobId, cancellationToken);
         var changed = await db.Database.ExecuteSqlInterpolatedAsync(
             $"""
             UPDATE linking_confirmation_jobs
@@ -156,7 +155,7 @@ internal sealed partial class EfLinkingConfirmationJobStore
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(JobLockNamespace, LockKey(lease.JobId), cancellationToken);
+        await lockProtocol.AcquireConfirmationJobMutationAsync(lease.JobId, cancellationToken);
         var jobs = await db.LinkingConfirmationJobs.FromSqlInterpolated(
                 $"""
                 SELECT job.*, job.xmin

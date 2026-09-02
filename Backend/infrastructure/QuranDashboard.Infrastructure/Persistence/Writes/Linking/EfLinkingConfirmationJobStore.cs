@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using Microsoft.EntityFrameworkCore.Storage;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
@@ -6,7 +5,6 @@ using QuranDashboard.Application.Abstractions.Linking.Responses;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Background;
 using QuranDashboard.Infrastructure.Persistence.Linking;
-using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -15,13 +13,8 @@ internal sealed partial class EfLinkingConfirmationJobStore(
     ILinkingDataRevisionWriterStore revisionStore,
     ILinkingScalabilityPolicy policy,
     LinkingJobQueueSignal queueSignal,
-    AbwabDoorInclusionSyncLock syncLock) : ILinkingConfirmationJobStore
+    LinkingWriteLockProtocol lockProtocol) : ILinkingConfirmationJobStore
 {
-    private const int ActorLockNamespace = 193648317;
-    private const int IdempotencyLockNamespace = 193648319;
-    private const int ClaimLockNamespace = 193648320;
-    private const int JobLockNamespace = 193648321;
-
     private static readonly JsonSerializerOptions OutcomeJsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
@@ -35,10 +28,9 @@ internal sealed partial class EfLinkingConfirmationJobStore(
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(ActorLockNamespace, actorUserId, cancellationToken);
-        await TakeAdvisoryLockAsync(
-            IdempotencyLockNamespace,
-            LockKey(request.IdempotencyKey),
+        await lockProtocol.AcquireConfirmationEnqueueAsync(
+            actorUserId,
+            request.IdempotencyKey,
             cancellationToken);
 
         var operation = await db.LinkingOperations.AsNoTracking().SingleOrDefaultAsync(
@@ -179,7 +171,7 @@ internal sealed partial class EfLinkingConfirmationJobStore(
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(JobLockNamespace, LockKey(jobId), cancellationToken);
+        await lockProtocol.AcquireConfirmationJobMutationAsync(jobId, cancellationToken);
         var job = await LockOwnedJobAsync(actorUserId, jobId, cancellationToken);
         if (job is null)
         {
@@ -414,14 +406,6 @@ internal sealed partial class EfLinkingConfirmationJobStore(
         JsonSerializer.Deserialize<LinkingConfirmationResultDto>(json, OutcomeJsonOptions)
         ?? throw new InvalidOperationException("Stored linking confirmation outcome is empty.");
 
-    private async Task TakeAdvisoryLockAsync(
-        int lockNamespace,
-        int key,
-        CancellationToken cancellationToken) =>
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({lockNamespace}, {key})",
-            cancellationToken);
-
     private async Task<long> LockRevisionAsync(
         IDbContextTransaction transaction,
         CancellationToken cancellationToken)
@@ -481,9 +465,6 @@ internal sealed partial class EfLinkingConfirmationJobStore(
     private async Task<DateTimeOffset> DatabaseNowAsync(CancellationToken cancellationToken) =>
         await db.Database.SqlQuery<DateTimeOffset>($"SELECT CURRENT_TIMESTAMP AS \"Value\"")
             .SingleAsync(cancellationToken);
-
-    private static int LockKey(Guid key) =>
-        BitConverter.ToInt32(SHA256.HashData(key.ToByteArray()), 0);
 
     private static LinkingConfirmationJobConflictException Conflict(
         LinkingConfirmationJobConflictKind kind,

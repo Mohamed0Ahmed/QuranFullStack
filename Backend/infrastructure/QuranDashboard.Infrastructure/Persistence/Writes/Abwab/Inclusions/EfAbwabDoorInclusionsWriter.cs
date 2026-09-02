@@ -1,10 +1,11 @@
 using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
+using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 internal sealed partial class EfAbwabDoorInclusionsWriter(
     QuranDashboardDbContext db,
-    AbwabDoorInclusionSyncLock syncLock,
+    LinkingWriteLockProtocol lockProtocol,
     EfAbwabDoorInclusionSynchronizer synchronizer) : IAbwabDoorInclusionsWriter
 {
     public async Task<AbwabDoorInclusionAddWriteResult> AddAsync(

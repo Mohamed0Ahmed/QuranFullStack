@@ -71,7 +71,7 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
         int actorUserId,
         CancellationToken cancellationToken)
     {
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
 
         var activeInclusions = await db.AbwabDoorInclusions.AsNoTracking()
             .Where(inclusion => inclusion.DeletedAtUtc == null)

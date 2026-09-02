@@ -17,6 +17,7 @@ internal sealed partial class EfDoorLinkRecordsWriter
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
             var door = await LockDoorAsync(doorId, cancellationToken);
             var invalidDoor = ValidateDoor(door, expectedDoorVersion);
             if (invalidDoor is not null)
