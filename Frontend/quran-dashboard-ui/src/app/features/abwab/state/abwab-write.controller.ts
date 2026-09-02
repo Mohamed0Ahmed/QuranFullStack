@@ -1,4 +1,4 @@
-import { Injectable, Injector, computed, inject, signal } from '@angular/core';
+import { Injectable, computed, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, from, map, of, switchMap } from 'rxjs';
 
@@ -20,8 +20,7 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
 import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { PermissionCode } from '../../../core/auth/permission-code';
 import { ABWAB_WRITE_PERMISSIONS } from './abwab-permissions.controller';
 
@@ -42,14 +41,25 @@ interface AbwabWriteOptions {
 
 export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
   if (err instanceof HttpErrorResponse) {
-    const body = err.error as ApiResponse<unknown> | null | undefined;
-    const backendMessage = typeof body?.message === 'string' && body.message.length > 0 ? body.message : null;
+    const backendMessage = readBackendMessage(err);
 
     if (err.status === 409) {
       return { kind: 'conflict', message: backendMessage ?? ABWAB_LABELS.writeConflictFallback };
     }
     if (err.status === 400 || err.status === 404) {
       return { kind: 'invalid', message: backendMessage ?? ABWAB_LABELS.writeInvalidFallback };
+    }
+    if (err.status === 401) {
+      return {
+        kind: 'unauthorized',
+        message: backendMessage ?? ABWAB_LABELS.writePermissionDenied,
+      };
+    }
+    if (err.status === 403) {
+      return {
+        kind: 'forbidden',
+        message: backendMessage ?? ABWAB_LABELS.writePermissionDenied,
+      };
     }
   }
   return { kind: 'error', message: ABWAB_LABELS.writeTransportFallback };
@@ -68,8 +78,7 @@ export class AbwabWriteController {
   private readonly api = inject(AbwabApi);
   private readonly facade = inject(AbwabSnapshotFacade);
   private readonly selection = inject(AbwabSelectionStore);
-  private readonly currentUserStore = inject(CurrentUserStore);
-  private readonly injector = inject(Injector);
+  private readonly authSession = inject(AuthSessionStore);
 
   private readonly announcementState = signal<string | null>(null);
   readonly announcement = this.announcementState.asReadonly();
@@ -181,7 +190,7 @@ export class AbwabWriteController {
     targetParentId: number | null,
     targetSectionId: number | null,
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> {
-    if (!this.currentUserStore.can(ABWAB_WRITE_PERMISSIONS.moveDoor)) {
+    if (!this.authSession.can(ABWAB_WRITE_PERMISSIONS.moveDoor)) {
       return of(this.handlePermissionDenied<AbwabDoorDto[]>({ announceFailure: true }));
     }
     const doors = this.currentBulkRefs();
@@ -196,7 +205,7 @@ export class AbwabWriteController {
   }
 
   bulkArchiveDoors(): Observable<AbwabWriteOutcome<number[]>> {
-    if (!this.currentUserStore.can(ABWAB_WRITE_PERMISSIONS.archiveDoor)) {
+    if (!this.authSession.can(ABWAB_WRITE_PERMISSIONS.archiveDoor)) {
       return of(this.handlePermissionDenied<number[]>({ announceFailure: true }));
     }
     const doors = this.currentBulkRefs();
@@ -238,7 +247,7 @@ export class AbwabWriteController {
     request: () => Observable<ApiResponse<T> | null>,
     options: AbwabWriteOptions = {},
   ): Observable<AbwabWriteOutcome<T>> {
-    if (!this.currentUserStore.can(permission)) {
+    if (!this.authSession.can(permission)) {
       return of(this.handlePermissionDenied<T>(options));
     }
 
@@ -340,15 +349,11 @@ export class AbwabWriteController {
     if (!(err instanceof HttpErrorResponse) || (err.status !== 401 && err.status !== 403)) {
       return of(toAbwabWriteFailure(err));
     }
-    return from(this.injector.get(WriteAuthFailureCoordinator).handle(err)).pipe(
-      map((authFailure) =>
-        authFailure === null
-          ? toAbwabWriteFailure(err)
-          : {
-              kind: authFailure.kind,
-              message: authFailure.message ?? ABWAB_LABELS.writePermissionDenied,
-            },
-      ),
-    );
+    return from(this.authSession.handleWriteAuthFailure(err)).pipe(map(() => toAbwabWriteFailure(err)));
   }
+}
+
+function readBackendMessage(error: HttpErrorResponse): string | null {
+  const body = error.error as ApiResponse<unknown> | null | undefined;
+  return typeof body?.message === 'string' && body.message.trim().length > 0 ? body.message : null;
 }

@@ -1,7 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { HttpLinkingWorkspaceRepository } from '../data-access/http-linking-workspace.repository';
 import { LinkingWorkspaceRepository } from '../data-access/linking-workspace.repository';
 import { LinkingManualLinkShape } from '../models/linking-manual-mushaf.models';
@@ -29,7 +29,7 @@ import { LinkingWorkspaceAddResult } from '../models/linking-workspace-add.model
 
 @Injectable({ providedIn: 'root' })
 export class LinkingWorkspaceStore {
-  private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly sync = inject(LinkingWorkspaceSyncRunner);
   private readonly configurationSync = inject(LinkingWorkspaceConfigurationSyncRunner);
@@ -407,16 +407,16 @@ export class LinkingWorkspaceStore {
   }
 
   private synchronizeActorWorkspace(): void {
-    if (!this.currentUserStore.authStateKnown() || this.currentUserStore.loadState() === 'loading') {
+    if (this.authSession.isResolving()) {
       return;
     }
-    const currentUser = this.currentUserStore.currentUser();
-    if (!this.linkingAccess.canUseLinking() || currentUser === null) {
+    const actorSub = this.authSession.subject();
+    if (!this.linkingAccess.canUseLinking() || actorSub === null) {
       this.resetInMemoryWorkspace();
       return;
     }
-    if (this.currentActorSub() !== currentUser.sub) {
-      this.activateActor(currentUser.sub);
+    if (this.currentActorSub() !== actorSub) {
+      this.activateActor(actorSub);
     }
   }
 
@@ -568,10 +568,10 @@ export class LinkingWorkspaceStore {
 
   private canMutate(): boolean {
     this.synchronizeActorWorkspace();
-    const actorSub = this.currentUserStore.currentUser()?.sub;
+    const actorSub = this.authSession.subject();
     return (
       this.linkingAccess.canUseLinking() &&
-      actorSub !== undefined &&
+      actorSub !== null &&
       actorSub === this.currentActorSub() &&
       actorSub === this.hydratedActorSub()
     );
@@ -582,15 +582,15 @@ export class LinkingWorkspaceStore {
       this.actorGeneration === actorGeneration &&
       this.currentActorSub() === actorSub &&
       this.linkingAccess.canUseLinking() &&
-      this.currentUserStore.currentUser()?.sub === actorSub
+      this.authSession.subject() === actorSub
     );
   }
 
   private isReadyForCurrentActor(): boolean {
-    const actorSub = this.currentUserStore.currentUser()?.sub;
+    const actorSub = this.authSession.subject();
     return (
       this.linkingAccess.canUseLinking() &&
-      actorSub !== undefined &&
+      actorSub !== null &&
       actorSub === this.currentActorSub() &&
       actorSub === this.hydratedActorSub()
     );

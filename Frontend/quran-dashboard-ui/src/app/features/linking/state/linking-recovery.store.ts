@@ -1,7 +1,7 @@
 import { Injectable, computed, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { LinkingExecutionApi } from '../data-access/linking-execution.api';
 import { LinkingJobStatusApi } from '../data-access/linking-job-status.api';
 import { LinkingPreparedPreflightApi } from '../data-access/linking-prepared-preflight.api';
@@ -56,7 +56,7 @@ export class LinkingRecoveryCapacityError extends Error {}
 
 @Injectable({ providedIn: 'root' })
 export class LinkingRecoveryStore {
-  private readonly currentUser = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly access = inject(LinkingAccessService);
   private readonly preflights = inject(LinkingPreparedPreflightApi);
   private readonly executions = inject(LinkingExecutionApi);
@@ -76,14 +76,14 @@ export class LinkingRecoveryStore {
     if (typeof BroadcastChannel !== 'undefined') {
       this.channel = new BroadcastChannel('quran-dashboard-linking-recovery');
       this.channel.onmessage = ({ data }) => {
-        if (data === this.currentUser.currentUser()?.sub) {
+        if (data === this.authSession.subject()) {
           void this.refresh(data);
         }
       };
     }
     effect(() => {
       const actorSub = this.access.canUseLinking()
-        ? this.currentUser.currentUser()?.sub ?? null
+        ? this.authSession.subject()
         : null;
       if (actorSub === null) {
         this.recordsSignal.set([]);
@@ -207,7 +207,7 @@ export class LinkingRecoveryStore {
   }
 
   recover(actorSub: string): void {
-    if (!this.access.canUseLinking() || this.currentUser.currentUser()?.sub !== actorSub) {
+    if (!this.access.canUseLinking() || this.authSession.subject() !== actorSub) {
       return;
     }
     if (this.queuedActors.has(actorSub)) {
@@ -382,7 +382,7 @@ export class LinkingRecoveryStore {
   }
 
   private async refresh(actorSub: string): Promise<void> {
-    if (this.currentUser.currentUser()?.sub === actorSub) {
+    if (this.authSession.subject() === actorSub) {
       this.recordsSignal.set(await this.list(actorSub));
     }
   }

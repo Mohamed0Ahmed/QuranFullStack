@@ -1,4 +1,4 @@
-import { Injectable, Injector, inject, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Observable, catchError, from, map, of } from 'rxjs';
 
@@ -16,8 +16,7 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabTemplateDto } from '../../../core/api/generated/models/abwab-template-dto';
 import { AbwabTemplateNodeDto } from '../../../core/api/generated/models/abwab-template-node-dto';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { PermissionCode } from '../../../core/auth/permission-code';
 import { ABWAB_WRITE_PERMISSIONS } from './abwab-permissions.controller';
 
@@ -33,8 +32,7 @@ interface AbwabTemplatesWriteOptions {
 export class AbwabTemplatesController {
   private readonly api = inject(AbwabTemplatesApi);
   private readonly facade = inject(AbwabTemplatesFacade);
-  private readonly currentUserStore = inject(CurrentUserStore);
-  private readonly injector = inject(Injector);
+  private readonly authSession = inject(AuthSessionStore);
 
   private readonly announcementState = signal<string | null>(null);
   readonly announcement = this.announcementState.asReadonly();
@@ -110,7 +108,7 @@ export class AbwabTemplatesController {
     request: () => Observable<ApiResponse<T> | null>,
     options: AbwabTemplatesWriteOptions,
   ): Observable<AbwabWriteOutcome<T | null>> {
-    if (!this.currentUserStore.can(permission)) {
+    if (!this.authSession.can(permission)) {
       return of(this.handlePermissionDenied<T | null>(options));
     }
 
@@ -150,16 +148,7 @@ export class AbwabTemplatesController {
     if (!(err instanceof HttpErrorResponse) || (err.status !== 401 && err.status !== 403)) {
       return of(toAbwabWriteFailure(err));
     }
-    return from(this.injector.get(WriteAuthFailureCoordinator).handle(err)).pipe(
-      map((authFailure) =>
-        authFailure === null
-          ? toAbwabWriteFailure(err)
-          : {
-              kind: authFailure.kind,
-              message: authFailure.message ?? ABWAB_LABELS.writePermissionDenied,
-            },
-      ),
-    );
+    return from(this.authSession.handleWriteAuthFailure(err)).pipe(map(() => toAbwabWriteFailure(err)));
   }
 
   private applyRefresh(refresh: AbwabTemplatesRefresh): void {
