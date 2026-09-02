@@ -8,5 +8,4 @@ public sealed record ResolvePhraseContextLinkingSelectionQuery(
     string? Following,
     string? PreviousAlternatives,
     string? FollowingAlternatives,
-    PhraseContextAyahSelectionMode? SelectionMode,
-    IReadOnlyList<int>? AyahIds);
+    PhraseLinkingAyahSelection Selection);

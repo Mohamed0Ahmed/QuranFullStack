@@ -22,7 +22,7 @@ public interface IPhraseContextReader
 
     Task<PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>> GetLinkingSelectionAsync(
         PhraseContextSelection selection,
-        PhraseContextLinkingSelection ayahSelection,
+        PhraseLinkingAyahSelection ayahSelection,
         CancellationToken cancellationToken);
 
     Task<PhraseSearchReadResult<PhraseContextOccurrencesResponse>> GetOccurrencesAsync(

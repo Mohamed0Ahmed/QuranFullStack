@@ -7,15 +7,9 @@ public sealed partial class EfPhraseContextReader
 {
     public async Task<PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>> GetLinkingSelectionAsync(
         PhraseContextSelection selection,
-        PhraseContextLinkingSelection ayahSelection,
+        PhraseLinkingAyahSelection ayahSelection,
         CancellationToken cancellationToken)
     {
-        if (ayahSelection.AyahIds.Any(ayahId => ayahId <= 0)
-            || ayahSelection.AyahIds.Distinct().Count() != ayahSelection.AyahIds.Count)
-        {
-            return new PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.InvalidSelection();
-        }
-
         await using var snapshot = await PhraseSearchReadSnapshot.OpenAsync(db, cancellationToken);
         if (snapshot is null)
         {
@@ -46,40 +40,33 @@ public sealed partial class EfPhraseContextReader
         var rowsByAyah = loaded.Items
             .GroupBy(row => row.AyahId)
             .ToDictionary(group => group.Key, group => group.ToList());
-        if (ayahSelection.AyahIds.Any(ayahId => !rowsByAyah.ContainsKey(ayahId)))
+        var orderedPopulationAyahIds = rowsByAyah
+            .OrderBy(pair => pair.Value[0].SurahNumber)
+            .ThenBy(pair => pair.Value[0].AyahNumber)
+            .Select(pair => pair.Key)
+            .ToList();
+        var selectedAyahIds = PhraseLinkingSelectionResolver.ResolveAyahIds(
+            ayahSelection,
+            orderedPopulationAyahIds);
+        if (selectedAyahIds is null)
         {
             await snapshot.CompleteAsync(cancellationToken);
             return new PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.InvalidSelection();
         }
 
-        var selectedRowsByAyah = ayahSelection.Mode switch
-        {
-            PhraseContextAyahSelectionMode.Only => rowsByAyah
-                .Where(pair => ayahSelection.AyahIds.Contains(pair.Key))
-                .ToList(),
-            PhraseContextAyahSelectionMode.AllExcept => rowsByAyah
-                .Where(pair => !ayahSelection.AyahIds.Contains(pair.Key))
-                .ToList(),
-            _ => [],
-        };
-        if (selectedRowsByAyah.Count == 0)
-        {
-            await snapshot.CompleteAsync(cancellationToken);
-            return new PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.InvalidSelection();
-        }
-
+        var selectedRowsByAyah = selectedAyahIds
+            .Select(ayahId => rowsByAyah[ayahId])
+            .ToList();
         var selectedRows = selectedRowsByAyah
-            .SelectMany(pair => pair.Value)
+            .SelectMany(rows => rows)
             .ToList();
         var occurrences = await LoadContextOccurrencesAsync(
             selectedRows,
             selection.Resolution,
             cancellationToken);
         var ayahs = selectedRowsByAyah
-            .OrderBy(pair => pair.Value[0].SurahNumber)
-            .ThenBy(pair => pair.Value[0].AyahNumber)
-            .Select(pair => CreateLinkingSelectionAyah(
-                pair.Value.Select(row => occurrences[row.OccurrenceId]).ToList(),
+            .Select(rows => CreateLinkingSelectionAyah(
+                rows.Select(row => occurrences[row.OccurrenceId]).ToList(),
                 selection))
             .ToList();
         var response = new PhraseContextLinkingSelectionResponse(
@@ -90,7 +77,7 @@ public sealed partial class EfPhraseContextReader
         return new PhraseSearchReadResult<PhraseContextLinkingSelectionResponse>.Success(response);
     }
 
-    private static PhraseContextLinkingSelectionAyahDto CreateLinkingSelectionAyah(
+    private PhraseContextLinkingSelectionAyahDto CreateLinkingSelectionAyah(
         IReadOnlyList<ContextOccurrence> occurrences,
         PhraseContextSelection selection)
     {
@@ -100,15 +87,9 @@ public sealed partial class EfPhraseContextReader
             .Concat(ayah.Highlights.PreviousQuranWordIds)
             .Concat(ayah.Highlights.FollowingQuranWordIds)
             .ToHashSet();
-        var canonicalWordIds = first.Words
-            .Where(word => selectedWordIds.Contains(word.QuranWordId))
-            .Select(word => word.QuranWordId)
-            .ToList();
-        if (canonicalWordIds.Count != selectedWordIds.Count
-            || canonicalWordIds.Any(wordId => wordId <= 0))
-        {
-            throw new InvalidDataException("PhraseSearch linking selection contains an invalid Quran word.");
-        }
+        var canonicalWordIds = PhraseLinkingSelectionResolver.OrderSelectedWords(
+            first.Words.Select(word => word.QuranWordId).ToList(),
+            selectedWordIds);
 
         return new PhraseContextLinkingSelectionAyahDto(
             ayah.AyahId,

@@ -12,16 +12,6 @@ public sealed class ResolvePhraseContextLinkingSelectionHandler(
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (query.SelectionMode is null
-            || !Enum.IsDefined(query.SelectionMode.Value)
-            || query.AyahIds is null
-            || query.AyahIds.Any(ayahId => ayahId <= 0)
-            || query.AyahIds.Distinct().Count() != query.AyahIds.Count)
-        {
-            return new PhraseReadOutcome<PhraseContextLinkingSelectionResponse>.Invalid(
-                PhraseRequestInvalidKind.Selection);
-        }
-
         if (!parser.TryParseSelection(
                 query.Resolution,
                 query.Previous,
@@ -37,7 +27,7 @@ public sealed class ResolvePhraseContextLinkingSelectionHandler(
 
         var result = await reader.GetLinkingSelectionAsync(
             selection,
-            new PhraseContextLinkingSelection(query.SelectionMode.Value, query.AyahIds),
+            query.Selection,
             cancellationToken);
         return result switch
         {
