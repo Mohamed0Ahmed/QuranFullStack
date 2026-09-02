@@ -25,7 +25,6 @@ import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissio
 import { AbwabRelationsController } from '../../../abwab/state/abwab-relations.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
 import { searchAbwabNodes } from '../../../abwab/state/abwab-tree-search';
-import { abwabPermissionDenied } from '../../../abwab/state/abwab-write.controller';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
@@ -138,7 +137,10 @@ export class MushafDoorsPanelComponent implements OnInit, OnDestroy {
 
   protected readonly loadRelations = (doorId: number) => this.relations.loadFor(doorId);
   protected readonly refetchRelations = (doorId: number) => this.relations.refetchFor(doorId);
-  protected readonly rejectRelationWrite = () => of(abwabPermissionDenied());
+  protected readonly rejectRelationWrite = () => of({
+    kind: 'forbidden' as const,
+    message: ABWAB_LABELS.writePermissionDenied,
+  });
 
   constructor() {
     effect(() => {

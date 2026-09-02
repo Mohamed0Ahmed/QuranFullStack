@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  ElementRef,
   computed,
   effect,
   inject,
@@ -59,6 +60,7 @@ export class AbwabInclusionsModalComponent {
   protected readonly view = signal<AbwabInclusionsView>('overview');
 
   private readonly picker = viewChild(AbwabDoorPickerComponent);
+  private readonly host: ElementRef<HTMLElement> = inject(ElementRef);
   private activeTargetId: number | null = null;
   private readonly pathsById = computed(() => buildAbwabNodePaths(this.liveRoots()));
   private readonly nodesById = computed(() => {
@@ -120,8 +122,15 @@ export class AbwabInclusionsModalComponent {
       const open = this.controller.isOpen();
       const loaded = this.controller.topology() !== null;
       const view = this.view();
+      const canCreateSources = this.canCreateSources();
       untracked(() => {
-        if (open && loaded && view === 'add' && this.canCreateSources()) {
+        if (open && view === 'add' && !canCreateSources) {
+          this.host.nativeElement
+            .querySelector<HTMLElement>('[data-testid="abwab-inclusions-modal-close"]')
+            ?.focus();
+          this.controller.clearSourceDraft();
+          this.view.set('overview');
+        } else if (open && loaded && view === 'add') {
           setTimeout(() => this.picker()?.focusSearch());
         }
       });

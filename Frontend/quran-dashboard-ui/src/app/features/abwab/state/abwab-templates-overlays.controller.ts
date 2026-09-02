@@ -10,7 +10,7 @@ import {
 import { AbwabTemplatesFacade } from './abwab-templates.facade';
 import { AbwabTemplatesController } from './abwab-templates.controller';
 import { AbwabPermissionsController } from './abwab-permissions.controller';
-import { AbwabWriteOutcome, abwabPermissionDenied } from './abwab-write.controller';
+import { AbwabWriteOutcome } from './abwab-write.controller';
 import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto';
 
 type AbwabNodeModalState =
@@ -90,12 +90,7 @@ export class AbwabTemplatesOverlaysController {
   readonly submitNode = (fields: AbwabAuthoringFields): Observable<AbwabWriteOutcome<unknown>> => {
     const state = this.nodeModal();
     if (state?.mode === 'edit') {
-      return this.permissions.canEditTemplateNode()
-        ? this.templates.editNode(state.nodeId, fields)
-        : of(abwabPermissionDenied());
-    }
-    if (!this.permissions.canCreateTemplateNode()) {
-      return of(abwabPermissionDenied());
+      return this.templates.editNode(state.nodeId, fields);
     }
     const template = this.facade.selectedTemplate();
     if (state === null || template === null) {
@@ -108,9 +103,6 @@ export class AbwabTemplatesOverlaysController {
     targetDoorIds: readonly number[],
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[] | null>> => {
     const template = this.facade.selectedTemplate();
-    if (!this.permissions.canApplyTemplate()) {
-      return of(abwabPermissionDenied());
-    }
     if (template === null) {
       return of<AbwabWriteOutcome<AbwabDoorDto[] | null>>({
         kind: 'invalid',

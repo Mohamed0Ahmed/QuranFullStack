@@ -1,9 +1,8 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { of } from 'rxjs';
 
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
-import { AbwabWriteController, AbwabWriteOutcome, abwabPermissionDenied } from './abwab-write.controller';
+import { AbwabWriteController, AbwabWriteOutcome } from './abwab-write.controller';
 import { AbwabSectionsController } from './abwab-sections.controller';
 import { AbwabRelationsController } from './abwab-relations.controller';
 import { AbwabNode, AbwabRelationDirectionKind, AbwabRelationKind } from '../models/abwab.models';
@@ -360,20 +359,12 @@ export class AbwabPageOverlaysController {
     this.sectionsModalOpen.set(false);
   }
 
-  readonly createSection = (name: string) =>
-    this.permissions.canCreateSection()
-      ? this.sectionsController.createSection(name)
-      : of(abwabPermissionDenied());
+  readonly createSection = (name: string) => this.sectionsController.createSection(name);
   readonly renameSection = (id: number, name: string, version: number) =>
-    this.permissions.canEditSection()
-      ? this.sectionsController.renameSection(id, name, version)
-      : of(abwabPermissionDenied());
-  readonly deleteSection = (id: number) =>
-    this.permissions.canDeleteSection() ? this.sectionsController.deleteSection(id) : of(abwabPermissionDenied());
+    this.sectionsController.renameSection(id, name, version);
+  readonly deleteSection = (id: number) => this.sectionsController.deleteSection(id);
   readonly reorderSection = (id: number, position: number, version: number) =>
-    this.permissions.canReorderSection()
-      ? this.sectionsController.reorderSection(id, position, version)
-      : of(abwabPermissionDenied());
+    this.sectionsController.reorderSection(id, position, version);
 
   readonly relationsModalOpen = signal(false);
   readonly relationsAnchorPickMode = signal(false);
@@ -425,11 +416,9 @@ export class AbwabPageOverlaysController {
     direction: AbwabRelationDirectionKind | null,
     targetDoorIds: readonly number[],
   ) =>
-    this.permissions.canCreateRelation()
-      ? this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds)
-      : of(abwabPermissionDenied());
+    this.relationsController.addRelations(anchorDoorId, kind, direction, targetDoorIds);
   readonly deleteRelation = (relationId: number) =>
-    this.permissions.canDeleteRelation() ? this.relationsController.deleteRelation(relationId) : of(abwabPermissionDenied());
+    this.relationsController.deleteRelation(relationId);
 
   readonly contextMenuDoorId = signal<number | null>(null);
   readonly contextMenuPosition = signal<{ x: number; y: number }>({ x: 0, y: 0 });

@@ -1,14 +1,16 @@
 import { DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { HttpErrorResponse, HttpStatusCode } from '@angular/common/http';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 
 import { AbwabInclusionsApi } from '../data-access/abwab-inclusions.api';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabNode } from '../models/abwab.models';
 import { ABWAB_LABELS } from '../models/abwab.labels';
-import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AbwabDirectInclusionDoorDto } from '../../../core/api/generated/models/abwab-direct-inclusion-door-dto';
 import { AbwabDoorInclusionTopologyDto } from '../../../core/api/generated/models/abwab-door-inclusion-topology-dto';
+import { ApiResponse } from '../../../core/data-access/api-response.model';
+import { ABWAB_WRITE_PERMISSIONS } from './abwab-permissions.controller';
+import { AbwabMutationFailure, AbwabMutationPolicy } from './abwab-mutation.policy';
 
 const NO_SOURCE_IDS: ReadonlySet<number> = new Set<number>();
 
@@ -16,6 +18,7 @@ const NO_SOURCE_IDS: ReadonlySet<number> = new Set<number>();
 export class AbwabInclusionsController {
   private readonly api = inject(AbwabInclusionsApi);
   private readonly snapshot = inject(AbwabSnapshotFacade);
+  private readonly mutationPolicy = inject(AbwabMutationPolicy);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly openState = signal(false);
@@ -159,38 +162,33 @@ export class AbwabInclusionsController {
     this.submittingState.set(true);
     this.writeErrorState.set(null);
     this.noticeState.set(null);
-    this.writeRequest = this.api.addSources(target.id, {
-      expectedTargetDoorVersion: doorVersion,
-      sourceDoorIds,
-    }).subscribe({
-      next: (response) => {
+    this.writeRequest = this.mutationPolicy.execute(
+      ABWAB_WRITE_PERMISSIONS.createInclusion,
+      () => this.api.addSources(target.id, {
+        expectedTargetDoorVersion: doorVersion,
+        sourceDoorIds,
+      }),
+    ).subscribe({
+      next: (outcome) => {
         if (generation !== this.writeGeneration) {
           return;
         }
         this.submittingState.set(false);
-        if (!response.isSuccess || response.data == null) {
-          this.writeErrorState.set(response.message ?? ABWAB_LABELS.inclusionsAddError);
+        if (outcome.kind !== 'success') {
+          this.handleWriteFailure('add', outcome, doorVersion);
+          return;
+        }
+        if (outcome.data == null) {
+          this.writeErrorState.set(outcome.envelope?.message ?? ABWAB_LABELS.inclusionsAddError);
           return;
         }
 
-        this.doorVersionState.set(response.data.targetDoorVersion);
+        this.doorVersionState.set(outcome.data.targetDoorVersion);
         this.selectedSourceIdsState.set(NO_SOURCE_IDS);
         this.addCompletionState.update((value) => value + 1);
-        this.noticeState.set(response.message ?? ABWAB_LABELS.inclusionsAddedNotice);
+        this.noticeState.set(outcome.envelope?.message ?? ABWAB_LABELS.inclusionsAddedNotice);
         this.loadTopology();
         this.snapshot.refresh();
-      },
-      error: (error: unknown) => {
-        if (generation !== this.writeGeneration) {
-          return;
-        }
-        this.submittingState.set(false);
-        this.writeErrorState.set(apiErrorMessage(error, ABWAB_LABELS.inclusionsAddError));
-        if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.Conflict) {
-          this.noticeState.set(ABWAB_LABELS.inclusionsConflictRefreshed);
-          this.loadTopology();
-          this.snapshot.refresh();
-        }
       },
     });
   }
@@ -234,41 +232,36 @@ export class AbwabInclusionsController {
     this.detachingState.set(true);
     this.detachErrorState.set(null);
     this.noticeState.set(null);
-    this.writeRequest = this.api.detachSource(
-      target.id,
-      candidate.inclusionId,
-      { expectedTargetDoorVersion: doorVersion },
+    this.writeRequest = this.mutationPolicy.execute(
+      ABWAB_WRITE_PERMISSIONS.deleteInclusion,
+      () => this.api.detachSource(
+        target.id,
+        candidate.inclusionId,
+        { expectedTargetDoorVersion: doorVersion },
+      ),
     ).subscribe({
-      next: (response) => {
+      next: (outcome) => {
         if (generation !== this.writeGeneration) {
           return;
         }
         this.detachingState.set(false);
-        if (!response.isSuccess || response.data == null) {
-          this.detachErrorState.set(response.message ?? ABWAB_LABELS.inclusionsDetachError);
+        if (outcome.kind !== 'success') {
+          this.handleWriteFailure('detach', outcome, doorVersion);
+          return;
+        }
+        if (outcome.data == null) {
+          this.detachErrorState.set(outcome.envelope?.message ?? ABWAB_LABELS.inclusionsDetachError);
           return;
         }
 
-        this.doorVersionState.set(response.data.targetDoorVersion);
+        this.doorVersionState.set(outcome.data.targetDoorVersion);
         this.detachCandidateState.set(null);
         this.detachErrorState.set(null);
         this.noticeState.set(ABWAB_LABELS.inclusionsDetachedNotice(
-          response.data.removedSynchronizedRecordCount,
+          outcome.data.removedSynchronizedRecordCount,
         ));
         this.loadTopology();
         this.snapshot.refresh();
-      },
-      error: (error: unknown) => {
-        if (generation !== this.writeGeneration) {
-          return;
-        }
-        this.detachingState.set(false);
-        this.detachErrorState.set(apiErrorMessage(error, ABWAB_LABELS.inclusionsDetachError));
-        if (error instanceof HttpErrorResponse && error.status === HttpStatusCode.Conflict) {
-          this.noticeState.set(ABWAB_LABELS.inclusionsConflictRefreshed);
-          this.loadTopology();
-          this.snapshot.refresh();
-        }
       },
     });
   }
@@ -277,7 +270,10 @@ export class AbwabInclusionsController {
     this.noticeState.set(null);
   }
 
-  private loadTopology(): void {
+  private loadTopology(conflict?: {
+    readonly attemptedVersion: number;
+    readonly kind: 'add' | 'detach';
+  }): void {
     const target = this.target();
     if (!this.openState() || target === null) {
       return;
@@ -301,6 +297,12 @@ export class AbwabInclusionsController {
         }
         this.topologyState.set(response.data);
         this.doorVersionState.set(response.data.doorVersion);
+        if (conflict !== undefined && response.data.doorVersion !== conflict.attemptedVersion) {
+          this.noticeState.set(ABWAB_LABELS.inclusionsConflictRefreshed);
+          conflict.kind === 'add'
+            ? this.writeErrorState.set(null)
+            : this.detachErrorState.set(null);
+        }
         const detachCandidate = this.detachCandidateState();
         if (detachCandidate !== null
             && !response.data.sources.some((source) => source.inclusionId === detachCandidate.inclusionId)) {
@@ -319,7 +321,7 @@ export class AbwabInclusionsController {
           return;
         }
         this.finishTopologyLoad();
-        this.readErrorState.set(apiErrorMessage(error, ABWAB_LABELS.inclusionsLoadError));
+        this.readErrorState.set(readErrorMessage(error, ABWAB_LABELS.inclusionsLoadError));
       },
     });
   }
@@ -327,6 +329,21 @@ export class AbwabInclusionsController {
   private finishTopologyLoad(): void {
     this.initialLoadingState.set(false);
     this.refreshingState.set(false);
+  }
+
+  private handleWriteFailure(
+    kind: 'add' | 'detach',
+    outcome: AbwabMutationFailure,
+    attemptedVersion: number,
+  ): void {
+    const message = outcome.message;
+    kind === 'add'
+      ? this.writeErrorState.set(message)
+      : this.detachErrorState.set(message);
+    if (outcome.kind === 'conflict') {
+      this.loadTopology({ attemptedVersion, kind });
+      this.snapshot.refresh();
+    }
   }
 
   private cancelRequests(): void {
@@ -339,7 +356,7 @@ export class AbwabInclusionsController {
   }
 }
 
-function apiErrorMessage(error: unknown, fallback: string): string {
+function readErrorMessage(error: unknown, fallback: string): string {
   if (!(error instanceof HttpErrorResponse)
       || typeof error.error !== 'object'
       || error.error === null) {
