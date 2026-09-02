@@ -34,9 +34,14 @@ public sealed partial class EfUniqueWordsReader(QuranDashboardDbContext db) : IU
         rows = ApplySort(rows, sort);
 
         var totalCount = await rows.CountAsync(cancellationToken);
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<UniqueWordListItemDto>(page, pageSize, totalCount, []);
+        }
 
         var pageRows = await rows
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 

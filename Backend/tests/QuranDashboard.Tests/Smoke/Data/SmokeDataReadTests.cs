@@ -71,6 +71,57 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
             .Should().OnlyContain(table => table.Value == 0);
     }
 
+    [SmokeDumpFact]
+    public async Task ExtremePositivePages_PreserveSuccessfulEmptyLexicalReads()
+    {
+        const int pageSize = 100;
+
+        using var client = fixture.CreateClient();
+        using var discoveryResponse = await client.GetAsync("/api/words/roots?page=1&pageSize=1");
+
+        discoveryResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var discoveryEnvelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(discoveryResponse);
+        var rootId = discoveryEnvelope
+            .GetProperty("data")
+            .GetProperty("items")
+            .EnumerateArray()
+            .Single()
+            .GetProperty("id")
+            .GetInt32();
+
+        using var rootsResponse = await client.GetAsync(
+            $"/api/words/roots?page={int.MaxValue}&pageSize={pageSize}");
+        using var rootWordsResponse = await client.GetAsync(
+            $"/api/words/roots/{rootId}/words/tashkeel?page={int.MaxValue}&pageSize={pageSize}");
+        using var uniqueWordsResponse = await client.GetAsync(
+            $"/api/words/unique/tashkeel?page={int.MaxValue}&pageSize={pageSize}");
+
+        var rootsPage = await AssertSuccessfulEmptyPageAsync(rootsResponse, pageSize);
+        rootsPage.GetProperty("totalCount").GetInt32().Should().Be(fixture.Manifest.RowCount("quran_roots"));
+
+        var rootWordsPage = await AssertSuccessfulEmptyPageAsync(rootWordsResponse, pageSize);
+        rootWordsPage.GetProperty("totalCount").GetInt32().Should().BePositive();
+
+        var uniqueWordsPage = await AssertSuccessfulEmptyPageAsync(uniqueWordsResponse, pageSize);
+        uniqueWordsPage.GetProperty("totalCount").GetInt32().Should()
+            .Be(fixture.Manifest.RowCount("quran_words_unique_tashkeel"));
+    }
+
+    private static async Task<JsonElement> AssertSuccessfulEmptyPageAsync(
+        HttpResponseMessage response,
+        int pageSize)
+    {
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var envelope = await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
+        var page = envelope.GetProperty("data");
+
+        page.GetProperty("page").GetInt32().Should().Be(int.MaxValue);
+        page.GetProperty("pageSize").GetInt32().Should().Be(pageSize);
+        page.GetProperty("items").GetArrayLength().Should().Be(0);
+
+        return page;
+    }
+
     private void AssertPayload(JsonElement data, SmokeSeededPayload payload)
     {
         switch (payload)
