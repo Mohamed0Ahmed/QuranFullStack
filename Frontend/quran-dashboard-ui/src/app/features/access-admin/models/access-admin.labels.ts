@@ -1,4 +1,10 @@
 export const ACCESS_ADMIN_LABELS = {
+  loadError: 'تعذر تحميل بيانات إدارة الوصول.',
+  accessDeniedError: 'لا تملك صلاحية إدارة الوصول.',
+  writeError: 'تعذر إتمام التغيير المطلوب.',
+  mutationSuccess: 'تم حفظ التغيير.',
+  conflictNotice: 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.',
+  conflictReloadError: 'تغيرت بيانات المستخدم، وتعذر تحديث الحالة الحالية.',
   unsavedChangesTitle: 'تغييرات غير محفوظة',
   unsavedChangesSwitchUserBody:
     'لم تُحفظ تعديلات الصلاحيات الحالية، واختيار مستخدم آخر يتجاهلها.',

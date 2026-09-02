@@ -31,7 +31,10 @@
             <p class="access-change-review__diff-heading">الصلاحيات المضافة</p>
             <ul class="access-change-review__permission-list" aria-label="الصلاحيات المضافة">
               @for (code of permissionDiff().granted; track code) {
-                <li><span>{{ permissionLabel(code) }}</span><code class="qd-ltr-isolate" dir="ltr">{{ code }}</code></li>
+                <li>
+                  <span>{{ permissionLabel(code) }}</span
+                  ><code class="qd-ltr-isolate" dir="ltr">{{ code }}</code>
+                </li>
               }
             </ul>
           </div>
@@ -41,7 +44,10 @@
             <p class="access-change-review__diff-heading">الصلاحيات الملغاة</p>
             <ul class="access-change-review__permission-list" aria-label="الصلاحيات الملغاة">
               @for (code of permissionDiff().revoked; track code) {
-                <li><span>{{ permissionLabel(code) }}</span><code class="qd-ltr-isolate" dir="ltr">{{ code }}</code></li>
+                <li>
+                  <span>{{ permissionLabel(code) }}</span
+                  ><code class="qd-ltr-isolate" dir="ltr">{{ code }}</code>
+                </li>
               }
             </ul>
           </div>
@@ -67,16 +73,20 @@
         qdAction="primary"
         data-testid="access-confirm-action"
         [busy]="busyAction() !== null"
-        [disabled]="busyAction() !== null || isNoOpPermissionSave()"
+        [disabled]="busyAction() !== null || !canConfirm()"
         (click)="confirm()"
-      >تأكيد</button>
+      >
+        تأكيد
+      </button>
       <button
         type="button"
         qdAction="tertiary"
         data-testid="access-cancel-action"
         [disabled]="busyAction() !== null"
         (click)="cancel()"
-      >إلغاء</button>
+      >
+        إلغاء
+      </button>
     </div>
   </section>
 }

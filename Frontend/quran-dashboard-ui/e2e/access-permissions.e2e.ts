@@ -54,6 +54,7 @@ test(
   async ({ page, request, permissionLifecyclePersona }, testInfo) => {
     const persona = permissionLifecyclePersona;
     const ownerPage = persona.ownerPage;
+    const accessReads = observeAccessWorkflowReads(ownerPage, persona.userId);
     const section = await createSectionPrerequisite(
       request,
       persona.ownerAccessToken,
@@ -61,6 +62,9 @@ test(
     );
 
     await openTargetAccount(ownerPage, persona.email);
+    expect(accessReads.detail).toBe(1);
+    expect(accessReads.permissions).toBe(0);
+    expect(accessReads.catalogue).toBe(1);
     await expectNoBlockingAccessibilityViolations(ownerPage, testInfo);
     await replacePermissionThroughUi(
       ownerPage,
@@ -196,6 +200,83 @@ test(
       ['PermissionRevoked', persona.permission],
       ['UserDisabled', null],
     ]);
+
+    await reactivateThroughUi(ownerPage, persona.userId);
+    await expect(ownerPage.getByRole('button', { name: 'تعطيل الحساب' })).toBeVisible();
+    const reactivatedPermissions = await readOwnerData<AccessUserPermissions>(
+      request,
+      persona.ownerAccessToken,
+      `/api/access/users/${persona.userId}/permissions`,
+    );
+    expect(reactivatedPermissions).toEqual(
+      expect.objectContaining({ status: 'active', permissionCodes: [] }),
+    );
+    expect(accessReads.detail).toBe(1);
+    expect(accessReads.permissions).toBe(0);
+    expect(accessReads.catalogue).toBe(1);
+  },
+);
+
+test(
+  'an Access mutation is single-flight and conflict recovery rereads its target once',
+  async ({ permissionLifecyclePersona }) => {
+    const persona = permissionLifecyclePersona;
+    const ownerPage = persona.ownerPage;
+    const accessReads = observeAccessWorkflowReads(ownerPage, persona.userId);
+    let releaseConflict!: () => void;
+    const conflictReleased = new Promise<void>((resolve) => {
+      releaseConflict = resolve;
+    });
+    let mutationRequests = 0;
+
+    await ownerPage.route(`**/api/access/users/${persona.userId}/permissions`, async (route) => {
+      if (route.request().method() !== 'PUT') {
+        await route.continue();
+        return;
+      }
+      mutationRequests += 1;
+      await conflictReleased;
+      await route.fulfill({
+        status: 409,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          isSuccess: false,
+          message: 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.',
+          data: null,
+        }),
+      });
+    });
+
+    await openTargetAccount(ownerPage, persona.email);
+    const search = ownerPage.getByRole('searchbox', { name: 'الاسم أو البريد' });
+    await search.fill('');
+    await search.press('Enter');
+    const checkbox = ownerPage.getByRole('checkbox', { name: 'إنشاء الأبواب' });
+    await checkbox.check();
+    await ownerPage.getByRole('button', { name: 'مراجعة تعديل الصلاحيات' }).click();
+    await ownerPage.getByRole('button', { name: 'تأكيد', exact: true }).click();
+    await expect.poll(() => mutationRequests).toBe(1);
+
+    const otherAccount = ownerPage
+      .getByTestId(/^access-user-\d+$/)
+      .filter({ hasNotText: persona.email })
+      .first();
+    await otherAccount.click();
+    await expect(ownerPage.getByTestId('access-user-summary-email')).toHaveText(persona.email);
+    await expect(ownerPage.getByRole('button', { name: 'تعطيل الحساب' })).toBeDisabled();
+    await expect(ownerPage.getByRole('button', { name: 'تأكيد', exact: true })).toBeDisabled();
+    expect(mutationRequests).toBe(1);
+
+    releaseConflict();
+    await expect(
+      ownerPage.getByText('تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.', { exact: true }),
+    ).toBeVisible();
+    await expect(checkbox).not.toBeChecked();
+    await expect(ownerPage.getByRole('region', { name: 'تأكيد الإجراء' })).toHaveCount(0);
+    expect(accessReads.detail).toBe(2);
+    expect(accessReads.permissions).toBe(0);
+    expect(accessReads.catalogue).toBe(1);
+    expect(mutationRequests).toBe(1);
   },
 );
 
@@ -233,9 +314,9 @@ async function replacePermissionThroughUi(
   await ownerPage.getByRole('textbox', { name: 'سبب الإجراء (اختياري)' }).fill(reason);
   const responsePromise = ownerPage.waitForResponse(
     (response) =>
-      response.request().method() === 'PUT'
-      && response.url().includes('/api/access/users/')
-      && response.url().endsWith('/permissions'),
+      response.request().method() === 'PUT' &&
+      response.url().includes('/api/access/users/') &&
+      response.url().endsWith('/permissions'),
   );
   await ownerPage.getByRole('button', { name: 'تأكيد', exact: true }).click();
   expect((await responsePromise).status()).toBe(200);
@@ -257,12 +338,48 @@ async function disableThroughUi(ownerPage: Page, userId: number): Promise<void> 
     .fill('Disable the account through the Owner UI.');
   const responsePromise = ownerPage.waitForResponse(
     (response) =>
-      response.request().method() === 'POST'
-      && response.url().endsWith(`/api/access/users/${userId}/disable`),
+      response.request().method() === 'POST' &&
+      response.url().endsWith(`/api/access/users/${userId}/disable`),
   );
   await ownerPage.getByRole('button', { name: 'تأكيد', exact: true }).click();
   expect((await responsePromise).status()).toBe(200);
   await expect(ownerPage.getByText('الحساب معطّل ولا يحمل صلاحيات مباشرة')).toBeVisible();
+}
+
+async function reactivateThroughUi(ownerPage: Page, userId: number): Promise<void> {
+  await ownerPage.getByRole('button', { name: 'إعادة التفعيل' }).click();
+  await ownerPage
+    .getByRole('textbox', { name: 'سبب الإجراء (اختياري)' })
+    .fill('Reactivate the account through the Owner UI.');
+  const responsePromise = ownerPage.waitForResponse(
+    (response) =>
+      response.request().method() === 'POST' &&
+      response.url().endsWith(`/api/access/users/${userId}/reactivate`),
+  );
+  await ownerPage.getByRole('button', { name: 'تأكيد', exact: true }).click();
+  expect((await responsePromise).status()).toBe(200);
+  await expect(ownerPage.getByRole('button', { name: 'تعطيل الحساب' })).toBeVisible();
+}
+
+function observeAccessWorkflowReads(
+  page: Page,
+  userId: number,
+): { detail: number; permissions: number; catalogue: number } {
+  const reads = { detail: 0, permissions: 0, catalogue: 0 };
+  page.on('request', (request) => {
+    if (request.method() !== 'GET') {
+      return;
+    }
+    const pathname = new URL(request.url()).pathname;
+    if (pathname === `/api/access/users/${userId}`) {
+      reads.detail += 1;
+    } else if (pathname === `/api/access/users/${userId}/permissions`) {
+      reads.permissions += 1;
+    } else if (pathname === '/api/access/permissions') {
+      reads.catalogue += 1;
+    }
+  });
+  return reads;
 }
 
 async function createSectionPrerequisite(
@@ -364,7 +481,9 @@ async function readData<T>(
 
   const envelope = JSON.parse(body) as ApiEnvelope<T>;
   if (!envelope.isSuccess || envelope.data === null) {
-    throw new Error(`${operation} returned an unsuccessful API envelope: ${envelope.message ?? body}`);
+    throw new Error(
+      `${operation} returned an unsuccessful API envelope: ${envelope.message ?? body}`,
+    );
   }
   return envelope.data;
 }

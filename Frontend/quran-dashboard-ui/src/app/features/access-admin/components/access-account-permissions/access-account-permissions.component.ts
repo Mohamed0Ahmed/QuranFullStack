@@ -1,11 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 
 import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { PermissionCode } from '../../../../core/auth/permission-code';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { ExplorerPanelSkeletonComponent } from '../../../../shared/ui/explorer-panel-skeleton/explorer-panel-skeleton.component';
 import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
-import { AccessPermissionDiff, accessAccountVariant } from '../../models/access-admin.models';
+import { AccessPermissionDiff } from '../../models/access-admin.models';
 import { AccessPermissionGroup } from '../../models/access-admin-permissions';
 import { AccessPermissionEditorComponent } from '../access-permission-editor/access-permission-editor.component';
 
@@ -19,8 +19,10 @@ import { AccessPermissionEditorComponent } from '../access-permission-editor/acc
 })
 export class AccessAccountPermissionsComponent {
   readonly user = input.required<AccessUserDetail>();
+  readonly mode = input.required<'owner' | 'permissions' | 'disabled' | 'unknown'>();
   readonly groups = input.required<readonly AccessPermissionGroup[]>();
   readonly selectedCodes = input.required<ReadonlySet<PermissionCode>>();
+  readonly unknownPermissionCodes = input.required<readonly string[]>();
   readonly permissionDiff = input.required<AccessPermissionDiff>();
   readonly hasUnsavedPermissions = input(false);
   readonly catalogueLoading = input(false);
@@ -30,12 +32,6 @@ export class AccessAccountPermissionsComponent {
 
   readonly selectionChange = output<PermissionCode[]>();
   readonly catalogueRetryRequested = output<void>();
-
-  protected readonly variant = computed(() => accessAccountVariant(this.user()));
-  protected readonly ownerAccount = computed(
-    () => this.user().isOwner && this.variant() !== 'unknown-status',
-  );
-  protected readonly ownerBypassApplies = computed(() => this.variant() === 'active-owner');
 
   protected get labels(): typeof ACCESS_ADMIN_LABELS {
     return ACCESS_ADMIN_LABELS;

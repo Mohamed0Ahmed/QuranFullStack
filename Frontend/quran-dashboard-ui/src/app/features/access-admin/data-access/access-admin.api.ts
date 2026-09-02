@@ -29,31 +29,48 @@ export class AccessAdminApi {
     return this.http.get<ApiResponse<AccessUserDetail>>(`${this.baseUrl}/users/${userId}`);
   }
 
-  acceptUser(userId: number, body: AcceptAccessUserBody): Observable<ApiResponse<AccessUserDetail>> {
-    return this.http.post<ApiResponse<AccessUserDetail>>(`${this.baseUrl}/users/${userId}/accept`, body);
+  acceptUser(
+    userId: number,
+    body: AcceptAccessUserBody,
+  ): Observable<ApiResponse<AccessUserDetail>> {
+    return this.http.post<ApiResponse<AccessUserDetail>>(
+      `${this.baseUrl}/users/${userId}/accept`,
+      body,
+    );
   }
 
-  disableUser(userId: number, body: DisableAccessUserBody): Observable<ApiResponse<AccessUserDetail>> {
-    return this.http.post<ApiResponse<AccessUserDetail>>(`${this.baseUrl}/users/${userId}/disable`, body);
+  disableUser(
+    userId: number,
+    body: DisableAccessUserBody,
+  ): Observable<ApiResponse<AccessUserDetail>> {
+    return this.http.post<ApiResponse<AccessUserDetail>>(
+      `${this.baseUrl}/users/${userId}/disable`,
+      body,
+    );
   }
 
-  reactivateUser(userId: number, body: ReactivateAccessUserBody): Observable<ApiResponse<AccessUserDetail>> {
-    return this.http.post<ApiResponse<AccessUserDetail>>(`${this.baseUrl}/users/${userId}/reactivate`, body);
+  reactivateUser(
+    userId: number,
+    body: ReactivateAccessUserBody,
+  ): Observable<ApiResponse<AccessUserDetail>> {
+    return this.http.post<ApiResponse<AccessUserDetail>>(
+      `${this.baseUrl}/users/${userId}/reactivate`,
+      body,
+    );
   }
 
   getPermissionCatalogue(): Observable<ApiResponse<PermissionCatalogueResponse>> {
     return this.http.get<ApiResponse<PermissionCatalogueResponse>>(`${this.baseUrl}/permissions`);
   }
 
-  getUserPermissions(userId: number): Observable<ApiResponse<AccessUserPermissions>> {
-    return this.http.get<ApiResponse<AccessUserPermissions>>(`${this.baseUrl}/users/${userId}/permissions`);
-  }
-
   replacePermissions(
     userId: number,
     body: ReplaceUserPermissionsBody,
   ): Observable<ApiResponse<AccessUserPermissions>> {
-    return this.http.put<ApiResponse<AccessUserPermissions>>(`${this.baseUrl}/users/${userId}/permissions`, body);
+    return this.http.put<ApiResponse<AccessUserPermissions>>(
+      `${this.baseUrl}/users/${userId}/permissions`,
+      body,
+    );
   }
 }
 
