@@ -70,6 +70,10 @@ internal static class DataImporterDefaults
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "report", "abwab-snapshot-import"));
 
+    internal static string ResolveDefaultQuranTopicsBookImportReportDir() =>
+        Path.GetFullPath(Path.Combine(
+            ResolveRepositoryRoot(), "resources", "report", "quran-topics-book-import"));
+
     internal static string ResolveDefaultMutashabihatReportDir() =>
         Path.GetFullPath(Path.Combine(
             ResolveRepositoryRoot(), "resources", "report", "mutashabihat"));

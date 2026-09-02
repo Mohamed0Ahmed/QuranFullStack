@@ -1,64 +1,73 @@
-# Browser E2E (Playwright)
+# Playwright provisioning and database modes
 
-Policy lives in `../../../TESTING_CONSTITUTION.md`. This file owns the retained Playwright journeys,
-fixtures, prerequisites, and runtime invariants.
-
-## Retained journeys
-
-- `authenticated-smoke.e2e.ts` — authenticated session and application entry.
-- `abwab-permissions.e2e.ts` — public Abwab access, hidden write controls, and anonymous write denial.
-- `shell-nav.e2e.ts` — application-shell navigation.
-- `mushaf-reader.e2e.ts` — reader paging, deep links, surah navigation, and fonts.
-- `mushaf-ayah-study.e2e.ts` — ayah-study panels and related Quran data views.
-- `words-explorers.e2e.ts` — the words hub and surviving explorer journeys.
-
-`abwab-permissions.e2e.ts` is intentionally read-only: it sends a handcrafted anonymous write and
-expects the Backend's `401` envelope, so it creates no sandbox or domain residue.
-
-## Commands
+Required critical and full evidence uses two explicit phases. Controlled provisioning may use the
+network and any short-lived artifact/dependency credentials available to the job:
 
 ```bash
-npm run e2e
-npm run e2e:headed
-npm run e2e:ui
-npm run e2e:typecheck
-npx playwright test e2e/mushaf-reader.e2e.ts --project=default
-npx playwright test e2e/abwab-permissions.e2e.ts --project=abwab --workers=1
+npm run e2e:provision
 ```
 
-`npm run e2e` runs the `default` project and then the `abwab` project with one worker. Both projects
-remain non-empty. The headed and UI commands are debugging entry points; scope the `abwab` project
-to one worker when running it directly.
+This runs `npm ci`, locked NuGet restore, exact Playwright Chromium installation, digest-pinned
+PostgreSQL image acquisition, verification of the compact base and PhraseSearch-ready overlay,
+ephemeral localhost certificate
+generation, and Backend/Frontend builds. It writes a credential-free receipt under
+`.playwright/provisioning/`; the receipt is rejected after any npm, NuGet, artifact-lock, browser, or
+image drift.
 
-## Prerequisites
+Execution consumes only that preloaded receipt and its outputs:
 
-- mkcert certificates `localhost.pem` and `localhost-key.pem` in the project root.
-- A migrated local `quran_dashboard` source database and the `createdb`, `dropdb`, `pg_dump`, and
-  `pg_restore` tools.
-- `dotnet build Backend/QuranDashboard.sln` before the run; the Playwright backend starts with
-  `--no-build`.
+```bash
+npm run e2e:critical
+npm run e2e
+```
 
-`run-backend.mjs` refuses non-local PostgreSQL, clones the source database into a uniquely named
-disposable database, and drops the clone when the backend exits. The source database is never the
-E2E write target.
+Both commands strip artifact/dependency/application credentials, verify the fixture again without
+restore or build, restore PostgreSQL once with pulling disabled, and start the compiled API plus the
+prebuilt Angular output. A preloaded system-call guard permits only loopback and the exact private
+PostgreSQL address for the UI, API, browser, and their child processes. PostgreSQL remains on a Docker
+`--internal` network, so unexpected process and container egress fail closed. Local OIDC/JWKS and
+Logto Management API behavior remain stubbed.
 
-## Fixtures and invariants
+For developer iteration without the sealed receipt, use the explicit local commands. Artifact remains
+the default; cloning a developer database remains opt-in, loopback-only, and non-canonical:
 
-- Journey files are named `*.e2e.ts`; `playwright.config.ts` discovers only that suffix.
-- Every test gets a fresh browser context. Do not add shared `storageState` reuse.
-- `fixtures/app-test.ts` stubs the Logto origin and fails external browser requests.
-- `fixtures/auth.ts` owns the authenticated persona. It supplies a test-only JWKS, mints matching
-  tokens, provisions through the real access endpoints, removes its direct grant, and disables the
-  persona during teardown. The temporary Owner and audit history exist only in the disposable clone.
-- Authentication and authorization handlers remain the production composition; fixtures do not
-  replace or bypass them.
-- The frontend server may be reused. The backend on port 5015 must be Playwright-owned so its clone
-  lifecycle and teardown remain coupled to the run.
-- Read assertions avoid exact source-data totals so a legitimate source refresh does not make a
-  browser journey brittle.
+```bash
+npm run e2e:critical:local
+npm run e2e:local
+E2E_DATABASE_MODE=clone-local npm run e2e:local
+```
 
-## Not this suite
+`clone-local` is non-canonical evidence. It accepts loopback PostgreSQL only, is rejected whenever a
+CI environment marker is present, and is never selected because a connection string or user secret
+happens to exist.
 
-Playwright does not replace Backend route-smoke or catalog gates. Backend lane selection lives in
-`../../../Backend/tests/QuranDashboard.Tests/README.md`; which verification is required lives in
-`../../../TESTING_CONSTITUTION.md` and an active plan's Testing Decision.
+Each sealed run writes structured durations for artifact provisioning, database preparation,
+application startup, and test execution under `.playwright/evidence/<run-id>/`. Failed runs also keep
+sanitized application/container logs, step-event traces, text/media-masked screenshots, browser console errors, and
+request method/origin/path/status metadata. Request/response headers and bodies, database dumps,
+credentials, cookies, tokens, signed query strings, and private keys are never captured. The manifest
+declares the required 14-day failed-diagnostic and 30-day aggregate-timing retention contracts for the
+provider-neutral observation jobs.
+
+Sealed evidence never enables Playwright's raw trace or HTML reporter because those formats can embed
+headers and bodies. The structured reporter retains only sanitized step events; the failure fixture
+masks all text, background images, and rendered media before taking its diagnostic screenshot. Each
+run places Playwright's unfiltered working output in a separate private temporary directory that is
+deleted before evidence inspection. It copies and hashes its immutable provisioning receipt, then
+validates retained diagnostic filenames, MIME contracts, JSON schemas, PNG signatures, and text
+redaction before declaring the evidence safe.
+
+Artifact execution restores `compact-cross-stack-base` and composes the verified
+`compact-phrase-search-ready` data-only overlay with foreign-key constraints active. It then validates
+the runtime active build, source fingerprint, non-stale state, succeeded status, and exact/similarity
+readiness against the verified manifest. Ordinary execution never runs the PhraseSearch builder.
+
+Tests annotated `mutating` reset state before and after their scenario. The reset truncates only the
+literal allowlist in `e2e/harness/database-contract.mjs`; `permissions`, every `quran_*` table, and
+therefore all PhraseSearch tables stay outside it. The reset verifies every allowlisted table is
+empty, requires Linking background processors to be idle, and compares deterministic before/after
+SHA-256 fingerprints of all Quran and PhraseSearch table data with the baseline captured immediately
+after restore. A scenario-side mutation or reset-side mismatch fails the test run.
+
+Critical execution discovers annotated journeys from the specifications, then runs the selected
+file/line locations. It does not maintain a second journey catalogue.

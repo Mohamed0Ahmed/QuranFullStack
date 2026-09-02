@@ -1,9 +1,12 @@
+import { execFileSync } from 'node:child_process';
 import { createPrivateKey, sign } from 'node:crypto';
-import type { APIRequestContext, APIResponse } from '@playwright/test';
+import { resolve } from 'node:path';
+import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
 
 import { ABWAB_PERMISSION_CODES } from '../../src/app/core/auth/permission-codes.generated';
 import { environment } from '../../src/environments/environment.development';
-import { test as appTest } from './app-test';
+import { instrumentAppContext, test as appTest } from './app-test';
+import { readApiData } from './api-envelope';
 import {
   E2E_OWNER_SUBJECT,
   E2E_TEST_ISSUER,
@@ -40,6 +43,7 @@ D/87qVxDKhIVRcV/AxdZ3Q==
 -----END PRIVATE KEY-----`;
 const API_ORIGIN = environment.apiBaseUrl;
 const OIDC_SESSION_KEY = `0-${environment.logto.appId}`;
+const PREPARE_ACCESS_ADMIN = resolve(process.cwd(), 'e2e/prepare-access-admin.mjs');
 const IDENTITY_EVIDENCE_HEADER = 'X-Interactive-Identity-Evidence';
 const SETUP_REASON = 'Authenticated E2E fixture setup.';
 const TEARDOWN_REASON = 'Authenticated E2E fixture teardown.';
@@ -49,12 +53,6 @@ const PRIVATE_KEY = createPrivateKey(PRIVATE_KEY_PEM);
 interface TokenPair {
   accessToken: string;
   idToken: string;
-}
-
-interface ApiEnvelope<T> {
-  isSuccess: boolean;
-  message: string | null;
-  data: T | null;
 }
 
 interface CurrentUser {
@@ -89,7 +87,37 @@ interface AuthenticatedPersona {
   permission: typeof TEST_PERMISSION;
 }
 
-export const test = appTest.extend<{ authenticatedPersona: AuthenticatedPersona }>({
+interface DeviceSessionPersona {
+  subject: string;
+}
+
+interface PermissionLifecyclePersona {
+  subject: string;
+  email: string;
+  userId: number;
+  permission: typeof TEST_PERMISSION;
+  accessToken: string;
+  ownerAccessToken: string;
+  ownerPage: Page;
+}
+
+interface OwnerPersona {
+  accessToken: string;
+}
+
+export const test = appTest.extend<{
+  authenticatedPersona: AuthenticatedPersona;
+  deviceSessionPersona: DeviceSessionPersona;
+  ownerPersona: OwnerPersona;
+  permissionLifecyclePersona: PermissionLifecyclePersona;
+}>({
+  deviceSessionPersona: async ({ context }, use, testInfo) => {
+    const subject = `e2e-device-session-${testInfo.parallelIndex}`;
+    const tokens = mintTokenPair(subject);
+    await installOidcSession(context, tokens);
+
+    await use({ subject });
+  },
   authenticatedPersona: async ({ context, request }, use, testInfo) => {
     const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
     const personaSubject = `e2e-permission-author-${testInfo.parallelIndex}`;
@@ -105,18 +133,67 @@ export const test = appTest.extend<{ authenticatedPersona: AuthenticatedPersona 
 
       await provisionCurrentUser(request, personaTokens);
       await activatePersona(request, ownerTokens.accessToken, personaSubject);
-      await context.addInitScript(
-        ({ key, session }) => sessionStorage.setItem(key, JSON.stringify(session)),
-        {
-          key: OIDC_SESSION_KEY,
-          session: oidcSession(personaTokens),
-        },
-      );
+      await installOidcSession(context, personaTokens);
 
       await use({ subject: personaSubject, permission: TEST_PERMISSION });
     } finally {
       if (ownerReady) {
         await disablePersona(request, ownerTokens.accessToken, personaSubject);
+      }
+    }
+  },
+  ownerPersona: async ({ context, request }, use) => {
+    prepareAccessAdministration();
+    const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
+    const owner = await provisionCurrentUser(request, ownerTokens);
+    if (owner.status !== 'active' || !owner.isOwner) {
+      throw new Error('The E2E Owner was not provisioned as an active Owner.');
+    }
+
+    await installOidcSession(context, ownerTokens);
+    await use({ accessToken: ownerTokens.accessToken });
+  },
+  permissionLifecyclePersona: async ({ browser, context, request }, use, testInfo) => {
+    const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
+    const personaSubject = `e2e-permission-lifecycle-${testInfo.parallelIndex}`;
+    const personaTokens = mintTokenPair(personaSubject);
+    let ownerContext: BrowserContext | null = null;
+    let finalizeOwnerInstrumentation: (() => Promise<void>) | null = null;
+
+    try {
+      prepareAccessAdministration();
+      const owner = await provisionCurrentUser(request, ownerTokens);
+      if (owner.status !== 'active' || !owner.isOwner) {
+        throw new Error('The E2E Owner was not provisioned as an active Owner.');
+      }
+
+      await provisionCurrentUser(request, personaTokens);
+      const persona = await activatePersonaWithoutPermissions(
+        request,
+        ownerTokens.accessToken,
+        personaSubject,
+      );
+      await installOidcSession(context, personaTokens);
+
+      ownerContext = await browser.newContext({ ignoreHTTPSErrors: true });
+      finalizeOwnerInstrumentation = await instrumentAppContext(ownerContext, testInfo);
+      await installOidcSession(ownerContext, ownerTokens);
+      const ownerPage = await ownerContext.newPage();
+
+      await use({
+        subject: personaSubject,
+        email: e2eProfileEmail(personaSubject),
+        userId: persona.id,
+        permission: TEST_PERMISSION,
+        accessToken: personaTokens.accessToken,
+        ownerAccessToken: ownerTokens.accessToken,
+        ownerPage,
+      });
+    } finally {
+      try {
+        await finalizeOwnerInstrumentation?.();
+      } finally {
+        await ownerContext?.close();
       }
     }
   },
@@ -159,6 +236,13 @@ function encodeJson(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
 
+function prepareAccessAdministration(): void {
+  execFileSync(process.execPath, [PREPARE_ACCESS_ADMIN], {
+    cwd: process.cwd(),
+    stdio: 'inherit',
+  });
+}
+
 function oidcSession(tokens: TokenPair): Record<string, unknown> {
   return {
     authzData: tokens.accessToken,
@@ -172,6 +256,16 @@ function oidcSession(tokens: TokenPair): Record<string, unknown> {
   };
 }
 
+async function installOidcSession(context: BrowserContext, tokens: TokenPair): Promise<void> {
+  await context.addInitScript(
+    ({ key, session }) => sessionStorage.setItem(key, JSON.stringify(session)),
+    {
+      key: OIDC_SESSION_KEY,
+      session: oidcSession(tokens),
+    },
+  );
+}
+
 async function provisionCurrentUser(
   request: APIRequestContext,
   tokens: TokenPair,
@@ -182,7 +276,7 @@ async function provisionCurrentUser(
       [IDENTITY_EVIDENCE_HEADER]: tokens.idToken,
     },
   });
-  return readData<CurrentUser>(response, 'provision current user');
+  return readApiData<CurrentUser>(response, 'provision current user');
 }
 
 async function activatePersona(
@@ -238,6 +332,65 @@ async function activatePersona(
   if (detail.status !== 'active' || !detail.permissionCodes.includes(TEST_PERMISSION)) {
     throw new Error('The E2E persona did not receive its active direct permission grant.');
   }
+}
+
+async function activatePersonaWithoutPermissions(
+  request: APIRequestContext,
+  ownerAccessToken: string,
+  subject: string,
+): Promise<AccessUserDetail> {
+  const user = await findUser(request, ownerAccessToken, subject);
+  let detail: AccessUserDetail;
+
+  if (user.status === 'pending') {
+    detail = await postOwnerData<AccessUserDetail>(
+      request,
+      ownerAccessToken,
+      `/api/access/users/${user.id}/accept`,
+      {
+        expectedVersion: user.version,
+        permissionCodes: [],
+        reason: SETUP_REASON,
+      },
+      'accept least-privilege E2E persona',
+    );
+  } else {
+    detail = user.status === 'disabled'
+      ? await postOwnerData<AccessUserDetail>(
+          request,
+          ownerAccessToken,
+          `/api/access/users/${user.id}/reactivate`,
+          { expectedVersion: user.version, reason: SETUP_REASON },
+          'reactivate least-privilege E2E persona',
+        )
+      : await getOwnerData<AccessUserDetail>(
+          request,
+          ownerAccessToken,
+          `/api/access/users/${user.id}`,
+          'load least-privilege E2E persona',
+        );
+
+    if (detail.permissionCodes.length > 0) {
+      const permissions = await putOwnerData<AccessUserPermissions>(
+        request,
+        ownerAccessToken,
+        `/api/access/users/${detail.id}/permissions`,
+        {
+          expectedVersion: detail.version,
+          permissionCodes: [],
+          reason: SETUP_REASON,
+        },
+        'clear least-privilege E2E persona permissions',
+      );
+      detail = { ...detail, ...permissions };
+    }
+  }
+
+  if (detail.status !== 'active' || detail.permissionCodes.length !== 0) {
+    throw new Error('The least-privilege E2E persona was not active without direct permissions.');
+  }
+
+  return detail;
 }
 
 async function disablePersona(
@@ -306,7 +459,7 @@ function getOwnerData<T>(
 ): Promise<T> {
   return request
     .get(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken) })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function postOwnerData<T>(
@@ -318,7 +471,7 @@ function postOwnerData<T>(
 ): Promise<T> {
   return request
     .post(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken), data })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function putOwnerData<T>(
@@ -330,24 +483,9 @@ function putOwnerData<T>(
 ): Promise<T> {
   return request
     .put(`${API_ORIGIN}${path}`, { headers: ownerHeaders(accessToken), data })
-    .then((response) => readData<T>(response, operation));
+    .then((response) => readApiData<T>(response, operation));
 }
 
 function ownerHeaders(accessToken: string): Record<string, string> {
   return { Authorization: `Bearer ${accessToken}` };
-}
-
-async function readData<T>(response: APIResponse, operation: string): Promise<T> {
-  const status = response.status();
-  const body = await response.text();
-  await response.dispose();
-  if (status < 200 || status >= 300) {
-    throw new Error(`${operation} failed with HTTP ${status}: ${body}`);
-  }
-
-  const envelope = JSON.parse(body) as ApiEnvelope<T>;
-  if (!envelope.isSuccess || envelope.data === null) {
-    throw new Error(`${operation} returned an unsuccessful API envelope: ${envelope.message ?? body}`);
-  }
-  return envelope.data;
 }

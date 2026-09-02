@@ -9,7 +9,8 @@ namespace QuranDashboard.Api.Controllers.Access;
 [Route("api/auth/sessions")]
 public sealed class DeviceSessionsController(
     CreateDeviceSessionHandler createDeviceSessionHandler,
-    RevokeDeviceSessionHandler revokeDeviceSessionHandler) : ControllerBase
+    RevokeDeviceSessionHandler revokeDeviceSessionHandler,
+    TimeProvider timeProvider) : ControllerBase
 {
     private const string InteractiveIdentityEvidenceHeader = "X-Interactive-Identity-Evidence";
 
@@ -24,7 +25,7 @@ public sealed class DeviceSessionsController(
             previousSessionToken,
             cancellationToken);
 
-        DeviceSessionCookieWriter.Write(Response, session);
+        DeviceSessionCookieWriter.Write(Response, session, timeProvider.GetUtcNow());
 
         return Ok(ApiResponse<DeviceSessionResponse>.Ok(
             new DeviceSessionResponse(session.ExpiresAtUtc),
@@ -43,7 +44,7 @@ public sealed class DeviceSessionsController(
         }
 
         await revokeDeviceSessionHandler.HandleAsync(sessionId, cancellationToken);
-        DeviceSessionCookieWriter.Delete(Response);
+        DeviceSessionCookieWriter.Delete(Response, timeProvider.GetUtcNow());
         return NoContent();
     }
 }

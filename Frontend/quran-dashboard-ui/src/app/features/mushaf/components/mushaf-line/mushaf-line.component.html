@@ -3,7 +3,12 @@
   [class.mushaf-line--centered]="line().isCentered"
   [class.mushaf-line--surah-name]="line().lineType === 'surah_name'"
   [class.mushaf-line--basmallah]="line().lineType === 'basmallah'"
+  data-testid="mushaf-line"
+  [attr.data-line-number]="line().lineNumber"
   [attr.data-line-type]="line().lineType"
+  [attr.data-is-centered]="line().isCentered"
+  [attr.data-surah-number]="line().surahNumber"
+  [attr.data-word-locations]="lineWordLocations()"
 >
   @if (line().lineType === 'basmallah') {
     <span class="mushaf-line__basmallah" dir="rtl">{{ basmallahText() }}</span>

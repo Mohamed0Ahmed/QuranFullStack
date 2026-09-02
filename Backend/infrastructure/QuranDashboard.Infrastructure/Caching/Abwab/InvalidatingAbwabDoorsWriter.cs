@@ -125,13 +125,12 @@ internal sealed class InvalidatingAbwabDoorsWriter(
 
     public async Task<AbwabDoorDto?> RestoreAsync(int id, int? sectionId, uint expectedVersion, CancellationToken cancellationToken)
     {
-        try
-        {
-            return await _inner.RestoreAsync(id, sectionId, expectedVersion, cancellationToken);
-        }
-        finally
+        var restored = await _inner.RestoreAsync(id, sectionId, expectedVersion, cancellationToken);
+        if (restored is not null)
         {
             _invalidator.InvalidateTree();
         }
+
+        return restored;
     }
 }

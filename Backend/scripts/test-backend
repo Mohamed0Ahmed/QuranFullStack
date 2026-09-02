@@ -8,6 +8,7 @@ SOLUTION="${BACKEND_ROOT}/QuranDashboard.sln"
 TEST_PROJECT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj"
 CATALOG="${BACKEND_ROOT}/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv"
 TEST_OUTPUT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/bin/Debug/net10.0/QuranDashboard.Tests.dll"
+ARTIFACT_TOOL_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll"
 ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/net10.0/QuranDashboard.AccessAdmin.dll"
 DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
 CALLER_DIR="$(pwd -P)"
@@ -17,6 +18,7 @@ CALLER_DIR="$(pwd -P)"
 # two sequential invocations so the two servers never exist at once. TestGateCatalog.ExclusivePostgreSqlClass
 # is the same name on the C# side, and the catalog check below fails the lane if this one ever goes stale.
 EXCLUSIVE_POSTGRES_CLASS="QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
+FULL_CANONICAL_ARTIFACT_SHA256="3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
 POSTGRES_CONTAINER_FILTERS=(
   --filter "label=com.qurandashboard.test.owner=backend-tests"
   --filter "label=com.qurandashboard.test.repository=quran-dashboard"
@@ -27,7 +29,7 @@ SHARD_HANDOVER_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data
+  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal
     --build|--no-build [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
@@ -70,12 +72,19 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|feature|pipeline|pre-pr)
+  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal|feature|pipeline|pre-pr)
     ;;
   *)
     fail_usage "Unknown lane: ${lane}"
     ;;
 esac
+
+artifact_execution="${QURAN_DASHBOARD_ARTIFACT_EXECUTION:-local}"
+if [[ "${artifact_execution}" != "local" \
+  && "${artifact_execution}" != "scheduled" \
+  && "${artifact_execution}" != "release" ]]; then
+  fail_usage "QURAN_DASHBOARD_ARTIFACT_EXECUTION must be local, scheduled, or release."
+fi
 
 feature_selector=""
 class_selector=""
@@ -182,6 +191,7 @@ declare -a selected_features=()
 declare -a selected_kinds=()
 declare -a selected_gates=()
 declare -a selected_concerns=()
+declare -a release_classes=()
 
 add_selected_row() {
   selected_classes+=("$1")
@@ -201,6 +211,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
   [[ -n "${class_name}" ]] || continue
 
   [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_class_cataloged=true
+  [[ "${kind}" == "Release" ]] && release_classes+=("${class_name}")
 
   if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
     feature_exists=true
@@ -238,17 +249,29 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       [[ "${gate}" == "TierB" && -z "${concerns}" ]] && selected=true
       ;;
     gate-contract)
-      [[ -n "${concerns}" ]] && selected=true
+      [[ "${kind}" != "Release" && -n "${concerns}" ]] && selected=true
       ;;
     canonical-data)
       [[ "${kind}" == "Canonical" ]] && selected=true
       ;;
+    full-canonical)
+      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests ]] && selected=true
+      ;;
+    full-canonical-recovery)
+      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests ]] && selected=true
+      ;;
+    previous-release-upgrade)
+      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests ]] && selected=true
+      ;;
+    phrase-index-rehearsal)
+      [[ "${class_name}" == QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests ]] && selected=true
+      ;;
     feature)
-      if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
+      if [[ "${kind}" != "Release" && -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
         selected=true
-      elif [[ -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
+      elif [[ "${kind}" != "Release" && -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
         selected=true
-      elif [[ -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
+      elif [[ "${kind}" != "Release" && -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
         selected=true
       fi
       ;;
@@ -259,7 +282,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
       fi
       ;;
     pre-pr)
-      selected=true
+      [[ "${kind}" != "Release" ]] && selected=true
       ;;
   esac
 
@@ -311,10 +334,12 @@ if [[ "${build_mode}" == "no-build" ]]; then
   requires_access_admin=false
   requires_data_importer=false
   for index in "${!selected_kinds[@]}"; do
+    feature="${selected_features[$index]}"
     kind="${selected_kinds[$index]}"
     gate="${selected_gates[$index]}"
-    [[ "${kind}" == "Migration" || "${kind}" == "Process" ]] && requires_access_admin=true
+    [[ "${feature}" == "Access" && ( "${kind}" == "Migration" || "${kind}" == "Process" ) ]] && requires_access_admin=true
     [[ "${gate}" == "Pipeline" || "${kind}" == "Canonical" ]] && requires_data_importer=true
+    [[ "${feature}" == "Abwab" && "${kind}" == "Process" ]] && requires_data_importer=true
   done
 
   if [[ "${requires_access_admin}" == true && ! -f "${ACCESS_ADMIN_OUTPUT}" ]]; then
@@ -371,6 +396,10 @@ fi
 filter=""
 if [[ -n "${test_selector}" ]]; then
   filter="FullyQualifiedName=${test_selector}"
+elif [[ "${lane}" == "pre-pr" ]]; then
+  for class_name in "${release_classes[@]}"; do
+    filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
+  done
 elif [[ "${lane}" != "pre-pr" ]]; then
   for class_name in "${selected_classes[@]}"; do
     term="(FullyQualifiedName~${class_name}.)"
@@ -391,9 +420,12 @@ declare -a shard_filters=()
 if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selected_classes[@]}" -gt 1 ]]; then
   shared_filter=""
   if [[ "${lane}" == "pre-pr" ]]; then
-    # A negative term rather than an enumeration: the Full Backend gate discovers its own classes, so a
-    # class added without a catalog row still runs here and still fails TestGateCatalogTests.
+    # Negative terms retain the Full Backend gate's discovery of uncataloged non-release classes while
+    # ensuring a cataloged scheduled/release-only class cannot enter the ordinary PR execution path.
     shared_filter="FullyQualifiedName!~${EXCLUSIVE_POSTGRES_CLASS}."
+    for class_name in "${release_classes[@]}"; do
+      shared_filter+="&FullyQualifiedName!~${class_name}."
+    done
   else
     for class_name in "${selected_classes[@]}"; do
       [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && continue
@@ -446,7 +478,7 @@ if [[ "${#resource_kinds[@]}" -eq 0 ]]; then
   echo "resource needs: none"
 else
   resource_summary=""
-  for kind in Database Migration Process Canonical; do
+  for kind in Database Migration Process Canonical Release; do
     if [[ -n "${resource_kinds[${kind}]:-}" ]]; then
       resource_summary="${resource_summary:+${resource_summary},}${kind}"
     fi
@@ -454,7 +486,11 @@ else
   echo "resource needs: ${resource_summary}"
 fi
 
-run_id="$(tr -d '-' < /proc/sys/kernel/random/uuid)"
+run_id="${QURAN_DASHBOARD_TEST_RUN_ID:-$(tr -d '-' < /proc/sys/kernel/random/uuid)}"
+if [[ ! "${run_id}" =~ ^[0-9a-f]{32}$ ]]; then
+  echo "ERROR: QURAN_DASHBOARD_TEST_RUN_ID must be 32 lowercase hexadecimal characters." >&2
+  exit 1
+fi
 export QURAN_DASHBOARD_TEST_RUN_ID="${run_id}"
 export QURAN_DASHBOARD_TEST_DB_PARALLELISM=4
 unset MUSHAF_READER_REAL_DB_CONNECTION
@@ -476,11 +512,15 @@ trap clean_up_run EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
+full_canonical_execution=false
+
 canonical_preflight() {
   local missing=false
   local require_foundation=false
   local require_enriched=false
   local require_dump=false
+  local provisioned_full_canonical=false
+  local full_canonical_state_requested=false
 
   for class_name in "${selected_classes[@]}"; do
     [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* ]] && require_foundation=true
@@ -506,15 +546,76 @@ canonical_preflight() {
     echo "ERROR: canonical enriched morphology artifact is missing." >&2
     missing=true
   fi
-  if [[ "${require_dump}" == true ]]; then
-    for path in \
-      "${REPO_ROOT}/resources/db-dumps/quran-canonical/quran-canonical.dump" \
-      "${REPO_ROOT}/resources/db-dumps/quran-canonical/manifest.json"; do
-      if [[ ! -f "${path}" ]]; then
-        echo "ERROR: canonical Smoke resource is missing: ${path}" >&2
+  if [[ "${require_dump}" == true ]] \
+    && { [[ "${artifact_execution}" != "local" ]] \
+      || [[ -n "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" \
+      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK:-}" ]]; }; then
+    full_canonical_state_requested=true
+    for variable in \
+      QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT \
+      QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE \
+      QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT \
+      QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER \
+      QURAN_DASHBOARD_FULL_CANONICAL_NETWORK \
+      QURAN_DASHBOARD_FULL_CANONICAL_RUN; do
+      if [[ -z "${!variable:-}" ]]; then
+        echo "ERROR: provisioned full-canonical execution is missing ${variable}." >&2
         missing=true
       fi
     done
+
+    if [[ "${artifact_execution}" == "local" ]]; then
+      echo "ERROR: full-canonical execution requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+      missing=true
+    elif [[ "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" != "${artifact_execution}" ]]; then
+      echo "ERROR: scheduled/release execution requires QURAN_DASHBOARD_FULL_CANONICAL_RUN=${artifact_execution}." >&2
+      missing=true
+    fi
+
+    if [[ "${missing}" == false ]]; then
+      if [[ ! -f "${ARTIFACT_TOOL_OUTPUT}" ]]; then
+        echo "ERROR: sealed full-canonical verification requires existing artifact verifier output: ${ARTIFACT_TOOL_OUTPUT}" >&2
+        missing=true
+      elif ! env -i \
+        PATH="${PATH}" \
+        HOME="/tmp" \
+        QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
+        dotnet "${ARTIFACT_TOOL_OUTPUT}" verify-full-canonical \
+        --run "${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
+        --database-connection-file "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
+        --database-container "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
+        --staging-root "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
+        --receipt "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
+        --root "${REPO_ROOT}"; then
+        missing=true
+      else
+        provisioned_full_canonical=true
+        full_canonical_execution=true
+      fi
+    fi
+  fi
+  if [[ "${require_dump}" == true && "${provisioned_full_canonical}" == false ]]; then
+    if [[ "${full_canonical_state_requested}" == true ]]; then
+      echo "ERROR: scheduled/release full-canonical execution cannot fall back to the local ignored dump." >&2
+      missing=true
+    fi
+    if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+      echo "ERROR: canonical Smoke execution requires QURAN_TEST_ARTIFACT_ROOT." >&2
+      missing=true
+    else
+      for path in \
+        "${QURAN_TEST_ARTIFACT_ROOT}/sha256/${FULL_CANONICAL_ARTIFACT_SHA256}/quran-canonical.dump" \
+        "${QURAN_TEST_ARTIFACT_ROOT}/sha256/${FULL_CANONICAL_ARTIFACT_SHA256}/manifest.json"; do
+        if [[ ! -f "${path}" ]]; then
+          echo "ERROR: canonical Smoke artifact is missing: ${path}" >&2
+          missing=true
+        fi
+      done
+    fi
   fi
 
   [[ "${missing}" == false ]]
@@ -531,8 +632,43 @@ else
   echo "canonical data tier: not selected"
 fi
 
+if [[ "${lane}" == "previous-release-upgrade" || "${lane}" == "full-canonical-recovery" ]] && [[ "${list_tests}" == false ]]; then
+  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
+    echo "ERROR: ${lane} requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+    exit 1
+  fi
+  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+    echo "ERROR: ${lane} requires QURAN_TEST_ARTIFACT_ROOT." >&2
+    exit 1
+  fi
+  if [[ "${lane}" == "full-canonical-recovery" && "${QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP:-}" != "yes" ]]; then
+    echo "ERROR: full-canonical-recovery requires QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes." >&2
+    exit 1
+  fi
+  if [[ "${lane}" == "previous-release-upgrade" ]]; then
+    export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
+  else
+    export QURAN_DASHBOARD_FULL_CANONICAL_RECOVERY_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-full-canonical-recovery-evidence}"
+  fi
+fi
+
+if [[ "${lane}" == "phrase-index-rehearsal" && "${list_tests}" == false ]]; then
+  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
+    echo "ERROR: phrase-index-rehearsal requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
+    exit 1
+  fi
+  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+    echo "ERROR: phrase-index-rehearsal requires QURAN_TEST_ARTIFACT_ROOT." >&2
+    exit 1
+  fi
+  export QURAN_DASHBOARD_PHRASE_INDEX_REHEARSAL_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-phrase-index-rehearsal-evidence}"
+fi
+
 verbosity="normal"
 hang_timeout="20m"
+if [[ "${lane}" == "phrase-index-rehearsal" || "${lane}" == "full-canonical-recovery" ]]; then
+  hang_timeout="45m"
+fi
 if [[ "${all_fast}" == true ]]; then
   verbosity="minimal"
   hang_timeout="5m"
@@ -560,7 +696,9 @@ build_test_args() {
 
   [[ -n "${shard_filter}" ]] && test_args+=(--filter "${shard_filter}")
   [[ "${list_tests}" == true ]] && test_args+=(--list-tests)
-  [[ -n "${results_dir}" ]] && test_args+=(--results-directory "${results_dir}")
+  if [[ -n "${results_dir}" ]]; then
+    test_args+=(--results-directory "${results_dir}" --logger "trx;LogFileName=backend-tests.trx")
+  fi
   return 0
 }
 
@@ -691,7 +829,23 @@ for index in "${!shard_filters[@]}"; do
 
   build_test_args "${shard_filters[$index]}"
   set +e
-  dotnet "${test_args[@]}"
+   if [[ "${full_canonical_execution}" == true ]]; then
+     env -i \
+       PATH="${PATH}" \
+       HOME="/tmp" \
+       QURAN_DASHBOARD_TEST_RUN_ID="${QURAN_DASHBOARD_TEST_RUN_ID}" \
+       QURAN_DASHBOARD_TEST_DB_PARALLELISM="${QURAN_DASHBOARD_TEST_DB_PARALLELISM}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT="${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE="${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT="${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER="${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
+       QURAN_DASHBOARD_FULL_CANONICAL_RUN="${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
+       QURAN_DASHBOARD_ARTIFACT_EXECUTION="${artifact_execution}" \
+       dotnet "${test_args[@]}"
+   else
+     dotnet "${test_args[@]}"
+   fi
   shard_status=$?
   set -e
 
@@ -736,6 +890,11 @@ if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
     echo "canonical data tier: failed" >&2
     echo "canonical shard status: ${canonical_shard_summary}" >&2
   fi
+fi
+
+if [[ -n "${results_dir}" && "${test_status}" -eq 0 ]]; then
+  printf '{"schemaVersion":1,"lane":"%s","status":"passed"}\n' "${lane}" \
+    > "${results_dir}/nightly-test-evidence.json"
 fi
 
 exit "${test_status}"

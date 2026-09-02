@@ -15,8 +15,7 @@ branch/upstream confirmation, and the post-merge `dev` sync.
 
 **Not this skill's job:** builds, tests, code review, deployment, source-code fixes, or
 automatic PR preparation. Existing build/test/review evidence is not a Git gate — do not
-run or demand it here. A PR context package comes from `pr-context-prep` only when the
-user separately asks for one.
+run or demand it here.
 
 ## Branch model
 

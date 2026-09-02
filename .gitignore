@@ -24,6 +24,8 @@ Thumbs.db
 *.swp
 .impeccable/
 .playwright-mcp/
+.pr-observation/
+.dependency-advisory/
 docs/ui-concepts/
 Frontend/quran-dashboard-ui/test-results/
 Frontend/quran-dashboard-ui/playwright-report/

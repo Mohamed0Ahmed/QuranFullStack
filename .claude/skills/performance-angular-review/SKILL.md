@@ -36,20 +36,17 @@ a false positive erodes trust in every other finding.
 ## Quran rendering correctness overrides optimization (hard constraint)
 
 Readability, accuracy, selection/highlight semantics, RTL correctness, and accessibility
-of Quran content always win over a render or visual micro-optimization. Apply
-`.claude/skills/engineering-review/references/quran-data-safety.md` when the scope
-touches Quran display; a recommendation that trades any of it away is itself the defect
+of Quran content always win over a render or visual micro-optimization. A recommendation
+that trades any of it away is itself the defect
 — never propose it, and flag it if the diff already does it. "Slower but correct and
 readable" is the right answer for Quran content.
 
 ## Conditional context
 
-- `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` and
-  `API_INTEGRATION_GUIDELINES.md` — only the exact heading a finding depends on, plus the
+- `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` — only the exact
+  heading a finding depends on, plus the
   directly implicated Angular templates/styles when a recommendation depends on current UI
   implementation (so it does not break structure, rendering, or the API flow).
-- `Frontend/quran-dashboard-ui/e2e/README.md` — only when a retained Playwright journey or its
-  browser/runtime prerequisites are relevant to the finding.
 - Browser/profiler measurement — only when a finding requires it, and read-only.
 - Immediate parent/child components and the relevant facade/state service — only to
   judge whether a component is hot or a list is large; do not drift into auditing

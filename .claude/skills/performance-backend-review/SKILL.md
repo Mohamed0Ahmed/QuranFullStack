@@ -35,10 +35,9 @@ finding.
 
 ## Quran data safety overrides speed (hard constraint)
 
-Correctness, atomicity, and provenance always win over speed. Apply
-`.claude/skills/engineering-review/references/quran-data-safety.md` when the scope
-touches Quran source/import data; a recommendation that weakens text integrity, source
-hashes/manifest checks, source-unchanged checks, validation hard checks,
+Correctness, atomicity, and provenance always win over speed. A recommendation that
+weakens text integrity, source hashes/manifest checks,
+source-unchanged checks, validation hard checks,
 rollback/atomicity, report correctness, or provenance/traceability is itself the defect
 — never propose it, and flag it if the diff already does it. "Slower but correct" is the
 right answer for this product.
@@ -51,13 +50,8 @@ right answer for this product.
   `Backend/infrastructure/QuranDashboard.Infrastructure/Persistence/Configurations/` —
   the authoritative index/key/relationship declarations, and therefore the only
   trustworthy input to an index or join-path finding.
-- The implicated heading of `Backend/.architecture/BACKEND_STRUCTURE.md`,
-  `CLEAN_ARCHITECTURE.md`, or `API_GUIDELINES.md` — only so a recommendation does not
-  violate architecture or the `ApiResponse` contract.
-- `Backend/tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md` and
-  `Backend/tests/QuranDashboard.Tests/README.md` — only for a real PostgreSQL fixture/test-runtime finding
-  (ordinary fixtures lease from the shared runtime; a fixture starting its own container
-  is a finding).
+- The implicated heading of `Backend/.architecture/BACKEND_STRUCTURE.md` or
+  `CLEAN_ARCHITECTURE.md` — only so a recommendation does not violate structure.
 - Live cardinality — there is deliberately no stored database-baseline report; if row
   counts matter, measure in a read-only session and state when you measured.
 

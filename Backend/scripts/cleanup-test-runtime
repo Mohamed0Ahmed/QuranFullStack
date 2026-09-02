@@ -11,10 +11,11 @@ REMOVAL_TIMEOUT_SECONDS=30
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/cleanup-test-runtime --run-id RUN_ID [--dry-run]
+  Backend/scripts/cleanup-test-runtime --run-id RUN_ID [--dry-run] [--require-proof]
 
-Removes only Docker resources carrying all five project test labels and the exact run ID.
-It never prunes, never touches unlabelled resources, and never removes development volumes.
+Removes only containers carrying all five project test labels and networks carrying the project owner,
+repository, and exact run ID labels. It never prunes, never touches unlabelled resources, and never
+removes development volumes.
 EOF
 }
 
@@ -26,6 +27,7 @@ fail_usage() {
 
 run_id=""
 dry_run=false
+require_proof=false
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -36,6 +38,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       dry_run=true
+      shift
+      ;;
+    --require-proof)
+      require_proof=true
       shift
       ;;
     --help|-h)
@@ -56,13 +62,19 @@ if [[ ! "${run_id}" =~ ^[0-9a-f]{32}$ ]]; then
   fail_usage "A run ID must be 32 lowercase hexadecimal characters, found: ${run_id}"
 fi
 
+if [[ "${dry_run}" == true && "${require_proof}" == true ]]; then
+  fail_usage "--dry-run cannot be combined with --require-proof."
+fi
+
 if ! command -v docker >/dev/null 2>&1; then
   echo "cleanup: docker is not installed; no project test resources can exist."
+  [[ "${require_proof}" == false ]] || exit 1
   exit 0
 fi
 
 if ! docker info >/dev/null 2>&1; then
   echo "cleanup: the Docker daemon is unreachable; no resources were inspected." >&2
+  [[ "${require_proof}" == false ]] || exit 1
   exit 0
 fi
 
@@ -175,6 +187,30 @@ for network in "${networks[@]}"; do
     cleanup_status=1
   fi
 done
+
+if [[ "${require_proof}" == true ]]; then
+  remaining_containers_output=""
+  remaining_networks_output=""
+  if ! remaining_containers_output="$(docker ps -aq "${label_filters[@]}")"; then
+    echo "ERROR: project-owned container cleanup proof query failed." >&2
+    cleanup_status=1
+  fi
+  if ! remaining_networks_output="$(docker network ls -q \
+    --filter "label=${OWNER_LABEL}" \
+    --filter "label=${REPOSITORY_LABEL}" \
+    --filter "label=${RUN_ID_LABEL}=${run_id}")"; then
+    echo "ERROR: project-owned network cleanup proof query failed." >&2
+    cleanup_status=1
+  fi
+  remaining_containers=()
+  remaining_networks=()
+  [[ -z "${remaining_containers_output}" ]] || mapfile -t remaining_containers <<< "${remaining_containers_output}"
+  [[ -z "${remaining_networks_output}" ]] || mapfile -t remaining_networks <<< "${remaining_networks_output}"
+  if [[ "${#remaining_containers[@]}" -ne 0 || "${#remaining_networks[@]}" -ne 0 ]]; then
+    echo "ERROR: project-owned PostgreSQL cleanup could not prove zero matching resources." >&2
+    cleanup_status=1
+  fi
+fi
 
 printf 'cleanup: removed %d container(s) and %d network(s); %d container(s) were already removed by their test host.\n' \
   "${removed_containers}" "${removed_networks}" "${already_removed_containers}"

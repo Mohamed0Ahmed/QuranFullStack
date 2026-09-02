@@ -11,12 +11,17 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `qd-ui` | `npm run start:https` for the Angular dashboard |
 | `export-swagger` | Builds the API (Release) without build servers, defaults the Swagger host to `Development` for startup-option validation, and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
-| `test-backend <lane>` | **The only supported way to run Backend tests.** Selects a lane from the test catalog, builds once or refuses a stale `--no-build`, shards when two PostgreSQL majors would collide, and cleans up its own containers. See *Backend test commands* below |
-| `cleanup-test-runtime --run-id RUN_ID` | Removes the Docker resources of one `test-backend` run, selected by all five project test labels **and** that exact run ID. Never prunes |
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
 | `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
+| `test-artifacts status\|verify [--lane LANE\|--artifact ID]` | Read-only inspection of the tracked test-artifact lock; `verify` adds hashes and strict external-manifest checks |
+| `test-artifacts provision-full-canonical\|verify-full-canonical ...` | Local-first scheduled/release full-canonical provision-once and sealed shared-state verification; `provision` requires `QURAN_TEST_ARTIFACT_ROOT` |
+| `test-artifacts previous-release-upgrade` | Read-only fail-closed verification of the adopted previous-release declaration, local Git inventories, and locked representative artifact; it never opens or mutates a database |
+| `test-backend full-canonical --build` | Runs the local-first full-canonical trust, provision-once, and shared-state contract tests |
+| `test-backend full-canonical-recovery --build` | Scheduled/release-only isolated PostgreSQL 18 source-to-target Quran backup/restore rehearsal; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release`, `QURAN_TEST_ARTIFACT_ROOT`, and `QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes` |
+| `test-backend previous-release-upgrade --build` | Scheduled/release-only private PostgreSQL 18 rehearsal of the supplemental five-to-six upgrade; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release` and `QURAN_TEST_ARTIFACT_ROOT` |
+| `test-backend phrase-index-rehearsal --build` | Scheduled/release-only disposable PostgreSQL 18 full-catalogue PhraseSearch build rehearsal; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release` and `QURAN_TEST_ARTIFACT_ROOT` |
 | `wipe-abwab` | Empties the literal Abwab and Abwab-owned Linking reset closure on a local database, leaving canonical `quran_*`, access, and linking-workspace data intact |
-| `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project. EF tooling only — never hand-write a migration (`Backend/README.md` §Invariants) |
+| `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
 | `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `export-abwab-snapshot` | DataImporter verb that captures the current Abwab relational snapshot across the eight-table schema without Linking or Linking-dependent inclusion-sync rows; see the export-only workflow below |
@@ -38,6 +43,30 @@ against it.
 `abwab_*` content is authored curation data. Preserve it with the v4 export/import workflow before
 a full reset; prefer `wipe-abwab` when the goal is only to clear Abwab rows. A full reset also
 discards canonical `quran_*` data, which then has to be re-imported.
+
+## Verifying locked test artifacts
+
+Backend projects opt into NuGet lock files through `Directory.Build.props`. Controlled test
+provisioning uses `dotnet restore QuranDashboard.sln --locked-mode`; dependency changes therefore
+require reviewed `packages.lock.json` updates before sealed execution.
+
+The repository-root `test-artifacts.lock.json` and the schemas under `docs/testing/` are the tracked
+trust contract. These commands are read-only: they do not fetch, extract, restore, refresh, publish,
+or connect to PostgreSQL.
+
+```bash
+./scripts/test-artifacts status
+./scripts/test-artifacts status --lane critical
+./scripts/test-artifacts verify --artifact compact-cross-stack-base
+```
+
+`status` checks strict lock shape, required selection, staged presence and size, and repository
+migration freshness. `verify` additionally checks every SHA-256, strictly parses the hashed external
+manifest, validates PostgreSQL table identifiers, and compares manifest identity, migration,
+producer, table scope, provenance, sentinels, and PhraseSearch expectations with the lock. An explicit
+lane or artifact that has no lock entry fails closed. The initial lock intentionally has no entries;
+the compact-fixture implementation adds its reviewed artifact rather than predeclaring invented
+hashes or Quran sentinels.
 
 ## Exporting the current Railway Abwab snapshot
 
@@ -503,96 +532,7 @@ trace.
 
 After the first successful build, use `qd-api` directly until backend code changes.
 
-## Backend test commands
-
-`../../TESTING_CONSTITUTION.md` and the active plan's `Testing Decision` select which checks to run.
-This section and `../tests/QuranDashboard.Tests/README.md` own the Backend command mechanics and
-lane membership.
-
-### `test-backend`
-
-```bash
-./scripts/test-backend --help
-```
-
-`--help` prints the authoritative usage and is the thing to trust when this file and the script
-disagree. The lanes are `fast`, `access`, `access-db`, `migration`, `process`, `smoke`,
-`tier-b`, `gate-contract`, `canonical-data`, `feature`, `pipeline`, and `pre-pr`; an unknown lane exits 2 with the
-usage text (`test-backend:72-78`).
-
-| Purpose | Lanes | Selection |
-|---|---|---|
-| Daily verification | `smoke`, `tier-b` | Permanent classes only; the union is the complete Permanent set |
-| Concern gate | `gate-contract` | Every retained row with a non-empty `Concerns` value |
-| Pipeline gate | `pipeline` | `Gate=Pipeline` **and** `Kind!=Canonical`; `canonical-data` owns every excluded canonical class |
-| Canonical-data gate | `canonical-data` | Every `Kind=Canonical` row, including the nine canonical rows excluded from `pipeline` and the canonical smoke-data class |
-| Migration gate | `migration` | `Kind=Migration` |
-| Access database gate | `access-db` | `Feature=Access` **and** (`Kind=Database` **or** `Concerns` contains `Schema`); `gate-contract` owns the excluded non-Access `AbwabSchemaTests` and `WordTypesChildCatalogueDriftTests` |
-| Mandatory pre-release gate | `pre-pr` | Every retained catalog row |
-
-The focused `fast`, `access`, `process`, and `feature` lanes remain diagnostic entry points. They do
-not replace the daily pair or a change/release gate. Before release, `pre-pr` is mandatory and runs
-the complete retained estate.
-
-| Flag | Effect |
-|------|--------|
-| `--build` / `--no-build` | **Required, exactly one**, on every lane except `pre-pr` (`test-backend:144-155`). `--build` builds `QuranDashboard.sln` once, single-threaded. `--no-build` verifies the outputs the selection actually needs — the test assembly always, `QuranDashboard.AccessAdmin` for `Kind=Migration`/`Kind=Process`, `QuranDashboard.DataImporter` for `Gate=Pipeline`/`Kind=Canonical` — and names the missing path instead of running stale (`:299-326`) |
-| `--list-tests` | Discovery only. Starts no container, never shards, and additionally fails if a selected catalog class discovers no tests or discovery finds a class outside the selection (`:602-631`) |
-| `--results-dir PATH` | Passed through as `--results-directory`; a relative path resolves against your working directory, not the repo root (`:361-366`). **It does not produce a TRX file.** The script registers no VSTest logger — `:536-555` is the whole argument list — so the directory receives the blame-hang output and nothing machine-readable. When you need parseable results, prefix the invocation with `VSTestLogger=trx`, which MSBuild reads as a property; the script itself needs no change |
-| `--feature KEY` | `pipeline` only — narrows the lane to one validated Pipeline feature; a non-Pipeline feature exits 2 |
-| `--class NAME` / `--test NAME` | `feature` only, as the two exact alternatives to a `FEATURE_KEY`. `--test` is additionally validated against VSTest discovery, so a typo'd method name fails before anything runs (`:328-359`) |
-
-`pre-pr` is the exception: executing it always builds, so it rejects `--no-build`; discovering it
-requires the exact form `pre-pr --list-tests --no-build` (`:144-152`).
-
-Selection comes from `../tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`, whose
-header the script verifies before reading a row (`:168-178`). A `FEATURE_KEY` that no row carries
-exits 2 rather than running nothing (`:268-279`). The script prints its lane, the catalog path,
-every selected row, the expanded VSTest filter, and the resource kinds the selection needs —
-**that block is the evidence**; do not pipe a run into `tail`.
-
-Three behaviors are worth knowing before you read an unfamiliar failure:
-
-- **It can run twice.** A selection containing `QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests`
-  alongside any other class runs as two sequential `dotnet test` invocations — the shared
-  `postgres:16-alpine` classes, then that one class on its exclusive `postgres:18-alpine` server —
-  with a bounded wait in between until no labelled PostgreSQL container is running (`:388-408,
-  562-586`). That is `pre-pr` and `canonical-data`; `smoke` excludes the data tier and stays one
-  invocation. Shard exit statuses are combined (`:693-698`).
-- **A missing canonical resource fails the lane.** When the selection needs the foundation
-  sources, the enriched morphology artifact, or the dump plus manifest, the script checks for them
-  before starting anything and exits 1 with `canonical data tier: failed preflight` (`:476-519`).
-  It prints one of `ran` / `failed` / `not selected` / `discovery only` either way — quote that
-  line as the canonical skip accounting. It is scoped to the shards that actually carry a
-  `Kind=Canonical` class, which is not only the exclusive one: every `Quran.Import` class is
-  canonical and runs on the shared runtime. `ran` means every canonical-bearing shard started
-  **and** exited zero; `failed` means one of them came back non-zero or never started because an
-  earlier shard stopped the lane (`:701-731`). A failure confined to a shard that carries no
-  canonical class no longer reports the tier as failed — that was the misattribution. Which
-  shard, and its own exit code, is on the `canonical shard status:` line printed beside it.
-- **It owns its cleanup.** Each run generates a 32-hex run ID, exports it as
-  `QURAN_DASHBOARD_TEST_RUN_ID`, unsets the five external-database overrides and their opt-in, and
-  installs an `EXIT` trap that calls `cleanup-test-runtime` for that ID (`:454-474`).
-
-Backend test processes **must not run concurrently** — the shared database runtime is guarded by
-a cross-process OS lock, so a second run waits rather than failing fast. See
-`../tests/QuranDashboard.Tests/TestSupport/PostgreSql/README.md`.
-
-### `cleanup-test-runtime`
-
-```bash
-./scripts/cleanup-test-runtime --run-id RUN_ID [--dry-run]
-```
-
-`test-backend` calls this itself; run it by hand only to clear a run that was killed. It selects
-Docker resources by the three fixed project labels, the presence of `host-pid`, and the **exact**
-run ID (`cleanup-test-runtime:69-83`) — so it can only ever reach containers this project
-labelled. It refuses a missing or non-32-hex run ID (`:51-57`), never prunes, never touches
-unlabelled resources or development volumes, and reports the Testcontainers reaper separately
-while leaving it running (`:101-106`). A container the test host already removed itself counts as
-cleaned, not as a failure (`:130-148`). `--dry-run` prints the candidates and removes nothing.
-
-### `check-pending-model`
+## `check-pending-model`
 
 ```bash
 ./scripts/check-pending-model --build|--no-build
@@ -600,8 +540,7 @@ cleaned, not as a failure (`:130-148`). `--dry-run` prints the candidates and re
 
 Wraps `dotnet ef migrations has-pending-model-changes` for `QuranDashboardDbContext` with the
 right project/startup pair and `DOTNET_ENVIRONMENT=Development` (`check-pending-model:53-59`). It
-**never adds and never applies a migration**; it is a separate command from every test lane, run
-alongside the `migration` lane whenever the EF model or schema is in scope. `--no-build` requires
+**never adds and never applies a migration**. `--no-build` requires
 existing Infrastructure and Api output and names the missing path otherwise (`:41-46`).
 
 ## One-time setup (zsh)

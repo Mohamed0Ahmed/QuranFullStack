@@ -1,0 +1,334 @@
+{
+  "$schema": "docs/testing/test-artifacts-lock.schema.json",
+  "contractVersion": 1,
+  "artifacts": [
+    {
+      "id": "compact-cross-stack-base",
+      "version": "2026.08.31.3",
+      "requiredLanes": ["critical", "full"],
+      "stagedFiles": [
+        {
+          "path": "test-artifacts/compact-cross-stack-base/manifest.json",
+          "role": "manifest",
+          "size": 4414,
+          "sha256": "f5b595378fb7e0c4aefb3ba832fedc7a1168b2d24f1bfe3a128bff4c352203ee"
+        },
+        {
+          "path": "test-artifacts/compact-cross-stack-base/oracle.json",
+          "role": "oracle",
+          "size": 17428,
+          "sha256": "bde6d3bf7ea0a9d594847bd8d661ffa05ddf8a2b46ae3b2e5c8fa63320ae4a21"
+        },
+        {
+          "path": "test-artifacts/compact-cross-stack-base/compact-cross-stack-base.dump",
+          "role": "payload",
+          "size": 740705,
+          "sha256": "cce855a3c76aa55af3a0d6203d4026d73655868a06354e051db71bd82e666a1f"
+        }
+      ],
+      "manifestPath": "test-artifacts/compact-cross-stack-base/manifest.json",
+      "migration": {
+        "head": "20260826012918_AddQuranPhraseSearchIndex",
+        "count": 6
+      },
+      "tableScope": {
+        "quran": true,
+        "phraseSearch": false,
+        "abwab": false,
+        "access": false,
+        "linking": false,
+        "tables": [
+          "quran_ayahs",
+          "quran_hizbs",
+          "quran_juzs",
+          "quran_mushaf_lines",
+          "quran_mushaf_pages",
+          "quran_rubs",
+          "quran_sajdas",
+          "quran_surahs",
+          "quran_tafsir_ayah_entries",
+          "quran_tafsir_entries",
+          "quran_tafsir_sources",
+          "quran_translation_ayah_entries",
+          "quran_translation_sources",
+          "quran_words"
+        ]
+      },
+      "postgresql": {
+        "producerVersion": "18.6",
+        "containerDigest": "sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7"
+      },
+      "producer": {
+        "command": "dotnet ef migrations script; pg_restore --disable-triggers; retain page-1 Mushaf rows; add reviewed 1:1 study rows; pg_dump --format=custom",
+        "version": "1"
+      },
+      "sources": [
+        {
+          "id": "quran-canonical",
+          "version": "2026.08.26",
+          "sha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
+          "provenance": "Row-preserving selection from the verified local quran-canonical data-only dump."
+        },
+        {
+          "id": "quran-foundation-uthmani",
+          "version": "1",
+          "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+          "provenance": "Exact page-1 word text, verse keys, and word locations originate from resources/import-sources/quran-foundation/words/uthmani.json."
+        },
+        {
+          "id": "quran-foundation-ayah-metadata",
+          "version": "1",
+          "sha256": "bf1e0d24abf378acc7ebd35c4ecbcbf941057594fefa50322cc5c801565de0f4",
+          "provenance": "Exact page-1 ayah Unicode originates from resources/import-sources/quran-foundation/metadata/quran-metadata-ayah.json."
+        },
+        {
+          "id": "quran-foundation-layout",
+          "version": "1",
+          "sha256": "9d6cf089a40c8c8e17939631470aa93fa33aea07aac3fd5dc7f6519b94d40d53",
+          "provenance": "Exact page-1 line placement originates from resources/import-sources/quran-foundation/mushaf/qpc-v4-pages-layout.json."
+        },
+        {
+          "id": "translation-en-sahih-international",
+          "version": "1",
+          "sha256": "db544f7634cba2d69fdb9b0ccc43139a8784a8d8e33cb7802aefb0530614cb58",
+          "provenance": "Exact source identity and 1:1 content originate from resources/import-sources/quran-translations/sources/en-sahih-international.fn.json; the curated manifest records unknown license and provenance, so this fixture remains internal-only."
+        },
+        {
+          "id": "translation-source-manifest",
+          "version": "1",
+          "sha256": "f61cbcd36991cf88efdaaa835ff473aa85f4ac05edf3b8480a77ce3e2303ace9",
+          "provenance": "Source key, package path, content hash, coverage, and unknown license/provenance status originate from resources/import-sources/quran-translations/manifest.json."
+        },
+        {
+          "id": "translation-display-metadata",
+          "version": "1",
+          "sha256": "7f3c511d96412554b7383c9c02560fe5feeb7137f43dcc4884b8b7642d908d0a",
+          "provenance": "Reviewed Arabic and English display names for en-sahih-international originate from resources/import-sources/quran-translations/source-display-metadata.json."
+        },
+        {
+          "id": "tafsir-ar-muyassar",
+          "version": "1",
+          "sha256": "091e857e8f88142b20e7a38ffc0075cb9c3b92a07dcf66376dbe1cdd1fa2848e",
+          "provenance": "Exact source identity and 1:1 content originate from resources/import-sources/quran-tafsirs/sources/ar-muyassar.json; the curated manifest records unknown license and provenance, so this fixture remains internal-only."
+        },
+        {
+          "id": "tafsir-source-manifest",
+          "version": "1",
+          "sha256": "ae22b29e76eeac1789091d367382d3baa6291771c1f763c95ebd5f92a884daf8",
+          "provenance": "Source key, display names, contributor, package path, content hash, coverage, and unknown license/provenance status originate from resources/import-sources/quran-tafsirs/manifest.json."
+        }
+      ],
+      "sentinels": [
+        {
+          "id": "quran-fidelity.page-1-words",
+          "expectedCount": 36,
+          "oracleSha256": "bde6d3bf7ea0a9d594847bd8d661ffa05ddf8a2b46ae3b2e5c8fa63320ae4a21"
+        }
+      ],
+      "immutableStorageId": "repo://test-artifacts/compact-cross-stack-base@sha256:cce855a3c76aa55af3a0d6203d4026d73655868a06354e051db71bd82e666a1f",
+      "refresh": {
+        "date": "2026-08-31",
+        "reason": "Extend the source-reviewed Quran fidelity oracle and compact payload with exact ayah Unicode, page relationships, and 1:1 study-source associations for issue #83.",
+        "ownerRole": "artifact-maintainer"
+      }
+    },
+    {
+      "id": "compact-phrase-search-ready",
+      "version": "2026.08.31.1",
+      "requiredLanes": [
+        "critical",
+        "full"
+      ],
+      "stagedFiles": [
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/manifest.json",
+          "role": "manifest",
+          "size": 3173,
+          "sha256": "a216e809dd168852a35df25e38dab5e6acf5318cc5d2f85ec5b1439a76ff7de9"
+        },
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/oracle.json",
+          "role": "oracle",
+          "size": 4639,
+          "sha256": "5562ec216ec3dd87bda16034be97c8fac34577315c82f040ddc5d2c571677cb9"
+        },
+        {
+          "path": "test-artifacts/compact-phrase-search-ready/compact-phrase-search-ready.dump",
+          "role": "payload",
+          "size": 8699,
+          "sha256": "de231a3f6aab423de3c898fa8550194606c5bb38b56fc80c5bebda0aeee1db11"
+        }
+      ],
+      "manifestPath": "test-artifacts/compact-phrase-search-ready/manifest.json",
+      "migration": {
+        "head": "20260826012918_AddQuranPhraseSearchIndex",
+        "count": 6
+      },
+      "tableScope": {
+        "quran": true,
+        "phraseSearch": true,
+        "abwab": false,
+        "access": false,
+        "linking": false,
+        "tables": [
+          "quran_mushaf_pages",
+          "quran_phrase_index_builds",
+          "quran_phrase_index_state",
+          "quran_phrase_occurrences",
+          "quran_phrase_search_tokens",
+          "quran_phrase_similarity_anchor_stats",
+          "quran_phrase_similarity_edges",
+          "quran_phrase_variants",
+          "quran_words",
+          "quran_words_unique_simple",
+          "quran_words_unique_tashkeel"
+        ]
+      },
+      "postgresql": {
+        "producerVersion": "18.6",
+        "containerDigest": "sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7"
+      },
+      "producer": {
+        "command": "verify the completed full-index report and snapshot; compare selected Quran words and unique-word first-occurrence closure with the pinned Uthmani source; extract two reviewed variants, three occurrences, and one real similarity edge; normalize compact build totals; pg_dump --data-only with the explicit 11-table manifest allowlist",
+        "version": "1"
+      },
+      "sources": [
+        {
+          "id": "compact-cross-stack-base",
+          "version": "2026.08.31.3",
+          "sha256": "cce855a3c76aa55af3a0d6203d4026d73655868a06354e051db71bd82e666a1f",
+          "provenance": "The overlay composes after the already locked compact cross-stack schema and source-reviewed page-1 Quran fixture."
+        },
+        {
+          "id": "quran-foundation-uthmani",
+          "version": "1",
+          "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+          "provenance": "Exact Quran word IDs, locations, and Uthmani text for 1:1, 11:41, 27:30, and every unique-word first-occurrence foreign-key closure row were compared with resources/import-sources/quran-foundation/words/uthmani.json."
+        },
+        {
+          "id": "phrase-search-full-build-report",
+          "version": "2026.08.29",
+          "sha256": "2010f1cd2c0fe7a23a55eea196902d6b0fa165abe2acf9db5a5ed6f7ff7f17e0",
+          "provenance": "The completed phrase-index-v2 report attests active build identity, source fingerprint, exact readiness, similarity readiness, and successful activation."
+        },
+        {
+          "id": "phrase-search-ready-source-snapshot",
+          "version": "2026.08.29",
+          "sha256": "b4be17fc52b8e2d89c273585ec762bab82e34fdf755e99dccf50d44d267e9d98",
+          "provenance": "Exact selected build, token, variant, occurrence, anchor-stat, similarity-edge, and derived word-identity rows were extracted from the PostgreSQL 18.6 data-only snapshot produced after that successful build."
+        }
+      ],
+      "sentinels": [
+        {
+          "id": "phrase-search.available-reviewed-subset",
+          "expectedCount": 3,
+          "oracleSha256": "5562ec216ec3dd87bda16034be97c8fac34577315c82f040ddc5d2c571677cb9"
+        }
+      ],
+      "immutableStorageId": "repo://test-artifacts/compact-phrase-search-ready@sha256:de231a3f6aab423de3c898fa8550194606c5bb38b56fc80c5bebda0aeee1db11",
+      "refresh": {
+        "date": "2026-08-31",
+        "reason": "Add the source-reviewed compact PhraseSearch available-path fixture for issue #88 without rebuilding the index during ordinary journeys.",
+        "ownerRole": "artifact-maintainer"
+      },
+      "phraseSearch": {
+        "manifestSha256": "a216e809dd168852a35df25e38dab5e6acf5318cc5d2f85ec5b1439a76ff7de9",
+        "sourceFingerprint": "6320611aa63d3ee757e4bc5a75fc19b5c5fd0e78a257be59e78aed7d5a145957",
+        "readinessExpectation": "available"
+      }
+    },
+    {
+      "id": "quran-canonical",
+      "version": "2026.08.26",
+      "requiredLanes": ["scheduled", "release"],
+      "stagedFiles": [
+        {
+          "path": "test-artifacts/quran-canonical/manifest.json",
+          "role": "manifest",
+          "size": 1363,
+          "sha256": "3b2d15dbc30d8dbe5010f1d373e6a33b8e089902b6347ebb6f561f18874bec3e"
+        },
+        {
+          "path": "test-artifacts/quran-canonical/quran-canonical.dump",
+          "role": "payload",
+          "size": 372143834,
+          "sha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
+        }
+      ],
+      "manifestPath": "test-artifacts/quran-canonical/manifest.json",
+      "migration": {
+        "head": "20260826012918_AddQuranPhraseSearchIndex",
+        "count": 6
+      },
+      "tableScope": {
+        "quran": true,
+        "phraseSearch": false,
+        "abwab": false,
+        "access": false,
+        "linking": false,
+        "tables": [
+          "quran_ayahs", "quran_full_i3rab_ayah_entries", "quran_full_i3rab_entries", "quran_full_i3rab_sources", "quran_hizbs", "quran_i3rab_rules", "quran_juzs", "quran_lemma_analyses", "quran_lemmas", "quran_mushaf_lines", "quran_mushaf_pages", "quran_mutashabihat_groups", "quran_mutashabihat_occurrences", "quran_pos_tags", "quran_roots", "quran_rubs", "quran_sajdas", "quran_similar_ayah_links", "quran_stems", "quran_surahs", "quran_tafsir_ayah_entries", "quran_tafsir_entries", "quran_tafsir_sources", "quran_translation_ayah_entries", "quran_translation_sources", "quran_word_morphology", "quran_word_morphology_segments", "quran_words", "quran_words_ordered_simple", "quran_words_ordered_tashkeel", "quran_words_unique_simple", "quran_words_unique_tashkeel"
+        ],
+        "ownedSequences": [
+          { "name": "quran_full_i3rab_ayah_entries_id_seq", "table": "quran_full_i3rab_ayah_entries", "column": "id" },
+          { "name": "quran_full_i3rab_entries_id_seq", "table": "quran_full_i3rab_entries", "column": "id" },
+          { "name": "quran_full_i3rab_sources_id_seq", "table": "quran_full_i3rab_sources", "column": "id" },
+          { "name": "quran_i3rab_rules_id_seq", "table": "quran_i3rab_rules", "column": "id" },
+          { "name": "quran_lemma_analyses_id_seq", "table": "quran_lemma_analyses", "column": "id" },
+          { "name": "quran_lemmas_id_seq", "table": "quran_lemmas", "column": "id" },
+          { "name": "quran_mushaf_lines_id_seq", "table": "quran_mushaf_lines", "column": "id" },
+          { "name": "quran_mutashabihat_groups_id_seq", "table": "quran_mutashabihat_groups", "column": "id" },
+          { "name": "quran_mutashabihat_occurrences_id_seq", "table": "quran_mutashabihat_occurrences", "column": "id" },
+          { "name": "quran_roots_id_seq", "table": "quran_roots", "column": "id" },
+          { "name": "quran_similar_ayah_links_id_seq", "table": "quran_similar_ayah_links", "column": "id" },
+          { "name": "quran_stems_id_seq", "table": "quran_stems", "column": "id" },
+          { "name": "quran_tafsir_ayah_entries_id_seq", "table": "quran_tafsir_ayah_entries", "column": "id" },
+          { "name": "quran_tafsir_entries_id_seq", "table": "quran_tafsir_entries", "column": "id" },
+          { "name": "quran_tafsir_sources_id_seq", "table": "quran_tafsir_sources", "column": "id" },
+          { "name": "quran_translation_ayah_entries_id_seq", "table": "quran_translation_ayah_entries", "column": "id" },
+          { "name": "quran_translation_sources_id_seq", "table": "quran_translation_sources", "column": "id" },
+          { "name": "quran_word_morphology_segments_id_seq", "table": "quran_word_morphology_segments", "column": "id" }
+        ]
+      },
+      "tableCounts": [
+        { "name": "quran_ayahs", "rows": 6236 }, { "name": "quran_full_i3rab_ayah_entries", "rows": 24944 }, { "name": "quran_full_i3rab_entries", "rows": 14513 }, { "name": "quran_full_i3rab_sources", "rows": 4 }, { "name": "quran_hizbs", "rows": 60 }, { "name": "quran_i3rab_rules", "rows": 142 }, { "name": "quran_juzs", "rows": 30 }, { "name": "quran_lemma_analyses", "rows": 4832 }, { "name": "quran_lemmas", "rows": 4817 }, { "name": "quran_mushaf_lines", "rows": 9046 }, { "name": "quran_mushaf_pages", "rows": 604 }, { "name": "quran_mutashabihat_groups", "rows": 814 }, { "name": "quran_mutashabihat_occurrences", "rows": 3557 }, { "name": "quran_pos_tags", "rows": 49 }, { "name": "quran_roots", "rows": 1642 }, { "name": "quran_rubs", "rows": 240 }, { "name": "quran_sajdas", "rows": 15 }, { "name": "quran_similar_ayah_links", "rows": 3552 }, { "name": "quran_stems", "rows": 11843 }, { "name": "quran_surahs", "rows": 114 }, { "name": "quran_tafsir_ayah_entries", "rows": 523824 }, { "name": "quran_tafsir_entries", "rows": 382704 }, { "name": "quran_tafsir_sources", "rows": 84 }, { "name": "quran_translation_ayah_entries", "rows": 1041412 }, { "name": "quran_translation_sources", "rows": 167 }, { "name": "quran_word_morphology", "rows": 77432 }, { "name": "quran_word_morphology_segments", "rows": 128219 }, { "name": "quran_words", "rows": 83668 }, { "name": "quran_words_ordered_simple", "rows": 77432 }, { "name": "quran_words_ordered_tashkeel", "rows": 77432 }, { "name": "quran_words_unique_simple", "rows": 14783 }, { "name": "quran_words_unique_tashkeel", "rows": 21294 }
+      ],
+      "postgresql": {
+        "producerVersion": "18.6",
+        "containerDigest": "sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7"
+      },
+      "producer": {
+        "command": "Backend/scripts/create-smoke-dump",
+        "version": "1"
+      },
+      "sources": [
+        {
+          "id": "quran-canonical-dump",
+          "version": "2026.08.26",
+          "sha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
+          "provenance": "Verified local non-production dump; historical source-package hashes are unavailable."
+        }
+      ],
+      "sentinels": [
+        {
+          "id": "quran-canonical.ayahs-count",
+          "expectedCount": 6236,
+          "oracleSha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
+        }
+      ],
+      "immutableStorageId": "local://quran-canonical@sha256:3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
+      "refresh": {
+        "date": "2026-09-01",
+        "reason": "Adopt the verified local full-canonical Quran-only dump for issue #92.",
+        "ownerRole": "artifact-maintainer"
+      },
+      "restore": {
+        "kind": "full-canonical",
+        "order": 1,
+        "sentinelTables": [
+          { "id": "quran-canonical.ayahs-count", "table": "quran_ayahs", "expectedCount": 6236, "criticalReadSha256": "3bd86e744827b2f7b7121d89c6f3dd6fe943b4e5b30e4118f7e8a0e9cdd2ece8" }
+        ]
+      }
+    }
+  ]
+}

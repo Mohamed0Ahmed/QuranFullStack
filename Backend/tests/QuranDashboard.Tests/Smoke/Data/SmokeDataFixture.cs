@@ -4,6 +4,7 @@ using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
+using QuranDashboard.TestArtifacts;
 
 namespace QuranDashboard.Tests.Smoke.Data;
 
@@ -33,13 +34,20 @@ public sealed class SmokeDataFixture : IAsyncLifetime
     private readonly SmokeSqlCommandCapture _commandCapture = new();
 
     private ExclusivePostgreSqlLease? _serverLease;
+    private PostgreSqlDatabaseLease? _provisionedDatabase;
     private WebApplicationFactory<HealthController>? _apiFactory;
-    private SmokeDumpManifest? _manifest;
+    private SmokeRestoredDataManifest? _manifest;
 
     public string ConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
+        if (SmokeDumpGate.UsesProvisionedFullCanonicalState)
+        {
+            await InitializeProvisionedStateAsync();
+            return;
+        }
+
         // Absent is the ordinary state on a machine without the artifact: every test in the tier is
         // already skipped by SmokeDumpFact/SmokeDumpTheory, so start nothing. xUnit builds a collection
         // fixture even when all of its tests skip, which is why the check has to be here and not only in
@@ -51,14 +59,15 @@ public sealed class SmokeDataFixture : IAsyncLifetime
 
         // Before the lock and any container work, so a stale dump — or one this image cannot restore —
         // costs a hash rather than a two-minute pull, start and mid-restore failure.
-        _manifest = SmokeDumpGate.VerifyAndRead(RestoreImageMajorVersion);
+        var manifest = SmokeDumpGate.VerifyAndRead(RestoreImageMajorVersion);
+        _manifest = new SmokeRestoredDataManifest(manifest.Tables);
 
         _serverLease = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
             nameof(SmokeDataFixture),
             RestoreImage,
             // Bind-mounted read-only rather than copied in: copying the archive would stream every byte
             // through the Docker API before the restore can begin.
-            builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory, DumpMountPath, AccessMode.ReadOnly));
+            builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory!, DumpMountPath, AccessMode.ReadOnly));
         ConnectionString = _serverLease.ConnectionString;
 
         // The dump is data-only, so the schema it lands in is this tree's migrations, applied first.
@@ -89,11 +98,18 @@ public sealed class SmokeDataFixture : IAsyncLifetime
             await _serverLease.DisposeAsync();
             _serverLease = null;
         }
+
+        if (_provisionedDatabase is not null)
+        {
+            NpgsqlConnection.ClearPool(new NpgsqlConnection(ConnectionString));
+            await _provisionedDatabase.DisposeAsync();
+            _provisionedDatabase = null;
+        }
     }
 
     public HttpClient CreateClient() => SmokeApiHost.CreateClient(Factory);
 
-    internal SmokeDumpManifest Manifest => _manifest
+    internal SmokeRestoredDataManifest Manifest => _manifest
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has no manifest. The canonical dump is absent, so every test in this tier should have been skipped.");
 
@@ -109,9 +125,13 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         var counts = new Dictionary<string, int>();
         foreach (var table in tables)
         {
-            // Interpolated because a table name cannot be a parameter. The value is a key of a manifest
-            // written by create-smoke-dump from pg_class on a local operator machine — nothing verifies
-            // the manifest's own contents, so this is trusted as a local file, not as validated input.
+            if (!ArtifactTrustLockValidator.IsValidTableIdentifier(table))
+            {
+                throw new InvalidOperationException($"Canonical smoke manifest contains invalid table '{table}'.");
+            }
+
+            // Interpolated because a table name cannot be a parameter. Validate identifiers immediately
+            // before interpolation even though the local manifest or sealed receipt was checked earlier.
             await using var command = new NpgsqlCommand($"SELECT count(*) FROM public.\"{table}\";", connection);
             counts[table] = Convert.ToInt32(await command.ExecuteScalarAsync());
         }
@@ -149,6 +169,89 @@ public sealed class SmokeDataFixture : IAsyncLifetime
     private WebApplicationFactory<HealthController> Factory => _apiFactory
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture.");
+
+    private async Task InitializeProvisionedStateAsync()
+    {
+        if (!SmokeDumpGate.RequiresProvisionedFullCanonicalState)
+        {
+            throw new InvalidOperationException(
+                "Full-canonical smoke execution requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release.");
+        }
+
+        var missing = new[]
+            {
+                ("QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE", SmokeDumpGate.ProvisionedConnectionFile),
+                ("QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT", SmokeDumpGate.ProvisionedStagingRoot),
+                ("QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER", SmokeDumpGate.ProvisionedDatabaseContainer),
+                ("QURAN_DASHBOARD_FULL_CANONICAL_RUN", SmokeDumpGate.ProvisionedRunKind),
+            }
+            .Where(entry => string.IsNullOrWhiteSpace(entry.Item2))
+            .Select(entry => entry.Item1)
+            .ToArray();
+        if (missing.Length > 0)
+        {
+            throw new InvalidOperationException(
+                $"Full-canonical smoke execution is missing {string.Join(", ", missing)}.");
+        }
+
+        FullCanonicalArtifactProvisioningCommand.EnsureSealedExecutionEnvironment();
+        var receipt = StrictJson.Read<FullCanonicalProvisioningReceipt>(
+            SmokeDumpGate.ProvisioningReceiptFile!,
+            "Full-canonical provisioning receipt");
+        if (receipt.Status != "provisioned"
+            || receipt.RunKind != SmokeDumpGate.ArtifactExecution
+            || receipt.RunKind != SmokeDumpGate.ProvisionedRunKind
+            || receipt.Artifacts.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "The supplied full-canonical receipt is not a completed shared-state provisioning receipt.");
+        }
+
+        var repositoryRoot = Path.GetFullPath(Path.Combine(
+            AppContext.BaseDirectory,
+            "..", "..", "..", "..", "..", ".."));
+        var artifactLock = ArtifactTrustLock.ReadFrom(Path.Combine(
+            repositoryRoot,
+            ArtifactTrustLock.FileName));
+        var verifiedDatabase = new ProcessFullCanonicalArtifactDatabase(
+            SmokeDumpGate.ProvisionedConnectionFile!,
+            SmokeDumpGate.ProvisionedDatabaseContainer!,
+            SmokeDumpGate.ProvisionedRunKind!);
+        await FullCanonicalArtifactProvisioner.VerifyProvisionedStateAsync(
+            receipt,
+            artifactLock,
+            repositoryRoot,
+            SmokeDumpGate.ProvisionedStagingRoot!,
+            verifiedDatabase);
+
+        _provisionedDatabase = PostgreSqlTestProcess.UseExternalReadOnlyDatabase(
+            verifiedDatabase.ConnectionString);
+        ConnectionString = _provisionedDatabase.ConnectionString;
+        var duplicateTables = receipt.Artifacts
+            .SelectMany(artifact => artifact.Tables)
+            .GroupBy(table => table.Name, StringComparer.Ordinal)
+            .FirstOrDefault(group => group.Select(table => table.Rows).Distinct().Skip(1).Any());
+        if (duplicateTables is not null)
+        {
+            throw new InvalidOperationException(
+                $"The full-canonical receipt disagrees about restored table '{duplicateTables.Key}'.");
+        }
+
+        _manifest = new SmokeRestoredDataManifest(receipt.Artifacts
+            .SelectMany(artifact => artifact.Tables)
+            // Sealed verification preflights unique table ownership across artifacts, and every trusted
+            // manifest rejects duplicate table entries, so one receipt row owns each manifest table.
+            .GroupBy(table => table.Name, StringComparer.Ordinal)
+            .ToDictionary(
+                group => group.Key,
+                group => checked((int)group.Single().Rows),
+                StringComparer.Ordinal));
+        _apiFactory = SmokeApiHost.Build(
+            ConnectionString,
+            _profileSource,
+            _commandCapture,
+            readOnlySharedState: true);
+    }
 
     private async Task RestoreDumpAsync()
     {

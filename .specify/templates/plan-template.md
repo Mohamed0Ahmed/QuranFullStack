@@ -24,8 +24,6 @@
 
 **Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]
 
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]
-
 **Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
 
 **Project Type**: [e.g., library/cli/web-service/mobile-app/compiler/desktop-app or NEEDS CLARIFICATION]
@@ -41,12 +39,6 @@
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
 [Gates determined based on constitution file]
-
-## Testing Decision
-
-[State the exact verification selected under TESTING_CONSTITUTION.md. The default is no new
-automated test. Name any explicitly authorized exception and keep migration, database application,
-destructive data operations, and deployment behind separate authorization.]
 
 ## Project Structure
 
@@ -78,18 +70,12 @@ src/
 ├── cli/
 └── lib/
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
 # [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
+└── src/
+    ├── models/
+    ├── services/
+    └── api/
 
 frontend/
 ├── src/
@@ -103,7 +89,7 @@ api/
 └── [same as backend above]
 
 ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+└── [platform-specific structure: feature modules and UI flows]
 ```
 
 **Structure Decision**: [Document the selected structure and reference the real

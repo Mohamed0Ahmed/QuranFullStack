@@ -1,0 +1,80 @@
+{
+  "contractVersion": 1,
+  "artifactId": "compact-phrase-search-ready",
+  "artifactVersion": "2026.08.31.1",
+  "review": {
+    "sourceWordFile": "resources/import-sources/quran-foundation/words/uthmani.json",
+    "sourceWordSha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+    "fullBuildReportSha256": "2010f1cd2c0fe7a23a55eea196902d6b0fa165abe2acf9db5a5ed6f7ff7f17e0",
+    "fullPhraseReadyDumpSha256": "b4be17fc52b8e2d89c273585ec762bab82e34fdf755e99dccf50d44d267e9d98",
+    "method": "Compare exact word IDs, locations, and Uthmani text, including every unique-word first-occurrence foreign-key closure row, with the pinned foundation source; compare build identity, fingerprint, readiness, selected variants, occurrences, and the real similarity edge with the completed full-index report and data-only snapshot before extracting the compact overlay."
+  },
+  "sourceWords": [
+    { "id": 1, "location": "1:1:1", "textUthmani": "بِسْمِ" },
+    { "id": 2, "location": "1:1:2", "textUthmani": "ٱللَّهِ" },
+    { "id": 3, "location": "1:1:3", "textUthmani": "ٱلرَّحْمَـٰنِ" },
+    { "id": 4, "location": "1:1:4", "textUthmani": "ٱلرَّحِيمِ" },
+    { "id": 30296, "location": "11:41:1", "textUthmani": "۞ وَقَالَ" },
+    { "id": 30297, "location": "11:41:2", "textUthmani": "ٱرْكَبُوا۟" },
+    { "id": 30298, "location": "11:41:3", "textUthmani": "فِيهَا" },
+    { "id": 30299, "location": "11:41:4", "textUthmani": "بِسْمِ" },
+    { "id": 30300, "location": "11:41:5", "textUthmani": "ٱللَّهِ" },
+    { "id": 30301, "location": "11:41:6", "textUthmani": "مَجْر۪ىٰهَا" },
+    { "id": 30302, "location": "11:41:7", "textUthmani": "وَمُرْسَىٰهَآ ۚ" },
+    { "id": 30303, "location": "11:41:8", "textUthmani": "إِنَّ" },
+    { "id": 30304, "location": "11:41:9", "textUthmani": "رَبِّى" },
+    { "id": 30305, "location": "11:41:10", "textUthmani": "لَغَفُورٌۭ" },
+    { "id": 30306, "location": "11:41:11", "textUthmani": "رَّحِيمٌۭ" },
+    { "id": 51975, "location": "27:30:1", "textUthmani": "إِنَّهُۥ" },
+    { "id": 51976, "location": "27:30:2", "textUthmani": "مِن" },
+    { "id": 51977, "location": "27:30:3", "textUthmani": "سُلَيْمَـٰنَ" },
+    { "id": 51978, "location": "27:30:4", "textUthmani": "وَإِنَّهُۥ" },
+    { "id": 51979, "location": "27:30:5", "textUthmani": "بِسْمِ" },
+    { "id": 51980, "location": "27:30:6", "textUthmani": "ٱللَّهِ" },
+    { "id": 51981, "location": "27:30:7", "textUthmani": "ٱلرَّحْمَـٰنِ" },
+    { "id": 51982, "location": "27:30:8", "textUthmani": "ٱلرَّحِيمِ" }
+  ],
+  "foreignKeyClosureWords": [
+    { "id": 63, "location": "2:4:8", "textUthmani": "مِن" },
+    { "id": 78, "location": "2:6:1", "textUthmani": "إِنَّ" },
+    { "id": 386, "location": "2:25:29", "textUthmani": "فِيهَآ" },
+    { "id": 629, "location": "2:37:8", "textUthmani": "إِنَّهُۥ" },
+    { "id": 1831, "location": "2:102:7", "textUthmani": "سُلَيْمَـٰنَ ۖ" },
+    { "id": 2201, "location": "2:118:1", "textUthmani": "وَقَالَ" },
+    { "id": 2453, "location": "2:130:14", "textUthmani": "وَإِنَّهُۥ" },
+    { "id": 2737, "location": "2:143:45", "textUthmani": "رَّحِيمٌۭ" },
+    { "id": 5552, "location": "2:258:16", "textUthmani": "رَبِّىَ" },
+    { "id": 7379, "location": "3:51:3", "textUthmani": "رَبِّى" },
+    { "id": 20180, "location": "6:165:20", "textUthmani": "لَغَفُورٌۭ" }
+  ],
+  "phraseSearch": {
+    "activeBuildId": "4b5e247e-decb-4ea4-9098-2b5b88759c88",
+    "sourceFingerprint": "6320611aa63d3ee757e4bc5a75fc19b5c5fd0e78a257be59e78aed7d5a145957",
+    "readiness": "available",
+    "query": {
+      "raw": "بسم الله الرحمن الرحيم",
+      "displayText": "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
+      "exactTokenIds": [1, 2, 3, 4],
+      "variantId": 111821,
+      "occurrenceCount": 2
+    },
+    "repetitions": {
+      "displayText": "بسم الله الرحمان الرحيم",
+      "verseKeys": ["1:1", "27:30"]
+    },
+    "context": {
+      "verseKeys": ["1:1", "27:30"],
+      "selectedVerseKey": "1:1",
+      "selectedQuranWordIds": [1, 2, 3, 4]
+    },
+    "similarity": {
+      "maximumDifferences": 2,
+      "minimumMatchedWords": 2,
+      "verseKeys": ["1:1", "27:30", "11:41"],
+      "nonIdenticalVerseKey": "11:41",
+      "nonIdenticalVariantId": 111822,
+      "matchedCount": 2,
+      "differencePositions": [3, 4]
+    }
+  }
+}

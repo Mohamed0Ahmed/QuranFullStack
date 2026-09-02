@@ -797,6 +797,27 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         editOutcome.Should().NotBeNull();
     }
 
+    [Fact]
+    public async Task RestoreAsync_WithThePreArchiveVersion_LeavesTheDoorArchived()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
+        var section = await NewSectionAsync(scope, "سلوك: قسم استعادة بإصدار قديم");
+        var door = await writer.CreateAsync(
+            section, null, "سلوك: باب لا يستعاد بإصدار قديم", null, null, [], CancellationToken.None);
+
+        await writer.DeleteAsync(door.Id, door.Version, CancellationToken.None);
+
+        var act = async () => await writer.RestoreAsync(
+            door.Id, null, door.Version, CancellationToken.None);
+
+        await act.Should().ThrowAsync<AbwabStaleVersionException>();
+
+        await using var verifyScope = fixture.Services.CreateAsyncScope();
+        var persisted = await ReloadAsync(verifyScope, door.Id);
+        persisted.DeletedAtUtc.Should().NotBeNull("a stale restore must not resurrect the archived door");
+    }
+
     // Selecting a door and one of its own descendants in the same batch is legal — the UI selects rows,
     // not subtrees — and the descendant is then reached twice, once swept in by its ancestor and once as
     // a top-level entry. The response is a set of what was archived, so it may not report it twice.

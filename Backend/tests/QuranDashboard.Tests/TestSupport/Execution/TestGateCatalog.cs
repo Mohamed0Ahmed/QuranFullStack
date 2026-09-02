@@ -14,9 +14,12 @@ internal static class TestGateCatalog
             "RateLimiting",
             "FullI3rab",
             "FoundationImport",
+            "Linking",
+            "PhraseSearch",
             "MushafReader",
             "Mutashabihat",
             "Navigation",
+            "QuranTopicsBook",
             "Tafsirs",
             "Translations",
             "Words",
@@ -32,11 +35,11 @@ internal static class TestGateCatalog
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedKinds { get; } = new HashSet<string>(
-        ["Fast", "Database", "Migration", "Process", "Canonical"],
+        ["Fast", "Database", "Migration", "Process", "Canonical", "Release"],
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedGates { get; } = new HashSet<string>(
-        ["TierB", "Pipeline", "Smoke"],
+        ["TierB", "Pipeline", "Smoke", "Release"],
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedConcerns { get; } = new HashSet<string>(
@@ -60,6 +63,7 @@ internal static class TestGateCatalog
         "QuranDashboard.Tests.Quran.Import.",
         "QuranDashboard.Tests.Quran.Mutashabihat.",
         "QuranDashboard.Tests.Quran.Navigation.",
+        "QuranDashboard.Tests.Quran.QuranTopicsBook.",
         "QuranDashboard.Tests.Quran.Tafsirs.",
         "QuranDashboard.Tests.Quran.Translations.",
         "QuranDashboard.Tests.Quran.WordsDisplay.",

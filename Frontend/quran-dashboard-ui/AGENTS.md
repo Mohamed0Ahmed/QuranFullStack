@@ -1,17 +1,37 @@
-# Sol/Codex Frontend Router
+# Frontend Instructions
 
-For a Frontend change, read only the specialist sources whose trigger matches. Active Spec Kit
-artifacts own feature intent; code owns implemented truth. The project README is operational and
-does not replace the triggered architecture sources. The root kernel is not repeated here.
+## Architecture invariants
 
-| Trigger | Load |
-| --- | --- |
-| Any Frontend path | The code in scope and, for phase-bound work, the active Spec Kit artifacts; `docs/contracts/README.md` only indexes code and architecture authorities. |
-| Any UI-visible change (tokens, layout, components, templates, styles) | Follow the owner's explicit direction and the active feature scope. Preserve Arabic-first RTL behavior, accessibility, responsive behavior, and protected Quran rendering. No permanent visual rule set is active during the UI rebuild. |
-| Structural organization of components, routes, tab/URL state, services, facades/stores/state, data access, or features | `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md`; visual-only edits to an existing component do not trigger this row. |
-| Global styles, design tokens, reusable classes, shell/component visuals, themes, or shared UI patterns | Read the implementation in scope and reuse existing shared primitives where they still fit. Do not establish a permanent visual authority until the UI rebuild is complete. |
-| New UI surface, product behavior, user-facing copy, or change in visual direction | `PRODUCT.md` for users and product purpose, plus the owner's explicit visual direction. Ordinary non-product code edits do not require it. |
-| API services/data access, `ApiResponse<T>`, DTO/view/state mapping, or API-backed loading, filters, search, and pagination | `Frontend/quran-dashboard-ui/.architecture/API_INTEGRATION_GUIDELINES.md`; add `docs/contracts/security-access.md` for auth, session, or permission behavior. |
-| Frontend verification | Read `TESTING_CONSTITUTION.md`; run `npm run check:no-unit-specs`, `npm run typecheck:app`, and `npm run build:verify` as three independent commands. |
-| Writing or reviewing approved Playwright tests | Read `TESTING_CONSTITUTION.md`, then `.agents/skills/test-guard/SKILL.md`. |
-| A changed Frontend file meets a documented size threshold | `Frontend/quran-dashboard-ui/.architecture/FRONTEND_STRUCTURE.md` §File Size and Responsibility Guidelines during pre-delivery. |
+Keep the Angular application feature-first. Routeable pages are stable URL destinations; meaningful
+main-content tabs survive refresh through routes or query parameters. Components render and coordinate,
+feature state orchestrates, and feature data-access clients own HTTP calls. Reserve `core/` for app-wide
+concerns and `shared/` for genuinely cross-feature building blocks.
+
+Read `.architecture/FRONTEND_STRUCTURE.md` before placing or moving components, routes, state,
+data-access code, or shared UI. It is canonical for page/component boundaries and URL-state decisions.
+
+Arabic-first RTL behavior is the default. Preserve Quranic source fidelity: represent missing data as a
+controlled state instead of inventing Quranic text or labels.
+
+## Route by task
+
+- **Responsive layout:** treat `src/app/shared/layout/breakpoints.contract.json` as the breakpoint source
+  of truth. Its consumers are `src/app/shared/layout/breakpoints.ts`, `tailwind.config.js`, and
+  `src/styles/_breakpoints.scss`.
+- **API client or wire model:** read `README.md` section `Generated API contract` and
+  `ng-openapi-gen.json`. `openapi/swagger.json` and `src/app/core/api/generated/` are committed generated
+  outputs; feature-owned clients and UI models remain hand-written outside that generated directory.
+- **Backend contract impact:** when a UI change requires an endpoint, payload, route,
+  authentication/authorization behavior, or permission vocabulary to change, read
+  `../../Backend/AGENTS.md`. Regenerate and verify the contract through
+  `../../Backend/scripts/check-api-contract` rather than editing generated files.
+- **Build or local run:** use `README.md` for the supported operational path. Use `package.json` scripts
+  as command truth and `angular.json` for build, serve, assets, and schematic configuration.
+- **Browser behavior:** use `playwright.config.ts` and the `package.json` E2E scripts. Keep tests aligned
+  with the repository's configured test strategy rather than adding a parallel test convention.
+
+## Manifests and verification
+
+`package.json` and `package-lock.json` define direct and resolved dependencies; `tsconfig*.json` files
+define TypeScript compilation scopes. Run the smallest relevant checks from `package.json`; use its
+aggregate pre-PR gate when the change spans multiple Frontend concerns.

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd -P)"
+PROJECT="${REPO_ROOT}/Backend/tools/QuranDashboard.TestArtifacts/QuranDashboard.TestArtifacts.csproj"
+
+if [[ "${QDB_TEST_ARTIFACTS_SEALED:-}" == "1" ]]; then
+  OUTPUT="${REPO_ROOT}/Backend/tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll"
+  if [[ ! -f "${OUTPUT}" ]]; then
+    echo "ERROR: sealed artifact verification requires existing output: ${OUTPUT}" >&2
+    exit 1
+  fi
+  if [[ "${1:-}" == "verify-content-addressed" ]]; then
+    if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
+      echo "ERROR: sealed content-addressed verification requires QURAN_TEST_ARTIFACT_ROOT." >&2
+      exit 1
+    fi
+    exec dotnet "${OUTPUT}" "$@" --content-root "${QURAN_TEST_ARTIFACT_ROOT}" --root "${REPO_ROOT}"
+  fi
+  exec dotnet "${OUTPUT}" "$@" --root "${REPO_ROOT}"
+fi
+
+exec dotnet run --project "${PROJECT}" -- "$@" --root "${REPO_ROOT}"

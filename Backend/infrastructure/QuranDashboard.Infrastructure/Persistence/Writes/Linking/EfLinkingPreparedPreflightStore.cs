@@ -42,8 +42,7 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
                 cancellationToken);
         if (existing is not null)
         {
-            if (!string.Equals(existing.RequestHash, requestHash, StringComparison.Ordinal)
-                || !JsonDocumentsEqual(existing.RequestDocumentJson, requestDocument))
+            if (!string.Equals(existing.RequestHash, requestHash, StringComparison.Ordinal))
             {
                 throw new LinkingPreparedPreflightLifecycleException(
                     LinkingPreparedPreflightFailureCode.IdempotencyConflict);
@@ -459,9 +458,6 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
 
     private static int PreparationLockKey(Guid key) =>
         BitConverter.ToInt32(SHA256.HashData(key.ToByteArray()), 0);
-
-    private static bool JsonDocumentsEqual(string left, string right) =>
-        string.Equals(left, right, StringComparison.Ordinal);
 
     private sealed record WorkspaceSnapshot(
         uint Version,
