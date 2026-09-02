@@ -50,26 +50,42 @@ public sealed class OwnerReconciliationService(
         string evidenceSource,
         CancellationToken cancellationToken)
     {
-        await using var lease = await store.TryAcquireLeaseAsync(cancellationToken)
-            ?? throw new OwnerReconciliationLockUnavailableException();
-        var configuration = configurationSource.GetCurrent();
-        var snapshot = await lease.ReadSnapshotAsync(configuration, cancellationToken);
-        var plan = await BuildPlanAsync(snapshot, configuration, identity, mode, cancellationToken);
-        if (!plan.CanApply)
+        for (var attempt = 0; attempt < 2; attempt++)
         {
-            return ToResult(plan, applied: false);
+            var configuration = configurationSource.GetCurrent();
+            var snapshot = await store.ReadSnapshotAsync(configuration, cancellationToken);
+            var plan = await BuildPlanAsync(snapshot, configuration, identity, mode, cancellationToken);
+            if (!plan.CanApply)
+            {
+                return ToResult(plan, applied: false);
+            }
+
+            var mutation = BuildMutation(plan, reason, evidenceSource);
+            if (mutation.RoleChanges.Count == 0 && mutation.GrantRevocations.Count == 0)
+            {
+                return ToResult(plan, applied: false);
+            }
+
+            var commitResult = await store.TryCommitAsync(
+                new OwnerReconciliationCommitIntent(configuration, snapshot, mutation),
+                cancellationToken);
+            switch (commitResult)
+            {
+                case OwnerReconciliationCommitResult.Applied:
+                    return ToResult(plan, applied: true);
+                case OwnerReconciliationCommitResult.LockUnavailable:
+                    throw new OwnerReconciliationLockUnavailableException();
+                case OwnerReconciliationCommitResult.StateChanged when attempt == 0:
+                    continue;
+                case OwnerReconciliationCommitResult.StateChanged:
+                    throw new InvalidOperationException(
+                        "Owner reconciliation local state changed during both commit attempts.");
+                default:
+                    throw new InvalidOperationException("Unknown Owner reconciliation commit result.");
+            }
         }
 
-        var mutation = BuildMutation(plan, reason, evidenceSource);
-        if (mutation.RoleChanges.Count == 0 && mutation.GrantRevocations.Count == 0)
-        {
-            return ToResult(plan, applied: false);
-        }
-
-        await lease.ApplyAsync(mutation, cancellationToken);
-        await lease.CommitAsync(cancellationToken);
-
-        return ToResult(plan, applied: true);
+        throw new InvalidOperationException("Owner reconciliation did not produce a result.");
     }
 
     private async Task<OwnerReconciliationPlan> BuildPlanAsync(

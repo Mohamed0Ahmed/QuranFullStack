@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Application.Access.OwnerReconciliation;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Infrastructure.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -98,34 +99,43 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public async Task ReconcileInteractiveSignInAsync_ConfigurationRemovedBeforeLockAcquisition_DoesNotPromoteTheRemovedCandidate()
+    public async Task ReconcileInteractiveSignInAsync_ConfigurationDrift_RepreparesProviderEvidenceBeforeCommit()
     {
         await fixture.ResetAsync();
         await SeedConfiguredOwnerAsync(AccessTestFixture.OwnerSub, UserStatus.Pending, owner: false);
         var configurationSource = new MutableOwnerBootstrapConfigurationSource(
-            Configuration("before-lock", AccessTestFixture.OwnerEmail));
+            Configuration("initial", AccessTestFixture.OwnerEmail));
 
         using var scope = fixture.ApiServices.CreateScope();
-        var store = new ConfigurationChangingOwnerReconciliationStore(
-            scope.ServiceProvider.GetRequiredService<IOwnerReconciliationStore>(),
-            () => configurationSource.SetCurrent(Configuration("under-lock", AccessTestFixture.SecondOwnerEmail)));
+        var store = new CommitBarrierOwnerReconciliationStore(
+            new OwnerReconciliationStore(
+                scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>(),
+                configurationSource));
         var reconciliation = new OwnerReconciliationService(
             store,
             configurationSource,
-            scope.ServiceProvider.GetRequiredService<IExternalUserProfileSource>(),
+            fixture.ProfileSource,
             scope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>());
 
-        var result = await reconciliation.ReconcileInteractiveSignInAsync(
+        var reconciliationTask = reconciliation.ReconcileInteractiveSignInAsync(
             Identity(AccessTestFixture.OwnerSub),
             CancellationToken.None);
+        await store.WaitUntilFirstCommitAsync();
+        configurationSource.SetCurrent(Configuration("changed", AccessTestFixture.OwnerEmail));
+        store.ReleaseFirstCommit();
 
-        result.IsReady.Should().BeFalse();
+        var result = await reconciliationTask;
+
+        result.IsReady.Should().BeTrue();
+        result.ConfigurationFingerprint.Should().Be("changed");
         result.Candidates.Should().ContainSingle(candidate =>
-            candidate.NormalizedEmail == AccessTestFixture.SecondOwnerEmail.ToUpperInvariant()
-            && candidate.State == OwnerReconciliationCandidateState.AwaitingVerifiedSignIn);
+            candidate.NormalizedEmail == AccessTestFixture.OwnerEmail.ToUpperInvariant()
+            && candidate.State == OwnerReconciliationCandidateState.Added);
+        fixture.ProfileSource.CallsFor(AccessTestFixture.OwnerSub).Should().Be(2);
+        store.CommitAttempts.Should().Be(2);
         var user = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
-        user!.Status.Should().Be(UserStatus.Pending);
-        user.RoleId.Should().BeNull();
+        user!.Status.Should().Be(UserStatus.Active);
+        user.RoleId.Should().NotBeNull();
     }
 
     [Fact]
@@ -266,7 +276,7 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public async Task ReconcileAsync_ConcurrentDirectGrantAdditionWaitsForTheLeaseAndIsDetectedByTheNextPreflight()
+    public async Task ReconcileAsync_ProviderBlocked_AllowsConcurrentGrantAndRepreparesBeforeCommit()
     {
         await fixture.ResetAsync();
         var ownerId = await SeedConfiguredOwnerAsync(AccessTestFixture.OwnerSub, UserStatus.Active, owner: true);
@@ -286,18 +296,15 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
             AbwabPermissions.Doors.Edit,
             saveAttempted);
         await saveAttempted.Task;
-        (await Task.WhenAny(concurrentGrant, Task.Delay(250))).Should().NotBe(concurrentGrant);
+        await concurrentGrant.WaitAsync(TimeSpan.FromSeconds(10));
 
         profileBlock.Release();
         (await firstReconciliation).IsReady.Should().BeTrue();
-        await concurrentGrant;
+        fixture.ProfileSource.CallsFor(AccessTestFixture.OwnerSub).Should().Be(2);
 
-        using var statusScope = fixture.ApiServices.CreateScope();
-        var status = await statusScope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>()
-            .GetStatusAsync(CancellationToken.None);
-        status.IsReady.Should().BeFalse();
-        status.Candidates.Should().Contain(candidate => candidate.UserId == ownerId
-            && candidate.State == OwnerReconciliationCandidateState.OwnerHasDirectGrants);
+        await using var queryScope = fixture.QueryServices.CreateAsyncScope();
+        var db = queryScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        (await db.AccessUserPermissions.CountAsync(grant => grant.UserId == ownerId)).Should().Be(0);
     }
 
     [Fact]
@@ -335,36 +342,44 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public async Task ReconcileInteractiveSignInAsync_ConcurrentAdditionAndRemovalRejectTheSecondAttemptAndRecoverAfterLockRelease()
+    public async Task ReconcileInteractiveSignInAsync_ConcurrentPromotionAndRemoval_ConvergeWithoutProviderTimeLockFailure()
     {
         await fixture.ResetAsync();
+        var existingOwnerId = await SeedConfiguredOwnerAsync(
+            AccessTestFixture.OwnerSub,
+            UserStatus.Active,
+            owner: true);
         await SeedConfiguredOwnerAsync(AccessTestFixture.SecondOwnerSub, UserStatus.Pending, owner: false);
         const string removedSub = "logto-concurrent-removed-owner";
         var removedOwnerId = await SeedOwnerAsync(removedSub, FakeExternalUserProfileSource.EmailFor(removedSub));
-        var profileBlock = fixture.ProfileSource.BlockNextProfileFor(AccessTestFixture.SecondOwnerSub);
+        var promotionProfileSource = new FakeExternalUserProfileSource();
+        var profileBlock = promotionProfileSource.BlockNextProfileFor(AccessTestFixture.SecondOwnerSub);
 
         using var firstScope = fixture.ApiServices.CreateScope();
         using var secondScope = fixture.ApiServices.CreateScope();
-        var firstReconciliation = firstScope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>()
+        var promotion = new OwnerReconciliationService(
+                firstScope.ServiceProvider.GetRequiredService<IOwnerReconciliationStore>(),
+                firstScope.ServiceProvider.GetRequiredService<IOwnerBootstrapConfigurationSource>(),
+                promotionProfileSource,
+                firstScope.ServiceProvider.GetRequiredService<IEmailIdentityNormalizer>())
             .ReconcileInteractiveSignInAsync(Identity(AccessTestFixture.SecondOwnerSub), CancellationToken.None);
         await profileBlock.WaitUntilEnteredAsync();
 
-        var secondReconciliation = () => secondScope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>()
+        var removal = secondScope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>()
             .ReconcileAsync("Concurrent safe removal.", CancellationToken.None);
 
-        await secondReconciliation.Should().ThrowAsync<OwnerReconciliationLockUnavailableException>();
+        (await removal).IsReady.Should().BeTrue();
         profileBlock.Release();
-        (await firstReconciliation).IsReady.Should().BeTrue();
+        (await promotion).IsReady.Should().BeTrue();
+        promotionProfileSource.CallsFor(AccessTestFixture.SecondOwnerSub).Should().Be(2);
 
         var promotedUser = await fixture.GetUserBySubAsync(AccessTestFixture.SecondOwnerSub);
         promotedUser!.Status.Should().Be(UserStatus.Active);
         promotedUser.RoleId.Should().NotBeNull();
-
-        using var retryScope = fixture.ApiServices.CreateScope();
-        (await retryScope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>()
-            .ReconcileAsync("Retry safe removal after promotion.", CancellationToken.None)).IsReady.Should().BeTrue();
         (await fixture.GetUserBySubAsync(removedSub))!.Id.Should().Be(removedOwnerId);
         (await fixture.GetUserBySubAsync(removedSub))!.RoleId.Should().BeNull();
+        (await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub))!.Id.Should().Be(existingOwnerId);
+        (await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub))!.RoleId.Should().NotBeNull();
     }
 
     [Fact]
@@ -509,10 +524,17 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
         }
     }
 
-    private sealed class ConfigurationChangingOwnerReconciliationStore(
-        IOwnerReconciliationStore inner,
-        Action beforeAcquire) : IOwnerReconciliationStore
+    private sealed class CommitBarrierOwnerReconciliationStore(IOwnerReconciliationStore inner)
+        : IOwnerReconciliationStore
     {
+        private readonly TaskCompletionSource firstCommitEntered =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private readonly TaskCompletionSource firstCommitReleased =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int commitAttempts;
+
+        public int CommitAttempts => Volatile.Read(ref commitAttempts);
+
         public Task<OwnerReconciliationSnapshot> ReadSnapshotAsync(
             OwnerBootstrapConfiguration configuration,
             CancellationToken cancellationToken)
@@ -520,10 +542,21 @@ public sealed class OwnerReconciliationServiceTests(AccessTestFixture fixture)
             return inner.ReadSnapshotAsync(configuration, cancellationToken);
         }
 
-        public Task<IOwnerReconciliationLease?> TryAcquireLeaseAsync(CancellationToken cancellationToken)
+        public async Task<OwnerReconciliationCommitResult> TryCommitAsync(
+            OwnerReconciliationCommitIntent intent,
+            CancellationToken cancellationToken)
         {
-            beforeAcquire();
-            return inner.TryAcquireLeaseAsync(cancellationToken);
+            if (Interlocked.Increment(ref commitAttempts) == 1)
+            {
+                firstCommitEntered.TrySetResult();
+                await firstCommitReleased.Task.WaitAsync(cancellationToken);
+            }
+
+            return await inner.TryCommitAsync(intent, cancellationToken);
         }
+
+        public Task WaitUntilFirstCommitAsync() => firstCommitEntered.Task;
+
+        public void ReleaseFirstCommit() => firstCommitReleased.TrySetResult();
     }
 }
