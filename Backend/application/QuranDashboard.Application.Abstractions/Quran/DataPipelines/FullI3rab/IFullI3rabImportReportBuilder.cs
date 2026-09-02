@@ -22,6 +22,7 @@ public interface IFullI3rabImportReportBuilder
         string sourcePath,
         FullI3rabSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         FullI3rabImportTotals totals,
         IReadOnlyList<FullI3rabCheckResult> postCopyChecks,

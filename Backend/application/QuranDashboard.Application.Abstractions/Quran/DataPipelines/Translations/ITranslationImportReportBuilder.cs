@@ -25,6 +25,7 @@ public interface ITranslationImportReportBuilder
         string profile,
         TranslationSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         TranslationImportTotals totals,
         IReadOnlyList<TranslationCheckResult> postCopyChecks,
