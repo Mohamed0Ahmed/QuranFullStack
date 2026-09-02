@@ -108,6 +108,35 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     }
 
     [Fact]
+    public async Task Bootstrap_ReplacementInsertFailure_PreservesPreviousSession()
+    {
+        await fixture.ResetAsync();
+        using var bootstrapClient = fixture.CreateApiClient();
+
+        using var first = await BootstrapAsync(bootstrapClient, "device-session-failed-replacement");
+        var firstToken = CookieValue(first, DeviceSessionAuthentication.SessionCookieName);
+
+        await AddSuccessorInsertFailureConstraintAsync();
+        try
+        {
+            using var second = await BootstrapAsync(bootstrapClient, "device-session-failed-replacement");
+            await ApiEnvelope.AssertFailureEnvelopeAsync(
+                second,
+                HttpStatusCode.InternalServerError,
+                ApiMessages.UnexpectedError);
+        }
+        finally
+        {
+            await DropSuccessorInsertFailureConstraintAsync();
+        }
+
+        using var previousSessionClient = fixture.CreateApiClient();
+        using var previousRequest = CookieBackedMeRequest(firstToken);
+        using var previousResponse = await previousSessionClient.SendAsync(previousRequest);
+        previousResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
+    [Fact]
     public async Task CookieBackedAccess_ExpiresAtTheControllableClockBoundary()
     {
         await fixture.ResetAsync();
@@ -177,6 +206,26 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     private static string CookieHeader(HttpResponseMessage response, string name) =>
         response.Headers.GetValues("Set-Cookie")
             .Single(header => header.StartsWith($"{name}=", StringComparison.Ordinal));
+
+    private async Task AddSuccessorInsertFailureConstraintAsync()
+    {
+        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await db.Database.ExecuteSqlRawAsync(
+            """
+            ALTER TABLE user_device_sessions
+            ADD CONSTRAINT ck_test_reject_unrevoked_device_session
+            CHECK (revoked_at IS NOT NULL) NOT VALID;
+            """);
+    }
+
+    private async Task DropSuccessorInsertFailureConstraintAsync()
+    {
+        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE user_device_sessions DROP CONSTRAINT ck_test_reject_unrevoked_device_session;");
+    }
 
     private sealed class AdjustableTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {
