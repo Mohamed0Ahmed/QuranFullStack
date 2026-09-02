@@ -167,6 +167,32 @@ async function exerciseContextAndPersist(
   }
 
   const selectedVerseKey = oracle.phraseSearch.context.selectedVerseKey;
+  const selectedMushafLink = page.getByRole('link', {
+    name: `فتح الآية ${selectedVerseKey} في المصحف`,
+  });
+  const selectedMushafHref = new URL(await selectedMushafLink.getAttribute('href') ?? '', page.url());
+  expect(selectedMushafHref.pathname).toBe('/dashboard/mushaf');
+  expect(selectedMushafHref.searchParams.get('ayah')).toBe(selectedVerseKey);
+  expect(selectedMushafHref.searchParams.get('focusAyah')).toBe(selectedVerseKey);
+  expect(selectedMushafHref.searchParams.get('panel')).toBe('ayah');
+  expect(Number(selectedMushafHref.searchParams.get('page'))).toBeGreaterThan(0);
+
+  await selectedMushafLink.click();
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return {
+        ayah: url.searchParams.get('ayah'),
+        page: Number(url.searchParams.get('page')),
+        panel: url.searchParams.get('panel'),
+      };
+    })
+    .toEqual({ ayah: selectedVerseKey, page: Number(selectedMushafHref.searchParams.get('page')), panel: 'ayah' });
+  await expect(page.getByTestId('mushaf-reader-page')).toHaveAttribute('dir', 'rtl');
+  await expect(page.getByTestId('selected-ayah-section')).toBeVisible();
+
+  await page.goBack();
+  await expect(page.getByRole('checkbox', { name: `تحديد الآية ${selectedVerseKey}` })).toBeVisible();
   const selectedAyah = page.getByRole('checkbox', { name: `تحديد الآية ${selectedVerseKey}` });
   await selectedAyah.check();
 

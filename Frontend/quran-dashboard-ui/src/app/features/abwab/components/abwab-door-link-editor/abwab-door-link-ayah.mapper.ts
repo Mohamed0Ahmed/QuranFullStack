@@ -1,13 +1,23 @@
 import { DoorLinkAyahDto } from '../../../../core/api/generated/models/door-link-ayah-dto';
 import { LinkingAyah } from '../../../linking/models/linking-ayah.models';
+import { parseQuranVerseKey } from '../../../../shared/quran/quran-location';
 
 export function toAbwabLinkingAyah(
   source: DoorLinkAyahDto,
   selectedWordIds: readonly number[] = source.selectedWordIds,
-): LinkingAyah {
+): LinkingAyah | null {
+  const verse = parseQuranVerseKey(source.verseKey);
+  if (
+    !verse ||
+    verse.key !== source.verseKey ||
+    verse.surahNumber !== source.surahNumber ||
+    verse.ayahNumber !== source.ayahNumber
+  ) {
+    return null;
+  }
   const selectedIds = new Set(selectedWordIds);
   return {
-    verseKey: source.verseKey,
+    verseKey: verse.key,
     ayahId: source.ayahId,
     surahNumber: source.surahNumber,
     surahNameArabic: source.surahNameArabic,

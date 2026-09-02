@@ -7,6 +7,7 @@ import {
   LinkingWordTypeSelection,
 } from '../models/linking-source.models';
 import { manualMushafVerseKeys } from './manual-link-shape';
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
 
 export function toLinkingSourceDescriptorBody(
   source: LinkingSourceDescriptor,
@@ -61,6 +62,9 @@ function toDescriptorCandidate(
   const label = body.label;
   switch (body.kind) {
     case 'manual-mushaf-ayahs':
+      if (!manualDescriptorMatchesRows(body, manualAyahs)) {
+        return null;
+      }
       return { kind: body.kind, label, manualAyahs, contextKey: body.contextKey };
     case 'unique-word':
       return {
@@ -81,6 +85,22 @@ function toDescriptorCandidate(
     default:
       return null;
   }
+}
+
+function manualDescriptorMatchesRows(
+  body: LinkingSourceDescriptorBody,
+  manualAyahs: readonly LinkingManualMushafAyahReference[],
+): boolean {
+  if (body.manualAyahs === null || body.manualAyahs.length !== manualAyahs.length) {
+    return false;
+  }
+
+  return body.manualAyahs.every((stored, index) => {
+    const parsed = parseQuranVerseKey(stored.verseKey);
+    return parsed !== null &&
+      parsed.key === stored.verseKey &&
+      parsed.key === manualAyahs[index]?.verseKey;
+  });
 }
 
 function readTypeCodes(body: LinkingSourceDescriptorBody): readonly string[] {

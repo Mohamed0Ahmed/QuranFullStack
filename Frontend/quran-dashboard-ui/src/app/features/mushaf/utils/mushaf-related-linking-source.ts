@@ -5,6 +5,7 @@ import {
   MutashabihatOccurrenceDto,
   SimilarAyahItemDto,
 } from '../models/mushaf.models';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export interface MutashabihatLinkingOccurrence {
   readonly sourceGroupId: number;
@@ -15,13 +16,21 @@ export function createSimilarAyahsLinkingLaunch(
   selectedAyah: AyahCoreDto,
   selectedRelatedAyahs: readonly SimilarAyahItemDto[],
 ): LinkingSourceLaunch | null {
-  const manualAyahs = new Map<string, LinkingManualMushafAyahReference>([
-    [selectedAyah.verseKey, toSelectedAyahReference(selectedAyah)],
+  const selectedVerse = canonicalVerseKey(selectedAyah.verseKey);
+  if (!selectedVerse) {
+    return null;
+  }
+  const manualAyahs = new Map<QuranVerseKey, LinkingManualMushafAyahReference>([
+    [selectedVerse, toReference(selectedVerse, selectedAyah.pageFrom)],
   ]);
 
   for (const relatedAyah of selectedRelatedAyahs) {
-    if (relatedAyah.targetVerseKey !== selectedAyah.verseKey) {
-      manualAyahs.set(relatedAyah.targetVerseKey, toRelatedAyahReference(relatedAyah));
+    const relatedVerse = canonicalVerseKey(relatedAyah.targetVerseKey);
+    if (!relatedVerse) {
+      return null;
+    }
+    if (relatedVerse !== selectedVerse) {
+      manualAyahs.set(relatedVerse, toReference(relatedVerse, relatedAyah.pageNumber));
     }
   }
 
@@ -54,6 +63,10 @@ export function createMutashabihatLinkingLaunch(
   if (selectedOccurrences.length === 0) {
     return null;
   }
+  const selectedVerse = canonicalVerseKey(selectedAyah.verseKey);
+  if (!selectedVerse) {
+    return null;
+  }
 
   const ayahs = new Map<number, { reference: LinkingManualMushafAyahReference; wordIds: Set<number> }>();
   const sourceGroupIds = new Set<number>();
@@ -61,6 +74,10 @@ export function createMutashabihatLinkingLaunch(
   for (const selectedOccurrence of selectedOccurrences) {
     const { occurrence, sourceGroupId } = selectedOccurrence;
     if (!hasCompleteCanonicalTargets(occurrence) || !isPositiveSafeInteger(sourceGroupId)) {
+      return null;
+    }
+    const occurrenceVerse = canonicalVerseKey(occurrence.verseKey);
+    if (!occurrenceVerse) {
       return null;
     }
 
@@ -71,7 +88,7 @@ export function createMutashabihatLinkingLaunch(
     }
 
     const member = existing ?? {
-      reference: toMutashabihatAyahReference(occurrence),
+      reference: toReference(occurrenceVerse, occurrence.pageNumber),
       wordIds: new Set<number>(),
     };
     occurrence.matchedQuranWordIds.forEach((wordId) => member.wordIds.add(wordId));
@@ -110,30 +127,20 @@ export function createMutashabihatLinkingLaunch(
   };
 }
 
-function toSelectedAyahReference(ayah: AyahCoreDto): LinkingManualMushafAyahReference {
-  return {
-    verseKey: ayah.verseKey,
-    pageNumber: ayah.pageFrom,
-    displayHint: ayah.verseKey,
-  };
-}
-
-function toRelatedAyahReference(ayah: SimilarAyahItemDto): LinkingManualMushafAyahReference {
-  return {
-    verseKey: ayah.targetVerseKey,
-    pageNumber: ayah.pageNumber,
-    displayHint: ayah.targetVerseKey,
-  };
-}
-
-function toMutashabihatAyahReference(
-  occurrence: MutashabihatOccurrenceDto,
+function toReference(
+  verseKey: QuranVerseKey,
+  pageNumber: number,
 ): LinkingManualMushafAyahReference {
   return {
-    verseKey: occurrence.verseKey,
-    pageNumber: occurrence.pageNumber,
-    displayHint: occurrence.verseKey,
+    verseKey,
+    pageNumber,
+    displayHint: verseKey,
   };
+}
+
+function canonicalVerseKey(value: unknown): QuranVerseKey | null {
+  const parsed = parseQuranVerseKey(value);
+  return parsed && parsed.key === value ? parsed.key : null;
 }
 
 function hasCompleteCanonicalTargets(occurrence: MutashabihatOccurrenceDto): boolean {

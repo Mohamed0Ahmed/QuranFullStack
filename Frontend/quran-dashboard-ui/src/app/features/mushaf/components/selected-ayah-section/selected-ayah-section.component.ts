@@ -24,6 +24,7 @@ import { TafsirCardComponent } from '../tafsir-card/tafsir-card.component';
 import { TranslationCardComponent } from '../translation-card/translation-card.component';
 import { FullI3rabCardComponent } from '../full-i3rab-card/full-i3rab-card.component';
 import { toStudyAyahDisplayText } from '../../utils/mushaf-verse-key-display';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../../shared/quran/quran-location';
 
 interface AyahStudyTabDefinition {
   readonly key: AyahStudyTab;
@@ -84,7 +85,7 @@ export class SelectedAyahSectionComponent {
   });
   readonly group = input<AyahStudyGroup>('sources');
   readonly activeTab = input<AyahStudyTab>('tafsir');
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly selectedVerseKey = input<QuranVerseKey | null>(null);
   readonly embedded = input(false);
 
   readonly tafsirOptions = input<SourceOption[]>([]);
@@ -185,12 +186,13 @@ export class SelectedAyahSectionComponent {
 
   protected onSelectedAyahNavigate(): void {
     const ayah = this.study()?.ayah;
-    if (!ayah) {
+    const verse = parseQuranVerseKey(ayah?.verseKey);
+    if (!ayah || !verse) {
       return;
     }
 
     this.ayahNavigate.emit({
-      verseKey: ayah.verseKey,
+      verseKey: verse.key,
       pageNumber: ayah.pageFrom,
     });
   }

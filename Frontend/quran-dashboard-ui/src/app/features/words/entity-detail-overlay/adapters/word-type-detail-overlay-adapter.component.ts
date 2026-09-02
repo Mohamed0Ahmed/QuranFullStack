@@ -94,7 +94,9 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
 
   protected readonly mentionedSurahs = computed(() =>
@@ -164,4 +166,8 @@ export class WordTypeDetailOverlayAdapterComponent {
 
     this.overlay.replaceTopFrame({ ...frame, view: this.effectiveView(), detailPage: page });
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }

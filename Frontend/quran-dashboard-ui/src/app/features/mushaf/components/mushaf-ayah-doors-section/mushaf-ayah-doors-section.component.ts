@@ -26,6 +26,7 @@ import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-s
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { QdSkeletonRowsComponent } from '../../../../shared/ui/skeleton/skeleton-rows.component';
 import { MushafAyahDoorsStore } from '../../state/mushaf-ayah-doors.store';
+import type { QuranVerseKey } from '../../../../shared/quran/quran-location';
 
 @Component({
   selector: 'qd-mushaf-ayah-doors-section',
@@ -44,7 +45,7 @@ import { MushafAyahDoorsStore } from '../../state/mushaf-ayah-doors.store';
   providers: [AbwabPermissionsController],
 })
 export class MushafAyahDoorsSectionComponent implements OnDestroy {
-  readonly verseKey = input<string | null>(null);
+  readonly verseKey = input<QuranVerseKey | null>(null);
 
   protected readonly store = inject(MushafAyahDoorsStore);
   protected readonly tree = inject(AbwabSnapshotFacade);

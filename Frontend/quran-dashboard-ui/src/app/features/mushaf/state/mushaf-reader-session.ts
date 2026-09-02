@@ -12,6 +12,7 @@ import {
   normalizeAyahTab,
   normalizePanelMode,
   normalizeWordTab,
+  sanitizeMushafQuranLocations,
 } from './mushaf-url-sync';
 
 const SESSION_STORAGE_KEY = 'qd-mushaf-reader-session';
@@ -120,13 +121,18 @@ function parseStoredSession(raw: string): MushafUrlSnapshot | null {
   }
 
   const sourceRecord = sources as Record<string, unknown>;
+  const locations = sanitizeMushafQuranLocations(
+    record['ayah'],
+    record['word'],
+    record['segment'],
+  );
 
   return {
     pageNumber: clampMushafPageNumber(String(record['pageNumber'] ?? '1')),
-    ayah: readNullableString(record['ayah']),
+    ayah: locations.ayah,
     focusAyah: null,
-    word: readNullableString(record['word']),
-    segment: readNullableString(record['segment']),
+    word: locations.word,
+    segment: locations.segment,
     panel: normalizePanelMode(readNullableString(record['panel'])),
     ayahTab: normalizeAyahTab(readNullableString(record['ayahTab'])),
     wordTab: normalizeWordTab(readNullableString(record['wordTab'])),

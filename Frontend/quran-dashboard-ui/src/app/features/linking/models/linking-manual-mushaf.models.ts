@@ -1,5 +1,7 @@
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
+
 export interface LinkingManualMushafAyahReference {
-  verseKey: string;
+  verseKey: QuranVerseKey;
   pageNumber: number | null;
   displayHint: string | null;
 }
@@ -33,25 +35,15 @@ export function isCanonicalQuranWordId(value: unknown): value is number {
 function isManualAyahReference(value: unknown): value is LinkingManualMushafAyahReference {
   return (
     isRecord(value) &&
-    isVerseKey(value['verseKey']) &&
+    isCanonicalPersistedVerseKey(value['verseKey']) &&
     (value['pageNumber'] === null || isPageNumber(value['pageNumber'])) &&
     (value['displayHint'] === null || isNonBlankString(value['displayHint']))
   );
 }
 
-function isVerseKey(value: unknown): value is string {
-  if (typeof value !== 'string') {
-    return false;
-  }
-
-  const match = /^(\d{1,3}):(\d{1,3})$/.exec(value);
-  if (!match) {
-    return false;
-  }
-
-  const surahNumber = Number(match[1]);
-  const ayahNumber = Number(match[2]);
-  return surahNumber >= 1 && surahNumber <= 114 && ayahNumber >= 1 && ayahNumber <= 286;
+function isCanonicalPersistedVerseKey(value: unknown): value is QuranVerseKey {
+  const parsed = parseQuranVerseKey(value);
+  return parsed !== null && parsed.key === value;
 }
 
 function isPageNumber(value: unknown): value is number {

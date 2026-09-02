@@ -38,6 +38,7 @@ import {
   canonicalizeSortToken,
 } from './explorer-sort';
 import { SURAHS_RANGE_THRESHOLD } from './words-filter-presets';
+import type { QuranVerseKey, QuranWordLocation } from '../../../shared/quran/quran-location';
 import { WORDS_SHARED_COUNT_COLUMNS, WORDS_SHARED_HEADERS } from './words-shared.labels';
 
 export type {
@@ -60,12 +61,12 @@ export interface UniqueWordSummaryDto extends Omit<UniqueWordSummaryWireDto, 'ki
 
 export interface AyahMatchDto {
   ayahId: number;
-  verseKey: string;
+  verseKey: QuranVerseKey;
   surahNameArabic: string;
   ayahNumber: number;
   pageNumber: number;
   matchedQuranWordIds: number[];
-  analysisLocation?: string | null;
+  analysisLocation?: QuranWordLocation | null;
   words: AyahWordForHighlightDto[];
 }
 

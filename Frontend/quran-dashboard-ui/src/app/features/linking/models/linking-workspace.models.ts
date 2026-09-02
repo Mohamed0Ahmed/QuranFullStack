@@ -3,10 +3,11 @@ import {
   LinkingManualWordIdsByVerseKey,
 } from './linking-manual-mushaf.models';
 import { LinkingSourceDescriptor } from './linking-source.models';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export type LinkingSelection =
-  | { mode: 'all-except'; verseKeys: readonly string[] }
-  | { mode: 'only'; verseKeys: readonly string[] };
+  | { mode: 'all-except'; verseKeys: readonly QuranVerseKey[] }
+  | { mode: 'only'; verseKeys: readonly QuranVerseKey[] };
 
 export type LinkingAutomaticSourceDescriptor = Exclude<
   LinkingSourceDescriptor,

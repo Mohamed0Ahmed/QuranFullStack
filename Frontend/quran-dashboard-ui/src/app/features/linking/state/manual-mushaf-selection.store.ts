@@ -12,11 +12,12 @@ import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkflowFacade } from './linking-workflow.facade';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export type ManualMushafSelectionLoadStatus = 'loading' | 'ready' | 'error';
 
 export interface ManualMushafSelectionEntry {
-  verseKey: string;
+  verseKey: QuranVerseKey;
   metadata: LinkingManualAyahMetadata | null;
   status: ManualMushafSelectionLoadStatus;
   errorMessage: string | null;
@@ -35,7 +36,7 @@ export class ManualMushafSelectionStore {
   private readonly operationGenerationSignal = signal(0);
   private readonly statusMessageSignal = signal<string | null>(null);
   private readonly directWorkflowGenerationSignal = signal<number | null>(null);
-  private readonly metadataSubscriptions = new Map<string, Subscription>();
+  private readonly metadataSubscriptions = new Map<QuranVerseKey, Subscription>();
 
   readonly active = this.activeSignal.asReadonly();
   readonly currentPage = this.currentPageSignal.asReadonly();
@@ -108,7 +109,7 @@ export class ManualMushafSelectionStore {
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionCleared);
   }
 
-  toggle(verseKey: string): void {
+  toggle(verseKey: QuranVerseKey): void {
     if (!this.requireOwner() || !this.active()) {
       return;
     }
@@ -134,7 +135,7 @@ export class ManualMushafSelectionStore {
     this.startMetadataLoad(verseKey, operationGeneration);
   }
 
-  retry(verseKey: string): void {
+  retry(verseKey: QuranVerseKey): void {
     if (!this.requireOwner() || !this.active()) {
       return;
     }
@@ -157,7 +158,7 @@ export class ManualMushafSelectionStore {
     this.startMetadataLoad(verseKey, operationGeneration);
   }
 
-  remove(verseKey: string): void {
+  remove(verseKey: QuranVerseKey): void {
     if (!this.requireOwner()) {
       return;
     }
@@ -224,7 +225,7 @@ export class ManualMushafSelectionStore {
   }
 
   private completeMetadataLoad(
-    verseKey: string,
+    verseKey: QuranVerseKey,
     operationGeneration: number,
     metadata: LinkingManualAyahMetadata,
   ): void {
@@ -242,7 +243,7 @@ export class ManualMushafSelectionStore {
     this.statusMessageSignal.set(LINKING_LABELS.mushafSelectionReady);
   }
 
-  private startMetadataLoad(verseKey: string, operationGeneration: number): void {
+  private startMetadataLoad(verseKey: QuranVerseKey, operationGeneration: number): void {
     this.cancelMetadata(verseKey);
     const subscription = this.reader.readMetadata(verseKey).subscribe({
       next: (metadata) => this.completeMetadataLoad(verseKey, operationGeneration, metadata),
@@ -257,7 +258,7 @@ export class ManualMushafSelectionStore {
     }
   }
 
-  private cancelMetadata(verseKey: string): void {
+  private cancelMetadata(verseKey: QuranVerseKey): void {
     this.metadataSubscriptions.get(verseKey)?.unsubscribe();
     this.metadataSubscriptions.delete(verseKey);
   }
@@ -267,7 +268,7 @@ export class ManualMushafSelectionStore {
     this.metadataSubscriptions.clear();
   }
 
-  private failMetadataLoad(verseKey: string, operationGeneration: number): void {
+  private failMetadataLoad(verseKey: QuranVerseKey, operationGeneration: number): void {
     if (!this.isCurrentOperation(verseKey, operationGeneration)) {
       return;
     }
@@ -286,7 +287,7 @@ export class ManualMushafSelectionStore {
     this.statusMessageSignal.set(`${LINKING_LABELS.mushafSelectionMetadataError} ${verseKey}`);
   }
 
-  private isCurrentOperation(verseKey: string, operationGeneration: number): boolean {
+  private isCurrentOperation(verseKey: QuranVerseKey, operationGeneration: number): boolean {
     return (
       this.active() &&
       this.access.canUseLinking() &&

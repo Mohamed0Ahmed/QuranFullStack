@@ -20,6 +20,7 @@ import { SelectedAyahSectionComponent } from '../selected-ayah-section/selected-
 import { SelectedWordSectionComponent } from '../selected-word-section/selected-word-section.component';
 import { MushafDoorsPanelComponent } from '../mushaf-doors-panel/mushaf-doors-panel.component';
 import { MushafAyahDoorsSectionComponent } from '../mushaf-ayah-doors-section/mushaf-ayah-doors-section.component';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 export type StudyContextTab = 'analysis' | 'doors' | AyahStudyGroup;
 
@@ -67,7 +68,7 @@ let nextStudyContextInstance = 0;
 export class StudyContextSectionComponent {
   readonly wordAnalysis = input<WordAnalysisViewModel | null>(null);
   readonly wordLoadState = input.required<ResourceLoadState>();
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
 
   readonly ayahStudy = input<AyahStudyViewModel | null>(null);
   readonly ayahLoadState = input.required<ResourceLoadState>();
@@ -77,7 +78,7 @@ export class StudyContextSectionComponent {
   readonly mutashabihatLoadState = input.required<ResourceLoadState>();
   readonly activePanel = input<PanelMode>('none');
   readonly activeAyahTab = input<AyahStudyTab>('tafsir');
-  readonly selectedVerseKey = input<string | null>(null);
+  readonly selectedVerseKey = input<QuranVerseKey | null>(null);
 
   readonly tafsirOptions = input<SourceOption[]>([]);
   readonly translationOptions = input<SourceOption[]>([]);

@@ -39,11 +39,15 @@ import {
 import { toPageViewModel } from './mushaf-reader-view-mappers';
 import { MushafStudySourceCatalogStore } from './mushaf-study-source-catalog.store';
 import { applyAuthoritativeUrlSnapshot } from './mushaf-url-hydration';
-import { verseKeyFromWordLocation } from '../utils/mushaf-location-keys';
+import {
+  QuranVerseKey,
+  QuranWordLocation,
+  quranVerseKeyFromWordLocation,
+} from '../../../shared/quran/quran-location';
 import {
   MushafUrlSnapshot,
   buildMushafWordSelectionQuery,
-  buildUrlEnumCorrections,
+  buildMushafUrlCorrections,
   parseMushafUrlParams,
 } from './mushaf-url-sync';
 import { SimilarAyahsLoadRunner } from './mushaf-similar-ayahs-load.runner';
@@ -68,7 +72,7 @@ export class MushafReaderFacade {
 
   private readonly _pageNumber = signal(DEFAULT_MUSHAF_READER_STATE.pageNumber);
   private readonly _selectedAyahKey = signal(DEFAULT_MUSHAF_READER_STATE.selectedAyahKey);
-  private readonly _focusAyahKey = signal<string | null>(null);
+  private readonly _focusAyahKey = signal<QuranVerseKey | null>(null);
   private readonly _selectedWordLocation = signal(DEFAULT_MUSHAF_READER_STATE.selectedWordLocation);
   private readonly _selectedSegmentLocation = signal(
     DEFAULT_MUSHAF_READER_STATE.selectedSegmentLocation,
@@ -226,7 +230,7 @@ export class MushafReaderFacade {
       this.hydrateFromUrl(snapshot);
       saveMushafReaderSession(snapshot);
 
-      const corrections = buildUrlEnumCorrections(params, snapshot);
+      const corrections = buildMushafUrlCorrections(params, snapshot);
       if (Object.keys(corrections).length > 0) {
         this.patchUrlQuery(corrections);
       }
@@ -261,29 +265,29 @@ export class MushafReaderFacade {
     }
   }
 
-  selectAyah(verseKey: string): void {
+  selectAyah(verseKey: QuranVerseKey): void {
     this.patchAyahSelectionQuery(verseKey);
   }
 
-  viewAyahOnPage(verseKey: string, pageNumber: number): void {
+  viewAyahOnPage(verseKey: QuranVerseKey, pageNumber: number): void {
     this.patchUrlQuery({
       [MUSHAF_URL_KEYS.page]: pageNumber,
       [MUSHAF_URL_KEYS.focusAyah]: verseKey,
     });
   }
 
-  private patchAyahSelectionQuery(verseKey: string): void {
+  private patchAyahSelectionQuery(verseKey: QuranVerseKey): void {
     this.cancelPeekFlashClearTimer();
     this.patchUrlQuery(this.buildAyahSelectionQueryParams(verseKey));
   }
 
   private buildAyahSelectionQueryParams(
-    verseKey: string,
+    verseKey: QuranVerseKey,
   ): Partial<
     Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
   > {
     const currentWord = this._selectedWordLocation();
-    const wordAyah = currentWord ? verseKeyFromWordLocation(currentWord) : null;
+    const wordAyah = currentWord ? quranVerseKeyFromWordLocation(currentWord) : null;
     const queryParams: Partial<
       Record<(typeof MUSHAF_URL_KEYS)[keyof typeof MUSHAF_URL_KEYS], string | number | null>
     > = {
@@ -300,7 +304,7 @@ export class MushafReaderFacade {
     return queryParams;
   }
 
-  selectWord(wordLocation: string): void {
+  selectWord(wordLocation: QuranWordLocation): void {
     this.cancelPeekFlashClearTimer();
     this.patchUrlQuery(
       buildMushafWordSelectionQuery(wordLocation, this._selectedWordLocation()),
@@ -338,7 +342,7 @@ export class MushafReaderFacade {
     return true;
   }
 
-  loadWordAnalysis(wordLocation: string): void {
+  loadWordAnalysis(wordLocation: QuranWordLocation): void {
     this._selectedWordLocation.set(wordLocation);
     this.wordAnalysisLoadRunner.loadImmediate(wordLocation);
   }
@@ -428,7 +432,7 @@ export class MushafReaderFacade {
     );
   }
 
-  loadAyahStudy(verseKey: string): void {
+  loadAyahStudy(verseKey: QuranVerseKey): void {
     this._selectedAyahKey.set(verseKey);
     this.ayahStudyLoadRunner.loadImmediate(verseKey);
   }
@@ -561,7 +565,7 @@ export class MushafReaderFacade {
     this.syncMutashabihatDetail(snapshot.ayah, snapshot.ayahTab);
   }
 
-  private syncSimilarAyahsDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
+  private syncSimilarAyahsDetail(verseKey: QuranVerseKey | null, ayahTab: AyahStudyTab): void {
     if (!verseKey || ayahTab !== 'similar-ayahs') {
       return;
     }
@@ -574,7 +578,7 @@ export class MushafReaderFacade {
     this.similarAyahsLoadRunner.loadImmediate(verseKey);
   }
 
-  private syncMutashabihatDetail(verseKey: string | null, ayahTab: AyahStudyTab): void {
+  private syncMutashabihatDetail(verseKey: QuranVerseKey | null, ayahTab: AyahStudyTab): void {
     if (!verseKey || ayahTab !== 'mutashabihat') {
       return;
     }

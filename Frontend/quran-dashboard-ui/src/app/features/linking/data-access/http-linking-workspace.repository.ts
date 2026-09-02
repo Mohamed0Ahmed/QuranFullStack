@@ -26,6 +26,7 @@ import {
   LinkingWorkspaceStaleVersionError,
 } from './linking-workspace.repository';
 import { LinkingDataStaleError } from '../models/linking-revision.models';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 @Injectable({ providedIn: 'root' })
 export class HttpLinkingWorkspaceRepository implements LinkingWorkspaceRepository {
@@ -157,6 +158,9 @@ function toSnapshot(response: ApiResponse<LinkingWorkspaceResponse>): LinkingWor
 
 function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspaceItem | null {
   const manualAyahs = orderedManualAyahs(source);
+  if (manualAyahs === null) {
+    return null;
+  }
   const descriptor = fromLinkingSourceDescriptorBody(
     source.descriptor,
     manualAyahs.map(toManualReference),
@@ -236,12 +240,10 @@ function toInclusion(
   if (mode === null) {
     return null;
   }
-  const verseKeyByAyahId = new Map(
-    Object.entries(ayahIdByVerseKey).map(([verseKey, ayahId]) => [ayahId, verseKey]),
-  );
+  const verseKeyByAyahId = canonicalVerseKeyByAyahId(ayahIdByVerseKey);
   const verseKeys = source.ayahOverrides
     .map((ayahId) => verseKeyByAyahId.get(ayahId))
-    .filter((verseKey): verseKey is string => verseKey !== undefined);
+    .filter((verseKey): verseKey is QuranVerseKey => verseKey !== undefined);
   return { mode, verseKeys };
 }
 
@@ -249,9 +251,7 @@ function toWordIdsByVerseKey(
   source: LinkingWorkspaceSourceResponse,
   ayahIdByVerseKey: Readonly<Record<string, number>>,
 ): Readonly<Record<string, readonly number[]>> {
-  const verseKeyByAyahId = new Map(
-    Object.entries(ayahIdByVerseKey).map(([verseKey, ayahId]) => [ayahId, verseKey]),
-  );
+  const verseKeyByAyahId = canonicalVerseKeyByAyahId(ayahIdByVerseKey);
   const wordIdsByVerseKey: Record<string, number[]> = {};
   for (const word of source.selectedWords) {
     const verseKey = word.ayahId === null ? undefined : verseKeyByAyahId.get(word.ayahId);
@@ -260,25 +260,48 @@ function toWordIdsByVerseKey(
     }
     (wordIdsByVerseKey[verseKey] ??= []).push(word.quranWordId);
   }
-  for (const verseKey of Object.keys(wordIdsByVerseKey)) {
-    wordIdsByVerseKey[verseKey] = [...new Set(wordIdsByVerseKey[verseKey])].sort(
+  for (const rawVerseKey of Object.keys(wordIdsByVerseKey)) {
+    const parsed = parseQuranVerseKey(rawVerseKey);
+    if (!parsed) {
+      continue;
+    }
+    wordIdsByVerseKey[parsed.key] = [...new Set(wordIdsByVerseKey[parsed.key])].sort(
       (left, right) => left - right,
     );
   }
   return wordIdsByVerseKey;
 }
 
+function canonicalVerseKeyByAyahId(
+  ayahIdByVerseKey: Readonly<Record<string, number>>,
+): ReadonlyMap<number, QuranVerseKey> {
+  return new Map(
+    Object.entries(ayahIdByVerseKey).flatMap(([verseKey, ayahId]) => {
+      const parsed = parseQuranVerseKey(verseKey);
+      return parsed ? [[ayahId, parsed.key] as const] : [];
+    }),
+  );
+}
+
 function orderedManualAyahs(
   source: LinkingWorkspaceSourceResponse,
-): readonly { ayahId: number; verseKey: string; pageHint: number | null }[] {
-  return source.manualAyahs
+): readonly { ayahId: number; verseKey: QuranVerseKey; pageHint: number | null }[] | null {
+  const ordered = source.manualAyahs
     .slice()
     .sort((left, right) => left.orderValue - right.orderValue)
-    .map((ayah) => ({ ayahId: ayah.ayahId, verseKey: ayah.verseKey, pageHint: ayah.pageHint }));
+    .map((ayah) => {
+      const parsed = parseQuranVerseKey(ayah.verseKey);
+      return parsed && parsed.key === ayah.verseKey
+        ? { ayahId: ayah.ayahId, verseKey: parsed.key, pageHint: ayah.pageHint }
+        : null;
+    });
+  return ordered.some((ayah) => ayah === null)
+    ? null
+    : ordered.filter((ayah): ayah is NonNullable<typeof ayah> => ayah !== null);
 }
 
 function toManualReference(ayah: {
-  verseKey: string;
+  verseKey: QuranVerseKey;
   pageHint: number | null;
 }): LinkingManualMushafAyahReference {
   return { verseKey: ayah.verseKey, pageNumber: ayah.pageHint, displayHint: ayah.verseKey };

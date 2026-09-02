@@ -77,7 +77,13 @@ export function wordTypeMemberWordsPageView(
 
 export function wordTypeAyahsPageView(panel: WordTypesDetailState): SharedPagedResultDto<AyahMatchDto> {
   const page = panel.ayahs;
-  return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : EMPTY_WORD_TYPE_AYAHS_PAGE;
+  return page
+    ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared).filter(isAyahMatch) }
+    : EMPTY_WORD_TYPE_AYAHS_PAGE;
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }
 
 export function wordTypeAyahParentFrame(panel: WordTypesDetailState): WordTypeDetailFrame | null {

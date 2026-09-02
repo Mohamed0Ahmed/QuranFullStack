@@ -10,6 +10,7 @@ import {
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
 import { toAyahStudyViewModel } from './mushaf-reader-view-mappers';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export interface AyahStudyLoadBindings {
   getUrlExplicitSources(): MushafReaderSources;
@@ -27,13 +28,13 @@ export class AyahStudyLoadRunner {
 
   constructor(private readonly bindings: AyahStudyLoadBindings) {}
 
-  loadImmediate(verseKey: string): void {
+  loadImmediate(verseKey: QuranVerseKey): void {
     this.clearPending();
     const requestToken = this.bindings.bumpRequestToken();
     this.runLoad(verseKey, requestToken);
   }
 
-  schedule(verseKey: string): void {
+  schedule(verseKey: QuranVerseKey): void {
     this.clearPending();
 
     if (this.applyCached(verseKey)) {
@@ -53,7 +54,7 @@ export class AyahStudyLoadRunner {
     this.bindings.bumpRequestToken();
   }
 
-  private applyCached(verseKey: string): boolean {
+  private applyCached(verseKey: QuranVerseKey): boolean {
     const sources = this.bindings.getUrlExplicitSources();
     const cached = this.bindings.readerCache.peek<AyahStudyDto>(
       MushafReaderCacheKeys.ayahStudy(verseKey, sources),
@@ -72,7 +73,7 @@ export class AyahStudyLoadRunner {
     return true;
   }
 
-  private runLoad(verseKey: string, requestToken: number): void {
+  private runLoad(verseKey: QuranVerseKey, requestToken: number): void {
     this.bindings.setLoadState({ isLoading: true, isEmpty: false, errorMessage: null });
 
     const sources = this.bindings.getUrlExplicitSources();

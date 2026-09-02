@@ -123,7 +123,9 @@ export class LemmaDetailOverlayAdapterComponent {
 
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapLemmaAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
 
   protected get wordViewLabels() {
@@ -248,4 +250,8 @@ export class LemmaDetailOverlayAdapterComponent {
   private normalizeTypeCode(typeCode: string | null): string | null {
     return typeCode === null || typeCode.trim().length === 0 ? null : typeCode.trim();
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }
