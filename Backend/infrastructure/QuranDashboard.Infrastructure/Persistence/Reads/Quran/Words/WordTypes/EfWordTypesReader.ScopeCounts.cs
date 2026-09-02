@@ -9,18 +9,7 @@ public sealed partial class EfWordTypesReader
         WordTypeFilter filter,
         CancellationToken cancellationToken)
     {
-        var type = NormalizeType(filter.Type);
-        var childCode = NormalizeChildCode(filter.ChildCode);
-        var context = new WordTypeReadContext(
-            type,
-            childCode,
-            filter.Case,
-            filter.Tense,
-            filter.Voice,
-            ArabicSearchQueryNormalizer.Normalize(filter.Search),
-            filter.HasRoot,
-            filter.HasStem,
-            filter.HasLemma);
+        var context = ToReadContext(filter);
 
         // No paging: BuildCountParameters binds exactly the base predicates' parameters (childCode,
         // secondary filters, search) and nothing else, so the single command stays in sync.

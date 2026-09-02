@@ -1,18 +1,12 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSummary;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedWords;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedAyahs;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeGroupedSurahs;
+using QuranDashboard.Application.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
 [ApiController]
 [Route("api/words/word-types/table")]
 public sealed class WordTypeGroupedDetailsController(
-    GetWordTypeGroupedSummaryHandler summaryHandler,
-    GetWordTypeGroupedWordsHandler wordsHandler,
-    GetWordTypeGroupedAyahsHandler ayahsHandler,
-    GetWordTypeGroupedSurahsHandler surahsHandler) : ControllerBase
+    WordTypeGroupedExplorer groupedExplorer) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultDetailPageSize = 100;
@@ -28,23 +22,21 @@ public sealed class WordTypeGroupedDetailsController(
         [FromQuery] string? voice,
         CancellationToken cancellationToken)
     {
-        var outcome = await summaryHandler.HandleAsync(
-            new GetWordTypeGroupedSummaryQuery(kind, dimensionId, type, childCode, caseFilter, tense, voice),
-            cancellationToken);
+        var outcome = await groupedExplorer.GetSummaryAsync(kind, dimensionId, type, childCode, caseFilter, tense, voice, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeGroupedSummaryOutcome.Success success =>
-                Ok(ApiResponse<WordTypeGroupedSummaryDto>.Ok(success.Summary, ApiMessages.WordTypeGroupedSummaryLoaded)),
-            GetWordTypeGroupedSummaryOutcome.InvalidKind =>
+            WordTypeGroupedResult.Summary.Success success =>
+                Ok(ApiResponse<WordTypeGroupedSummaryDto>.Ok(success.Value, ApiMessages.WordTypeGroupedSummaryLoaded)),
+            WordTypeGroupedResult.Summary.InvalidKind =>
                 BadRequest(ApiResponse<WordTypeGroupedSummaryDto>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
-            GetWordTypeGroupedSummaryOutcome.InvalidId =>
+            WordTypeGroupedResult.Summary.InvalidId =>
                 BadRequest(ApiResponse<WordTypeGroupedSummaryDto>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
-            GetWordTypeGroupedSummaryOutcome.InvalidFilter =>
+            WordTypeGroupedResult.Summary.InvalidFilter =>
                 BadRequest(ApiResponse<WordTypeGroupedSummaryDto>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeGroupedSummaryOutcome.NotFound =>
+            WordTypeGroupedResult.Summary.NotFound =>
                 NotFound(ApiResponse<WordTypeGroupedSummaryDto>.Fail(ApiMessages.WordTypesGroupedNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedSummaryOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeGroupedResult.Summary)} variant."),
         };
     }
 
@@ -61,27 +53,25 @@ public sealed class WordTypeGroupedDetailsController(
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
-        var outcome = await wordsHandler.HandleAsync(
-            new GetWordTypeGroupedWordsQuery(
-                kind, dimensionId, type, childCode, caseFilter, tense, voice,
-                page ?? DefaultPage, pageSize ?? DefaultDetailPageSize),
-            cancellationToken);
+        var outcome = await groupedExplorer.GetWordsAsync(
+            kind, dimensionId, type, childCode, caseFilter, tense, voice,
+            page ?? DefaultPage, pageSize ?? DefaultDetailPageSize, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeGroupedWordsOutcome.Success success =>
+            WordTypeGroupedResult.Words.Success success =>
                 Ok(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Ok(success.Page, ApiMessages.WordTypeGroupedWordsLoaded)),
-            GetWordTypeGroupedWordsOutcome.InvalidKind =>
+            WordTypeGroupedResult.Words.InvalidKind =>
                 BadRequest(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
-            GetWordTypeGroupedWordsOutcome.InvalidId =>
+            WordTypeGroupedResult.Words.InvalidId =>
                 BadRequest(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
-            GetWordTypeGroupedWordsOutcome.InvalidFilter =>
+            WordTypeGroupedResult.Words.InvalidFilter =>
                 BadRequest(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeGroupedWordsOutcome.InvalidPaging =>
+            WordTypeGroupedResult.Words.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
-            GetWordTypeGroupedWordsOutcome.NotFound =>
+            WordTypeGroupedResult.Words.NotFound =>
                 NotFound(ApiResponse<PagedResult<WordTypeGroupedMemberWordDto>>.Fail(ApiMessages.WordTypesGroupedNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedWordsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeGroupedResult.Words)} variant."),
         };
     }
 
@@ -98,27 +88,25 @@ public sealed class WordTypeGroupedDetailsController(
         [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
-        var outcome = await ayahsHandler.HandleAsync(
-            new GetWordTypeGroupedAyahsQuery(
-                kind, dimensionId, type, childCode, caseFilter, tense, voice,
-                page ?? DefaultPage, pageSize ?? DefaultDetailPageSize),
-            cancellationToken);
+        var outcome = await groupedExplorer.GetAyahsAsync(
+            kind, dimensionId, type, childCode, caseFilter, tense, voice,
+            page ?? DefaultPage, pageSize ?? DefaultDetailPageSize, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeGroupedAyahsOutcome.Success success =>
+            WordTypeGroupedResult.Ayahs.Success success =>
                 Ok(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Ok(success.Page, ApiMessages.WordTypeGroupedAyahsLoaded)),
-            GetWordTypeGroupedAyahsOutcome.InvalidKind =>
+            WordTypeGroupedResult.Ayahs.InvalidKind =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
-            GetWordTypeGroupedAyahsOutcome.InvalidId =>
+            WordTypeGroupedResult.Ayahs.InvalidId =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
-            GetWordTypeGroupedAyahsOutcome.InvalidFilter =>
+            WordTypeGroupedResult.Ayahs.InvalidFilter =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeGroupedAyahsOutcome.InvalidPaging =>
+            WordTypeGroupedResult.Ayahs.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
-            GetWordTypeGroupedAyahsOutcome.NotFound =>
+            WordTypeGroupedResult.Ayahs.NotFound =>
                 NotFound(ApiResponse<PagedResult<WordTypeAyahMatchDto>>.Fail(ApiMessages.WordTypesGroupedNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedAyahsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeGroupedResult.Ayahs)} variant."),
         };
     }
 
@@ -133,23 +121,21 @@ public sealed class WordTypeGroupedDetailsController(
         [FromQuery] string? voice,
         CancellationToken cancellationToken)
     {
-        var outcome = await surahsHandler.HandleAsync(
-            new GetWordTypeGroupedSurahsQuery(kind, dimensionId, type, childCode, caseFilter, tense, voice),
-            cancellationToken);
+        var outcome = await groupedExplorer.GetSurahsAsync(kind, dimensionId, type, childCode, caseFilter, tense, voice, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeGroupedSurahsOutcome.Success success =>
-                Ok(ApiResponse<WordTypeSurahsResponse>.Ok(success.Surahs, ApiMessages.WordTypeGroupedSurahsLoaded)),
-            GetWordTypeGroupedSurahsOutcome.InvalidKind =>
+            WordTypeGroupedResult.Surahs.Success success =>
+                Ok(ApiResponse<WordTypeSurahsResponse>.Ok(success.Value, ApiMessages.WordTypeGroupedSurahsLoaded)),
+            WordTypeGroupedResult.Surahs.InvalidKind =>
                 BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidGroupedKind)),
-            GetWordTypeGroupedSurahsOutcome.InvalidId =>
+            WordTypeGroupedResult.Surahs.InvalidId =>
                 BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidGroupedId)),
-            GetWordTypeGroupedSurahsOutcome.InvalidFilter =>
+            WordTypeGroupedResult.Surahs.InvalidFilter =>
                 BadRequest(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeGroupedSurahsOutcome.NotFound =>
+            WordTypeGroupedResult.Surahs.NotFound =>
                 NotFound(ApiResponse<WordTypeSurahsResponse>.Fail(ApiMessages.WordTypesGroupedNotFound)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeGroupedSurahsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeGroupedResult.Surahs)} variant."),
         };
     }
 }

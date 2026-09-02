@@ -1,100 +1,89 @@
 namespace QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 
-// Every member maps to a column both CTEs already project. The label columns are deliberately excluded,
-// and the grouped member-word detail read takes no sort.
-public enum WordTypeSortColumn
+public sealed class WordTypeSortSpec
 {
-    Occurrences,
-    Ayahs,
-    Surahs,
-    MushafOrder,
-    Alpha,
-}
+    private const string Occurrences = "occurrences";
+    private const string Ayahs = "ayahs";
+    private const string Surahs = "surahs";
+    private const string MushafOrder = "mushaf-order";
+    private const string Alpha = "alpha";
 
-public static class WordTypeSortKeys
-{
-    public const string Occurrences = "occurrences";
-    public const string Ayahs = "ayahs";
-    public const string Surahs = "surahs";
-    public const string MushafOrder = "mushaf-order";
-    public const string Alpha = "alpha";
-}
+    private enum ColumnKind
+    {
+        Occurrences,
+        Ayahs,
+        Surahs,
+        MushafOrder,
+        Alpha,
+    }
 
-// Unlike the other four explorers, Word Types defaults to occurrences (descending) rather than Mushaf order.
-public readonly record struct WordTypeSortSpec(WordTypeSortColumn Column, WordSortDirection Direction)
-{
-    public static WordTypeSortSpec Default { get; } = Natural(WordTypeSortColumn.Occurrences);
+    private WordTypeSortSpec(ColumnKind column, WordSortDirection direction)
+    {
+        Column = column;
+        Direction = direction;
+    }
 
-    public static WordTypeSortSpec Natural(WordTypeSortColumn column) => new(column, NaturalDirectionOf(column));
+    private ColumnKind Column { get; }
+    private WordSortDirection Direction { get; }
+
+    public static WordTypeSortSpec? Create(string? value)
+    {
+        var token = string.IsNullOrWhiteSpace(value) ? Occurrences : value;
+        if (!WordSortToken.TrySplit(token, out var columnToken, out var direction)
+            || !TryParseColumn(columnToken, out var column)
+            || (column == ColumnKind.MushafOrder && direction is not null))
+        {
+            return null;
+        }
+
+        return new WordTypeSortSpec(column, direction ?? NaturalDirectionOf(column));
+    }
 
     // Counts read most-first (descending natural); text and the Mushaf release order read forward.
-    public static WordSortDirection NaturalDirectionOf(WordTypeSortColumn column) => column switch
+    private static WordSortDirection NaturalDirectionOf(ColumnKind column) => column switch
     {
-        WordTypeSortColumn.MushafOrder => WordSortDirection.Ascending,
-        WordTypeSortColumn.Alpha => WordSortDirection.Ascending,
-        WordTypeSortColumn.Occurrences => WordSortDirection.Descending,
-        WordTypeSortColumn.Ayahs => WordSortDirection.Descending,
-        WordTypeSortColumn.Surahs => WordSortDirection.Descending,
-        _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortColumn)} value."),
+        ColumnKind.MushafOrder => WordSortDirection.Ascending,
+        ColumnKind.Alpha => WordSortDirection.Ascending,
+        ColumnKind.Occurrences => WordSortDirection.Descending,
+        ColumnKind.Ayahs => WordSortDirection.Descending,
+        ColumnKind.Surahs => WordSortDirection.Descending,
+        _ => throw new InvalidOperationException($"Unhandled {nameof(ColumnKind)} value."),
     };
 
     // Canonical wire/cache token: bare for the natural direction, suffixed for the opposite one.
     // mushaf-order is ascending-only by contract and never carries a suffix.
-    public string CanonicalToken() => Column == WordTypeSortColumn.MushafOrder
-        ? WordTypeSortKeys.MushafOrder
+    public string CanonicalToken() => Column == ColumnKind.MushafOrder
+        ? MushafOrder
         : WordSortToken.Canonical(ColumnKey(Column), Direction, NaturalDirectionOf(Column));
 
-    private static string ColumnKey(WordTypeSortColumn column) => column switch
+    private static string ColumnKey(ColumnKind column) => column switch
     {
-        WordTypeSortColumn.Occurrences => WordTypeSortKeys.Occurrences,
-        WordTypeSortColumn.Ayahs => WordTypeSortKeys.Ayahs,
-        WordTypeSortColumn.Surahs => WordTypeSortKeys.Surahs,
-        WordTypeSortColumn.MushafOrder => WordTypeSortKeys.MushafOrder,
-        WordTypeSortColumn.Alpha => WordTypeSortKeys.Alpha,
-        _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortColumn)} value."),
+        ColumnKind.Occurrences => Occurrences,
+        ColumnKind.Ayahs => Ayahs,
+        ColumnKind.Surahs => Surahs,
+        ColumnKind.MushafOrder => MushafOrder,
+        ColumnKind.Alpha => Alpha,
+        _ => throw new InvalidOperationException($"Unhandled {nameof(ColumnKind)} value."),
     };
-}
 
-public static class WordTypeSortParser
-{
-    public static bool TryParse(string? value, out WordTypeSortSpec spec)
-    {
-        spec = default;
-
-        if (!WordSortToken.TrySplit(value, out var columnToken, out var direction)
-            || !TryParseColumn(columnToken, out var column))
-        {
-            return false;
-        }
-
-        // mushaf-order is the release order, not a column: ascending-only, bare token only.
-        if (column == WordTypeSortColumn.MushafOrder && direction is not null)
-        {
-            return false;
-        }
-
-        spec = new WordTypeSortSpec(column, direction ?? WordTypeSortSpec.NaturalDirectionOf(column));
-        return true;
-    }
-
-    private static bool TryParseColumn(string token, out WordTypeSortColumn column)
+    private static bool TryParseColumn(string token, out ColumnKind column)
     {
         switch (token)
         {
-            case WordTypeSortKeys.Occurrences:
-                column = WordTypeSortColumn.Occurrences;
+            case Occurrences:
+                column = ColumnKind.Occurrences;
                 return true;
-            case WordTypeSortKeys.Ayahs:
-                column = WordTypeSortColumn.Ayahs;
+            case Ayahs:
+                column = ColumnKind.Ayahs;
                 return true;
-            case WordTypeSortKeys.Surahs:
-                column = WordTypeSortColumn.Surahs;
+            case Surahs:
+                column = ColumnKind.Surahs;
                 return true;
-            case WordTypeSortKeys.MushafOrder:
-                column = WordTypeSortColumn.MushafOrder;
+            case MushafOrder:
+                column = ColumnKind.MushafOrder;
                 return true;
-            case WordTypeSortKeys.Alpha:
-                column = WordTypeSortColumn.Alpha;
+            case Alpha:
+                column = ColumnKind.Alpha;
                 return true;
             default:
                 column = default;

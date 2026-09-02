@@ -7,11 +7,11 @@ public static class WordTypesCacheKeys
 {
     public const string Tree = "wordtypes:tree";
 
-    public static string Rows(WordTypeFilter filter, WordTypeSortSpec sort, int page, int pageSize) =>
-        $"wordtypes:rows:{HashFilter(filter)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
+    public static string Rows(WordTypeFilter filter, WordTypeSortSpec sort, WordTypeListPaging paging) =>
+        $"wordtypes:rows:{HashFilter(filter)}:sort:{SortKey(sort)}:p{paging.Page}:s{paging.PageSize}";
 
-    public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, int page, int pageSize) =>
-        $"wordtypes:table:{HashFilter(filter)}:view:{TableViewKey(tableView)}:sort:{SortKey(sort)}:p{page}:s{pageSize}";
+    public static string Table(WordTypeFilter filter, WordTypeTableView tableView, WordTypeSortSpec sort, WordTypeListPaging paging) =>
+        $"wordtypes:table:{HashFilter(filter)}:view:{tableView.Key}:sort:{SortKey(sort)}:p{paging.Page}:s{paging.PageSize}";
 
     // Scoped four-count summary (Feature 026, US8). The key folds in EVERY scope input via HashFilter
     // (type, childCode, case, tense, voice, normalized search, presence flags) and NOTHING else — no
@@ -22,8 +22,8 @@ public static class WordTypesCacheKeys
     public static string Summary(WordTypeRowIdentity identity) =>
         $"wordtypes:summary:{HashIdentity(identity)}";
 
-    public static string Ayahs(WordTypeRowIdentity identity, int page, int pageSize) =>
-        $"wordtypes:ayahs:{HashIdentity(identity)}:p{page}:s{pageSize}";
+    public static string Ayahs(WordTypeRowIdentity identity, WordTypeDetailPaging paging) =>
+        $"wordtypes:ayahs:{HashIdentity(identity)}:p{paging.Page}:s{paging.PageSize}";
 
     public static string Surahs(WordTypeRowIdentity identity) =>
         $"wordtypes:surahs:{HashIdentity(identity)}";
@@ -33,25 +33,25 @@ public static class WordTypesCacheKeys
     // carries its own segment (summary vs words vs …) so views never share a prefix; paged views append
     // page/pageSize.
     public static string GroupedSummary(WordTypeGroupedSelection selection) =>
-        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:summary:{HashGroupedSelection(selection)}";
+        $"wordtypes:grouped:{selection.Kind.RouteKey}:summary:{HashGroupedSelection(selection)}";
 
-    public static string GroupedWords(WordTypeGroupedSelection selection, int page, int pageSize) =>
-        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:words:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
+    public static string GroupedWords(WordTypeGroupedSelection selection, WordTypeDetailPaging paging) =>
+        $"wordtypes:grouped:{selection.Kind.RouteKey}:words:{HashGroupedSelection(selection)}:p{paging.Page}:s{paging.PageSize}";
 
-    public static string GroupedAyahs(WordTypeGroupedSelection selection, int page, int pageSize) =>
-        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:ayahs:{HashGroupedSelection(selection)}:p{page}:s{pageSize}";
+    public static string GroupedAyahs(WordTypeGroupedSelection selection, WordTypeDetailPaging paging) =>
+        $"wordtypes:grouped:{selection.Kind.RouteKey}:ayahs:{HashGroupedSelection(selection)}:p{paging.Page}:s{paging.PageSize}";
 
     // Surahs are single-shot, so the key carries no page component (mirrors the summary key shape).
     public static string GroupedSurahs(WordTypeGroupedSelection selection) =>
-        $"wordtypes:grouped:{selection.Kind.ToRouteKey()}:surahs:{HashGroupedSelection(selection)}";
+        $"wordtypes:grouped:{selection.Kind.RouteKey}:surahs:{HashGroupedSelection(selection)}";
 
     private static string HashGroupedSelection(WordTypeGroupedSelection selection) => HashParts(
         selection.DimensionId.ToString(CultureInfo.InvariantCulture),
-        selection.Filter.Type,
-        selection.Filter.ChildCode,
-        selection.Filter.Case,
-        selection.Filter.Tense,
-        selection.Filter.Voice);
+        selection.Scope.Type,
+        selection.Scope.ChildCode,
+        selection.Scope.Case,
+        selection.Scope.Tense,
+        selection.Scope.Voice);
 
     // Empty/absent search AND absent presence flags keep the pre-feature 5-part hash so warm rows/table
     // entries stay valid. A non-empty NORMALIZED search appends a LABELLED component (same normalization
@@ -63,7 +63,14 @@ public static class WordTypesCacheKeys
     private static string HashFilter(WordTypeFilter filter)
     {
         var normalizedSearch = ArabicSearchQueryNormalizer.Normalize(filter.Search);
-        var parts = new List<string?> { filter.Type, filter.ChildCode, filter.Case, filter.Tense, filter.Voice };
+        var parts = new List<string?>
+        {
+            filter.Scope.Type,
+            filter.Scope.ChildCode,
+            filter.Scope.Case,
+            filter.Scope.Tense,
+            filter.Scope.Voice,
+        };
 
         if (!string.IsNullOrEmpty(normalizedSearch))
         {
@@ -104,15 +111,6 @@ public static class WordTypesCacheKeys
     // the reserved "_" placeholder, matching the pre-feature key shape for unfiltered reads.
     private static string EncodePart(string? part) =>
         string.IsNullOrWhiteSpace(part) ? "_" : part.Trim().Replace("\\", "\\\\").Replace("|", "\\|");
-
-    private static string TableViewKey(WordTypeTableView tableView) => tableView switch
-    {
-        WordTypeTableView.Words => WordTypeTableViewKeys.Words,
-        WordTypeTableView.Roots => WordTypeTableViewKeys.Roots,
-        WordTypeTableView.Stems => WordTypeTableViewKeys.Stems,
-        WordTypeTableView.Lemmas => WordTypeTableViewKeys.Lemmas,
-        _ => tableView.ToString(),
-    };
 
     // The CANONICAL token, so alias and canonical spellings of one ordering share ONE entry
     // ("occurrences-desc" keys as "occurrences") and every pre-feature key stays byte-identical.

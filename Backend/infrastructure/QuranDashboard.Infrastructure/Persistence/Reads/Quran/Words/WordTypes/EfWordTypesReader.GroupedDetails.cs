@@ -12,12 +12,7 @@ public sealed partial class EfWordTypesReader
     {
         ArgumentNullException.ThrowIfNull(selection);
 
-        if (!selection.IsValid)
-        {
-            return null;
-        }
-
-        var context = ToGroupedReadContext(selection.Filter);
+        var context = ToGroupedReadContext(selection.Scope);
         var parameters = BuildGroupedDetailParameters(context, selection.DimensionId);
 
         var row = await _dbContext.Database
@@ -29,18 +24,12 @@ public sealed partial class EfWordTypesReader
 
     public async Task<PagedResult<WordTypeGroupedMemberWordDto>?> GetGroupedMemberWordsAsync(
         WordTypeGroupedSelection selection,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(selection);
 
-        if (!selection.IsValid)
-        {
-            return null;
-        }
-
-        var context = ToGroupedReadContext(selection.Filter);
+        var context = ToGroupedReadContext(selection.Scope);
 
         // A dimension absent from the scope has zero grouped word-context rows → not found (null). An
         // existing dimension with an out-of-range page falls through to a non-null empty page below.
@@ -50,38 +39,32 @@ public sealed partial class EfWordTypesReader
             return null;
         }
 
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        var skip = ReadPaging.CalculateSafeSkip(paging.Page, paging.PageSize, totalCount);
         if (skip is null)
         {
-            return new PagedResult<WordTypeGroupedMemberWordDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeGroupedMemberWordDto>(paging.Page, paging.PageSize, totalCount, []);
         }
 
-        var parameters = BuildRowsParameters(context, skip.Value, pageSize, selection.DimensionId);
+        var parameters = BuildRowsParameters(context, skip.Value, paging.PageSize, selection.DimensionId);
         var rows = await _dbContext.Database
-            .SqlQueryRaw<WordTypeRowSqlResult>(RowsSql(context, WordTypeSortSpec.Natural(WordTypeSortColumn.Occurrences), selection.Kind), parameters)
+            .SqlQueryRaw<WordTypeRowSqlResult>(RowsSql(context, "occurrences", selection.Kind), parameters)
             .ToListAsync(cancellationToken);
 
         return new PagedResult<WordTypeGroupedMemberWordDto>(
-            page,
-            pageSize,
+            paging.Page,
+            paging.PageSize,
             totalCount,
-            rows.Select(row => ToGroupedMemberWordDto(row, selection.Filter)).ToList());
+            rows.Select(row => ToGroupedMemberWordDto(row, selection.Scope)).ToList());
     }
 
     public async Task<PagedResult<WordTypeAyahMatchDto>?> GetGroupedAyahMatchesAsync(
         WordTypeGroupedSelection selection,
-        int page,
-        int pageSize,
+        WordTypeDetailPaging paging,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(selection);
 
-        if (!selection.IsValid)
-        {
-            return null;
-        }
-
-        var context = ToGroupedReadContext(selection.Filter);
+        var context = ToGroupedReadContext(selection.Scope);
 
         // The distinct-ayah count doubles as the existence check: zero scoped ayahs → dimension absent → null.
         var countParameters = BuildCountParameters(context, selection.DimensionId);
@@ -93,13 +76,13 @@ public sealed partial class EfWordTypesReader
             return null;
         }
 
-        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        var skip = ReadPaging.CalculateSafeSkip(paging.Page, paging.PageSize, totalCount);
         if (skip is null)
         {
-            return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, []);
+            return new PagedResult<WordTypeAyahMatchDto>(paging.Page, paging.PageSize, totalCount, []);
         }
 
-        var pageParameters = BuildRowsParameters(context, skip.Value, pageSize, selection.DimensionId);
+        var pageParameters = BuildRowsParameters(context, skip.Value, paging.PageSize, selection.DimensionId);
         var matchRows = await _dbContext.Database
             .SqlQueryRaw<GroupedAyahMatchSqlRow>(GroupedAyahsPageSql(context, selection.Kind), pageParameters)
             .ToListAsync(cancellationToken);
@@ -137,7 +120,7 @@ public sealed partial class EfWordTypesReader
             },
             cancellationToken);
 
-        return new PagedResult<WordTypeAyahMatchDto>(page, pageSize, totalCount, items);
+        return new PagedResult<WordTypeAyahMatchDto>(paging.Page, paging.PageSize, totalCount, items);
     }
 
     public async Task<WordTypeSurahsResponse?> GetGroupedSurahsAsync(
@@ -146,12 +129,7 @@ public sealed partial class EfWordTypesReader
     {
         ArgumentNullException.ThrowIfNull(selection);
 
-        if (!selection.IsValid)
-        {
-            return null;
-        }
-
-        var context = ToGroupedReadContext(selection.Filter);
+        var context = ToGroupedReadContext(selection.Scope);
         var parameters = BuildCountParameters(context, selection.DimensionId);
 
         // One server-side aggregate groups occurrences by surah. Zero rows means the positive dimension is
@@ -204,12 +182,12 @@ public sealed partial class EfWordTypesReader
         return result.Count;
     }
 
-    private static WordTypeGroupedMemberWordDto ToGroupedMemberWordDto(WordTypeRowSqlResult row, WordTypeFilter filter) => new(
+    private static WordTypeGroupedMemberWordDto ToGroupedMemberWordDto(WordTypeRowSqlResult row, WordTypeScope scope) => new(
         row.TashkeelWordId,
         row.ContextCode,
-        filter.Case,
-        filter.Tense,
-        filter.Voice,
+        scope.Case,
+        scope.Tense,
+        scope.Voice,
         row.DisplayText,
         row.TypeCode,
         new WordTypeLabelDto(row.TypeLabel),
