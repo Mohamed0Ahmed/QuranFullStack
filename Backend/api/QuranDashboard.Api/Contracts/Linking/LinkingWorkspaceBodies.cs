@@ -42,8 +42,6 @@ public sealed record LinkingWorkspaceSourceTypesBody
 
 public sealed record LinkingWorkspaceConfigurationBody
 {
-    public string? Label { get; init; }
-
     public string? InclusionMode { get; init; }
 
     public IReadOnlyList<int>? AyahOverrides { get; init; }

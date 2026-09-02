@@ -391,14 +391,20 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             .Select(row => new LinkingWorkspaceDescriptionInput(row.AyahId, row.OrderValue, row.Body))
             .ToListAsync(cancellationToken);
         var descriptor = LinkingSourceStorage.Decode(source, [.. manualRows.Select(row => row.VerseKey)]);
-        var configuration = new LinkingWorkspaceConfigurationInput(
-            descriptor.Label,
+        if (!LinkingSourceConfiguration.TryCreate(
+            descriptor.Kind,
             source.InclusionMode,
             overrides,
             words,
             source.AutomaticWordMatchesEnabled,
             source.ManualLinkShape,
-            descriptions);
+            descriptions,
+            out var configuration,
+            out _))
+        {
+            throw new InvalidDataException("The stored linking workspace configuration is incoherent.");
+        }
+
         return new WorkspaceSnapshot(
             source.Version,
             new LinkingPreparedInlineSource(descriptor, configuration),
@@ -467,7 +473,12 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             uint? sourceVersion,
             IReadOnlyList<string> manualVerseKeys)
         {
-            var mode = LinkingPreparedPreflightRequestHasher.ContributionModeOf(source);
+            if (source.Descriptor.Kind != source.Configuration.SourceKind)
+            {
+                throw new InvalidDataException("The prepared linking source configuration is incoherent.");
+            }
+
+            var mode = source.Configuration.ContributionMode;
             var descriptorVerseKeys = source.Descriptor is LinkingSourceDescriptor.ManualMushafAyahs manual
                 ? manual.VerseKeys.Select(verseKey => verseKey.Value).ToList()
                 : manualVerseKeys;

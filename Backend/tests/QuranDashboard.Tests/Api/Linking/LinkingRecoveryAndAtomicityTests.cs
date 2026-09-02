@@ -7,6 +7,55 @@ namespace QuranDashboard.Tests.Api.Linking;
 public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
 {
     [Fact]
+    public async Task IncoherentInlineConfiguration_IsRejectedSynchronouslyWithoutPreparedRows()
+    {
+        await fixture.ResetAsync();
+        using var client = fixture.CreatePausedWorkersClient();
+        var scenario = new LinkingTestScenario(fixture, client);
+        scenario.ConfigureOwner();
+        await scenario.ProvisionOwnerAsync();
+        var doorId = await scenario.CreateTargetDoorAsync("incoherent-inline-configuration");
+        var source = await scenario.ResolveSourceAsync();
+
+        using var response = await client.PostAsJsonAsync(
+            "/api/linking/preflights",
+            new
+            {
+                preparationKey = Guid.NewGuid(),
+                doorId,
+                expectedLinkingDataRevision = source.GetProperty("linkingDataRevision").GetInt64(),
+                sources = new[]
+                {
+                    new
+                    {
+                        orderValue = 1,
+                        workspaceSource = (object?)null,
+                        inlineSource = new
+                        {
+                            descriptor = LinkingTestScenario.ManualSourceDescriptor(),
+                            configuration = new
+                            {
+                                inclusionMode = "all_except",
+                                ayahOverrideIds = Array.Empty<int>(),
+                                selectedWords = Array.Empty<object>(),
+                                automaticWordMatchesEnabled = true,
+                                manualLinkShape = "independent",
+                                descriptions = Array.Empty<object>(),
+                            },
+                        },
+                    },
+                },
+            });
+
+        await ApiEnvelope.AssertFailureEnvelopeAsync(
+            response,
+            HttpStatusCode.BadRequest,
+            ApiMessages.LinkingPreparedPreflightInvalid);
+        (await fixture.ReadPersistentStateCountsAsync(doorId)).Should().Be(
+            new LinkingPersistentStateCounts(0, 0, 0, 0, 0, 0));
+    }
+
+    [Fact]
     public async Task StaleLinkingDataRevision_IsRejectedBeforeAnyWorkflowOrLinkWrite()
     {
         await fixture.ResetAsync();

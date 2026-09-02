@@ -53,16 +53,16 @@ public sealed class LinkingWorkspaceController(
                 ApiMessages.LinkingDescriptorViolationMessage(violation)));
         }
 
-        LinkingWorkspaceConfigurationInput? initialConfiguration = null;
+        LinkingSourceConfiguration? initialConfiguration = null;
         if (body!.InitialConfiguration is not null
             && !LinkingWorkspaceConfigurationBodyMapper.TryMapInitial(
                 body.InitialConfiguration,
-                descriptor.Label,
+                descriptor.Kind,
                 out initialConfiguration,
-                out violation))
+                out var configurationError))
         {
             return BadRequest(ApiResponse<LinkingWorkspaceResponse>.Fail(
-                ApiMessages.LinkingDescriptorViolationMessage(violation)));
+                configurationError));
         }
 
         var userId = await ResolveUserIdAsync();

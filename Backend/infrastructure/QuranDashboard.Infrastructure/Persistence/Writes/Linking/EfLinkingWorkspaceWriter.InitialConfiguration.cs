@@ -20,91 +20,13 @@ internal sealed partial class EfLinkingWorkspaceWriter
             cancellationToken);
     }
 
-    private async Task<InitialConfiguration> PrepareInitialConfigurationAsync(
-        LinkingSourceDescriptor descriptor,
-        LinkingWorkspaceConfigurationInput initialConfiguration,
+    private async Task<LinkingSourceConfiguration> PrepareInitialConfigurationAsync(
+        LinkingSourceKind sourceKind,
+        LinkingSourceConfiguration initialConfiguration,
         LinkingResolvedSourceCompact compact,
         CancellationToken cancellationToken)
     {
-        var configuration = NormalizeInitialConfiguration(descriptor, initialConfiguration);
-        var isManual = descriptor.Kind == LinkingSourceKind.ManualMushafAyahs;
-
-        EnsureConfigurationCoherence(isManual, configuration);
-        EnsureConfigurationMembership(isManual, configuration, compact);
-        await EnsureSelectedWordsAsync(configuration.SelectedWords, cancellationToken);
-
-        return new InitialConfiguration(configuration, NormalizeDescriptions(configuration.Descriptions));
-    }
-
-    private async Task ApplyInitialConfigurationAsync(
-        long sourceId,
-        InitialConfiguration initialConfiguration,
-        int userId,
-        DateTimeOffset now,
-        CancellationToken cancellationToken)
-    {
-        await ReplaceOverridesAsync(
-            sourceId,
-            initialConfiguration.Configuration.AyahOverrides,
-            cancellationToken);
-        await ReplaceSelectedWordsAsync(
-            sourceId,
-            initialConfiguration.Configuration.SelectedWords,
-            cancellationToken);
-        await ReplaceDescriptionsAsync(
-            sourceId,
-            initialConfiguration.Descriptions,
-            userId,
-            now,
-            cancellationToken);
-    }
-
-    private static LinkingWorkspaceConfigurationInput NormalizeInitialConfiguration(
-        LinkingSourceDescriptor descriptor,
-        LinkingWorkspaceConfigurationInput configuration)
-    {
-        ArgumentNullException.ThrowIfNull(configuration);
-
-        return configuration with
-        {
-            Label = descriptor.Label,
-            AyahOverrides = [.. configuration.AyahOverrides.Distinct().Order()],
-            SelectedWords = NormalizeSelectedWords(configuration.SelectedWords),
-        };
-    }
-
-    private static IReadOnlyList<LinkingWorkspaceSelectedWordInput> NormalizeSelectedWords(
-        IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords)
-    {
-        var selectedByWordId = new Dictionary<int, LinkingWorkspaceSelectedWordInput>();
-
-        foreach (var selectedWord in selectedWords)
-        {
-            if (selectedByWordId.TryGetValue(selectedWord.QuranWordId, out var existing)
-                && existing.AyahId != selectedWord.AyahId)
-            {
-                throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                    LinkingWorkspaceViolationCode.SelectedWordAyahConflict,
-                    "initialConfiguration.selectedWords.quranWordId",
-                    selectedWord.QuranWordId.ToString(CultureInfo.InvariantCulture)));
-            }
-
-            selectedByWordId[selectedWord.QuranWordId] = selectedWord;
-        }
-
-        return [.. selectedByWordId.Values
-            .OrderBy(selectedWord => selectedWord.AyahId)
-            .ThenBy(selectedWord => selectedWord.QuranWordId)];
-    }
-
-    private static void EnsureConfigurationMembership(
-        bool isManual,
-        LinkingWorkspaceConfigurationInput configuration,
-        LinkingResolvedSourceCompact compact)
-    {
-        if (!Enum.IsDefined(configuration.InclusionMode)
-            || configuration.ManualLinkShape is { } manualLinkShape
-                && !Enum.IsDefined(manualLinkShape))
+        if (initialConfiguration.SourceKind != sourceKind)
         {
             throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
                 LinkingWorkspaceViolationCode.ConfigurationIncoherent,
@@ -112,6 +34,39 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 null));
         }
 
+        EnsureConfigurationMembership(initialConfiguration, compact);
+        await EnsureSelectedWordsAsync(initialConfiguration.SelectedWords, cancellationToken);
+
+        return initialConfiguration;
+    }
+
+    private async Task ApplyInitialConfigurationAsync(
+        long sourceId,
+        LinkingSourceConfiguration initialConfiguration,
+        int userId,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        await ReplaceOverridesAsync(
+            sourceId,
+            initialConfiguration.AyahOverrides,
+            cancellationToken);
+        await ReplaceSelectedWordsAsync(
+            sourceId,
+            initialConfiguration.SelectedWords,
+            cancellationToken);
+        await ReplaceDescriptionsAsync(
+            sourceId,
+            initialConfiguration.NormalizedDescriptions,
+            userId,
+            now,
+            cancellationToken);
+    }
+
+    private static void EnsureConfigurationMembership(
+        LinkingSourceConfiguration configuration,
+        LinkingResolvedSourceCompact compact)
+    {
         var memberIds = compact.AyahIds.ToHashSet();
         var invalidAyah = configuration.AyahOverrides
             .Concat(configuration.SelectedWords.Select(word => word.AyahId))
@@ -123,14 +78,6 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 LinkingWorkspaceViolationCode.AyahReferenceUnknown,
                 "initialConfiguration.ayahId",
                 invalidAyah.ToString(CultureInfo.InvariantCulture)));
-        }
-
-        if (!isManual && configuration.SelectedWords.Count > 0)
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource,
-                "initialConfiguration.selectedWords",
-                null));
         }
 
         var wordsByAyah = compact.Ayahs.ToDictionary(
@@ -183,7 +130,4 @@ internal sealed partial class EfLinkingWorkspaceWriter
         }
     }
 
-    private sealed record InitialConfiguration(
-        LinkingWorkspaceConfigurationInput Configuration,
-        IReadOnlyList<LinkingWorkspaceAyahDescriptions> Descriptions);
 }

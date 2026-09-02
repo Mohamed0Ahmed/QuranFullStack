@@ -156,14 +156,24 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             preflight.DoorId,
             preflight.LinkingDataRevision,
             preflight.RequestHash,
-            [.. sources.Select(source => new LinkingPreparedSourceWork(
-                source.Id,
-                source.OrderValue,
-                new LinkingPreparedInlineSource(
-                    LinkingPreparedSnapshotCodec.DecodeDescriptor(source.DescriptorDocumentJson),
-                    LinkingPreparedSnapshotCodec.DecodeConfiguration(
-                        source.ConfigurationDocumentJson,
-                        source.Label))))]);
+            [.. sources.Select(source =>
+            {
+                var descriptor = LinkingPreparedSnapshotCodec.DecodeDescriptor(
+                    source.DescriptorDocumentJson);
+                var configuration = LinkingPreparedSnapshotCodec.DecodeConfiguration(
+                    source.ConfigurationDocumentJson,
+                    descriptor.Kind);
+                if (descriptor.Kind != source.SourceKind
+                    || configuration.ContributionMode != source.ContributionMode)
+                {
+                    throw new InvalidDataException("The stored prepared linking source is incoherent.");
+                }
+
+                return new LinkingPreparedSourceWork(
+                    source.Id,
+                    source.OrderValue,
+                    new LinkingPreparedInlineSource(descriptor, configuration));
+            })]);
     }
 
     public async Task<bool> PublishProgressAsync(

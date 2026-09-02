@@ -86,7 +86,8 @@ internal static class LinkingPreparedPreflightBodyMapper
                     out var descriptor,
                     out _)
                 || !LinkingWorkspaceConfigurationBodyMapper.TryMap(
-                    ToWorkspaceBody(inline.Configuration, descriptor.Label),
+                    ToWorkspaceBody(inline.Configuration),
+                    descriptor.Kind,
                     out var configuration,
                     out _))
             {
@@ -108,13 +109,11 @@ internal static class LinkingPreparedPreflightBodyMapper
     }
 
     private static LinkingWorkspaceConfigurationBody? ToWorkspaceBody(
-        LinkingPreparedConfigurationBody? body,
-        string label) =>
+        LinkingPreparedConfigurationBody? body) =>
         body is null
             ? null
             : new LinkingWorkspaceConfigurationBody
             {
-                Label = label,
                 InclusionMode = body.InclusionMode,
                 AyahOverrides = body.AyahOverrideIds,
                 SelectedWords = body.SelectedWords,

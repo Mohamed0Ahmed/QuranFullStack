@@ -35,20 +35,13 @@ public static class LinkingPreparedPreflightRequestHasher
                                 source.InlineSource.Descriptor),
                             contributionIdentity = LinkingContributionIdentity.For(
                                 source.InlineSource.Descriptor,
-                                ContributionModeOf(source.InlineSource)),
+                                source.InlineSource.Configuration.ContributionMode),
                             source.InlineSource.Configuration.InclusionMode,
-                            ayahOverrideIds = source.InlineSource.Configuration.AyahOverrides
-                                .Distinct()
-                                .Order(),
-                            selectedWords = source.InlineSource.Configuration.SelectedWords
-                                .Distinct()
-                                .OrderBy(word => word.AyahId)
-                                .ThenBy(word => word.QuranWordId),
+                            ayahOverrideIds = source.InlineSource.Configuration.AyahOverrides,
+                            selectedWords = source.InlineSource.Configuration.SelectedWords,
                             source.InlineSource.Configuration.AutomaticWordMatchesEnabled,
                             source.InlineSource.Configuration.ManualLinkShape,
-                            descriptions = source.InlineSource.Configuration.Descriptions
-                                .OrderBy(description => description.AyahId)
-                                .ThenBy(description => description.OrderValue),
+                            descriptions = source.InlineSource.Configuration.Descriptions,
                         },
                 }),
         };
@@ -63,15 +56,4 @@ public static class LinkingPreparedPreflightRequestHasher
             SHA256.HashData(Encoding.UTF8.GetBytes(canonicalDocument)));
     }
 
-    public static LinkingContributionMode ContributionModeOf(LinkingPreparedInlineSource source)
-    {
-        if (source.Descriptor.Kind != Domain.Linking.LinkingSourceKind.ManualMushafAyahs)
-        {
-            return LinkingContributionMode.Automatic;
-        }
-
-        return source.Configuration.ManualLinkShape == Domain.Linking.LinkingManualLinkShape.Grouped
-            ? LinkingContributionMode.ManualGrouped
-            : LinkingContributionMode.ManualIndependent;
-    }
 }

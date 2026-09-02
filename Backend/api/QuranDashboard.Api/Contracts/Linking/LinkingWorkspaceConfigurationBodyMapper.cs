@@ -7,15 +7,14 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
 {
     internal static bool TryMapInitial(
         LinkingWorkspaceInitialConfigurationBody? body,
-        string label,
-        out LinkingWorkspaceConfigurationInput configuration,
-        out LinkingDescriptorViolation violation) =>
+        LinkingSourceKind sourceKind,
+        out LinkingSourceConfiguration configuration,
+        out string errorMessage) =>
         TryMap(
             body is null
                 ? null
                 : new LinkingWorkspaceConfigurationBody
                 {
-                    Label = label,
                     InclusionMode = body.InclusionMode,
                     AyahOverrides = body.AyahOverrides,
                     SelectedWords = body.SelectedWords,
@@ -23,26 +22,29 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
                     ManualLinkShape = body.ManualLinkShape,
                     Descriptions = body.Descriptions,
                 },
+            sourceKind,
             out configuration,
-            out violation);
+            out errorMessage);
 
     internal static bool TryMap(
         LinkingWorkspaceConfigurationBody? body,
-        out LinkingWorkspaceConfigurationInput configuration,
-        out LinkingDescriptorViolation violation)
+        LinkingSourceKind sourceKind,
+        out LinkingSourceConfiguration configuration,
+        out string errorMessage)
     {
         configuration = null!;
-        violation = null!;
+        errorMessage = string.Empty;
 
         if (body is null)
         {
-            violation = LinkingBodyViolations.Malformed("body");
+            errorMessage = MalformedMessage(LinkingBodyViolations.Malformed("body"));
             return false;
         }
 
         if (!LinkingWorkspaceTokens.TryParseInclusionMode(body.InclusionMode, out var inclusionMode))
         {
-            violation = LinkingBodyViolations.Malformed("inclusionMode", body.InclusionMode);
+            errorMessage = MalformedMessage(
+                LinkingBodyViolations.Malformed("inclusionMode", body.InclusionMode));
             return false;
         }
 
@@ -51,7 +53,8 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
         {
             if (!LinkingWorkspaceTokens.TryParseManualLinkShape(body.ManualLinkShape, out var parsedShape))
             {
-                violation = LinkingBodyViolations.Malformed("manualLinkShape", body.ManualLinkShape);
+                errorMessage = MalformedMessage(
+                    LinkingBodyViolations.Malformed("manualLinkShape", body.ManualLinkShape));
                 return false;
             }
 
@@ -63,15 +66,15 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
         {
             if (selectedWord?.AyahId is not > 0)
             {
-                violation = LinkingBodyViolations.Malformed(
-                    "selectedWords.ayahId", LinkingBodyViolations.Text(selectedWord?.AyahId));
+                errorMessage = MalformedMessage(LinkingBodyViolations.Malformed(
+                    "selectedWords.ayahId", LinkingBodyViolations.Text(selectedWord?.AyahId)));
                 return false;
             }
 
             if (selectedWord.QuranWordId is not > 0)
             {
-                violation = LinkingBodyViolations.Malformed(
-                    "selectedWords.quranWordId", LinkingBodyViolations.Text(selectedWord.QuranWordId));
+                errorMessage = MalformedMessage(LinkingBodyViolations.Malformed(
+                    "selectedWords.quranWordId", LinkingBodyViolations.Text(selectedWord.QuranWordId)));
                 return false;
             }
 
@@ -83,8 +86,8 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
         {
             if (ayahId <= 0)
             {
-                violation = LinkingBodyViolations.Malformed(
-                    "ayahOverrides", LinkingBodyViolations.Text(ayahId));
+                errorMessage = MalformedMessage(LinkingBodyViolations.Malformed(
+                    "ayahOverrides", LinkingBodyViolations.Text(ayahId)));
                 return false;
             }
         }
@@ -94,15 +97,15 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
         {
             if (description?.AyahId is not > 0)
             {
-                violation = LinkingBodyViolations.Malformed(
-                    "descriptions.ayahId", LinkingBodyViolations.Text(description?.AyahId));
+                errorMessage = MalformedMessage(LinkingBodyViolations.Malformed(
+                    "descriptions.ayahId", LinkingBodyViolations.Text(description?.AyahId)));
                 return false;
             }
 
             if (description.OrderValue is not > 0)
             {
-                violation = LinkingBodyViolations.Malformed(
-                    "descriptions.orderValue", LinkingBodyViolations.Text(description.OrderValue));
+                errorMessage = MalformedMessage(LinkingBodyViolations.Malformed(
+                    "descriptions.orderValue", LinkingBodyViolations.Text(description.OrderValue)));
                 return false;
             }
 
@@ -110,15 +113,24 @@ internal static class LinkingWorkspaceConfigurationBodyMapper
                 description.AyahId.Value, description.OrderValue.Value, description.Body ?? string.Empty));
         }
 
-        configuration = new LinkingWorkspaceConfigurationInput(
-            body.Label ?? string.Empty,
+        if (!LinkingSourceConfiguration.TryCreate(
+            sourceKind,
             inclusionMode,
             [.. body.AyahOverrides ?? []],
             selectedWords,
             body.AutomaticWordMatchesEnabled,
             manualLinkShape,
-            descriptions);
+            descriptions,
+            out configuration,
+            out var configurationViolation))
+        {
+            errorMessage = ApiMessages.LinkingWorkspaceViolationMessage(configurationViolation);
+            return false;
+        }
 
         return true;
     }
+
+    private static string MalformedMessage(LinkingDescriptorViolation violation) =>
+        ApiMessages.LinkingDescriptorViolationMessage(violation);
 }
