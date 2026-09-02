@@ -18,7 +18,10 @@ import { MissingSurahsListComponent } from '../../components/missing-surahs-list
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { AyahMatchDto } from '../../models/unique-words.models';
-import { WORD_TYPE_DETAIL_PRESENTATIONS, WORD_TYPES_NOT_FOUND_LABEL } from '../../models/word-types.labels';
+import {
+  WORD_TYPE_DETAIL_PRESENTATIONS,
+  WORD_TYPES_NOT_FOUND_LABEL,
+} from '../../models/word-types.labels';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
@@ -31,7 +34,6 @@ import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.m
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayHeaderStore } from '../entity-detail-overlay-header.store';
-import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-word-type-detail-overlay-adapter',
@@ -67,19 +69,6 @@ export class WordTypeDetailOverlayAdapterComponent {
   readonly entityTitle = computed(() => this.panelState().summary?.displayText ?? '');
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
-
-  protected readonly linkingSource = computed(() => {
-    const selection = this.panelState().selection;
-    const summary = this.panelState().summary;
-    if (selection === null || selection.kind !== 'word' || summary === null) {
-      return null;
-    }
-    return {
-      kind: 'word-type',
-      selection: { kind: 'word', ...selection.identity, scope: { ...selection.scope } },
-      label: summary.displayText,
-    } satisfies LinkingSourceDescriptor;
-  });
 
   protected readonly effectiveView = computed<WordTypeDetailView>(() =>
     this.frame().view === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : this.frame().view,
@@ -145,7 +134,6 @@ export class WordTypeDetailOverlayAdapterComponent {
 
     effect(() => this.headerStore?.setTitle(this.entityTitle()));
     effect(() => this.headerStore?.setAyahCount(this.entityAyahCount()));
-    effect(() => this.headerStore?.setLinkingSource(this.linkingSource()));
     inject(DestroyRef).onDestroy(() => this.headerStore?.clear());
   }
 

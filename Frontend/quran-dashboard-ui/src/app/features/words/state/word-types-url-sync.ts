@@ -1,6 +1,7 @@
 import { ParamMap } from '@angular/router';
 
 import { wordTypesRoutePath } from '../../../core/navigation/route-paths';
+import { parseWordsPositiveSafeInteger } from './words-route-integer';
 import {
   DEFAULT_WORD_TYPE,
   DEFAULT_WORD_TYPE_CASE,
@@ -48,14 +49,19 @@ const EMPTY_DETAIL_SCOPE: ParsedDetailScope = {
 
 export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordTypesQuery {
   const typeRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.type);
-  const type: WordTypeMainType = typeRaw !== null && isWordTypeMainType(typeRaw) ? typeRaw : DEFAULT_WORD_TYPE;
+  const type: WordTypeMainType =
+    typeRaw !== null && isWordTypeMainType(typeRaw) ? typeRaw : DEFAULT_WORD_TYPE;
   const childCode = normalizeChildCode(type, queryParams.get(WORD_TYPES_QUERY_KEYS.childCode));
   const tableView = normalizeTableView(queryParams.get(WORD_TYPES_QUERY_KEYS.tableView));
 
   const parsedIdentity = parseDetailIdentity(queryParams);
-  const view = normalizeView(parsedIdentity.kind, tableView, queryParams.get(WORD_TYPES_QUERY_KEYS.view));
-  const wordRouteState = parsedIdentity.kind === 'word'
-    || (parsedIdentity.kind === null && tableView === 'words');
+  const view = normalizeView(
+    parsedIdentity.kind,
+    tableView,
+    queryParams.get(WORD_TYPES_QUERY_KEYS.view),
+  );
+  const wordRouteState =
+    parsedIdentity.kind === 'word' || (parsedIdentity.kind === null && tableView === 'words');
   const detailScope = parseDetailScope(queryParams);
 
   return {
@@ -74,7 +80,9 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     // Canonicalizes legacy aliases in (occurrences-desc → occurrences) and fails closed to the
     // default on anything unknown, so one ordering can never be cached under two tokens.
     sort: normalizeWordTypeSort(queryParams.get(WORD_TYPES_QUERY_KEYS.sort)),
-    page: parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ?? DEFAULT_WORD_TYPES_PAGE,
+    page:
+      parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.page)) ??
+      DEFAULT_WORD_TYPES_PAGE,
     word: parsedIdentity.word,
     root: parsedIdentity.root,
     stem: parsedIdentity.stem,
@@ -83,10 +91,14 @@ export function parseWordTypesQueryParams(queryParams: ParamMap): ParsedWordType
     tashkeelWordId: parsedIdentity.word ?? 0,
     contextCode: parsedIdentity.contextCode,
     view,
-    detailPage: view === 'surahs'
-      ? DEFAULT_WORD_TYPES_DETAIL_PAGE
-      : parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ?? DEFAULT_WORD_TYPES_DETAIL_PAGE,
-    location: wordRouteState ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location)) : null,
+    detailPage:
+      view === 'surahs'
+        ? DEFAULT_WORD_TYPES_DETAIL_PAGE
+        : (parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.detailPage)) ??
+          DEFAULT_WORD_TYPES_DETAIL_PAGE),
+    location: wordRouteState
+      ? normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.location))
+      : null,
     column: normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.column)),
   };
 }
@@ -149,7 +161,9 @@ const WORD_TYPES_QUERY_ORDER = [
   'column',
 ] as const satisfies readonly (keyof WordTypesQueryChange)[];
 
-export function buildWordTypesQueryParams(changes: WordTypesQueryChange): Record<string, string | null> {
+export function buildWordTypesQueryParams(
+  changes: WordTypesQueryChange,
+): Record<string, string | null> {
   const params: Record<string, string | null> = {};
   for (const key of WORD_TYPES_QUERY_ORDER) {
     if (!Object.prototype.hasOwnProperty.call(changes, key)) {
@@ -197,12 +211,20 @@ export function clearWordTypesSelection(): Record<string, string | null> {
   });
 }
 
-export function canonicalWordTypesDetailPage(view: WordTypeDetailView, page: number | string): string | null {
-  const normalizedPage = typeof page === 'string'
-    ? parsePositiveInt(page)
-    : Number.isInteger(page) && page > 0 ? page : null;
+export function canonicalWordTypesDetailPage(
+  view: WordTypeDetailView,
+  page: number | string,
+): string | null {
+  const normalizedPage =
+    typeof page === 'string'
+      ? parseWordsPositiveSafeInteger(page)
+      : Number.isSafeInteger(page) && page > 0
+        ? page
+        : null;
 
-  return view === 'surahs' || normalizedPage === null || normalizedPage <= DEFAULT_WORD_TYPES_DETAIL_PAGE
+  return view === 'surahs' ||
+    normalizedPage === null ||
+    normalizedPage <= DEFAULT_WORD_TYPES_DETAIL_PAGE
     ? null
     : String(normalizedPage);
 }
@@ -212,16 +234,22 @@ export interface WordTypesDeepLinkTarget {
   queryParams: Record<string, string | null>;
 }
 
-export function buildWordTypesDeepLink(options: WordTypesQueryChange = {}): WordTypesDeepLinkTarget {
+export function buildWordTypesDeepLink(
+  options: WordTypesQueryChange = {},
+): WordTypesDeepLinkTarget {
   const tableView = options.tableView ?? DEFAULT_WORD_TYPE_TABLE_VIEW;
   const view = options.view ?? defaultViewForTableView(tableView);
-  const detailPage = options.detailPage === undefined || options.detailPage === null
-    ? options.detailPage
-    : canonicalWordTypesDetailPage(view, options.detailPage);
+  const detailPage =
+    options.detailPage === undefined || options.detailPage === null
+      ? options.detailPage
+      : canonicalWordTypesDetailPage(view, options.detailPage);
 
   return {
     path: wordTypesRoutePath(),
-    queryParams: buildWordTypesQueryParams({ ...options, ...(detailPage === undefined ? {} : { detailPage }) }),
+    queryParams: buildWordTypesQueryParams({
+      ...options,
+      ...(detailPage === undefined ? {} : { detailPage }),
+    }),
   };
 }
 
@@ -250,9 +278,12 @@ function parseDetailScope(queryParams: ParamMap): ParsedDetailScope {
   const detailTenseRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailTense);
   const detailVoiceRaw = queryParams.get(WORD_TYPES_QUERY_KEYS.detailVoice);
   if (
-    detailCaseRaw === null || !isWordTypeCase(detailCaseRaw)
-    || detailTenseRaw === null || !isWordTypeTense(detailTenseRaw)
-    || detailVoiceRaw === null || !isWordTypeVoice(detailVoiceRaw)
+    detailCaseRaw === null ||
+    !isWordTypeCase(detailCaseRaw) ||
+    detailTenseRaw === null ||
+    !isWordTypeTense(detailTenseRaw) ||
+    detailVoiceRaw === null ||
+    !isWordTypeVoice(detailVoiceRaw)
   ) {
     return EMPTY_DETAIL_SCOPE;
   }
@@ -262,12 +293,14 @@ function parseDetailScope(queryParams: ParamMap): ParsedDetailScope {
     return EMPTY_DETAIL_SCOPE;
   }
 
-  const detailChildCodeRaw = normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.detailChildCode));
+  const detailChildCodeRaw = normalizeOptionalText(
+    queryParams.get(WORD_TYPES_QUERY_KEYS.detailChildCode),
+  );
   const detailChildCode = normalizeChildCode(detailTypeRaw, detailChildCodeRaw);
   if (
-    (detailTypeRaw === 'inl' && detailChildCodeRaw !== null)
-    || (detailTypeRaw !== 'inl' && detailChildCode === null)
-    || !hasCompatibleDetailFeatures(detailTypeRaw, detailCaseRaw, detailTenseRaw, detailVoiceRaw)
+    (detailTypeRaw === 'inl' && detailChildCodeRaw !== null) ||
+    (detailTypeRaw !== 'inl' && detailChildCode === null) ||
+    !hasCompatibleDetailFeatures(detailTypeRaw, detailCaseRaw, detailTenseRaw, detailVoiceRaw)
   ) {
     return EMPTY_DETAIL_SCOPE;
   }
@@ -288,26 +321,36 @@ function hasCompatibleDetailFeatures(
   voice: WordTypeVoice,
 ): boolean {
   switch (type) {
-    case 'noun': return tense === DEFAULT_WORD_TYPE_TENSE && voice === DEFAULT_WORD_TYPE_VOICE;
-    case 'verb': return caseValue === DEFAULT_WORD_TYPE_CASE;
+    case 'noun':
+      return tense === DEFAULT_WORD_TYPE_TENSE && voice === DEFAULT_WORD_TYPE_VOICE;
+    case 'verb':
+      return caseValue === DEFAULT_WORD_TYPE_CASE;
     case 'particle':
     case 'inl':
-      return caseValue === DEFAULT_WORD_TYPE_CASE
-        && tense === DEFAULT_WORD_TYPE_TENSE
-        && voice === DEFAULT_WORD_TYPE_VOICE;
+      return (
+        caseValue === DEFAULT_WORD_TYPE_CASE &&
+        tense === DEFAULT_WORD_TYPE_TENSE &&
+        voice === DEFAULT_WORD_TYPE_VOICE
+      );
   }
 }
 
 function normalizeCase(type: WordTypeMainType, value: string | null): WordTypeCase {
-  return type === 'noun' && value !== null && isWordTypeCase(value) ? value : DEFAULT_WORD_TYPE_CASE;
+  return type === 'noun' && value !== null && isWordTypeCase(value)
+    ? value
+    : DEFAULT_WORD_TYPE_CASE;
 }
 
 function normalizeTense(type: WordTypeMainType, value: string | null): WordTypeTense {
-  return type === 'verb' && value !== null && isWordTypeTense(value) ? value : DEFAULT_WORD_TYPE_TENSE;
+  return type === 'verb' && value !== null && isWordTypeTense(value)
+    ? value
+    : DEFAULT_WORD_TYPE_TENSE;
 }
 
 function normalizeVoice(type: WordTypeMainType, value: string | null): WordTypeVoice {
-  return type === 'verb' && value !== null && isWordTypeVoice(value) ? value : DEFAULT_WORD_TYPE_VOICE;
+  return type === 'verb' && value !== null && isWordTypeVoice(value)
+    ? value
+    : DEFAULT_WORD_TYPE_VOICE;
 }
 
 function normalizeTableView(value: string | null): WordTypeTableView {
@@ -320,7 +363,9 @@ function normalizeView(
   value: string | null,
 ): WordTypeDetailView {
   const wordDetail = detailKind === 'word' || (detailKind === null && tableView === 'words');
-  const defaultView = wordDetail ? DEFAULT_WORD_TYPES_DETAIL_VIEW : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
+  const defaultView = wordDetail
+    ? DEFAULT_WORD_TYPES_DETAIL_VIEW
+    : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
   const normalized = value !== null && isWordTypeDetailView(value) ? value : defaultView;
   return wordDetail && normalized === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : normalized;
 }
@@ -335,15 +380,16 @@ interface ParsedDetailIdentity {
 }
 
 function parseDetailIdentity(queryParams: ParamMap): ParsedDetailIdentity {
-  const word = parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.word));
-  const contextCode = word === null
-    ? ''
-    : normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '';
+  const word = parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.word));
+  const contextCode =
+    word === null
+      ? ''
+      : (normalizeOptionalText(queryParams.get(WORD_TYPES_QUERY_KEYS.contextCode)) ?? '');
   const candidates: ReadonlyArray<readonly [WordTypeDetailSelectionKind, number | null]> = [
     ['word', contextCode.length > 0 ? word : null],
-    ['root', parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.root))],
-    ['stem', parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.stem))],
-    ['lemma', parsePositiveInt(queryParams.get(WORD_TYPES_QUERY_KEYS.lemma))],
+    ['root', parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.root))],
+    ['stem', parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.stem))],
+    ['lemma', parseWordsPositiveSafeInteger(queryParams.get(WORD_TYPES_QUERY_KEYS.lemma))],
   ];
   const selected = candidates.filter((candidate) => candidate[1] !== null);
   const kind = selected.length === 1 ? selected[0][0] : null;
@@ -359,11 +405,9 @@ function parseDetailIdentity(queryParams: ParamMap): ParsedDetailIdentity {
 }
 
 function defaultViewForTableView(tableView: WordTypeTableView): WordTypeDetailView {
-  return tableView === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
-}
-
-function parsePositiveInt(value: string | null): number | null {
-  return value !== null && /^[1-9]\d*$/.test(value) ? Number.parseInt(value, 10) : null;
+  return tableView === 'words'
+    ? DEFAULT_WORD_TYPES_DETAIL_VIEW
+    : DEFAULT_GROUPED_WORD_TYPES_DETAIL_VIEW;
 }
 
 function parseTriState(value: string | null): boolean | null {

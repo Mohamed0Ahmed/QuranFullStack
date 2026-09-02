@@ -2,7 +2,7 @@ import { ParamMap } from '@angular/router';
 
 import { lemmasRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
-import { parsePositiveIntParam } from './words-association-filters';
+import { parseWordsPositiveSafeInteger } from './words-route-integer';
 
 import {
   DEFAULT_LEMMA_DETAIL_PAGE,
@@ -30,14 +30,15 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
   // default on anything unknown, so one ordering can never be cached under two tokens.
   const sort: LemmaSort = normalizeLemmaSort(queryParams.get(LEMMAS_QUERY_KEYS.sort));
 
-  const page = parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.page)) ?? DEFAULT_LEMMAS_LIST_PAGE;
+  const page =
+    parseWordsPositiveSafeInteger(queryParams.get(LEMMAS_QUERY_KEYS.page)) ??
+    DEFAULT_LEMMAS_LIST_PAGE;
 
   const lemmaRaw = queryParams.get(LEMMAS_QUERY_KEYS.lemma);
-  const lemmaId = lemmaRaw === null ? null : parsePositiveInt(lemmaRaw);
+  const lemmaId = lemmaRaw === null ? null : parseWordsPositiveSafeInteger(lemmaRaw);
 
   const viewRaw = lemmaId !== null ? queryParams.get(LEMMAS_QUERY_KEYS.view) : null;
-  const view: LemmaView =
-    viewRaw !== null && isLemmaView(viewRaw) ? viewRaw : DEFAULT_LEMMA_VIEW;
+  const view: LemmaView = viewRaw !== null && isLemmaView(viewRaw) ? viewRaw : DEFAULT_LEMMA_VIEW;
 
   const wordViewRaw = view === 'words' ? queryParams.get(LEMMAS_QUERY_KEYS.wordView) : null;
   const wordView: LemmaWordView =
@@ -45,15 +46,17 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
 
   const surahViewRaw = view === 'surahs' ? queryParams.get(LEMMAS_QUERY_KEYS.surahView) : null;
   const surahView: LemmaSurahView =
-    surahViewRaw !== null && isLemmaSurahView(surahViewRaw) ? surahViewRaw : DEFAULT_LEMMA_SURAHS_VIEW;
+    surahViewRaw !== null && isLemmaSurahView(surahViewRaw)
+      ? surahViewRaw
+      : DEFAULT_LEMMA_SURAHS_VIEW;
 
   const detailPage = isPaginatedLemmaView(view)
-    ? parsePositiveInt(queryParams.get(LEMMAS_QUERY_KEYS.detailPage)) ?? DEFAULT_LEMMA_DETAIL_PAGE
+    ? (parseWordsPositiveSafeInteger(queryParams.get(LEMMAS_QUERY_KEYS.detailPage)) ??
+      DEFAULT_LEMMA_DETAIL_PAGE)
     : DEFAULT_LEMMA_DETAIL_PAGE;
 
-  const typeCodeRaw = view === 'ayahs' || view === 'words'
-    ? queryParams.get(LEMMAS_QUERY_KEYS.typeCode)
-    : null;
+  const typeCodeRaw =
+    view === 'ayahs' || view === 'words' ? queryParams.get(LEMMAS_QUERY_KEYS.typeCode) : null;
   const typeCode = normalizeOptionalText(typeCodeRaw);
 
   return {
@@ -61,7 +64,9 @@ export function parseLemmasQueryParams(queryParams: ParamMap): ParsedLemmasQuery
     sort,
     page,
     ranges: parseRangeFilters(queryParams, LEMMAS_RANGE_METRICS),
-    association: { rootId: parsePositiveIntParam(queryParams.get(LEMMAS_QUERY_KEYS.rootId)) },
+    association: {
+      rootId: parseWordsPositiveSafeInteger(queryParams.get(LEMMAS_QUERY_KEYS.rootId)),
+    },
     lemmaId,
     view,
     column: queryParams.get(LEMMAS_QUERY_KEYS.column),
@@ -141,14 +146,6 @@ export function buildLemmasDeepLink(options: LemmasQueryChange = {}): LemmasDeep
     path: lemmasRoutePath(),
     queryParams: buildLemmasQueryParams(options),
   };
-}
-
-function parsePositiveInt(value: string | null): number | null {
-  if (value === null || !/^[1-9]\d*$/.test(value)) {
-    return null;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return parsed;
 }
 
 function normalizeOptionalText(value: string | null): string | null {
