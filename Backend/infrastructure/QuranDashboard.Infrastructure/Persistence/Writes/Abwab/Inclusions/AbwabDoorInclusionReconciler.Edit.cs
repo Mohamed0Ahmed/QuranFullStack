@@ -4,7 +4,7 @@ using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
     private async Task<IReadOnlyList<long>> EditSourceUnitsAsync(
         AbwabDoorInclusionEdgeContext context,
@@ -21,7 +21,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         }
 
         var orderedSourceUnitIds = sourceUnitIds.Distinct().Order().ToArray();
-        var snapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
+        var snapshots = await SourceSnapshot.LoadAsync(
             db,
             orderedSourceUnitIds,
             cancellationToken);
@@ -32,13 +32,13 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .ToListAsync(cancellationToken);
         if (snapshots.Count != orderedSourceUnitIds.Length || syncs.Count != orderedSourceUnitIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var changedActiveSyncs = new List<AbwabDoorInclusionUnitSync>();
         foreach (var sync in syncs)
         {
-            var fingerprint = AbwabDoorInclusionFingerprint.Compute(snapshots[sync.SourceUnitId]);
+            var fingerprint = SourceFingerprint.Compute(snapshots[sync.SourceUnitId]);
             if (sync.SourceFingerprint.AsSpan().SequenceEqual(fingerprint))
             {
                 continue;
@@ -51,7 +51,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             {
                 if (sync.TargetUnitId is null)
                 {
-                    throw new AbwabDoorInclusionSynchronizationConflictException();
+                    throw new AbwabDoorInclusionReconciliationConflictException();
                 }
 
                 changedActiveSyncs.Add(sync);
@@ -65,7 +65,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         }
 
         var targetUnitIds = changedActiveSyncs.Select(sync => sync.TargetUnitId!.Value).Order().ToArray();
-        var previousTargetSnapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
+        var previousTargetSnapshots = await SourceSnapshot.LoadAsync(
             db,
             targetUnitIds,
             cancellationToken);
@@ -75,7 +75,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .ToListAsync(cancellationToken);
         if (previousTargetSnapshots.Count != targetUnitIds.Length || targetUnits.Count != targetUnitIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var sourceUnitIdByTargetUnitId = changedActiveSyncs.ToDictionary(

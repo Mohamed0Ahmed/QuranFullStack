@@ -1,8 +1,6 @@
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
-
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
     private async Task ReconcileSourceUnitReplacementsAsync(
         int inclusionId,
@@ -26,7 +24,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         if (previousUnitIds.Any(previousUnitId => !syncsBySourceUnitId.ContainsKey(previousUnitId))
             || currentUnitIds.Any(syncsBySourceUnitId.ContainsKey))
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         foreach (var replacement in replacements.OrderBy(replacement => replacement.PreviousUnitId))

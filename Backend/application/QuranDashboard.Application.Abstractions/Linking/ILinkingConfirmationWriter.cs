@@ -28,4 +28,8 @@ public abstract record LinkingConfirmationWriteResult
         bool IsReplay) : LinkingConfirmationWriteResult;
 
     public sealed record DoorNotFound(int DoorId) : LinkingConfirmationWriteResult;
+
+    public sealed record Stale : LinkingConfirmationWriteResult;
+
+    public sealed record SynchronizationUnavailable : LinkingConfirmationWriteResult;
 }

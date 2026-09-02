@@ -1,6 +1,6 @@
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
     private const int TraversalBatchSize = 500;
 
@@ -31,8 +31,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                 .Select(inclusion => new AbwabDoorInclusionTraversalEdge(
                     inclusion.Id,
                     inclusion.SourceDoorId,
-                    inclusion.TargetDoorId,
-                    0))
+                    inclusion.TargetDoorId))
                 .ToListAsync(cancellationToken);
 
             foreach (var edge in edges)
@@ -100,13 +99,11 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .OrderBy(edge => orderByDoorId[edge.TargetDoorId])
             .ThenBy(edge => orderByDoorId[edge.SourceDoorId])
             .ThenBy(edge => edge.InclusionId)
-            .Select(edge => edge with { Sequence = orderByDoorId[edge.TargetDoorId] })
             .ToArray();
     }
 
     private sealed record AbwabDoorInclusionTraversalEdge(
         int InclusionId,
         int SourceDoorId,
-        int TargetDoorId,
-        int Sequence);
+        int TargetDoorId);
 }

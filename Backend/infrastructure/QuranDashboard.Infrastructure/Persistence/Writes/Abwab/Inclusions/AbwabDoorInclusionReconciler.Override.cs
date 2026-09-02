@@ -4,9 +4,9 @@ using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
-    public async Task MarkTargetUnitOverriddenAsync(
+    private async Task MarkTargetUnitOverriddenAsync(
         int targetDoorId,
         long targetUnitId,
         int actorUserId,
@@ -37,7 +37,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         if (sync.State is not AbwabDoorInclusionSyncState.Active
             and not AbwabDoorInclusionSyncState.Overridden)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var ownsTargetUnit = await (
@@ -57,7 +57,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .AnyAsync(cancellationToken);
         if (!ownsTargetUnit)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         sync.State = AbwabDoorInclusionSyncState.Overridden;
