@@ -1,13 +1,11 @@
 import { LinkingSourceDescriptorBody } from '../../../core/api/generated/models/linking-source-descriptor-body';
 import { LinkingWordTypeSelectionBody } from '../../../core/api/generated/models/linking-word-type-selection-body';
-import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import {
   isLinkingSourceDescriptor,
   LinkingSourceDescriptor,
   LinkingWordTypeSelection,
 } from '../models/linking-source.models';
-import { manualMushafVerseKeys } from './manual-link-shape';
-import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export function toLinkingSourceDescriptorBody(
   source: LinkingSourceDescriptor,
@@ -32,7 +30,7 @@ export function toLinkingSourceDescriptorBody(
       return {
         ...body,
         contextKey: source.contextKey,
-        manualAyahs: manualMushafVerseKeys(source).map((verseKey) => ({ verseKey })),
+        manualAyahs: source.verseKeys.map((verseKey) => ({ verseKey })),
       };
     case 'unique-word':
       return { ...body, mode: source.mode, wordId: source.wordId, typeCodes: [...source.typeCodes] };
@@ -49,23 +47,23 @@ export function toLinkingSourceDescriptorBody(
 
 export function fromLinkingSourceDescriptorBody(
   body: LinkingSourceDescriptorBody,
-  manualAyahs: readonly LinkingManualMushafAyahReference[],
+  verseKeys: readonly QuranVerseKey[],
 ): LinkingSourceDescriptor | null {
-  const candidate = toDescriptorCandidate(body, manualAyahs);
+  const candidate = toDescriptorCandidate(body, verseKeys);
   return isLinkingSourceDescriptor(candidate) ? candidate : null;
 }
 
 function toDescriptorCandidate(
   body: LinkingSourceDescriptorBody,
-  manualAyahs: readonly LinkingManualMushafAyahReference[],
+  verseKeys: readonly QuranVerseKey[],
 ): unknown {
   const label = body.label;
   switch (body.kind) {
     case 'manual-mushaf-ayahs':
-      if (!manualDescriptorMatchesRows(body, manualAyahs)) {
+      if (!manualDescriptorMatchesRows(body, verseKeys)) {
         return null;
       }
-      return { kind: body.kind, label, manualAyahs, contextKey: body.contextKey };
+      return { kind: body.kind, label, verseKeys, contextKey: body.contextKey };
     case 'unique-word':
       return {
         kind: body.kind,
@@ -89,9 +87,9 @@ function toDescriptorCandidate(
 
 function manualDescriptorMatchesRows(
   body: LinkingSourceDescriptorBody,
-  manualAyahs: readonly LinkingManualMushafAyahReference[],
+  verseKeys: readonly QuranVerseKey[],
 ): boolean {
-  if (body.manualAyahs === null || body.manualAyahs.length !== manualAyahs.length) {
+  if (body.manualAyahs === null || body.manualAyahs.length !== verseKeys.length) {
     return false;
   }
 
@@ -99,7 +97,7 @@ function manualDescriptorMatchesRows(
     const parsed = parseQuranVerseKey(stored.verseKey);
     return parsed !== null &&
       parsed.key === stored.verseKey &&
-      parsed.key === manualAyahs[index]?.verseKey;
+      parsed.key === verseKeys[index];
   });
 }
 

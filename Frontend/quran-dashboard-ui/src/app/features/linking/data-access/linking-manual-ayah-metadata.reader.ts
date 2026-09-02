@@ -5,7 +5,6 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { MushafAyahStudyApi } from '../../mushaf/data-access/mushaf-ayah-study.api';
 import { AyahCoreDto } from '../../mushaf/models/mushaf.models';
 import { MushafReaderCache, MushafReaderCacheKeys } from '../../mushaf/state/mushaf-reader-cache';
-import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 const METADATA_READ_SOURCES = {
@@ -15,7 +14,6 @@ const METADATA_READ_SOURCES = {
 } as const;
 
 export interface LinkingManualAyahMetadata {
-  readonly reference: LinkingManualMushafAyahReference;
   readonly surahNameArabic: string;
   readonly ayahNumber: number;
   readonly textUthmani: string;
@@ -51,11 +49,6 @@ function validateCoreResponse(
 function toManualMetadata(ayah: AyahCoreDto & { verseKey: QuranVerseKey }): LinkingManualAyahMetadata {
   const display = splitAyahMarker(ayah.textUthmani, ayah.ayahNumber);
   return {
-    reference: {
-      verseKey: ayah.verseKey,
-      pageNumber: ayah.pageFrom,
-      displayHint: ayah.verseKey,
-    },
     surahNameArabic: ayah.surahNameArabic,
     ayahNumber: ayah.ayahNumber,
     textUthmani: display.text,

@@ -1,5 +1,5 @@
-import { LinkingManualMushafAyahReference } from '../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../linking/models/linking-source-launch.models';
+import { ManualLinkingSourceFactory } from '../../linking/utils/manual-linking-source.factory';
 import {
   AyahCoreDto,
   MutashabihatOccurrenceDto,
@@ -20,9 +20,7 @@ export function createSimilarAyahsLinkingLaunch(
   if (!selectedVerse) {
     return null;
   }
-  const manualAyahs = new Map<QuranVerseKey, LinkingManualMushafAyahReference>([
-    [selectedVerse, toReference(selectedVerse, selectedAyah.pageFrom)],
-  ]);
+  const verseKeys = new Set<QuranVerseKey>([selectedVerse]);
 
   for (const relatedAyah of selectedRelatedAyahs) {
     const relatedVerse = canonicalVerseKey(relatedAyah.targetVerseKey);
@@ -30,30 +28,20 @@ export function createSimilarAyahsLinkingLaunch(
       return null;
     }
     if (relatedVerse !== selectedVerse) {
-      manualAyahs.set(relatedVerse, toReference(relatedVerse, relatedAyah.pageNumber));
+      verseKeys.add(relatedVerse);
     }
   }
 
-  if (manualAyahs.size < 2) {
+  if (verseKeys.size < 2) {
     return null;
   }
 
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `الآيات القريبة من الآية ${selectedAyah.ayahNumber} سورة ${selectedAyah.surahNameArabic}`,
-      contextKey: `mushaf-similar-ayahs:${selectedAyah.verseKey}`,
-      manualAyahs: [...manualAyahs.values()],
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords: [],
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `الآيات القريبة من الآية ${selectedAyah.ayahNumber} سورة ${selectedAyah.surahNameArabic}`,
+    contextKey: `mushaf-similar-ayahs:${selectedAyah.verseKey}`,
+    verseKeys: [...verseKeys],
+    configuration: 'explicit',
+  });
 }
 
 export function createMutashabihatLinkingLaunch(
@@ -68,7 +56,7 @@ export function createMutashabihatLinkingLaunch(
     return null;
   }
 
-  const ayahs = new Map<number, { reference: LinkingManualMushafAyahReference; wordIds: Set<number> }>();
+  const ayahs = new Map<number, { verseKey: QuranVerseKey; wordIds: Set<number> }>();
   const sourceGroupIds = new Set<number>();
 
   for (const selectedOccurrence of selectedOccurrences) {
@@ -83,19 +71,18 @@ export function createMutashabihatLinkingLaunch(
 
     sourceGroupIds.add(sourceGroupId);
     const existing = ayahs.get(occurrence.ayahId);
-    if (existing !== undefined && existing.reference.verseKey !== occurrence.verseKey) {
+    if (existing !== undefined && existing.verseKey !== occurrence.verseKey) {
       return null;
     }
 
     const member = existing ?? {
-      reference: toReference(occurrenceVerse, occurrence.pageNumber),
+      verseKey: occurrenceVerse,
       wordIds: new Set<number>(),
     };
     occurrence.matchedQuranWordIds.forEach((wordId) => member.wordIds.add(wordId));
     ayahs.set(occurrence.ayahId, member);
   }
 
-  const manualAyahs = [...ayahs.values()].map((ayah) => ayah.reference);
   const selectedWords = [...ayahs.entries()]
     .sort(([leftAyahId], [rightAyahId]) => leftAyahId - rightAyahId)
     .flatMap(([ayahId, ayah]) =>
@@ -105,37 +92,17 @@ export function createMutashabihatLinkingLaunch(
     );
   const groups = [...sourceGroupIds].sort((leftGroupId, rightGroupId) => leftGroupId - rightGroupId);
 
-  if (manualAyahs.length === 0 || selectedWords.length === 0 || groups.length === 0) {
+  if (ayahs.size === 0 || selectedWords.length === 0 || groups.length === 0) {
     return null;
   }
 
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `متشابهات الآية ${selectedAyah.ayahNumber} سورة ${selectedAyah.surahNameArabic}`,
-      contextKey: `mushaf-mutashabihat:${selectedAyah.verseKey}:groups:${groups.join(',')}`,
-      manualAyahs,
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords,
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
-}
-
-function toReference(
-  verseKey: QuranVerseKey,
-  pageNumber: number,
-): LinkingManualMushafAyahReference {
-  return {
-    verseKey,
-    pageNumber,
-    displayHint: verseKey,
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `متشابهات الآية ${selectedAyah.ayahNumber} سورة ${selectedAyah.surahNameArabic}`,
+    contextKey: `mushaf-mutashabihat:${selectedAyah.verseKey}:groups:${groups.join(',')}`,
+    verseKeys: [...ayahs.values()].map((ayah) => ayah.verseKey),
+    selectedWords,
+    configuration: 'explicit',
+  });
 }
 
 function canonicalVerseKey(value: unknown): QuranVerseKey | null {

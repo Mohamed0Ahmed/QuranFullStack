@@ -71,11 +71,20 @@ interface PhraseCapabilities {
 
 interface LinkingWorkspace {
   sources: Array<{
+    sourceIdentity: string;
     descriptor: {
       kind: string | null;
       label: string | null;
+      contextKey: string | null;
       manualAyahs: Array<{ verseKey: string | null }> | null;
     };
+    manualAyahs: Array<{
+      ayahId: number;
+      orderValue: number;
+      pageHint: number | null;
+      verseKey: string;
+    }>;
+    manualLinkShape: string | null;
     selectedWords: Array<{
       ayahId: number | null;
       quranWordId: number | null;
@@ -167,6 +176,7 @@ async function exerciseContextAndPersist(
   }
 
   const selectedVerseKey = oracle.phraseSearch.context.selectedVerseKey;
+  expect(selectedVerseKey).toBe('1:1');
   const selectedMushafLink = page.getByRole('link', {
     name: `فتح الآية ${selectedVerseKey} في المصحف`,
   });
@@ -217,14 +227,34 @@ async function exerciseContextAndPersist(
     'independent Linking workspace read after Add to Workspace',
   );
   expect(workspace.sources).toHaveLength(1);
-  expect(workspace.sources[0]?.descriptor).toMatchObject({
+  const persistedSource = workspace.sources[0];
+  expect(persistedSource?.sourceIdentity).toBe('manual-mushaf-ayahs|1%3A1');
+  expect(persistedSource?.descriptor).toEqual({
+    contextKey: null,
     kind: 'manual-mushaf-ayahs',
     label: `البحث عن «${oracle.phraseSearch.query.raw}»`,
+    lemmaId: null,
     manualAyahs: [{ verseKey: selectedVerseKey }],
+    mode: null,
+    rootId: null,
+    selection: null,
+    stemId: null,
+    typeCode: null,
+    typeCodes: null,
+    wordId: null,
   });
-  expect(
-    workspace.sources[0]?.selectedWords.map((word) => word.quranWordId),
-  ).toEqual(oracle.phraseSearch.context.selectedQuranWordIds);
+  expect(persistedSource?.manualLinkShape).toBe('independent');
+  expect(persistedSource?.manualAyahs).toEqual([
+    expect.objectContaining({ ayahId: expect.any(Number), verseKey: selectedVerseKey }),
+  ]);
+  const persistedAyahId = persistedSource?.manualAyahs[0]?.ayahId;
+  expect(persistedAyahId).toBeGreaterThan(0);
+  expect(persistedSource?.selectedWords).toEqual(
+    oracle.phraseSearch.context.selectedQuranWordIds.map((quranWordId) => ({
+      ayahId: persistedAyahId,
+      quranWordId,
+    })),
+  );
   await accessibility.expectNoBlockingViolations(page);
 }
 

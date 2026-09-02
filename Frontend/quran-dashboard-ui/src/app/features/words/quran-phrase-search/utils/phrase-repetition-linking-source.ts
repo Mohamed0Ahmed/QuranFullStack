@@ -1,17 +1,17 @@
 import { PhraseOccurrenceDto } from '../../../../core/api/generated/models/phrase-occurrence-dto';
 import { PhraseOccurrencePageResponse } from '../../../../core/api/generated/models/phrase-occurrence-page-response';
-import {
-  isCanonicalQuranWordId,
-  LinkingManualMushafAyahReference,
-} from '../../../linking/models/linking-manual-mushaf.models';
+import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
+import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
 import {
   compareQuranVerseKeys,
   parseQuranVerseKey,
+  type QuranVerseKey,
 } from '../../../../shared/quran/quran-location';
 
 interface CollectedPhraseAyah {
-  readonly reference: LinkingManualMushafAyahReference;
+  readonly verseKey: QuranVerseKey;
+  readonly pageNumber: number;
   readonly wordIds: Set<number>;
 }
 
@@ -41,18 +41,15 @@ export function createPhraseRepetitionLinkingLaunch(
     const existing = ayahs.get(occurrence.ayahId);
     if (
       existing !== undefined &&
-      (existing.reference.verseKey !== occurrence.verseKey ||
-        existing.reference.pageNumber !== occurrence.pageFrom)
+      (existing.verseKey !== occurrence.verseKey ||
+        existing.pageNumber !== occurrence.pageFrom)
     ) {
       return null;
     }
 
     const collected = existing ?? {
-      reference: {
-        verseKey: verse.key,
-        pageNumber: occurrence.pageFrom,
-        displayHint: occurrence.verseKey,
-      },
+      verseKey: verse.key,
+      pageNumber: occurrence.pageFrom,
       wordIds: new Set<number>(),
     };
     occurrence.highlights.queryQuranWordIds.forEach((wordId) => collected.wordIds.add(wordId));
@@ -64,9 +61,8 @@ export function createPhraseRepetitionLinkingLaunch(
   }
 
   const orderedAyahs = [...ayahs.entries()].sort(([, left], [, right]) =>
-    compareQuranVerseKeys(left.reference.verseKey, right.reference.verseKey),
+    compareQuranVerseKeys(left.verseKey, right.verseKey),
   );
-  const manualAyahs = orderedAyahs.map(([, ayah]) => ayah.reference);
   const selectedWords = orderedAyahs
     .flatMap(([ayahId, ayah]) =>
       [...ayah.wordIds]
@@ -74,26 +70,17 @@ export function createPhraseRepetitionLinkingLaunch(
         .map((quranWordId) => ({ ayahId, quranWordId })),
     );
 
-  if (manualAyahs.length === 0 || selectedWords.length === 0) {
+  if (orderedAyahs.length === 0 || selectedWords.length === 0) {
     return null;
   }
 
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `تكرارات العبارة «${response.phrase.displayText}»`,
-      contextKey: `quran-phrase-repetition:${response.activeBuildId}:${response.phrase.variantId}`,
-      manualAyahs,
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords,
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `تكرارات العبارة «${response.phrase.displayText}»`,
+    contextKey: `quran-phrase-repetition:${response.activeBuildId}:${response.phrase.variantId}`,
+    verseKeys: orderedAyahs.map(([, ayah]) => ayah.verseKey),
+    selectedWords,
+    configuration: 'explicit',
+  });
 }
 
 function isCompleteOccurrenceResponse(response: PhraseOccurrencePageResponse): boolean {

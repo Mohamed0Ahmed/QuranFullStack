@@ -1,6 +1,7 @@
 import { PhraseContextLinkingSelectionResponse } from '../../../../core/api/generated/models/phrase-context-linking-selection-response';
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
+import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
 import { PhraseContextAyahSelectionSnapshot } from '../state/phrase-context-ayah-selection.store';
 import {
   compareQuranVerseKeys,
@@ -30,11 +31,6 @@ export function createPhraseContextLinkingLaunch(
     return null;
   }
   const sortedAyahs = canonicalAyahs.sort(compareAyahs);
-  const manualAyahs = sortedAyahs.map((ayah) => ({
-    verseKey: ayah.verseKey,
-    pageNumber: ayah.pageNumber,
-    displayHint: ayah.verseKey,
-  }));
   const selectedWords = sortedAyahs.flatMap((ayah) =>
     [...new Set(ayah.selectedQuranWordIds)]
       .sort((left, right) => left - right)
@@ -45,22 +41,13 @@ export function createPhraseContextLinkingLaunch(
     return null;
   }
 
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `البحث عن «${normalizedQuery}»`,
-      contextKey: null,
-      manualAyahs,
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords,
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `البحث عن «${normalizedQuery}»`,
+    contextKey: null,
+    verseKeys: sortedAyahs.map((ayah) => ayah.verseKey),
+    selectedWords,
+    configuration: 'explicit',
+  });
 }
 
 function isCompleteResponse(

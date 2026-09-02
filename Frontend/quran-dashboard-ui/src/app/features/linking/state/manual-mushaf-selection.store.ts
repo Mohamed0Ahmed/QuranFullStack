@@ -1,14 +1,14 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
 import { Subscription } from 'rxjs';
 
-import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LINKING_LABELS } from '../models/linking.labels';
-import { LinkingSourceDescriptor } from '../models/linking-source.models';
+import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import {
   LinkingManualAyahMetadata,
   LinkingManualAyahMetadataReader,
 } from '../data-access/linking-manual-ayah-metadata.reader';
 import { orderedUniqueLinkingVerseKeys } from '../utils/linking-verse-order';
+import { ManualLinkingSourceFactory } from '../utils/manual-linking-source.factory';
 import { LinkingAccessService } from './linking-access.service';
 import { LinkingWorkflowFacade } from './linking-workflow.facade';
 import { LinkingWorkspaceStore } from './linking-workspace.store';
@@ -210,18 +210,16 @@ export class ManualMushafSelectionStore {
     this.statusMessageSignal.set(statusMessage);
   }
 
-  private readySource(): LinkingSourceDescriptor | null {
+  private readySource(): LinkingSourceLaunch | null {
     if (!this.canHandoff()) {
       return null;
     }
-    return {
-      kind: 'manual-mushaf-ayahs',
+    return ManualLinkingSourceFactory.createLaunch({
       label: LINKING_LABELS.mushafSelectionSource,
       contextKey: null,
-      manualAyahs: this.entries()
-        .map((entry) => entry.metadata?.reference ?? null)
-        .filter((reference): reference is LinkingManualMushafAyahReference => reference !== null),
-    };
+      verseKeys: this.entries().map((entry) => entry.verseKey),
+      configuration: 'none',
+    });
   }
 
   private completeMetadataLoad(
