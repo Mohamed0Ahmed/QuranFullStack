@@ -1,13 +1,11 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { HttpErrorResponse } from '@angular/common/http';
-import { Observable, catchError, from, map, of, switchMap } from 'rxjs';
+import { Observable, map, of, switchMap } from 'rxjs';
 
 import { AbwabApi } from '../data-access/abwab.api';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabSelectionStore } from './abwab-selection.store';
 import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabNode } from '../models/abwab.models';
-import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { CreateSectionCommand } from '../../../core/api/generated/models/create-section-command';
 import { RenameSectionBody } from '../../../core/api/generated/models/rename-section-body';
 import { ReorderSectionBody } from '../../../core/api/generated/models/reorder-section-body';
@@ -20,53 +18,19 @@ import { AbwabDoorDto } from '../../../core/api/generated/models/abwab-door-dto'
 import { AbwabSectionDto } from '../../../core/api/generated/models/abwab-section-dto';
 import { AbwabDoorRelationDto } from '../../../core/api/generated/models/abwab-door-relation-dto';
 import { AddDoorRelationsBody } from '../../../core/api/generated/models/add-door-relations-body';
-import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { PermissionCode } from '../../../core/auth/permission-code';
+import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { ABWAB_WRITE_PERMISSIONS } from './abwab-permissions.controller';
+import { AbwabMutationFailure, AbwabMutationPolicy } from './abwab-mutation.policy';
 
-export type AbwabWriteFailureOutcome =
-  | { readonly kind: 'conflict'; readonly message: string }
-  | { readonly kind: 'invalid'; readonly message: string }
-  | { readonly kind: 'unauthorized'; readonly message: string }
-  | { readonly kind: 'forbidden'; readonly message: string }
-  | { readonly kind: 'error'; readonly message: string };
-
-export type AbwabWriteOutcome<T> = { readonly kind: 'success'; readonly data: T | null } | AbwabWriteFailureOutcome;
+export type AbwabWriteOutcome<T> =
+  | { readonly kind: 'success'; readonly data: T | null }
+  | Pick<AbwabMutationFailure, 'kind' | 'message'>;
 
 interface AbwabWriteOptions {
   readonly successAnnouncement?: string;
   readonly conflictClearsSelectionId?: number;
   readonly announceFailure?: boolean;
-}
-
-export function toAbwabWriteFailure(err: unknown): AbwabWriteFailureOutcome {
-  if (err instanceof HttpErrorResponse) {
-    const backendMessage = readBackendMessage(err);
-
-    if (err.status === 409) {
-      return { kind: 'conflict', message: backendMessage ?? ABWAB_LABELS.writeConflictFallback };
-    }
-    if (err.status === 400 || err.status === 404) {
-      return { kind: 'invalid', message: backendMessage ?? ABWAB_LABELS.writeInvalidFallback };
-    }
-    if (err.status === 401) {
-      return {
-        kind: 'unauthorized',
-        message: backendMessage ?? ABWAB_LABELS.writePermissionDenied,
-      };
-    }
-    if (err.status === 403) {
-      return {
-        kind: 'forbidden',
-        message: backendMessage ?? ABWAB_LABELS.writePermissionDenied,
-      };
-    }
-  }
-  return { kind: 'error', message: ABWAB_LABELS.writeTransportFallback };
-}
-
-export function abwabPermissionDenied(): AbwabWriteFailureOutcome {
-  return { kind: 'forbidden', message: ABWAB_LABELS.writePermissionDenied };
 }
 
 function countLiveSubtree(node: AbwabNode): number {
@@ -78,7 +42,7 @@ export class AbwabWriteController {
   private readonly api = inject(AbwabApi);
   private readonly facade = inject(AbwabSnapshotFacade);
   private readonly selection = inject(AbwabSelectionStore);
-  private readonly authSession = inject(AuthSessionStore);
+  private readonly mutationPolicy = inject(AbwabMutationPolicy);
 
   private readonly announcementState = signal<string | null>(null);
   readonly announcement = this.announcementState.asReadonly();
@@ -190,33 +154,33 @@ export class AbwabWriteController {
     targetParentId: number | null,
     targetSectionId: number | null,
   ): Observable<AbwabWriteOutcome<AbwabDoorDto[]>> {
-    if (!this.authSession.can(ABWAB_WRITE_PERMISSIONS.moveDoor)) {
-      return of(this.handlePermissionDenied<AbwabDoorDto[]>({ announceFailure: true }));
-    }
     const doors = this.currentBulkRefs();
     const options: AbwabWriteOptions = {
       successAnnouncement: ABWAB_LABELS.bulkMoveAnnouncement(doors.length),
       announceFailure: true,
     };
-    return this.api.bulkMoveDoors({ doors, targetParentId, targetSectionId }).pipe(
-      map((response) => this.handleSuccess(response, options)),
-      catchError((err: unknown) => this.handleBulkFailure<AbwabDoorDto[]>(err, doors, options)),
-    );
+    return this.dispatch(
+      ABWAB_WRITE_PERMISSIONS.moveDoor,
+      () => this.api.bulkMoveDoors({ doors, targetParentId, targetSectionId }),
+      options,
+    ).pipe(switchMap((outcome) => outcome.kind === 'success'
+      ? of(outcome)
+      : this.handleBulkFailure<AbwabDoorDto[]>(outcome, doors, options)));
   }
 
   bulkArchiveDoors(): Observable<AbwabWriteOutcome<number[]>> {
-    if (!this.authSession.can(ABWAB_WRITE_PERMISSIONS.archiveDoor)) {
-      return of(this.handlePermissionDenied<number[]>({ announceFailure: true }));
-    }
     const doors = this.currentBulkRefs();
     const options: AbwabWriteOptions = {
       successAnnouncement: ABWAB_LABELS.bulkArchiveAnnouncement(doors.length),
       announceFailure: true,
     };
-    return this.api.bulkArchiveDoors({ doors }).pipe(
-      map((response) => this.handleSuccess(response, options)),
-      catchError((err: unknown) => this.handleBulkFailure<number[]>(err, doors, options)),
-    );
+    return this.dispatch(
+      ABWAB_WRITE_PERMISSIONS.archiveDoor,
+      () => this.api.bulkArchiveDoors({ doors }),
+      options,
+    ).pipe(switchMap((outcome) => outcome.kind === 'success'
+      ? of(outcome)
+      : this.handleBulkFailure<number[]>(outcome, doors, options)));
   }
 
   addDoorRelations(doorId: number, body: AddDoorRelationsBody): Observable<AbwabWriteOutcome<AbwabDoorRelationDto[]>> {
@@ -247,59 +211,43 @@ export class AbwabWriteController {
     request: () => Observable<ApiResponse<T> | null>,
     options: AbwabWriteOptions = {},
   ): Observable<AbwabWriteOutcome<T>> {
-    if (!this.authSession.can(permission)) {
-      return of(this.handlePermissionDenied<T>(options));
-    }
-
-    return request().pipe(
-      map((response) => this.handleSuccess(response, options)),
-      catchError((err: unknown) => this.toFailureOutcome(err).pipe(map((outcome) => this.handleFailure<T>(outcome, options)))),
-    );
-  }
-
-  private handleSuccess<T>(response: ApiResponse<T> | null, options: AbwabWriteOptions = {}): AbwabWriteOutcome<T> {
-    if (response === null || response.isSuccess) {
-      this.announcementState.set(options.successAnnouncement ?? null);
-      this.refreshAndRebind();
-      return { kind: 'success', data: response?.data ?? null };
-    }
-    const message = response.message ?? ABWAB_LABELS.writeInvalidFallback;
-    this.announcementState.set(options.announceFailure ? message : null);
-    return { kind: 'invalid', message };
-  }
-
-  private handleFailure<T>(outcome: AbwabWriteFailureOutcome, options: AbwabWriteOptions): AbwabWriteOutcome<T> {
-    if (outcome.kind === 'conflict' && options.conflictClearsSelectionId !== undefined) {
-      if (this.selection.selectedDoorId() === options.conflictClearsSelectionId) {
+    return this.mutationPolicy.execute<T>(permission, request).pipe(map((outcome) => {
+      if (outcome.kind === 'success') {
+        this.announcementState.set(options.successAnnouncement ?? null);
+        this.refreshAndRebind();
+        return { kind: 'success' as const, data: outcome.data };
+      }
+      if (outcome.kind === 'conflict'
+          && this.selection.selectedDoorId() === options.conflictClearsSelectionId) {
         this.selection.clearSelection();
       }
-    }
-    this.announcementState.set(options.announceFailure ? outcome.message : null);
-    return outcome;
+      this.announcementState.set(options.announceFailure ? outcome.message : null);
+      return outcome;
+    }));
   }
 
   private handleBulkFailure<T>(
-    err: unknown,
+    outcome: Exclude<AbwabWriteOutcome<unknown>, { kind: 'success' }>,
     attempted: readonly AbwabBulkDoorRef[],
     options: AbwabWriteOptions = {},
   ): Observable<AbwabWriteOutcome<T>> {
-    return this.toFailureOutcome(err).pipe(
-      switchMap((outcome) => {
-        if (outcome.kind === 'conflict') {
+    return of(outcome).pipe(
+      switchMap((failure) => {
+        if (failure.kind === 'conflict') {
           const message = this.bulkConflictMessage(attempted);
           this.announcementState.set(options.announceFailure ? message : null);
           return of<AbwabWriteOutcome<T>>({ kind: 'conflict', message });
         }
-        if (outcome.kind !== 'invalid') {
-          this.announcementState.set(options.announceFailure ? outcome.message : null);
-          return of<AbwabWriteOutcome<T>>(outcome);
+        if (failure.kind !== 'invalid') {
+          this.announcementState.set(options.announceFailure ? failure.message : null);
+          return of<AbwabWriteOutcome<T>>(failure);
         }
         return this.facade.refresh().pipe(
           map((snapshot): AbwabWriteOutcome<T> => {
             if (snapshot) {
               this.selection.rebindTo(snapshot);
             }
-            const message = this.bulkVanishedMessage(attempted, snapshot?.byId) ?? outcome.message;
+            const message = this.bulkVanishedMessage(attempted, snapshot?.byId) ?? failure.message;
             this.announcementState.set(options.announceFailure ? message : null);
             return { kind: 'invalid' as const, message };
           }),
@@ -339,21 +287,4 @@ export class AbwabWriteController {
     });
   }
 
-  private handlePermissionDenied<T>(options: AbwabWriteOptions): AbwabWriteOutcome<T> {
-    const outcome = abwabPermissionDenied();
-    this.announcementState.set(options.announceFailure ? outcome.message : null);
-    return outcome;
-  }
-
-  private toFailureOutcome(err: unknown): Observable<AbwabWriteFailureOutcome> {
-    if (!(err instanceof HttpErrorResponse) || (err.status !== 401 && err.status !== 403)) {
-      return of(toAbwabWriteFailure(err));
-    }
-    return from(this.authSession.handleWriteAuthFailure(err)).pipe(map(() => toAbwabWriteFailure(err)));
-  }
-}
-
-function readBackendMessage(error: HttpErrorResponse): string | null {
-  const body = error.error as ApiResponse<unknown> | null | undefined;
-  return typeof body?.message === 'string' && body.message.trim().length > 0 ? body.message : null;
 }

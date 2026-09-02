@@ -9,7 +9,6 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { of } from 'rxjs';
 
 import { AbwabDoorLinksPanelComponent } from '../../../abwab/components/abwab-door-links-panel/abwab-door-links-panel.component';
 import { AbwabRelationsModalComponent } from '../../../abwab/components/abwab-relations-modal/abwab-relations-modal.component';
@@ -20,7 +19,6 @@ import { AbwabPermissionsController } from '../../../abwab/state/abwab-permissio
 import { AbwabRelationsController } from '../../../abwab/state/abwab-relations.controller';
 import { AbwabSnapshotFacade } from '../../../abwab/state/abwab-snapshot.facade';
 import { buildAbwabNodePaths } from '../../../abwab/state/abwab-tree-paths';
-import { abwabPermissionDenied } from '../../../abwab/state/abwab-write.controller';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdEmptyStateComponent } from '../../../../shared/ui/empty-state/empty-state.component';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
@@ -85,13 +83,9 @@ export class MushafAyahDoorsSectionComponent implements OnDestroy {
     kind: AbwabRelationKind,
     direction: AbwabRelationDirectionKind | null,
     targetDoorIds: readonly number[],
-  ) => this.permissions.canCreateRelation()
-    ? this.relations.addRelations(doorId, kind, direction, targetDoorIds)
-    : of(abwabPermissionDenied());
+  ) => this.relations.addRelations(doorId, kind, direction, targetDoorIds);
   protected readonly deleteRelation = (relationId: number) =>
-    this.permissions.canDeleteRelation()
-      ? this.relations.deleteRelation(relationId)
-      : of(abwabPermissionDenied());
+    this.relations.deleteRelation(relationId);
 
   constructor() {
     effect(() => {
