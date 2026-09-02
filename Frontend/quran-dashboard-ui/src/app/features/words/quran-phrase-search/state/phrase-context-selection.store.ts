@@ -7,7 +7,6 @@ import {
   PHRASE_CONTEXT_RESULT_PAGE_SIZE,
   PhraseContextFocusTarget,
 } from '../models/phrase-context.models';
-import { PhraseContextAyahSelectionStore } from './phrase-context-ayah-selection.store';
 import { PhraseLongStateSessionStore } from './phrase-long-state-session.store';
 
 type PhraseContextBranchOptions = PhraseContextBranchesResponse['previous']['options'];
@@ -21,7 +20,6 @@ interface PhraseContextBranchSnapshot {
 @Injectable()
 export class PhraseContextSelectionStore {
   private readonly longState = inject(PhraseLongStateSessionStore);
-  private readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
   private readonly branchSnapshots = new Map<string, PhraseContextBranchSnapshot>();
   private readonly _activeBranchStateKey = signal<string | null>(null);
   private readonly _branches = signal<PhraseContextBranchesResponse | null>(null);
@@ -118,7 +116,6 @@ export class PhraseContextSelectionStore {
     this._resultsPageSize.set(response.pageSize);
     this._totalAyahCount.set(response.totalAyahCount);
     this._totalOccurrenceCount.set(response.totalOccurrenceCount);
-    this.ayahSelection.setTotalAyahCount(response.totalAyahCount);
   }
 
   clearAll(): void {
@@ -140,7 +137,6 @@ export class PhraseContextSelectionStore {
     this._resultsPageSize.set(PHRASE_CONTEXT_RESULT_PAGE_SIZE);
     this._totalAyahCount.set(0);
     this._totalOccurrenceCount.set(0);
-    this.ayahSelection.setTotalAyahCount(0);
   }
 
   private showBranchSnapshot(snapshot: PhraseContextBranchSnapshot): void {

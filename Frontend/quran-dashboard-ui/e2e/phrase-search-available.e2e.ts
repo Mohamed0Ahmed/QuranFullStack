@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import type { APIRequestContext, Page } from '@playwright/test';
+import type { PhraseSimilarityLinkingSelectionResponse } from '../src/app/core/api/generated/models/phrase-similarity-linking-selection-response';
 
 import oracleData from '../../../test-artifacts/compact-phrase-search-ready/oracle.json';
 import manifestData from '../../../test-artifacts/compact-phrase-search-ready/manifest.json';
@@ -255,6 +256,20 @@ async function exerciseContextAndPersist(
       quranWordId,
     })),
   );
+
+  await page
+    .getByRole('checkbox', { name: 'تحديد كل الآيات المطابقة', exact: true })
+    .check();
+  await expect(page.getByLabel('ملخص نتائج السياق')).toContainText(
+    `${oracle.phraseSearch.context.verseKeys.length} آية محددة`,
+  );
+  const validContextUrl = page.url();
+  const invalidContextUrl = new URL(validContextUrl);
+  invalidContextUrl.searchParams.set('contextsPage', '0');
+  await pushClientUrl(page, invalidContextUrl.toString());
+  await expect(page.getByRole('button', { name: 'بدء بحث جديد', exact: true })).toBeVisible();
+  await pushClientUrl(page, validContextUrl);
+  await expect(page.getByLabel('ملخص نتائج السياق')).toContainText('0 آية محددة');
   await accessibility.expectNoBlockingViolations(page);
 }
 
@@ -298,7 +313,128 @@ async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit)
       name: `فتح الآية ${oracle.phraseSearch.similarity.nonIdenticalVerseKey} في المصحف`,
     }),
   ).toContainText('مَجْر۪ىٰهَا');
+
+  const selectAll = page
+    .getByRole('table', { name: 'جدول الآيات المطابقة والمتشابهة', exact: true })
+    .getByRole('checkbox', { name: 'تحديد كل آيات نتائج التشابه', exact: true });
+  await selectAll.check();
+  const excludedVerseKey = oracle.phraseSearch.similarity.nonIdenticalVerseKey;
+  const excludedAyah = page.getByRole('checkbox', { name: `تحديد الآية ${excludedVerseKey}` });
+  const excludedAyahId = Number(await excludedAyah.getAttribute('data-ayah-id'));
+  expect(excludedAyahId).toBeGreaterThan(0);
+  await excludedAyah.uncheck();
+
+  const staleIntercepted = deferred<void>();
+  const staleRelease = deferred<void>();
+  const staleSettled = deferred<void>();
+  let requestCount = 0;
+  let freshSelection: PhraseSimilarityLinkingSelectionResponse | null = null;
+  let freshRequestBody: unknown = null;
+  await page.route('**/api/quran/phrase-search/similarities/linking-selection', async (route) => {
+    requestCount += 1;
+    const response = await route.fetch();
+    if (requestCount === 1) {
+      expect(route.request().postDataJSON()).toEqual({
+        ayahIds: [excludedAyahId],
+        minimumMatchedWords:
+          oracle.phraseSearch.query.exactTokenIds.length -
+          oracle.phraseSearch.similarity.maximumDifferences,
+        resolutionRef: expect.any(String),
+        selectionMode: 'all-except',
+      });
+      staleIntercepted.resolve();
+      await staleRelease.promise;
+      await route.fulfill({ response });
+      staleSettled.resolve();
+      return;
+    }
+    freshRequestBody = route.request().postDataJSON();
+    const envelope = await response.json() as {
+      data: PhraseSimilarityLinkingSelectionResponse | null;
+    };
+    freshSelection = envelope.data;
+    await route.fulfill({ response });
+  });
+
+  const direct = page.getByRole('button', { name: /^ربط مباشر: \d+ آية محددة$/u });
+  await direct.click();
+  await staleIntercepted.promise;
+  await excludedAyah.check();
+  staleRelease.resolve();
+  await staleSettled.promise;
+  await expect(page.getByRole('dialog', { name: 'ربط مباشر', exact: true })).toBeHidden();
+
+  const sourcePageRequest = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' &&
+      new URL(request.url()).pathname === '/api/linking/sources/resolve-page',
+  );
+  await direct.click();
+  const dialog = page.getByRole('dialog', { name: 'ربط مباشر', exact: true });
+  await expect(dialog).toBeVisible();
+  const acceptedSelection = freshSelection as PhraseSimilarityLinkingSelectionResponse | null;
+  if (acceptedSelection === null) {
+    throw new Error('The fresh Similarity selection response was not captured.');
+  }
+  expect(freshRequestBody).toEqual({
+    ayahIds: [],
+    minimumMatchedWords:
+      oracle.phraseSearch.query.exactTokenIds.length -
+      oracle.phraseSearch.similarity.maximumDifferences,
+    resolutionRef: expect.any(String),
+    selectionMode: 'all-except',
+  });
+  const canonicalAyahs = [...acceptedSelection.ayahs].sort(
+    (left, right) => compareVerseKeys(left.verseKey, right.verseKey) || left.ayahId - right.ayahId,
+  );
+  expect(acceptedSelection.selectedAyahCount).toBe(
+    oracle.phraseSearch.similarity.verseKeys.length,
+  );
+  expect(canonicalAyahs.map((ayah) => ayah.verseKey)).toEqual(
+    [...oracle.phraseSearch.similarity.verseKeys].sort(compareVerseKeys),
+  );
+  for (const ayah of canonicalAyahs) {
+    expect(ayah.selectedQuranWordIds).toEqual(
+      [...ayah.selectedQuranWordIds].sort((left, right) => left - right),
+    );
+  }
+  const sourceRequestBody = (await sourcePageRequest).postDataJSON() as {
+    descriptor: {
+      contextKey: string | null;
+      kind: string | null;
+      label: string | null;
+      manualAyahs: Array<{ verseKey: string | null }> | null;
+    };
+  };
+  expect(sourceRequestBody.descriptor).toMatchObject({
+    contextKey: null,
+    kind: 'manual-mushaf-ayahs',
+    label: `متشابهات العبارة «${oracle.phraseSearch.query.displayText}»`,
+    manualAyahs: canonicalAyahs.map((ayah) => ({ verseKey: ayah.verseKey })),
+  });
+  await expect(dialog).toContainText(`متشابهات العبارة «${oracle.phraseSearch.query.displayText}»`);
   await accessibility.expectNoBlockingViolations(page);
+}
+
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
+function compareVerseKeys(left: string, right: string): number {
+  const [leftSurah, leftAyah] = left.split(':').map(Number);
+  const [rightSurah, rightAyah] = right.split(':').map(Number);
+  return leftSurah - rightSurah || leftAyah - rightAyah;
+}
+
+async function pushClientUrl(page: Page, url: string): Promise<void> {
+  await page.evaluate((nextUrl) => {
+    window.history.pushState({}, '', nextUrl);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, url);
 }
 
 function readAuthorizedData<T>(

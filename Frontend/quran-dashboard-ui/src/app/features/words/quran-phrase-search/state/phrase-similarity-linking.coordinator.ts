@@ -11,10 +11,10 @@ import {
   createPhraseSimilarityLinkingLaunch,
 } from '../utils/phrase-similarity-linking-launch';
 import {
-  PhraseSimilarityAyahSelectionSnapshot,
-  PhraseSimilarityAyahSelectionStore,
-  phraseSimilarityResultSetKey,
-} from './phrase-similarity-ayah-selection.store';
+  PhraseLinkingAyahSelectionSnapshot,
+  PhraseLinkingAyahSelectionStore,
+} from './phrase-linking-ayah-selection.store';
+import { phraseSimilarityResultSetKey } from './phrase-similarity-url-sync';
 import { PhraseSimilarityFacade } from './phrase-similarity.facade';
 import { phraseEnvelopeFailure, phraseRequestFailure } from './phrase-request-failure';
 
@@ -34,7 +34,7 @@ interface PhraseSimilarityLinkingError extends PhraseSimilarityLinkingRequestIde
 export class PhraseSimilarityLinkingCoordinator implements OnDestroy {
   private readonly api = inject(PhraseSimilarityApi);
   private readonly facade = inject(PhraseSimilarityFacade);
-  private readonly selection = inject(PhraseSimilarityAyahSelectionStore);
+  private readonly selection = inject(PhraseLinkingAyahSelectionStore);
   private readonly access = inject(LinkingAccessService);
   private readonly focus = inject(LinkingFocusCoordinator);
   private readonly workspace = inject(LinkingWorkspaceStore);
@@ -239,8 +239,8 @@ function samePopulation(
 }
 
 function sameSelection(
-  left: PhraseSimilarityAyahSelectionSnapshot,
-  right: PhraseSimilarityAyahSelectionSnapshot,
+  left: PhraseLinkingAyahSelectionSnapshot,
+  right: PhraseLinkingAyahSelectionSnapshot,
 ): boolean {
   return left.revision === right.revision &&
     left.resultSetKey === right.resultSetKey &&

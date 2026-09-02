@@ -21,7 +21,7 @@ import {
   phraseContextResultSetKey,
   phraseContextStateKey,
 } from './phrase-context-url-sync';
-import { PhraseContextAyahSelectionStore } from './phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from './phrase-linking-ayah-selection.store';
 import { PhraseContextSelectionStore } from './phrase-context-selection.store';
 import { contextResultsRedirectPage } from './phrase-context-results-paging';
 import { PhraseActionRequestGate } from './phrase-action-request-gate';
@@ -57,7 +57,7 @@ export class PhraseContextFacade {
   private readonly resolutionApi = inject(PhraseResolutionApi);
   private readonly resolutionFlow = inject(PhraseContextResolutionStore);
   private readonly selection = inject(PhraseContextSelectionStore);
-  private readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
+  private readonly ayahSelection = inject(PhraseLinkingAyahSelectionStore);
   private readonly requestStatus = inject(PhraseContextRequestStatusStore);
   private readonly routeCoordinator = inject(PhraseRouteNavigationCoordinator);
   private readonly actionGate = inject(PhraseActionRequestGate);
@@ -330,7 +330,10 @@ export class PhraseContextFacade {
       contextResultsPageOnlyChanged(previousRoute, parsed.state) &&
       this.workspaceRequests.isCommittedWorkspaceCurrent(parsed.state);
     this._route.set(parsed.state);
-    this.ayahSelection.synchronizeResultSet(phraseContextResultSetKey(parsed.state));
+    const populationKey = phraseContextResultSetKey(parsed.state);
+    if (parsed.invalid || populationKey !== this.ayahSelection.resultSetKey()) {
+      this.ayahSelection.synchronizePopulation(populationKey, 0);
+    }
     this.syncDraftForRoute(previousRoute, parsed.state);
     this.workspaceRequests.clearMismatchedPendingWorkspace(previousRoute, parsed.state);
     this._routeInvalid.set(parsed.invalid);
@@ -430,6 +433,10 @@ export class PhraseContextFacade {
         }
         this.selection.replaceBranches(result.branches, phraseContextBranchStateKey(route));
         this.selection.replaceResults(result.results);
+        this.ayahSelection.synchronizePopulation(
+          phraseContextResultSetKey(route),
+          result.results.totalAyahCount,
+        );
         this.resolutionFlow.restoreFromBranches(route.q, result.branches);
         this.requestStatus.branches.set('success');
         this.requestStatus.results.set(

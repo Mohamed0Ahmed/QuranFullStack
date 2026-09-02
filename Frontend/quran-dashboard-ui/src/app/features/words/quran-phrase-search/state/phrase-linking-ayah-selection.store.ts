@@ -1,10 +1,10 @@
 import { Injectable, computed, signal } from '@angular/core';
 
-export type PhraseContextAyahSelectionMode = 'only' | 'all-except';
+export type PhraseLinkingAyahSelectionMode = 'only' | 'all-except';
 
-export interface PhraseContextAyahSelectionSnapshot {
+export interface PhraseLinkingAyahSelectionSnapshot {
   readonly resultSetKey: string;
-  readonly mode: PhraseContextAyahSelectionMode;
+  readonly mode: PhraseLinkingAyahSelectionMode;
   readonly ayahIds: readonly number[];
   readonly selectedCount: number;
   readonly totalAyahCount: number;
@@ -12,9 +12,9 @@ export interface PhraseContextAyahSelectionSnapshot {
 }
 
 @Injectable()
-export class PhraseContextAyahSelectionStore {
+export class PhraseLinkingAyahSelectionStore {
   private readonly _resultSetKey = signal('');
-  private readonly _mode = signal<PhraseContextAyahSelectionMode>('only');
+  private readonly _mode = signal<PhraseLinkingAyahSelectionMode>('only');
   private readonly _overrides = signal<ReadonlySet<number>>(new Set());
   private readonly _totalAyahCount = signal(0);
   private readonly _revision = signal(0);
@@ -36,18 +36,16 @@ export class PhraseContextAyahSelectionStore {
     () => this.selectedCount() > 0 && this.selectedCount() < this._totalAyahCount(),
   );
 
-  synchronizeResultSet(resultSetKey: string): void {
-    if (this._resultSetKey() === resultSetKey) {
+  synchronizePopulation(resultSetKey: string, totalAyahCount: number): void {
+    const safeTotal = safePopulationTotal(totalAyahCount);
+    if (this._resultSetKey() !== resultSetKey) {
+      this._resultSetKey.set(resultSetKey);
+      this._mode.set('only');
+      this._overrides.set(new Set());
+      this._totalAyahCount.set(safeTotal);
+      this.bumpRevision();
       return;
     }
-    this._resultSetKey.set(resultSetKey);
-    this.resetSelection();
-  }
-
-  setTotalAyahCount(totalAyahCount: number): void {
-    const safeTotal = Number.isSafeInteger(totalAyahCount) && totalAyahCount > 0
-      ? totalAyahCount
-      : 0;
     if (safeTotal === this._totalAyahCount()) {
       return;
     }
@@ -56,19 +54,26 @@ export class PhraseContextAyahSelectionStore {
       (safeTotal === 0 && this._mode() === 'all-except') ||
       this._overrides().size > safeTotal
     ) {
-      this.clearAll();
-      return;
+      this._mode.set('only');
+      this._overrides.set(new Set());
     }
     this.bumpRevision();
   }
 
   isSelected(ayahId: number): boolean {
+    if (!isPositiveSafeInteger(ayahId) || this._totalAyahCount() === 0) {
+      return false;
+    }
     const overridden = this._overrides().has(ayahId);
     return this._mode() === 'only' ? overridden : !overridden;
   }
 
   setSelected(ayahId: number, selected: boolean): void {
-    if (!isPositiveSafeInteger(ayahId) || this.isSelected(ayahId) === selected) {
+    if (
+      !isPositiveSafeInteger(ayahId) ||
+      this._totalAyahCount() === 0 ||
+      this.isSelected(ayahId) === selected
+    ) {
       return;
     }
     const overrides = new Set(this._overrides());
@@ -99,7 +104,7 @@ export class PhraseContextAyahSelectionStore {
     this.bumpRevision();
   }
 
-  snapshot(): PhraseContextAyahSelectionSnapshot {
+  snapshot(): PhraseLinkingAyahSelectionSnapshot {
     return {
       resultSetKey: this._resultSetKey(),
       mode: this._mode(),
@@ -110,16 +115,13 @@ export class PhraseContextAyahSelectionStore {
     };
   }
 
-  private resetSelection(): void {
-    this._mode.set('only');
-    this._overrides.set(new Set());
-    this._totalAyahCount.set(0);
-    this.bumpRevision();
-  }
-
   private bumpRevision(): void {
     this._revision.update((revision) => revision + 1);
   }
+}
+
+function safePopulationTotal(value: number): number {
+  return Number.isSafeInteger(value) && value > 0 ? value : 0;
 }
 
 function isPositiveSafeInteger(value: number): boolean {

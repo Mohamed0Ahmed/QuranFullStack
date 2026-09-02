@@ -20,7 +20,7 @@ import { PaginationComponent } from '../../../../../shared/ui/pagination/paginat
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
 import { parseQuranVerseKey } from '../../../../../shared/quran/quran-location';
 import { PHRASE_SIMILARITY_AYAH_PAGE_SIZE } from '../../models/phrase-similarity.models';
-import { PhraseSimilarityAyahSelectionStore } from '../../state/phrase-similarity-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
 interface SimilarityAyahRow {
@@ -51,7 +51,7 @@ const matchPercentFormatter = new Intl.NumberFormat('en-US', {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseSimilarityListComponent {
-  protected readonly selection = inject(PhraseSimilarityAyahSelectionStore);
+  protected readonly selection = inject(PhraseLinkingAyahSelectionStore);
 
   readonly items = input.required<readonly PhraseSimilarityAyahDto[]>();
   readonly queryPhrase = input.required<PhraseSimilarityPhraseDto>();
