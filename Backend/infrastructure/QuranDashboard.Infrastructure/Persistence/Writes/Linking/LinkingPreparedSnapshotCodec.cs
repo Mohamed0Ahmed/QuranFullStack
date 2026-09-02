@@ -63,26 +63,21 @@ internal static class LinkingPreparedSnapshotCodec
         return LinkingSourceStorage.Decode(source, document.ManualVerseKeys);
     }
 
-    public static string EncodeConfiguration(LinkingWorkspaceConfigurationInput configuration) =>
+    public static string EncodeConfiguration(LinkingSourceConfiguration configuration) =>
         JsonSerializer.Serialize(
             new ConfigurationDocument(
                 SchemaVersion,
                 LinkingWorkspaceTokens.ToToken(configuration.InclusionMode),
-                [.. configuration.AyahOverrides.Distinct().Order()],
-                [.. configuration.SelectedWords
-                    .Distinct()
-                    .OrderBy(word => word.AyahId)
-                    .ThenBy(word => word.QuranWordId)],
+                configuration.AyahOverrides,
+                configuration.SelectedWords,
                 configuration.AutomaticWordMatchesEnabled,
                 configuration.ManualLinkShape is null
                     ? null
                     : LinkingWorkspaceTokens.ToToken(configuration.ManualLinkShape.Value),
-                [.. configuration.Descriptions
-                    .OrderBy(description => description.AyahId)
-                    .ThenBy(description => description.OrderValue)]),
+                configuration.Descriptions),
             JsonOptions);
 
-    public static LinkingWorkspaceConfigurationInput DecodeConfiguration(string json, string label)
+    public static LinkingSourceConfiguration DecodeConfiguration(string json, LinkingSourceKind sourceKind)
     {
         var document = JsonSerializer.Deserialize<ConfigurationDocument>(json, JsonOptions)
             ?? throw new InvalidOperationException("The prepared linking configuration document is empty.");
@@ -90,6 +85,13 @@ internal static class LinkingPreparedSnapshotCodec
             || !LinkingWorkspaceTokens.TryParseInclusionMode(document.InclusionMode, out var inclusionMode))
         {
             throw new InvalidOperationException("The prepared linking configuration schema is unsupported.");
+        }
+
+        if (document.AyahOverrideIds is null
+            || document.SelectedWords is null
+            || document.Descriptions is null)
+        {
+            throw new InvalidDataException("The prepared linking configuration is incomplete.");
         }
 
         LinkingManualLinkShape? shape = null;
@@ -103,14 +105,21 @@ internal static class LinkingPreparedSnapshotCodec
             shape = parsed;
         }
 
-        return new LinkingWorkspaceConfigurationInput(
-            label,
+        if (!LinkingSourceConfiguration.TryCreate(
+            sourceKind,
             inclusionMode,
             document.AyahOverrideIds,
             document.SelectedWords,
             document.AutomaticWordMatchesEnabled,
             shape,
-            document.Descriptions);
+            document.Descriptions,
+            out var configuration,
+            out _))
+        {
+            throw new InvalidDataException("The prepared linking configuration is incoherent.");
+        }
+
+        return configuration;
     }
 
     private sealed record DescriptorDocument(

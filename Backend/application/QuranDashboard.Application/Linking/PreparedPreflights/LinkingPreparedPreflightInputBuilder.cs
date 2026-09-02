@@ -107,25 +107,17 @@ public sealed class LinkingPreparedPreflightInputBuilder(
             .GroupBy(word => word.AyahId)
             .ToDictionary(
                 group => group.Key,
-                group => (IReadOnlyList<int>)[.. group.Select(word => word.QuranWordId).Distinct().Order()]);
-        var descriptions = configuration.Descriptions
-            .GroupBy(description => description.AyahId)
-            .ToDictionary(
-                group => group.Key,
-                group => (IReadOnlyList<string>)[.. group
-                    .OrderBy(description => description.OrderValue)
-                    .Select(description => description.Body.Trim())]);
+                group => (IReadOnlyList<int>)[.. group.Select(word => word.QuranWordId)]);
+        var descriptions = configuration.NormalizedDescriptions.ToDictionary(
+            description => description.AyahId,
+            description => description.Bodies);
         var included = resolvedAyahs
             .Where(ayah => configuration.InclusionMode == LinkingInclusionMode.AllExcept
                 ? !overrides.Contains(ayah.AyahId)
                 : overrides.Contains(ayah.AyahId))
             .ToList();
-        var grouped = configuration.ManualLinkShape == LinkingManualLinkShape.Grouped;
-        var contributionMode = inline.Descriptor.Kind != LinkingSourceKind.ManualMushafAyahs
-            ? LinkingContributionMode.Automatic
-            : grouped
-                ? LinkingContributionMode.ManualGrouped
-                : LinkingContributionMode.ManualIndependent;
+        var contributionMode = configuration.ContributionMode;
+        var grouped = contributionMode == LinkingContributionMode.ManualGrouped;
         var ayahRequests = included.Select(ayah => new LinkingOperationAyahRequest(
             ayah.AyahId,
             contributionMode == LinkingContributionMode.Automatic
@@ -185,26 +177,12 @@ public sealed class LinkingPreparedPreflightInputBuilder(
 
     private static void ValidateConfiguration(
         LinkingSourceDescriptor descriptor,
-        LinkingWorkspaceConfigurationInput configuration,
+        LinkingSourceConfiguration configuration,
         IReadOnlyList<LinkingResolvedAyahDto> resolvedAyahs)
     {
-        var isManual = descriptor.Kind == LinkingSourceKind.ManualMushafAyahs;
-        if ((isManual
-                && (configuration.ManualLinkShape is null
-                    || configuration.AutomaticWordMatchesEnabled is not null))
-            || (!isManual
-                && (configuration.ManualLinkShape is not null
-                    || configuration.AutomaticWordMatchesEnabled is null
-                    || configuration.SelectedWords.Count != 0)))
+        if (configuration.SourceKind != descriptor.Kind)
         {
             throw new InvalidDataException("The prepared source configuration is incoherent.");
-        }
-
-        if (LinkingWorkspaceDescriptionValidation.TryNormalize(
-                configuration.Descriptions,
-                out _) is not null)
-        {
-            throw new InvalidDataException("The prepared source descriptions are invalid.");
         }
 
         var ayahsById = resolvedAyahs.ToDictionary(ayah => ayah.AyahId);

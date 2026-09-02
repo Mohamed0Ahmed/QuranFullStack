@@ -24,7 +24,7 @@ internal sealed partial class EfLinkingWorkspaceWriter(
     public async Task<LinkingWorkspaceDto> AddSourceAsync(
         int userId,
         LinkingSourceDescriptor descriptor,
-        LinkingWorkspaceConfigurationInput? initialConfiguration,
+        LinkingSourceConfiguration? initialConfiguration,
         uint? expectedWorkspaceVersion,
         CancellationToken cancellationToken)
     {
@@ -72,7 +72,7 @@ internal sealed partial class EfLinkingWorkspaceWriter(
                     linkingDataRevision,
                     cancellationToken);
                 _ = await PrepareInitialConfigurationAsync(
-                    descriptor,
+                    form.Kind,
                     initialConfiguration,
                     existingCompact,
                     cancellationToken);
@@ -103,14 +103,12 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             descriptor,
             linkingDataRevision,
             cancellationToken);
-        var isManual = form.Kind == LinkingSourceKind.ManualMushafAyahs;
-        var preparedInitialConfiguration = initialConfiguration is null
-            ? null
-            : await PrepareInitialConfigurationAsync(
-                descriptor,
-                initialConfiguration,
-                compact,
-                cancellationToken);
+        var sourceConfiguration = initialConfiguration ?? DefaultConfiguration(form.Kind);
+        var preparedInitialConfiguration = await PrepareInitialConfigurationAsync(
+            form.Kind,
+            sourceConfiguration,
+            compact,
+            cancellationToken);
 
         var source = new LinkingWorkspaceSource
         {
@@ -127,12 +125,9 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             UniqueSimpleWordId = form.UniqueSimpleWordId,
             UniqueTashkeelWordId = form.UniqueTashkeelWordId,
             WordTypeTashkeelWordId = form.WordTypeTashkeelWordId,
-            InclusionMode = preparedInitialConfiguration?.Configuration.InclusionMode
-                ?? LinkingInclusionMode.AllExcept,
-            AutomaticWordMatchesEnabled = preparedInitialConfiguration?.Configuration.AutomaticWordMatchesEnabled
-                ?? (isManual ? null : true),
-            ManualLinkShape = preparedInitialConfiguration?.Configuration.ManualLinkShape
-                ?? (isManual ? LinkingManualLinkShape.Independent : null),
+            InclusionMode = preparedInitialConfiguration.InclusionMode,
+            AutomaticWordMatchesEnabled = preparedInitialConfiguration.AutomaticWordMatchesEnabled,
+            ManualLinkShape = preparedInitialConfiguration.ManualLinkShape,
             LastResolvedCount = compact.AyahCount,
             LastResolvedAtUtc = now,
             CreatedAtUtc = now,
@@ -150,7 +145,7 @@ internal sealed partial class EfLinkingWorkspaceWriter(
             await AddManualAyahsAsync(source.Id, manual, cancellationToken);
         }
 
-        if (preparedInitialConfiguration is not null)
+        if (initialConfiguration is not null)
         {
             await ApplyInitialConfigurationAsync(
                 source.Id,
@@ -165,6 +160,23 @@ internal sealed partial class EfLinkingWorkspaceWriter(
         await transaction.CommitAsync(cancellationToken);
 
         return await LinkingWorkspaceProjection.ProjectAsync(db, workspace, cancellationToken);
+    }
+
+    private static LinkingSourceConfiguration DefaultConfiguration(LinkingSourceKind sourceKind)
+    {
+        _ = LinkingSourceConfiguration.TryCreate(
+            sourceKind,
+            LinkingInclusionMode.AllExcept,
+            [],
+            [],
+            sourceKind == LinkingSourceKind.ManualMushafAyahs ? null : true,
+            sourceKind == LinkingSourceKind.ManualMushafAyahs
+                ? LinkingManualLinkShape.Independent
+                : null,
+            [],
+            out var configuration,
+            out _);
+        return configuration;
     }
 
     public async Task<LinkingWorkspaceDto> RemoveSourceAsync(

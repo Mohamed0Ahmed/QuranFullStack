@@ -60,12 +60,36 @@ internal sealed partial class EfLinkingWorkspaceWriter
             form.SourceIdentity,
             token => efResolution.ResolveCompactAsync(descriptor, token),
             cancellationToken);
+        var retainedDescriptions = await db.LinkingWorkspaceSourceDescriptions
+            .AsNoTracking()
+            .Where(row => row.WorkspaceSourceId == source.Id
+                && compact.AyahIds.Contains(row.AyahId))
+            .OrderBy(row => row.AyahId)
+            .ThenBy(row => row.OrderValue)
+            .Select(row => new LinkingWorkspaceDescriptionInput(row.AyahId, row.OrderValue, row.Body))
+            .ToListAsync(cancellationToken);
+        if (!LinkingSourceConfiguration.TryCreate(
+            form.Kind,
+            LinkingInclusionMode.AllExcept,
+            [],
+            [],
+            source.AutomaticWordMatchesEnabled,
+            source.ManualLinkShape,
+            retainedDescriptions,
+            out var configuration,
+            out var violation))
+        {
+            throw new LinkingWorkspaceViolationException(violation);
+        }
+
         var now = DateTimeOffset.UtcNow;
 
         source.SourceIdentity = form.SourceIdentity;
         source.SourceIdentityHash = form.SourceIdentityHash;
         source.ScopeJson = form.ScopeJson;
-        source.InclusionMode = LinkingInclusionMode.AllExcept;
+        source.InclusionMode = configuration.InclusionMode;
+        source.AutomaticWordMatchesEnabled = configuration.AutomaticWordMatchesEnabled;
+        source.ManualLinkShape = configuration.ManualLinkShape;
         source.LastResolvedCount = compact.AyahCount;
         source.LastResolvedAtUtc = now;
         source.UpdatedAtUtc = now;

@@ -19,7 +19,7 @@ public sealed record LinkingPreparedWorkspaceSourceReference(long SourceId, uint
 
 public sealed record LinkingPreparedInlineSource(
     LinkingSourceDescriptor Descriptor,
-    LinkingWorkspaceConfigurationInput Configuration);
+    LinkingSourceConfiguration Configuration);
 
 public sealed record LinkingPreparedPreflightReceipt(
     LinkingPreparedPreflightStatusDto Status,

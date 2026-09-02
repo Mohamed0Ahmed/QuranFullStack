@@ -16,31 +16,6 @@ internal sealed partial class EfLinkingWorkspaceWriter
         }
     }
 
-    private static void EnsureConfigurationCoherence(bool isManual, LinkingWorkspaceConfigurationInput configuration)
-    {
-        var coherent = isManual
-            ? configuration.ManualLinkShape.HasValue && configuration.AutomaticWordMatchesEnabled is null
-            : configuration.AutomaticWordMatchesEnabled.HasValue && configuration.ManualLinkShape is null;
-
-        if (!coherent)
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.ConfigurationIncoherent,
-                isManual ? "manualLinkShape" : "automaticWordMatchesEnabled",
-                null));
-        }
-    }
-
-    private static List<LinkingWorkspaceAyahDescriptions> NormalizeDescriptions(
-        IReadOnlyList<LinkingWorkspaceDescriptionInput> descriptions)
-    {
-        var violation = LinkingWorkspaceDescriptionValidation.TryNormalize(descriptions, out var normalized);
-
-        return violation is null
-            ? [.. normalized]
-            : throw new LinkingWorkspaceViolationException(violation);
-    }
-
     private async Task EnsureSelectedWordsAsync(
         IReadOnlyList<LinkingWorkspaceSelectedWordInput> selectedWords,
         CancellationToken cancellationToken)
