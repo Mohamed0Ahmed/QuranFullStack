@@ -1,6 +1,7 @@
 import { PhraseSimilarityLinkingSelectionResponse } from '../../../../core/api/generated/models/phrase-similarity-linking-selection-response';
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
+import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
 import { PhraseSimilarityAyahSelectionSnapshot } from '../state/phrase-similarity-ayah-selection.store';
 import {
   compareQuranVerseKeys,
@@ -37,30 +38,17 @@ export function createPhraseSimilarityLinkingLaunch(
     return null;
   }
   const sortedAyahs = canonicalAyahs.sort(compareAyahs);
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `متشابهات العبارة «${response.query.displayText}»`,
-      contextKey: null,
-      manualAyahs: sortedAyahs.map((ayah) => ({
-        verseKey: ayah.verseKey,
-        pageNumber: ayah.pageNumber,
-        displayHint: ayah.verseKey,
-      })),
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords: sortedAyahs.flatMap((ayah) =>
-        [...ayah.selectedQuranWordIds]
-          .sort((left, right) => left - right)
-          .map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
-      ),
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `متشابهات العبارة «${response.query.displayText}»`,
+    contextKey: null,
+    verseKeys: sortedAyahs.map((ayah) => ayah.verseKey),
+    selectedWords: sortedAyahs.flatMap((ayah) =>
+      [...ayah.selectedQuranWordIds]
+        .sort((left, right) => left - right)
+        .map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
+    ),
+    configuration: 'explicit',
+  });
 }
 
 function isCompleteResponse(

@@ -8,7 +8,6 @@ import { LinkingWorkspaceResponse } from '../../../core/api/generated/models/lin
 import { LinkingWorkspaceInitialConfigurationBody } from '../../../core/api/generated/models/linking-workspace-initial-configuration-body';
 import { LinkingWorkspaceSourceResponse } from '../../../core/api/generated/models/linking-workspace-source-response';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
-import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../models/linking-source-launch.models';
 import { LinkingSourceDescriptor } from '../models/linking-source.models';
 import {
@@ -163,7 +162,7 @@ function toWorkspaceItem(source: LinkingWorkspaceSourceResponse): LinkingWorkspa
   }
   const descriptor = fromLinkingSourceDescriptorBody(
     source.descriptor,
-    manualAyahs.map(toManualReference),
+    manualAyahs.map((ayah) => ayah.verseKey),
   );
   if (descriptor === null) {
     return null;
@@ -285,26 +284,19 @@ function canonicalVerseKeyByAyahId(
 
 function orderedManualAyahs(
   source: LinkingWorkspaceSourceResponse,
-): readonly { ayahId: number; verseKey: QuranVerseKey; pageHint: number | null }[] | null {
+): readonly { ayahId: number; verseKey: QuranVerseKey }[] | null {
   const ordered = source.manualAyahs
     .slice()
     .sort((left, right) => left.orderValue - right.orderValue)
     .map((ayah) => {
       const parsed = parseQuranVerseKey(ayah.verseKey);
       return parsed && parsed.key === ayah.verseKey
-        ? { ayahId: ayah.ayahId, verseKey: parsed.key, pageHint: ayah.pageHint }
+        ? { ayahId: ayah.ayahId, verseKey: parsed.key }
         : null;
     });
   return ordered.some((ayah) => ayah === null)
     ? null
     : ordered.filter((ayah): ayah is NonNullable<typeof ayah> => ayah !== null);
-}
-
-function toManualReference(ayah: {
-  verseKey: QuranVerseKey;
-  pageHint: number | null;
-}): LinkingManualMushafAyahReference {
-  return { verseKey: ayah.verseKey, pageNumber: ayah.pageHint, displayHint: ayah.verseKey };
 }
 
 function fromWireInclusionMode(mode: string): 'all-except' | 'only' | null {

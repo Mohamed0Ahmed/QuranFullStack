@@ -1,4 +1,5 @@
 import { LinkingOperationSourceDraft } from '../../linking/models/linking-operation-draft.models';
+import { ManualLinkingSourceFactory } from '../../linking/utils/manual-linking-source.factory';
 import { AbwabDoorLinkCopyRecord } from '../models/abwab-door-links.models';
 import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
 import type { QuranVerseKey } from '../../../shared/quran/quran-location';
@@ -73,30 +74,19 @@ function toOperationDraft(
       entry !== null,
   );
   const unitIds = group.records.map((record) => record.unitId);
-  return {
+  return ManualLinkingSourceFactory.createPreparedDraft({
     sourceKey: `abwab-copy:${group.isGrouped ? 'grouped' : 'independent'}:${unitIds.join('-')}`,
-    sourceId: null,
-    sourceVersion: null,
     linkingDataRevision: group.linkingDataRevision,
-    descriptor: {
-      kind: 'manual-mushaf-ayahs',
-      label: sourceLabel,
-      contextKey: null,
-      manualAyahs: canonicalAyahs.map(({ ayah, verseKey }) => ({
-        verseKey,
-        pageNumber: ayah.pageFrom,
-        displayHint: null,
-      })),
-    },
     label: sourceLabel,
-    selection: { mode: 'all-except', ayahIds: [] },
-    selectedWordIdsByAyahId: Object.fromEntries(
-      ayahs.map((ayah) => [ayah.ayahId, [...ayah.selectedWordIds]]),
-    ),
+    contextKey: null,
+    ayahs: canonicalAyahs.map(({ ayah, verseKey }) => ({
+      verseKey,
+      ayahId: ayah.ayahId,
+      selectedWordIds: ayah.selectedWordIds,
+    })),
     descriptions: ayahs.flatMap((ayah) =>
       ayah.descriptions.map((body, index) => ({ ayahId: ayah.ayahId, orderValue: index + 1, body })),
     ),
-    automaticWordMatchesEnabled: null,
     manualLinkShape: group.isGrouped ? 'grouped' : 'independent',
-  };
+  });
 }

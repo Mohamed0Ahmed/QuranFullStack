@@ -46,7 +46,7 @@ export type LinkingWordTypeSelection =
   | { kind: 'lemma'; lemmaId: number; scope: LinkingWordTypeScope };
 
 export type LinkingSourceDescriptor =
-  | ({ kind: 'manual-mushaf-ayahs'; label: string } & LinkingManualMushafAyahSource)
+  | ({ readonly kind: 'manual-mushaf-ayahs'; readonly label: string } & LinkingManualMushafAyahSource)
   | {
       kind: 'unique-word';
       mode: LinkingUniqueWordMode;
