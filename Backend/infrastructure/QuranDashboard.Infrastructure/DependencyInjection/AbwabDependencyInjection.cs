@@ -56,9 +56,7 @@ internal static class AbwabDependencyInjection
 
         services.AddScoped<IAbwabRelationsReader, EfAbwabRelationsReader>();
         services.AddScoped<IAbwabDoorInclusionsReader, EfAbwabDoorInclusionsReader>();
-        services.AddScoped<EfAbwabDoorInclusionSynchronizer>();
-        services.AddScoped<IAbwabDoorInclusionSynchronizer>(sp =>
-            sp.GetRequiredService<EfAbwabDoorInclusionSynchronizer>());
+        services.AddScoped<AbwabDoorInclusionReconciler>();
         services.AddScoped<EfAbwabDoorInclusionsWriter>();
         services.AddScoped<IAbwabDoorInclusionsWriter>(sp => new InvalidatingAbwabDoorInclusionsWriter(
             sp.GetRequiredService<EfAbwabDoorInclusionsWriter>(),

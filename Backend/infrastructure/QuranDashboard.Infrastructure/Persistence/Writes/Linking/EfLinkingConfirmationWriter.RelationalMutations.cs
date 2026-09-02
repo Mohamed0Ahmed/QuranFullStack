@@ -1,38 +1,10 @@
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingConfirmationWriter
 {
-    private async Task<IReadOnlyDictionary<long, AbwabDoorInclusionSourceSnapshot>>
-        LoadPreviousUnitSnapshotsAsync(
-            Guid preflightId,
-            int doorId,
-            CancellationToken cancellationToken)
-    {
-        var unitIds = await db.Database.SqlQuery<long>(
-                $"""
-                SELECT DISTINCT previous.unit_id AS "Value"
-                FROM linking_confirmation_previous_units previous
-                UNION
-                SELECT existing.id AS "Value"
-                FROM linking_prepared_units prepared
-                JOIN linking_confirmation_sources source
-                  ON source.prepared_source_id = prepared.source_id
-                JOIN linking_units existing
-                  ON existing.door_id = {doorId}
-                 AND existing.identity_hash = prepared.unit_identity_hash
-                 AND existing.identity = prepared.unit_identity
-                WHERE prepared.preflight_id = {preflightId}
-                ORDER BY "Value"
-                """)
-            .ToListAsync(cancellationToken);
-        return await AbwabDoorInclusionSourceSnapshot.LoadAsync(db, unitIds, cancellationToken);
-    }
-
-    private async Task<AbwabDoorInclusionMutationSet> CreatePreparedMutationSetAsync(
-        IReadOnlyDictionary<long, AbwabDoorInclusionSourceSnapshot> previousSnapshots,
+    private async Task<PreparedSourceChange> CreatePreparedSourceChangeAsync(
         CancellationToken cancellationToken)
     {
         var previousRows = await db.Database.SqlQuery<PreparedUnitOwnershipRow>(
@@ -74,27 +46,14 @@ internal sealed partial class EfLinkingConfirmationWriter
         deletedUnitIds.ExceptWith(replacements.Select(replacement => replacement.PreviousUnitId));
         addedUnitIds.ExceptWith(replacements.Select(replacement => replacement.CurrentUnitId));
 
-        var currentUnitIds = currentRows.Select(row => row.UnitId).Distinct().Order().ToArray();
-        var currentSnapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
-            db,
-            currentUnitIds,
-            cancellationToken);
-        if (currentSnapshots.Count != currentUnitIds.Length)
-        {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
-        }
-
-        var editedUnitIds = previousSnapshots.Keys
-            .Intersect(currentSnapshots.Keys)
-            .Where(unitId => !AbwabDoorInclusionFingerprint.Compute(previousSnapshots[unitId])
-                .AsSpan()
-                .SequenceEqual(AbwabDoorInclusionFingerprint.Compute(currentSnapshots[unitId])))
+        var survivingCandidateUnitIds = previousRows.Select(row => row.UnitId)
+            .Intersect(currentRows.Select(row => row.UnitId))
             .Order()
             .ToArray();
 
-        return AbwabDoorInclusionMutationSet.Create(
+        return new PreparedSourceChange(
             addedUnitIds,
-            editedUnitIds,
+            survivingCandidateUnitIds,
             deletedUnitIds,
             replacements);
     }
@@ -137,14 +96,14 @@ internal sealed partial class EfLinkingConfirmationWriter
                 || addedOccurrences.Select(row => row.OrderValue).Distinct().Count()
                     != addedOccurrences.Length)
             {
-                throw new AbwabDoorInclusionSynchronizationConflictException();
+                throw new AbwabDoorInclusionReconciliationConflictException();
             }
 
             var previousByOrder = removedOccurrences.ToDictionary(row => row.OrderValue);
             var currentByOrder = addedOccurrences.ToDictionary(row => row.OrderValue);
             if (!previousByOrder.Keys.Order().SequenceEqual(currentByOrder.Keys.Order()))
             {
-                throw new AbwabDoorInclusionSynchronizationConflictException();
+                throw new AbwabDoorInclusionReconciliationConflictException();
             }
 
             foreach (var orderValue in previousByOrder.Keys.Order())
@@ -164,7 +123,7 @@ internal sealed partial class EfLinkingConfirmationWriter
             || distinctReplacements.Select(replacement => replacement.CurrentUnitId).Distinct().Count()
                 != distinctReplacements.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         return distinctReplacements;
@@ -180,4 +139,10 @@ internal sealed partial class EfLinkingConfirmationWriter
         long UnitId,
         int OrderValue,
         bool IsNew);
+
+    private sealed record PreparedSourceChange(
+        IReadOnlyCollection<long> AddedUnitIds,
+        IReadOnlyCollection<long> SurvivingCandidateUnitIds,
+        IReadOnlyCollection<long> DeletedUnitIds,
+        IReadOnlyCollection<AbwabDoorInclusionUnitReplacement> Replacements);
 }

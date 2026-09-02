@@ -2,9 +2,11 @@ using System.Buffers;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal static class AbwabDoorInclusionFingerprint
+internal sealed partial class AbwabDoorInclusionReconciler
 {
-    public static byte[] Compute(AbwabDoorInclusionSourceSnapshot snapshot)
+private static class SourceFingerprint
+{
+    public static byte[] Compute(SourceSnapshot snapshot)
     {
         ArgumentNullException.ThrowIfNull(snapshot);
 
@@ -38,4 +40,5 @@ internal static class AbwabDoorInclusionFingerprint
 
         return SHA256.HashData(buffer.WrittenSpan);
     }
+}
 }

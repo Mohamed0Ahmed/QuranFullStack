@@ -6,22 +6,22 @@ using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
-    internal async Task<IReadOnlyList<int>> AddInclusionsAsync(
+    internal async Task ReconcileInclusionMaterializationAsync(
         IReadOnlyList<AbwabDoorInclusion> inclusions,
         int actorUserId,
         CancellationToken cancellationToken)
     {
         if (inclusions.Count == 0)
         {
-            return [];
+            return;
         }
 
         var targetDoorIds = inclusions.Select(inclusion => inclusion.TargetDoorId).Distinct().ToArray();
         if (targetDoorIds.Length != 1)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -69,7 +69,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                     cancellationToken);
             if (inclusion is null || contribution is null)
             {
-                throw new AbwabDoorInclusionSynchronizationUnavailableException();
+                throw new AbwabDoorInclusionReconciliationUnavailableException();
             }
 
             var clonedUnitIds = await CloneUnitsAsync(
@@ -93,7 +93,24 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                 cancellationToken);
         }
 
-        return affectedAyahsByDoor.Keys.Order().ToArray();
+        var downstreamDoorIds = affectedAyahsByDoor.Keys
+            .Where(doorId => doorId != targetDoorIds[0])
+            .Order()
+            .ToArray();
+        if (downstreamDoorIds.Length > 0)
+        {
+            var updatedDoorCount = await db.AbwabDoors
+                .Where(door => downstreamDoorIds.Contains(door.Id))
+                .ExecuteUpdateAsync(
+                    updates => updates
+                        .SetProperty(door => door.UpdatedAtUtc, now)
+                        .SetProperty(door => door.UpdatedBy, actorUserId),
+                    cancellationToken);
+            if (updatedDoorCount != downstreamDoorIds.Length)
+            {
+                throw new AbwabDoorInclusionReconciliationConflictException();
+            }
+        }
     }
 
     private async Task<IReadOnlyList<long>> CloneUnitsAsync(
@@ -111,13 +128,13 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         }
 
         var orderedSourceUnitIds = sourceUnitIds.Distinct().Order().ToArray();
-        var snapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
+        var snapshots = await SourceSnapshot.LoadAsync(
             db,
             orderedSourceUnitIds,
             cancellationToken);
         if (snapshots.Count != orderedSourceUnitIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
 
         var nextOrder = await db.LinkingSourceContributionUnits.AsNoTracking()
@@ -151,7 +168,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                 SourceUnitId = sourceUnitId,
                 TargetUnitId = clonesBySourceUnitId[sourceUnitId].Id,
                 State = AbwabDoorInclusionSyncState.Active,
-                SourceFingerprint = AbwabDoorInclusionFingerprint.Compute(snapshots[sourceUnitId]),
+                SourceFingerprint = SourceFingerprint.Compute(snapshots[sourceUnitId]),
                 CreatedAtUtc = now,
                 CreatedBy = actorUserId,
                 UpdatedAtUtc = now,
@@ -230,7 +247,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
 
     private static LinkingUnit CreateClone(
         AbwabDoorInclusion inclusion,
-        AbwabDoorInclusionSourceSnapshot snapshot,
+        SourceSnapshot snapshot,
         int actorUserId,
         DateTimeOffset now)
     {
@@ -262,7 +279,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
 
     private async Task AddCloneShapesAsync(
         IReadOnlyDictionary<long, LinkingUnit> clonesBySourceUnitId,
-        IReadOnlyDictionary<long, AbwabDoorInclusionSourceSnapshot> snapshots,
+        IReadOnlyDictionary<long, SourceSnapshot> snapshots,
         int actorUserId,
         DateTimeOffset now,
         CancellationToken cancellationToken)
@@ -324,7 +341,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         }
         catch (DbUpdateConcurrencyException)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
     }
 }

@@ -1,7 +1,7 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -173,7 +173,7 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 cancellationToken);
         if (hasMappings || hasSyncMappings)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         await db.Database.ExecuteSqlInterpolatedAsync(

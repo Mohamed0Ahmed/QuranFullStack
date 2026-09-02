@@ -1,21 +1,23 @@
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Abwab;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer(
-    QuranDashboardDbContext db,
-    LinkingWriteLockProtocol lockProtocol) : IAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler(QuranDashboardDbContext db)
 {
-    public async Task<IReadOnlyList<int>> SynchronizeAsync(
+    internal async Task ReconcileSourceChangeAsync(
         int sourceDoorId,
-        AbwabDoorInclusionMutationSet mutations,
+        IReadOnlyCollection<long> addedUnitIds,
+        IReadOnlyCollection<long> survivingCandidateUnitIds,
+        IReadOnlyCollection<long> deletedUnitIds,
+        IReadOnlyCollection<AbwabDoorInclusionUnitReplacement> replacements,
         int actorUserId,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(mutations);
+        var mutations = new DoorMutationAccumulator();
+        mutations.Add(addedUnitIds, survivingCandidateUnitIds, deletedUnitIds);
+        mutations.AddReplacements(replacements);
         if (sourceDoorId <= 0)
         {
             throw new ArgumentOutOfRangeException(nameof(sourceDoorId));
@@ -28,20 +30,19 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
 
         if (mutations.IsEmpty)
         {
-            return [];
+            return;
         }
 
-        await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
         var traversal = await LoadActiveConsumerTraversalAsync(sourceDoorId, cancellationToken);
         if (traversal.Count == 0)
         {
-            return [];
+            return;
         }
 
         var edgeContexts = await LoadEdgeContextsAsync(traversal, cancellationToken);
         var mutationsByDoor = new Dictionary<int, DoorMutationAccumulator>
         {
-            [sourceDoorId] = DoorMutationAccumulator.From(mutations),
+            [sourceDoorId] = mutations,
         };
         var affectedAyahsByDoor = new Dictionary<int, HashSet<int>>();
         var deferredUnitIds = new HashSet<long>();
@@ -57,23 +58,22 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             }
 
             var context = edgeContexts[edge.InclusionId];
-            var edgeMutations = sourceMutations.ToMutationSet();
             await ReconcileSourceUnitReplacementsAsync(
                 context.Inclusion.Id,
-                edgeMutations.Replacements,
+                sourceMutations.Replacements,
                 cancellationToken);
 
             var deletedTargetUnitIds = await DeleteSourceUnitsAsync(
                 context,
-                edgeMutations.DeletedUnitIds,
+                sourceMutations.DeletedUnitIds,
                 actorUserId,
                 now,
                 affectedAyahsByDoor,
                 deferredUnitIds,
                 touchedContributionIds,
                 cancellationToken);
-            var editedSourceUnitIds = edgeMutations.EditedUnitIds
-                .Concat(edgeMutations.Replacements.Select(replacement => replacement.CurrentUnitId))
+            var editedSourceUnitIds = sourceMutations.EditedUnitIds
+                .Concat(sourceMutations.Replacements.Select(replacement => replacement.CurrentUnitId))
                 .Distinct()
                 .Order()
                 .ToArray();
@@ -88,7 +88,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             var addedTargetUnitIds = await CloneUnitsAsync(
                 context.Inclusion,
                 context.Contribution,
-                edgeMutations.AddedUnitIds,
+                sourceMutations.AddedUnitIds,
                 actorUserId,
                 now,
                 affectedAyahsByDoor,
@@ -143,11 +143,49 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
                     cancellationToken);
             if (updatedDoorCount != changedDoorIds.Length)
             {
-                throw new AbwabDoorInclusionSynchronizationConflictException();
+                throw new AbwabDoorInclusionReconciliationConflictException();
             }
         }
 
-        return changedDoorIds;
+    }
+
+    internal async Task ReconcileTargetEditAsync(
+        int targetDoorId,
+        long targetUnitId,
+        int actorUserId,
+        CancellationToken cancellationToken)
+    {
+        await MarkTargetUnitOverriddenAsync(targetDoorId, targetUnitId, actorUserId, cancellationToken);
+        await ReconcileSourceChangeAsync(
+            targetDoorId,
+            [],
+            [targetUnitId],
+            [],
+            [],
+            actorUserId,
+            cancellationToken);
+    }
+
+    internal async Task<AbwabDoorInclusionTargetDeleteResult> ReconcileTargetDeleteAsync(
+        int targetDoorId,
+        IReadOnlyCollection<long> targetUnitIds,
+        int actorUserId,
+        CancellationToken cancellationToken)
+    {
+        var synchronizedUnitIds = await PrepareTargetUnitSuppressionsAsync(
+            targetDoorId,
+            targetUnitIds,
+            actorUserId,
+            cancellationToken);
+        await ReconcileSourceChangeAsync(
+            targetDoorId,
+            [],
+            [],
+            targetUnitIds,
+            [],
+            actorUserId,
+            cancellationToken);
+        return new AbwabDoorInclusionTargetDeleteResult(synchronizedUnitIds);
     }
 
     private async Task<IReadOnlyDictionary<int, AbwabDoorInclusionEdgeContext>> LoadEdgeContextsAsync(
@@ -167,7 +205,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             .ToListAsync(cancellationToken);
         if (inclusions.Count != inclusionIds.Length || contributions.Count != inclusionIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var contributionsByInclusionId = contributions.ToDictionary(
@@ -237,15 +275,10 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             && _deletedUnitIds.Count == 0
             && _replacements.Count == 0;
 
-        public static DoorMutationAccumulator From(AbwabDoorInclusionMutationSet mutations)
-        {
-            var accumulator = new DoorMutationAccumulator();
-            accumulator._addedUnitIds.UnionWith(mutations.AddedUnitIds);
-            accumulator._editedUnitIds.UnionWith(mutations.EditedUnitIds);
-            accumulator._deletedUnitIds.UnionWith(mutations.DeletedUnitIds);
-            accumulator._replacements.AddRange(mutations.Replacements);
-            return accumulator;
-        }
+        public IReadOnlyCollection<long> AddedUnitIds => _addedUnitIds;
+        public IReadOnlyCollection<long> EditedUnitIds => _editedUnitIds;
+        public IReadOnlyCollection<long> DeletedUnitIds => _deletedUnitIds;
+        public IReadOnlyList<AbwabDoorInclusionUnitReplacement> Replacements => _replacements;
 
         public void Add(
             IEnumerable<long> addedUnitIds,
@@ -257,11 +290,24 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             _deletedUnitIds.UnionWith(deletedUnitIds);
         }
 
-        public AbwabDoorInclusionMutationSet ToMutationSet() =>
-            AbwabDoorInclusionMutationSet.Create(
-                _addedUnitIds,
-                _editedUnitIds,
-                _deletedUnitIds,
-                _replacements);
+        public void AddReplacements(IEnumerable<AbwabDoorInclusionUnitReplacement> replacements) =>
+            _replacements.AddRange(replacements);
     }
+
+    private static bool HasInvalidSyncState(IEnumerable<AbwabDoorInclusionUnitSync> syncs) =>
+        syncs.Any(sync => sync.State switch
+        {
+            AbwabDoorInclusionSyncState.Active => sync.TargetUnitId is null,
+            AbwabDoorInclusionSyncState.Overridden => sync.TargetUnitId is null,
+            AbwabDoorInclusionSyncState.Suppressed => sync.TargetUnitId is not null,
+            _ => true,
+        });
 }
+
+internal sealed record AbwabDoorInclusionUnitReplacement(long PreviousUnitId, long CurrentUnitId);
+
+internal sealed record AbwabDoorInclusionTargetDeleteResult(IReadOnlyList<long> SynchronizedUnitIds);
+
+internal sealed class AbwabDoorInclusionReconciliationConflictException : Exception;
+
+internal sealed class AbwabDoorInclusionReconciliationUnavailableException : Exception;

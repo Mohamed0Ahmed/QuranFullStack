@@ -4,9 +4,9 @@ using QuranDashboard.Domain.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
-    public async Task<IReadOnlyList<long>> PrepareTargetUnitSuppressionsAsync(
+    private async Task<IReadOnlyList<long>> PrepareTargetUnitSuppressionsAsync(
         int targetDoorId,
         IReadOnlyCollection<long> targetUnitIds,
         int actorUserId,
@@ -46,7 +46,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         if (syncs.Any(sync => sync.State is not AbwabDoorInclusionSyncState.Active
                 and not AbwabDoorInclusionSyncState.Overridden))
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var inclusionIds = syncs.Select(sync => sync.DoorInclusionId).Distinct().Order().ToArray();
@@ -69,7 +69,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             || contributions.Select(contribution => contribution.DoorInclusionId).Distinct().Count()
                 != inclusionIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var contributionIdByInclusionId = contributions.ToDictionary(
@@ -86,7 +86,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
         if (mappings.Count != synchronizedUnitIds.Length
             || mappings.Select(mapping => mapping.UnitId).Distinct().Count() != mappings.Count)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var mappingByUnitId = mappings.ToDictionary(mapping => mapping.UnitId);
@@ -94,7 +94,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             !mappingByUnitId.TryGetValue(sync.TargetUnitId!.Value, out var mapping)
             || mapping.SourceContributionId != contributionIdByInclusionId[sync.DoorInclusionId]))
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var now = DateTimeOffset.UtcNow;

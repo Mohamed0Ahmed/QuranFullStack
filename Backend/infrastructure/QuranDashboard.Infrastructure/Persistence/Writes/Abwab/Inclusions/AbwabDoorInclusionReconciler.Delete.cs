@@ -3,7 +3,7 @@ using QuranDashboard.Domain.Abwab;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
-internal sealed partial class EfAbwabDoorInclusionSynchronizer
+internal sealed partial class AbwabDoorInclusionReconciler
 {
     private async Task<IReadOnlyList<long>> DeleteSourceUnitsAsync(
         AbwabDoorInclusionEdgeContext context,
@@ -28,18 +28,12 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .ToListAsync(cancellationToken);
         if (syncs.Count != orderedSourceUnitIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
 
-        if (syncs.Any(sync => sync.State switch
-            {
-                AbwabDoorInclusionSyncState.Active => sync.TargetUnitId is null,
-                AbwabDoorInclusionSyncState.Overridden => sync.TargetUnitId is null,
-                AbwabDoorInclusionSyncState.Suppressed => sync.TargetUnitId is not null,
-                _ => true,
-            }))
+        if (HasInvalidSyncState(syncs))
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         var targetUnitIds = syncs
@@ -47,7 +41,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .Select(sync => sync.TargetUnitId!.Value)
             .Order()
             .ToArray();
-        var targetSnapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
+        var targetSnapshots = await SourceSnapshot.LoadAsync(
             db,
             targetUnitIds,
             cancellationToken);
@@ -58,7 +52,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
             .ToListAsync(cancellationToken);
         if (targetSnapshots.Count != targetUnitIds.Length || contributionMappings.Count != targetUnitIds.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         db.LinkingSourceContributionUnits.RemoveRange(contributionMappings);
@@ -95,7 +89,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer
                 cancellationToken);
         if (hasContributionMappings || hasSyncMappings)
         {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
+            throw new AbwabDoorInclusionReconciliationConflictException();
         }
 
         await db.Database.ExecuteSqlInterpolatedAsync(

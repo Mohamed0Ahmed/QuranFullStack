@@ -93,6 +93,129 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     }
 
     [Fact]
+    public async Task RecursiveReplacementAndDetach_PreserveContinuityDerivedStateVersionsAndPublicProjections()
+    {
+        await fixture.ResetAsync();
+        using var owner = fixture.CreateClient();
+        var scenario = new LinkingTestScenario(fixture, owner);
+        scenario.ConfigureOwner();
+        await scenario.ProvisionOwnerAsync();
+        var a = await scenario.CreateTargetDoorAsync("recursive-replacement-a");
+        var b = await scenario.CreateTargetDoorAsync("recursive-replacement-b");
+        var c = await scenario.CreateTargetDoorAsync("recursive-replacement-c");
+        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [12]);
+        using var publicClient = fixture.CreateClient();
+        var ab = await AddInclusionAndReadIdAsync(owner, publicClient, b, a);
+        var bc = await AddInclusionAndReadIdAsync(owner, publicClient, c, b);
+        var before = await ReadDoorProjectionsAsync(publicClient, a, b, c);
+        before.SelectMany(state => state.VerseKeys).Should().Equal("1:1", "1:1", "1:1");
+
+        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [11]);
+
+        var replaced = await ReadDoorProjectionsAsync(publicClient, a, b, c);
+        for (var index = 0; index < replaced.Length; index++)
+        {
+            replaced[index].Version.Should().BeGreaterThan(before[index].Version);
+        }
+        replaced.SelectMany(state => state.VerseKeys).Should().Equal("1:2", "1:2", "1:2");
+        replaced[0].UnitIds.Single().Should().NotBe(before[0].UnitIds.Single());
+        replaced[1].UnitIds.Should().Equal(before[1].UnitIds);
+        replaced[2].UnitIds.Should().Equal(before[2].UnitIds);
+        (await ReadSyncsAsync(ab, bc)).Should().BeEquivalentTo(
+        [
+            new InclusionSync(ab, replaced[0].UnitIds.Single(), replaced[1].UnitIds.Single(), "active"),
+            new InclusionSync(bc, replaced[1].UnitIds.Single(), replaced[2].UnitIds.Single(), "active"),
+        ]);
+        (await ReadTopologySourceIdsAsync(publicClient, b)).Should().Equal(a);
+        (await ReadTopologySourceIdsAsync(publicClient, c)).Should().Equal(b);
+        (await ReadProjectionAsync(publicClient, "1:1")).Should().BeEmpty();
+        (await ReadProjectionAsync(publicClient, "1:2")).Should().Equal(a, b, c);
+
+        using var detach = new HttpRequestMessage(HttpMethod.Delete, $"/api/abwab/doors/{b}/inclusions/{ab}")
+        {
+            Content = JsonContent.Create(new { expectedTargetDoorVersion = replaced[1].Version }),
+        };
+        using var detachedResponse = await owner.SendAsync(detach);
+        detachedResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        (await ApiEnvelope.ReadDataAsync(detachedResponse)).GetProperty("removedSynchronizedRecordCount")
+            .GetInt32().Should().Be(1);
+
+        var detached = await ReadDoorProjectionsAsync(publicClient, a, b, c);
+        detached[0].Version.Should().Be(replaced[0].Version);
+        detached[1].Version.Should().BeGreaterThan(replaced[1].Version);
+        detached[2].Version.Should().BeGreaterThan(replaced[2].Version);
+        detached[0].VerseKeys.Should().Equal("1:2");
+        detached[1].UnitIds.Should().BeEmpty();
+        detached[2].UnitIds.Should().BeEmpty();
+        (await ReadTopologySourceIdsAsync(publicClient, b)).Should().BeEmpty();
+        (await ReadTopologySourceIdsAsync(publicClient, c)).Should().Equal(b);
+        (await ReadProjectionAsync(publicClient, "1:2")).Should().Equal(a);
+        var tree = (await ReadPublicTreeAsync(publicClient)).Tree;
+        FindDoor(tree, a).GetProperty("inclusionConsumerCount").GetInt32().Should().Be(0);
+        FindDoor(tree, b).GetProperty("inclusionSourceCount").GetInt32().Should().Be(0);
+        FindDoor(tree, b).GetProperty("inclusionConsumerCount").GetInt32().Should().Be(1);
+        FindDoor(tree, c).GetProperty("inclusionSourceCount").GetInt32().Should().Be(1);
+        (await ReadContributionAsync(ab)).Should().Be(new ContributionState(0, true, 0));
+        (await ReadContributionAsync(bc)).Should().Be(new ContributionState(0, false, 0));
+        (await ReadSyncsAsync(ab, bc)).Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task OverrideSuppressionAndLaterUpstreamChanges_CorrectSurvivingDirectContributionMetadata()
+    {
+        await fixture.ResetAsync();
+        using var owner = fixture.CreateClient();
+        var scenario = new LinkingTestScenario(fixture, owner);
+        scenario.ConfigureOwner();
+        await scenario.ProvisionOwnerAsync();
+        var source = await scenario.CreateTargetDoorAsync("override-suppression-source");
+        var target = await scenario.CreateTargetDoorAsync("override-suppression-target");
+        await ConfirmTwoAyahSourceAsync(scenario, owner, source, []);
+        using var publicClient = fixture.CreateClient();
+        var inclusion = await AddInclusionAndReadIdAsync(owner, publicClient, target, source);
+        var initial = await ReadDoorProjectionsAsync(publicClient, source, target);
+        var sourceUnits = initial[0].UnitsByAyah;
+        var targetUnits = initial[1].UnitsByAyah;
+        var words = initial[1].SelectableWordIds.Take(2).ToArray();
+        words.Should().HaveCount(2);
+
+        var targetVersion = await ReplaceWordsAsync(owner, target, targetUnits[11], initial[1].Version, 11, words[0]);
+        targetVersion = await DeleteUnitsAsync(owner, target, targetVersion, targetUnits[12]);
+        var directStates = await ReadSyncsAsync(inclusion);
+        directStates.Should().BeEquivalentTo(
+        [
+            new InclusionSync(inclusion, sourceUnits[11], targetUnits[11], "overridden"),
+            new InclusionSync(inclusion, sourceUnits[12], null, "suppressed"),
+        ]);
+        (await ReadContributionAsync(inclusion)).Should().Be(new ContributionState(1, false, 1));
+
+        var sourceVersion = await ReplaceWordsAsync(owner, source, sourceUnits[11], initial[0].Version, 11, words[1]);
+        var afterUpstreamEdit = (await ReadDoorProjectionsAsync(publicClient, target))[0];
+        afterUpstreamEdit.Version.Should().Be(targetVersion);
+        afterUpstreamEdit.VerseKeys.Should().Equal("1:1");
+        afterUpstreamEdit.SelectedWordIds.Should().Equal(words[0]);
+        (await ReadSyncsAsync(inclusion)).Should().BeEquivalentTo(directStates);
+
+        var beforeDeletion = await ReadDirectContributionAsync(source);
+        beforeDeletion.State.Should().Be(new ContributionState(2, false, 2));
+        await DeleteUnitsAsync(owner, source, sourceVersion, sourceUnits[12]);
+        var afterDeletion = await ReadDirectContributionAsync(source);
+        afterDeletion.State.ResolvedAyahCount.Should().Be(1);
+        afterDeletion.State.Deleted.Should().BeFalse();
+        afterDeletion.State.UnitCount.Should().Be(1);
+        afterDeletion.ResolvedAtUtc.Should().BeAfter(beforeDeletion.ResolvedAtUtc);
+        (await ReadSyncsAsync(inclusion)).Should().BeEquivalentTo(
+            [new InclusionSync(inclusion, sourceUnits[11], targetUnits[11], "overridden")]);
+
+        var final = await ReadDoorProjectionsAsync(publicClient, source, target);
+        final.SelectMany(state => state.VerseKeys).Should().Equal("1:1", "1:1");
+        final[0].SelectedWordIds.Should().Equal(words[1]);
+        final[1].SelectedWordIds.Should().Equal(words[0]);
+        (await ReadProjectionAsync(publicClient, "1:1")).Should().Equal(source, target);
+        (await ReadProjectionAsync(publicClient, "1:2")).Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ValidInclusion_AnonymousUnderprivilegedRevokedAndDisabledActorsRemainDeniedWithoutPublicStateDrift()
     {
         await fixture.ResetAsync();
@@ -278,9 +401,9 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
             .GetProperty("version").GetUInt32();
 
         using (var archiveRequest = new HttpRequestMessage(HttpMethod.Delete, $"/api/abwab/doors/{doorId}")
-               {
-                   Content = JsonContent.Create(new { version = versionBeforeArchive }),
-               })
+        {
+            Content = JsonContent.Create(new { version = versionBeforeArchive }),
+        })
         using (var archiveResponse = await ownerClient.SendAsync(archiveRequest))
         {
             archiveResponse.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -298,6 +421,265 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         AssertArchivedDoorStateUnchanged(
             archivedBeforeStaleRestore,
             await ReadArchivedDoorStateAsync(publicClient, doorId));
+    }
+
+    private static async Task ConfirmTwoAyahSourceAsync(
+        LinkingTestScenario scenario,
+        HttpClient owner,
+        int doorId,
+        IReadOnlyList<int> excludedAyahIds)
+    {
+        var descriptor = TwoAyahSourceDescriptor();
+        using var sourceResponse = await owner.PostAsJsonAsync(
+            "/api/linking/sources/resolve-page",
+            new
+            {
+                descriptor,
+                expectedLinkingDataRevision = (long?)null,
+                expectedSourceViewIdentity = (string?)null,
+                view = new
+                {
+                    segment = "all",
+                    inclusionMode = (string?)null,
+                    ayahOverrideIds = Array.Empty<int>(),
+                    typeCodes = Array.Empty<string>(),
+                },
+                page = 1,
+                pageSize = 100,
+            });
+        sourceResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var source = await ApiEnvelope.ReadDataAsync(sourceResponse);
+        source.GetProperty("items").EnumerateArray()
+            .Select(item => item.GetProperty("verseKey").GetString())
+            .Should().Equal("1:1", "1:2");
+
+        using var preflightResponse = await owner.PostAsJsonAsync(
+            "/api/linking/preflights",
+            new
+            {
+                preparationKey = Guid.NewGuid(),
+                doorId,
+                expectedLinkingDataRevision = source.GetProperty("linkingDataRevision").GetInt64(),
+                sources = new[]
+                {
+                    new
+                    {
+                        orderValue = 1,
+                        workspaceSource = (object?)null,
+                        inlineSource = new
+                        {
+                            descriptor,
+                            configuration = new
+                            {
+                                inclusionMode = "all_except",
+                                ayahOverrideIds = excludedAyahIds,
+                                selectedWords = Array.Empty<object>(),
+                                automaticWordMatchesEnabled = (bool?)null,
+                                manualLinkShape = "independent",
+                                descriptions = Array.Empty<object>(),
+                            },
+                        },
+                    },
+                },
+            });
+        preflightResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var accepted = await ApiEnvelope.ReadDataAsync(preflightResponse);
+        var preflightId = accepted.GetProperty("preflightId").GetGuid();
+        var ready = await scenario.PollPreflightAsync(preflightId, status => status == "ready");
+        ready.GetProperty("isBlocked").GetBoolean().Should().BeFalse();
+        var token = ready.GetProperty("preflightToken").GetString();
+        token.Should().NotBeNullOrWhiteSpace();
+
+        using var confirmationResponse = await owner.PostAsJsonAsync(
+            $"/api/linking/preflights/{preflightId}/confirmation-jobs",
+            new { preflightToken = token, idempotencyKey = Guid.NewGuid() });
+        confirmationResponse.StatusCode.Should().Be(HttpStatusCode.Accepted);
+        var confirmation = await ApiEnvelope.ReadDataAsync(confirmationResponse);
+        await scenario.PollConfirmationAsync(
+            confirmation.GetProperty("job").GetProperty("jobId").GetGuid(),
+            status => status == "succeeded");
+    }
+
+    private static object TwoAyahSourceDescriptor() => new
+    {
+        kind = "manual-mushaf-ayahs",
+        label = "آيتا الفاتحة الأولى والثانية",
+        manualAyahs = new[]
+        {
+            new { verseKey = "1:1", pageNumber = 1, displayHint = "1:1" },
+            new { verseKey = "1:2", pageNumber = 1, displayHint = "1:2" },
+        },
+        contextKey = (string?)null,
+    };
+
+    private static async Task<int> AddInclusionAndReadIdAsync(
+        HttpClient owner,
+        HttpClient publicClient,
+        int targetDoorId,
+        int sourceDoorId)
+    {
+        var tree = (await ReadPublicTreeAsync(publicClient)).Tree;
+        var version = FindDoor(tree, targetDoorId).GetProperty("version").GetUInt32();
+        using var response = await AddInclusionAsync(owner, targetDoorId, version, sourceDoorId);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("added")
+            .EnumerateArray().Single().GetProperty("inclusionId").GetInt32();
+    }
+
+    private static async Task<DoorProjectionState[]> ReadDoorProjectionsAsync(
+        HttpClient client,
+        params int[] doorIds)
+    {
+        var states = new List<DoorProjectionState>();
+        foreach (var doorId in doorIds)
+        {
+            using var response = await client.GetAsync($"/api/abwab/doors/{doorId}/links/snapshot");
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var snapshot = await ApiEnvelope.ReadDataAsync(response);
+            var ayahVerseKeys = snapshot.GetProperty("ayahs").EnumerateArray()
+                .ToDictionary(ayah => ayah.GetProperty("ayahId").GetInt32(), ayah => ayah.GetProperty("verseKey").GetString()!);
+            var records = snapshot.GetProperty("records").EnumerateArray().ToArray();
+            states.Add(new DoorProjectionState(
+                snapshot.GetProperty("doorVersion").GetUInt32(),
+                records.Select(record => record.GetProperty("unitId").GetInt64()).ToArray(),
+                records.SelectMany(record => record.GetProperty("ayahs").EnumerateArray())
+                    .Select(ayah => ayahVerseKeys[ayah.GetProperty("ayahId").GetInt32()]).ToArray(),
+                records.ToDictionary(
+                    record => record.GetProperty("ayahs").EnumerateArray().Single().GetProperty("ayahId").GetInt32(),
+                    record => record.GetProperty("unitId").GetInt64()),
+                records.SelectMany(record => record.GetProperty("ayahs").EnumerateArray())
+                    .SelectMany(ayah => ayah.GetProperty("selectedWordIds").EnumerateArray())
+                    .Select(wordId => wordId.GetInt32()).ToArray(),
+                snapshot.GetProperty("ayahs").EnumerateArray()
+                    .SelectMany(ayah => ayah.GetProperty("words").EnumerateArray())
+                    .Where(word => !word.GetProperty("isAyahMarker").GetBoolean())
+                    .Select(word => word.GetProperty("quranWordId").GetInt32()).ToArray()));
+        }
+
+        return states.ToArray();
+    }
+
+    private static async Task<uint> ReplaceWordsAsync(
+        HttpClient owner,
+        int doorId,
+        long unitId,
+        uint doorVersion,
+        int ayahId,
+        int wordId)
+    {
+        using var response = await owner.PatchAsJsonAsync(
+            $"/api/abwab/doors/{doorId}/links/{unitId}/words",
+            new
+            {
+                expectedDoorVersion = doorVersion,
+                selectedWords = new[] { new { ayahId, quranWordId = wordId } },
+            });
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("doorVersion").GetUInt32();
+    }
+
+    private static async Task<uint> DeleteUnitsAsync(
+        HttpClient owner,
+        int doorId,
+        uint doorVersion,
+        params long[] unitIds)
+    {
+        using var response = await owner.PostAsJsonAsync(
+            $"/api/abwab/doors/{doorId}/links/bulk-delete",
+            new { expectedDoorVersion = doorVersion, selectionMode = "only", unitIds });
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("doorVersion").GetUInt32();
+    }
+
+    private static async Task<int[]> ReadTopologySourceIdsAsync(HttpClient client, int doorId)
+    {
+        using var response = await client.GetAsync($"/api/abwab/doors/{doorId}/inclusions");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("sources").EnumerateArray()
+            .Select(source => source.GetProperty("doorId").GetInt32()).ToArray();
+    }
+
+    private static async Task<int[]> ReadProjectionAsync(HttpClient client, string verseKey)
+    {
+        using var response = await client.GetAsync($"/api/mushaf/ayahs/{verseKey}/doors");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        return (await ApiEnvelope.ReadDataAsync(response)).GetProperty("doorIds").EnumerateArray()
+            .Select(doorId => doorId.GetInt32()).ToArray();
+    }
+
+    private async Task<InclusionSync[]> ReadSyncsAsync(params int[] inclusionIds)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT door_inclusion_id, source_unit_id, target_unit_id, state
+            FROM abwab_door_inclusion_unit_syncs
+            WHERE door_inclusion_id = ANY(@inclusion_ids)
+            ORDER BY door_inclusion_id, source_unit_id;
+            """,
+            connection);
+        command.Parameters.AddWithValue("inclusion_ids", inclusionIds);
+        await using var reader = await command.ExecuteReaderAsync();
+        var syncs = new List<InclusionSync>();
+        while (await reader.ReadAsync())
+        {
+            syncs.Add(new InclusionSync(
+                reader.GetInt32(0),
+                reader.GetInt64(1),
+                reader.IsDBNull(2) ? null : reader.GetInt64(2),
+                reader.GetString(3)));
+        }
+
+        return syncs.ToArray();
+    }
+
+    private async Task<ContributionState> ReadContributionAsync(int inclusionId)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT contribution.resolved_ayah_count,
+                   contribution.deleted_at IS NOT NULL,
+                   COUNT(mapping.unit_id)::integer
+            FROM linking_source_contributions contribution
+            LEFT JOIN linking_source_contribution_units mapping
+              ON mapping.source_contribution_id = contribution.id
+            WHERE contribution.door_inclusion_id = @inclusion_id
+            GROUP BY contribution.id;
+            """,
+            connection);
+        command.Parameters.AddWithValue("inclusion_id", inclusionId);
+        await using var reader = await command.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        return new ContributionState(reader.GetInt32(0), reader.GetBoolean(1), reader.GetInt32(2));
+    }
+
+    private async Task<DirectContributionState> ReadDirectContributionAsync(int doorId)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT contribution.resolved_ayah_count,
+                   contribution.deleted_at IS NOT NULL,
+                   COUNT(mapping.unit_id)::integer,
+                   contribution.resolved_at_utc
+            FROM linking_source_contributions contribution
+            LEFT JOIN linking_source_contribution_units mapping
+              ON mapping.source_contribution_id = contribution.id
+            WHERE contribution.door_id = @door_id
+              AND contribution.door_inclusion_id IS NULL
+            GROUP BY contribution.id;
+            """,
+            connection);
+        command.Parameters.AddWithValue("door_id", doorId);
+        await using var reader = await command.ExecuteReaderAsync();
+        (await reader.ReadAsync()).Should().BeTrue();
+        return new DirectContributionState(
+            new ContributionState(reader.GetInt32(0), reader.GetBoolean(1), reader.GetInt32(2)),
+            reader.GetFieldValue<DateTimeOffset>(3));
     }
 
     private static async Task<(EntityTagHeaderValue ETag, JsonElement Tree)> ReadPublicTreeAsync(HttpClient client)
@@ -440,4 +822,22 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         JsonElement Tree,
         string Snapshot,
         JsonElement Projection);
+
+    private sealed record DoorProjectionState(
+        uint Version,
+        IReadOnlyList<long> UnitIds,
+        IReadOnlyList<string> VerseKeys,
+        IReadOnlyDictionary<int, long> UnitsByAyah,
+        IReadOnlyList<int> SelectedWordIds,
+        IReadOnlyList<int> SelectableWordIds);
+
+    private sealed record InclusionSync(
+        int InclusionId,
+        long SourceUnitId,
+        long? TargetUnitId,
+        string State);
+
+    private sealed record ContributionState(int ResolvedAyahCount, bool Deleted, int UnitCount);
+
+    private sealed record DirectContributionState(ContributionState State, DateTimeOffset ResolvedAtUtc);
 }

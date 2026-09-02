@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Infrastructure.Persistence.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -9,7 +9,7 @@ internal sealed partial class EfLinkingConfirmationWriter(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore,
     LinkingWriteLockProtocol lockProtocol,
-    IAbwabDoorInclusionSynchronizer inclusionSynchronizer) : ILinkingConfirmationWriter
+    AbwabDoorInclusionReconciler inclusionReconciler) : ILinkingConfirmationWriter
 {
     private async Task<long> LockRevisionAsync(
         IDbContextTransaction transaction,

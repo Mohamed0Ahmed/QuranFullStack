@@ -70,17 +70,12 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
         db.AbwabDoorInclusions.AddRange(inclusions);
         await db.SaveChangesAsync(cancellationToken);
 
-        var synchronizedDoorIds = await synchronizer.AddInclusionsAsync(
+        await reconciler.ReconcileInclusionMaterializationAsync(
             inclusions,
             actorUserId,
             cancellationToken);
-        var changedDoorIds = synchronizedDoorIds.Append(targetDoorId).Distinct().ToArray();
-        foreach (var changedDoorId in changedDoorIds)
-        {
-            var door = doorsById[changedDoorId];
-            door.UpdatedAtUtc = now;
-            door.UpdatedBy = actorUserId;
-        }
+        targetDoor.UpdatedAtUtc = now;
+        targetDoor.UpdatedBy = actorUserId;
 
         await db.SaveChangesAsync(cancellationToken);
 
