@@ -404,6 +404,102 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         await AssertNoPublicLinksAsync(client, doorId);
     }
 
+    [Fact]
+    public async Task ConcurrentConfirmationAndInclusionAdd_SerializeWithoutDeadlockAndLeaveMatchingPublicProjections()
+    {
+        await fixture.ResetAsync();
+        using var client = fixture.CreatePausedWorkersClient();
+        var scenario = new LinkingTestScenario(fixture, client);
+        scenario.ConfigureOwner();
+        await scenario.ProvisionOwnerAsync();
+        var sourceDoorId = await scenario.CreateTargetDoorAsync("concurrent-confirmation-source");
+        var targetDoorId = await scenario.CreateTargetDoorAsync("concurrent-confirmation-target");
+        var prepared = await scenario.PrepareReadyPreflightAsync(
+            sourceDoorId,
+            fixture.ProcessNextPausedPreflightAsync);
+        var idempotencyKey = Guid.NewGuid();
+        var request = new { preflightToken = prepared.Token, idempotencyKey };
+        var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
+
+        using var topologyResponse = await client.GetAsync($"/api/abwab/doors/{targetDoorId}/inclusions");
+        topologyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var targetVersion = (await ApiEnvelope.ReadDataAsync(topologyResponse))
+            .GetProperty("doorVersion").GetUInt32();
+
+        await using var gateConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await gateConnection.OpenAsync();
+        await using var gateTransaction = await gateConnection.BeginTransactionAsync();
+        await using (var gateCommand = new NpgsqlCommand(
+                         "SELECT id FROM abwab_doors WHERE id = @door_id FOR UPDATE",
+                         gateConnection,
+                         gateTransaction))
+        {
+            gateCommand.Parameters.AddWithValue("door_id", sourceDoorId);
+            (await gateCommand.ExecuteScalarAsync()).Should().Be(sourceDoorId);
+        }
+        await using var gatePidCommand = new NpgsqlCommand("SELECT pg_backend_pid()", gateConnection, gateTransaction);
+        var gateBackendPid = Convert.ToInt32(await gatePidCommand.ExecuteScalarAsync());
+
+        var confirmation = fixture.ProcessNextPausedConfirmationAsync();
+        var inclusion = client.PostAsJsonAsync(
+            $"/api/abwab/doors/{targetDoorId}/inclusions",
+            new { expectedTargetDoorVersion = targetVersion, sourceDoorIds = new[] { sourceDoorId } });
+        var observedWaiters = 0;
+        try
+        {
+            observedWaiters = await WaitForBlockedSessionChainAsync(gateBackendPid, 2);
+        }
+        finally
+        {
+            await gateTransaction.CommitAsync();
+        }
+
+        await confirmation.WaitAsync(TimeSpan.FromSeconds(10));
+        using var inclusionResponse = await inclusion.WaitAsync(TimeSpan.FromSeconds(10));
+        observedWaiters.Should().BeGreaterThanOrEqualTo(2);
+        inclusionResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var added = await ApiEnvelope.ReadDataAsync(inclusionResponse);
+        added.GetProperty("added").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("sourceDoorId").GetInt32().Should().Be(sourceDoorId);
+
+        var terminal = await scenario.PollConfirmationAsync(jobId, status => status == "succeeded");
+        terminal.GetProperty("failureCode").ValueKind.Should().Be(JsonValueKind.Null);
+        using var outcomeResponse = await client.GetAsync(
+            $"/api/linking/confirmation-outcomes/{idempotencyKey}");
+        outcomeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var outcome = await ApiEnvelope.ReadDataAsync(outcomeResponse);
+        outcome.GetProperty("jobId").GetGuid().Should().Be(jobId);
+        outcome.GetProperty("status").GetString().Should().Be("succeeded");
+
+        await AssertDoorSnapshotAsync(client, sourceDoorId);
+        await AssertDoorSnapshotAsync(client, targetDoorId);
+        using var finalTopologyResponse = await client.GetAsync(
+            $"/api/abwab/doors/{targetDoorId}/inclusions");
+        finalTopologyResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var finalTopology = await ApiEnvelope.ReadDataAsync(finalTopologyResponse);
+        finalTopology.GetProperty("sources").EnumerateArray().Should().ContainSingle()
+            .Which.GetProperty("doorId").GetInt32().Should().Be(sourceDoorId);
+
+        using var treeResponse = await client.GetAsync("/api/abwab/tree");
+        treeResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var doors = (await ApiEnvelope.ReadDataAsync(treeResponse)).GetProperty("doors")
+            .EnumerateArray().ToDictionary(door => door.GetProperty("id").GetInt32());
+        doors[sourceDoorId].GetProperty("inclusionConsumerCount").GetInt32().Should().Be(1);
+        doors[targetDoorId].GetProperty("inclusionSourceCount").GetInt32().Should().Be(1);
+
+        using var projectionResponse = await client.GetAsync("/api/mushaf/ayahs/1:1/doors");
+        projectionResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var projection = await ApiEnvelope.ReadDataAsync(projectionResponse);
+        projection.GetProperty("doorIds").EnumerateArray()
+            .Select(id => id.GetInt32()).Should().Equal(sourceDoorId, targetDoorId);
+
+        (await fixture.ReadPersistentStateCountsAsync(sourceDoorId)).Should().Be(
+            new LinkingPersistentStateCounts(1, 1, 1, 1, 1, 1));
+        (await fixture.ReadPersistentStateCountsAsync(targetDoorId)).Should().Be(
+            new LinkingPersistentStateCounts(0, 0, 0, 1, 1, 1));
+        await AssertSingleCompleteInclusionAsync(sourceDoorId, targetDoorId);
+    }
+
     private static async Task<Guid> EnqueueConfirmationAsync(
         HttpClient client,
         Guid preflightId,
@@ -462,6 +558,85 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         var projection = await ApiEnvelope.ReadDataAsync(projectionResponse);
         projection.GetProperty("doorIds").EnumerateArray()
             .Select(id => id.GetInt32()).Should().Equal(doorId);
+    }
+
+    private static async Task AssertDoorSnapshotAsync(HttpClient client, int doorId)
+    {
+        using var response = await client.GetAsync($"/api/abwab/doors/{doorId}/links/snapshot");
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var snapshot = await ApiEnvelope.ReadDataAsync(response);
+        snapshot.GetProperty("records").GetArrayLength().Should().Be(1);
+        snapshot.GetProperty("ayahs").EnumerateArray()
+            .Select(ayah => ayah.GetProperty("verseKey").GetString())
+            .Should().Equal("1:1");
+    }
+
+    private async Task<int> WaitForBlockedSessionChainAsync(int gateBackendPid, int minimumWaiters)
+    {
+        var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
+        var observed = 0;
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            WITH RECURSIVE blocked(pid) AS (
+                SELECT activity.pid
+                FROM pg_stat_activity activity
+                WHERE @gate_backend_pid = ANY (pg_blocking_pids(activity.pid))
+                UNION
+                SELECT activity.pid
+                FROM pg_stat_activity activity
+                JOIN blocked blocker ON blocker.pid = ANY (pg_blocking_pids(activity.pid))
+            )
+            SELECT COUNT(*) FROM blocked
+            """,
+            connection);
+        command.Parameters.AddWithValue("gate_backend_pid", gateBackendPid);
+        while (DateTimeOffset.UtcNow < deadline)
+        {
+            observed = Convert.ToInt32(await command.ExecuteScalarAsync());
+            if (observed >= minimumWaiters)
+            {
+                return observed;
+            }
+
+            await Task.Yield();
+        }
+
+        return observed;
+    }
+
+    private async Task AssertSingleCompleteInclusionAsync(int sourceDoorId, int targetDoorId)
+    {
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            SELECT
+                (SELECT COUNT(*) FROM abwab_door_inclusions
+                 WHERE source_door_id = @source_door_id
+                   AND target_door_id = @target_door_id
+                   AND deleted_at IS NULL),
+                (SELECT COUNT(*) FROM abwab_door_inclusion_unit_syncs sync
+                 JOIN abwab_door_inclusions inclusion ON inclusion.id = sync.door_inclusion_id
+                 WHERE inclusion.source_door_id = @source_door_id
+                   AND inclusion.target_door_id = @target_door_id
+                   AND inclusion.deleted_at IS NULL),
+                (SELECT COUNT(*) FROM linking_source_contributions contribution
+                 JOIN abwab_door_inclusions inclusion ON inclusion.id = contribution.door_inclusion_id
+                 WHERE inclusion.source_door_id = @source_door_id
+                   AND inclusion.target_door_id = @target_door_id
+                   AND inclusion.deleted_at IS NULL
+                   AND contribution.deleted_at IS NULL)
+            """,
+            connection);
+        command.Parameters.AddWithValue("source_door_id", sourceDoorId);
+        command.Parameters.AddWithValue("target_door_id", targetDoorId);
+        await using var reader = await command.ExecuteReaderAsync();
+        await reader.ReadAsync();
+        reader.GetInt64(0).Should().Be(1);
+        reader.GetInt64(1).Should().Be(1);
+        reader.GetInt64(2).Should().Be(1);
     }
 
     private static async Task<WorkspaceSource> AddWorkspaceSourceAsync(HttpClient client)

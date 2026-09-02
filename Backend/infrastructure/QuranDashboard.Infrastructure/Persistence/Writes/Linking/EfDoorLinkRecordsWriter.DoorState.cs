@@ -9,7 +9,6 @@ internal sealed partial class EfDoorLinkRecordsWriter
 {
     private async Task<AbwabDoor?> LockDoorAsync(int doorId, CancellationToken cancellationToken)
     {
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
         return (await db.AbwabDoors.FromSqlInterpolated(
                 $"""
                 SELECT id, section_id, parent_id, name, description, representative_ayah_text,

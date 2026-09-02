@@ -161,9 +161,8 @@ internal sealed partial class EfLinkingPreparedPreflightStore
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(
-            ProcessingLockNamespace,
-            ProcessingLockKey(lease.PreflightId),
+        await lockProtocol.AcquirePreparedProcessingMutationAsync(
+            lease.PreflightId,
             cancellationToken);
         var revision = await LockRevisionAsync(transaction, cancellationToken);
         var preflight = await LockLeaseForFinalizationAsync(lease, cancellationToken);
@@ -258,9 +257,8 @@ internal sealed partial class EfLinkingPreparedPreflightStore
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(
-            ProcessingLockNamespace,
-            ProcessingLockKey(lease.PreflightId),
+        await lockProtocol.AcquirePreparedProcessingMutationAsync(
+            lease.PreflightId,
             cancellationToken);
         var preflight = await LockLeaseForFinalizationAsync(lease, cancellationToken);
         if (preflight is null)

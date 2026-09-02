@@ -5,16 +5,10 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfLinkingPreparedPreflightStore
 {
-    private const int ProcessingLockNamespace = 193648319;
-    private const int ClaimLockNamespace = 193648320;
-    private const int ClaimLockKey = 1;
-
     public async Task<LinkingPreparedPreflightLease?> ClaimAsync(CancellationToken cancellationToken)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await db.Database.ExecuteSqlRawAsync(
-            $"SELECT pg_advisory_xact_lock({ClaimLockNamespace}, {ClaimLockKey})",
-            cancellationToken);
+        await lockProtocol.AcquirePreparedWorkerClaimAsync(cancellationToken);
         var activeLeases = await db.Database.SqlQueryRaw<int>(
                 """
                 SELECT COUNT(*)::int AS "Value"
@@ -48,11 +42,9 @@ internal sealed partial class EfLinkingPreparedPreflightStore
         LinkingPreparedPreflight? preflight = null;
         foreach (var candidate in candidates)
         {
-            var acquired = await db.Database.SqlQueryRaw<bool>(
-                    "SELECT pg_try_advisory_xact_lock({0}, {1}) AS \"Value\"",
-                    ProcessingLockNamespace,
-                    ProcessingLockKey(candidate.Id))
-                .SingleAsync(cancellationToken);
+            var acquired = await lockProtocol.TryAcquirePreparedProcessingForWorkerClaimAsync(
+                candidate.Id,
+                cancellationToken);
             if (acquired)
             {
                 preflight = candidate;
@@ -90,14 +82,13 @@ internal sealed partial class EfLinkingPreparedPreflightStore
         CancellationToken cancellationToken)
     {
         await db.Database.OpenConnectionAsync(cancellationToken);
+        IAsyncDisposable? processingLock = null;
         try
         {
-            var acquired = await db.Database.SqlQueryRaw<bool>(
-                    "SELECT pg_try_advisory_lock({0}, {1}) AS \"Value\"",
-                    ProcessingLockNamespace,
-                    ProcessingLockKey(lease.PreflightId))
-                .SingleAsync(cancellationToken);
-            if (!acquired)
+            processingLock = await lockProtocol.TryAcquirePreparedProcessingSessionAsync(
+                lease.PreflightId,
+                cancellationToken);
+            if (processingLock is null)
             {
                 await db.Database.CloseConnectionAsync();
                 return null;
@@ -106,15 +97,26 @@ internal sealed partial class EfLinkingPreparedPreflightStore
             var active = await ProbeLeaseAsync(lease, cancellationToken);
             if (active)
             {
-                return new ProcessingFence(db, ProcessingLockKey(lease.PreflightId));
+                return new ProcessingFence(db, processingLock);
             }
 
-            await new ProcessingFence(db, ProcessingLockKey(lease.PreflightId)).DisposeAsync();
+            await new ProcessingFence(db, processingLock).DisposeAsync();
             return null;
         }
         catch
         {
-            await db.Database.CloseConnectionAsync();
+            try
+            {
+                if (processingLock is not null)
+                {
+                    await processingLock.DisposeAsync();
+                }
+            }
+            finally
+            {
+                await db.Database.CloseConnectionAsync();
+            }
+
             throw;
         }
     }
@@ -231,26 +233,21 @@ internal sealed partial class EfLinkingPreparedPreflightStore
                 lease.AttemptCount)
             .SingleAsync(cancellationToken);
 
-    private static int ProcessingLockKey(Guid preflightId) =>
-        BitConverter.ToInt32(preflightId.ToByteArray(), 0);
-
     private async Task<DateTimeOffset> DatabaseNowAsync(CancellationToken cancellationToken) =>
         await db.Database.SqlQueryRaw<DateTimeOffset>(
                 "SELECT CURRENT_TIMESTAMP AS \"Value\"")
             .SingleAsync(cancellationToken);
 
-    private sealed class ProcessingFence(QuranDashboardDbContext dbContext, int processingKey)
+    private sealed class ProcessingFence(
+        QuranDashboardDbContext dbContext,
+        IAsyncDisposable processingLock)
         : IAsyncDisposable
     {
         public async ValueTask DisposeAsync()
         {
             try
             {
-                _ = await dbContext.Database.SqlQueryRaw<bool>(
-                        "SELECT pg_advisory_unlock({0}, {1}) AS \"Value\"",
-                        ProcessingLockNamespace,
-                        processingKey)
-                    .SingleAsync();
+                await processingLock.DisposeAsync();
             }
             finally
             {

@@ -7,7 +7,7 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 internal sealed partial class EfAbwabDoorInclusionSynchronizer(
     QuranDashboardDbContext db,
-    AbwabDoorInclusionSyncLock syncLock) : IAbwabDoorInclusionSynchronizer
+    LinkingWriteLockProtocol lockProtocol) : IAbwabDoorInclusionSynchronizer
 {
     public async Task<IReadOnlyList<int>> SynchronizeAsync(
         int sourceDoorId,
@@ -31,7 +31,7 @@ internal sealed partial class EfAbwabDoorInclusionSynchronizer(
             return [];
         }
 
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
         var traversal = await LoadActiveConsumerTraversalAsync(sourceDoorId, cancellationToken);
         if (traversal.Count == 0)
         {

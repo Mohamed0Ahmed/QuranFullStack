@@ -15,10 +15,16 @@ internal sealed partial class EfLinkingConfirmationWriter
     {
         db.ChangeTracker.Clear();
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeJobLockAsync(lease.JobId, cancellationToken);
+        var jobLockPhase = await lockProtocol.BeginConfirmationCommitAsync(
+            transaction,
+            lease.JobId,
+            cancellationToken);
         var job = await LockFinalizingJobAsync(lease, cancellationToken)
             ?? throw new LinkingStaleVersionException();
-        await TakeIdempotencyLockAsync(lease.IdempotencyKey, cancellationToken);
+        var idempotencyLockPhase = await lockProtocol.AcquireConfirmationIdempotencyAsync(
+            jobLockPhase,
+            lease.IdempotencyKey,
+            cancellationToken);
         var revision = await LockRevisionAsync(transaction, cancellationToken);
         var preflight = await LockAcceptedPreflightAsync(lease, cancellationToken)
             ?? throw new LinkingStaleVersionException();
@@ -31,7 +37,9 @@ internal sealed partial class EfLinkingConfirmationWriter
             throw new LinkingIdempotencyConflictException();
         }
 
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        await lockProtocol.AcquireConfirmationGraphMutationAsync(
+            idempotencyLockPhase,
+            cancellationToken);
         var door = await LockDoorAsync(lease.DoorId, cancellationToken);
         if (door is null)
         {
