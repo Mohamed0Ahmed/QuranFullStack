@@ -22,9 +22,14 @@ import { PhraseSimilarityQueryCoordinator, PhraseSimilarityQueryHooks } from './
 import { PhraseSimilarityResolutionStore } from './phrase-similarity-resolution.store';
 import { PhraseSimilarityResultsLoader } from './phrase-similarity-results.loader';
 import { PhraseSimilarityResultHooks, PhraseSimilarityResultStore } from './phrase-similarity-result.store';
-import { parsePhraseSimilarityUrlState, phraseSimilarityStateKey } from './phrase-similarity-url-sync';
+import {
+  parsePhraseSimilarityUrlState,
+  phraseSimilarityResultSetKey,
+  phraseSimilarityStateKey,
+} from './phrase-similarity-url-sync';
 import { maximumDifferenceCount, minimumMatchedWords, percentForMaximumDifferences } from './phrase-similarity-threshold';
 import { supportsSimilarityRoute } from './phrase-similarity-route-options';
+import { PhraseLinkingAyahSelectionStore } from './phrase-linking-ayah-selection.store';
 
 const INVALID_ROUTE_MESSAGE = 'رابط المتشابهات غير صالح أو يحتوي على خيارات غير متاحة.';
 
@@ -38,6 +43,7 @@ export class PhraseSimilarityFacade {
   private readonly notice = inject(PhraseNoticeStore);
   private readonly results = inject(PhraseSimilarityResultStore);
   private readonly resolution = inject(PhraseSimilarityResolutionStore);
+  private readonly ayahSelection = inject(PhraseLinkingAyahSelectionStore);
 
   private readonly _route = signal(DEFAULT_PHRASE_SIMILARITY_URL_STATE);
   private readonly _draftMode = signal<PhraseTextMode>(DEFAULT_PHRASE_SIMILARITY_URL_STATE.mode);
@@ -59,6 +65,10 @@ export class PhraseSimilarityFacade {
     resetBuild: () => this.resetForBuildChange(),
     navigate: (state, replaceUrl) => this.navigate(state, replaceUrl),
     setError: (message) => this._errorMessage.set(message),
+    acceptPopulation: (totalAyahCount) => this.ayahSelection.synchronizePopulation(
+      this.currentPopulationKey(),
+      totalAyahCount,
+    ),
   };
   private readonly queryHooks: PhraseSimilarityQueryHooks = {
     currentRoute: () => this._route(),
@@ -226,6 +236,10 @@ export class PhraseSimilarityFacade {
 
   private runRoute(parsed: ParsedPhraseSimilarityUrlState): Observable<void> {
     this._route.set(parsed.state);
+    const populationKey = this.populationKey(parsed.state);
+    if (parsed.invalid || populationKey !== this.ayahSelection.resultSetKey()) {
+      this.ayahSelection.synchronizePopulation(populationKey, 0);
+    }
     this.syncDraftMode(parsed.state.mode);
     this._routeInvalid.set(parsed.invalid);
     this.resolution.restoreDraft(parsed.state.q);
@@ -393,6 +407,18 @@ export class PhraseSimilarityFacade {
     return (
       this.resolution.draft().trim() === route.q.trim() &&
       this._draftMode() === route.mode
+    );
+  }
+
+  private currentPopulationKey(): string {
+    return this.populationKey(this._route());
+  }
+
+  private populationKey(route: PhraseSimilarityUrlState): string {
+    return phraseSimilarityResultSetKey(
+      route.build,
+      route.resolution,
+      minimumMatchedWords(route.length, route.min),
     );
   }
 }

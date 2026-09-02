@@ -4,7 +4,7 @@ import { PhraseContextApi } from './data-access/phrase-context.api';
 import { PhraseResolutionApi } from './data-access/phrase-resolution.api';
 import { PhraseActionRequestGate } from './state/phrase-action-request-gate';
 import { PhraseContextActionCoordinator } from './state/phrase-context-action.coordinator';
-import { PhraseContextAyahSelectionStore } from './state/phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from './state/phrase-linking-ayah-selection.store';
 import { PhraseContextLinkingCoordinator } from './state/phrase-context-linking.coordinator';
 import { PhraseContextQueryCoordinator } from './state/phrase-context-query.coordinator';
 import { PhraseContextRequestStatusStore } from './state/phrase-context-request-status.store';
@@ -29,7 +29,7 @@ export const PHRASE_CONTEXT_ROUTES: Routes = [
       PhraseResolutionApi,
       PhraseContextFacade,
       PhraseContextActionCoordinator,
-      PhraseContextAyahSelectionStore,
+      PhraseLinkingAyahSelectionStore,
       PhraseContextLinkingCoordinator,
       PhraseContextQueryCoordinator,
       PhraseContextSelectionStore,

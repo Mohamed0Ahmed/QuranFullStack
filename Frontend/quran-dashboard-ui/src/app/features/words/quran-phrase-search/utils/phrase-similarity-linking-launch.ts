@@ -2,7 +2,7 @@ import { PhraseSimilarityLinkingSelectionResponse } from '../../../../core/api/g
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
 import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
-import { PhraseSimilarityAyahSelectionSnapshot } from '../state/phrase-similarity-ayah-selection.store';
+import { PhraseLinkingAyahSelectionSnapshot } from '../state/phrase-linking-ayah-selection.store';
 import {
   compareQuranVerseKeys,
   parseQuranVerseKey,
@@ -22,7 +22,7 @@ export interface PhraseSimilarityLinkingPopulationSnapshot {
   readonly queryVariantId: number;
   readonly queryDisplayText: string;
   readonly queryWordCount: number;
-  readonly selection: PhraseSimilarityAyahSelectionSnapshot;
+  readonly selection: PhraseLinkingAyahSelectionSnapshot;
 }
 
 export function createPhraseSimilarityLinkingLaunch(

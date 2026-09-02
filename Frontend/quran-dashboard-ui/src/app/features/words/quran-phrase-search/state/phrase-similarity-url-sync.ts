@@ -111,6 +111,18 @@ export function phraseSimilarityStateKey(state: PhraseSimilarityUrlState): strin
   ].join('|');
 }
 
+export function phraseSimilarityResultSetKey(
+  activeBuildId: string | null,
+  resolutionRef: string | null,
+  minimumMatchedWordCount: number,
+): string {
+  return JSON.stringify([
+    activeBuildId?.toLowerCase() ?? null,
+    resolutionRef,
+    minimumMatchedWordCount,
+  ]);
+}
+
 export function phraseSimilarityUrlLength(path: string, params: Params): number {
   const query = new URLSearchParams(
     Object.entries(params)

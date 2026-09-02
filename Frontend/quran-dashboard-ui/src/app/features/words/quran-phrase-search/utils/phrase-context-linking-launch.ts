@@ -2,7 +2,7 @@ import { PhraseContextLinkingSelectionResponse } from '../../../../core/api/gene
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
 import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
-import { PhraseContextAyahSelectionSnapshot } from '../state/phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionSnapshot } from '../state/phrase-linking-ayah-selection.store';
 import {
   compareQuranVerseKeys,
   parseQuranVerseKey,
@@ -16,7 +16,7 @@ type CanonicalContextAyah = PhraseContextLinkingSelectionResponse['ayahs'][numbe
 export function createPhraseContextLinkingLaunch(
   response: PhraseContextLinkingSelectionResponse,
   query: string,
-  selection: PhraseContextAyahSelectionSnapshot,
+  selection: PhraseLinkingAyahSelectionSnapshot,
 ): LinkingSourceLaunch | null {
   const normalizedQuery = query.trim();
   if (
@@ -52,7 +52,7 @@ export function createPhraseContextLinkingLaunch(
 
 function isCompleteResponse(
   response: PhraseContextLinkingSelectionResponse,
-  selection: PhraseContextAyahSelectionSnapshot,
+  selection: PhraseLinkingAyahSelectionSnapshot,
 ): boolean {
   if (
     response.activeBuildId.trim().length === 0 ||

@@ -28,7 +28,7 @@ import {
   isPhraseTextMode,
 } from '../../models/phrase-repetitions.models';
 import { PhraseContextFacade } from '../../state/phrase-context.facade';
-import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 
 const MINIMUM_WORKSPACE_BUSY_MS = 300;
 
@@ -53,7 +53,7 @@ const MINIMUM_WORKSPACE_BUSY_MS = 300;
 })
 export class PhraseContextPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(PhraseContextFacade);
-  protected readonly ayahSelection = inject(PhraseContextAyahSelectionStore);
+  protected readonly ayahSelection = inject(PhraseLinkingAyahSelectionStore);
   private readonly route = inject(ActivatedRoute);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private focusTimer?: ReturnType<typeof setTimeout>;

@@ -9,9 +9,9 @@ import { PhraseContextApi } from '../data-access/phrase-context.api';
 import { PhraseContextUrlState } from '../models/phrase-context.models';
 import { createPhraseContextLinkingLaunch } from '../utils/phrase-context-linking-launch';
 import {
-  PhraseContextAyahSelectionSnapshot,
-  PhraseContextAyahSelectionStore,
-} from './phrase-context-ayah-selection.store';
+  PhraseLinkingAyahSelectionSnapshot,
+  PhraseLinkingAyahSelectionStore,
+} from './phrase-linking-ayah-selection.store';
 import { phraseContextResultSetKey } from './phrase-context-url-sync';
 import { phraseEnvelopeFailure, phraseRequestFailure } from './phrase-request-failure';
 
@@ -26,7 +26,7 @@ interface PhraseContextLinkingError {
 @Injectable()
 export class PhraseContextLinkingCoordinator implements OnDestroy {
   private readonly api = inject(PhraseContextApi);
-  private readonly selection = inject(PhraseContextAyahSelectionStore);
+  private readonly selection = inject(PhraseLinkingAyahSelectionStore);
   private readonly access = inject(LinkingAccessService);
   private readonly focus = inject(LinkingFocusCoordinator);
   private readonly workspace = inject(LinkingWorkspaceStore);
@@ -123,7 +123,7 @@ export class PhraseContextLinkingCoordinator implements OnDestroy {
 
   private canResolve(
     route: PhraseContextUrlState,
-    selection: PhraseContextAyahSelectionSnapshot,
+    selection: PhraseLinkingAyahSelectionSnapshot,
   ): boolean {
     return this.canUseLinking() &&
       route.resolution !== null &&
@@ -136,14 +136,14 @@ export class PhraseContextLinkingCoordinator implements OnDestroy {
 
   private isCurrent(
     requestId: number,
-    selection: PhraseContextAyahSelectionSnapshot,
+    selection: PhraseLinkingAyahSelectionSnapshot,
   ): boolean {
     return requestId === this.requestId &&
       selection.revision === this.selection.revision() &&
       selection.resultSetKey === this.selection.resultSetKey();
   }
 
-  private fail(selection: PhraseContextAyahSelectionSnapshot, message: string): void {
+  private fail(selection: PhraseLinkingAyahSelectionSnapshot, message: string): void {
     this.errorState.set({
       revision: selection.revision,
       resultSetKey: selection.resultSetKey,
