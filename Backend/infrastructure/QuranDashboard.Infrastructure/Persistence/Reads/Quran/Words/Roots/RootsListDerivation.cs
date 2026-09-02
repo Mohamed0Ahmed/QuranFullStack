@@ -19,8 +19,14 @@ internal static class RootsListDerivation
         var rows = FilterAndSort(all, filter, search, sort);
         var materialized = rows.ToList();
         var totalCount = materialized.Count;
+        var skip = ReadPaging.CalculateSafeSkip(page, pageSize, totalCount);
+        if (skip is null)
+        {
+            return new PagedResult<RootListItemDto>(page, pageSize, totalCount, []);
+        }
+
         var pageRows = materialized
-            .Skip((page - 1) * pageSize)
+            .Skip(skip.Value)
             .Take(pageSize)
             .ToList();
 
