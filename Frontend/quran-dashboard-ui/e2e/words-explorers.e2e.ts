@@ -57,8 +57,24 @@ for (const explorer of SEARCHABLE_EXPLORERS) {
 }
 
 authenticatedTest(
-  'word-types explorer: route identities and scope-less overlays fail closed',
+  'word-types explorer: detail sessions fence stale reads and remain isolated',
   async ({ page, ownerPersona: _ownerPersona }) => {
+    let releaseStaleDetail!: () => void;
+    const staleDetailReleased = new Promise<void>((resolve) => {
+      releaseStaleDetail = resolve;
+    });
+    let markStaleDetailStarted!: () => void;
+    const staleDetailStarted = new Promise<void>((resolve) => {
+      markStaleDetailStarted = resolve;
+    });
+    let markStaleDetailSettled!: () => void;
+    let markStaleDetailFailed!: (error: unknown) => void;
+    const staleDetailSettled = new Promise<void>((resolve, reject) => {
+      markStaleDetailSettled = resolve;
+      markStaleDetailFailed = reject;
+    });
+    let overlayDetailAttempts = 0;
+
     await page.route('**/api/words/word-types/**', async (route) => {
       const pathname = new URL(route.request().url()).pathname;
 
@@ -72,8 +88,8 @@ authenticatedTest(
                 {
                   code: 'noun',
                   label: { ar: 'اسم' },
-                  count: 1,
-                  children: [{ code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 1 }],
+                  count: 3,
+                  children: [{ code: 'N', childCode: 'N', label: { ar: 'اسم' }, count: 3 }],
                   secondaryFilter: { kind: 'case', options: [], voiceOptions: [] },
                 },
               ],
@@ -92,7 +108,7 @@ authenticatedTest(
             data: {
               page: 1,
               pageSize: 50,
-              totalCount: 1,
+              totalCount: 2,
               items: [
                 {
                   kind: 'word',
@@ -113,6 +129,25 @@ authenticatedTest(
                   ayahsCount: 1,
                   surahsCount: 1,
                 },
+                {
+                  kind: 'word',
+                  tashkeelWordId: 42,
+                  contextCode: 'N',
+                  case: null,
+                  tense: null,
+                  voice: null,
+                  displayText: 'قلم',
+                  typeCode: 'N',
+                  typeLabel: { ar: 'اسم' },
+                  broadLabel: { ar: 'اسم' },
+                  caseOrFeature: null,
+                  rootText: 'قلم',
+                  lemmaText: 'قلم',
+                  stemText: 'قلم',
+                  occurrencesCount: 1,
+                  ayahsCount: 1,
+                  surahsCount: 1,
+                },
               ],
             },
             errors: null,
@@ -126,7 +161,7 @@ authenticatedTest(
           json: {
             isSuccess: true,
             message: null,
-            data: { wordsCount: 1, rootsCount: 1, stemsCount: 1, lemmasCount: 1 },
+            data: { wordsCount: 3, rootsCount: 1, stemsCount: 1, lemmasCount: 1 },
             errors: null,
           },
         });
@@ -134,6 +169,84 @@ authenticatedTest(
       }
 
       if (pathname.endsWith('/words/41/ayahs')) {
+        markStaleDetailStarted();
+        await staleDetailReleased;
+        try {
+          await route.fulfill({
+            json: {
+              isSuccess: true,
+              message: null,
+              data: {
+                page: 1,
+                pageSize: 20,
+                totalCount: 1,
+                items: [
+                  {
+                    ayahNumber: 2,
+                    matchedWordIds: [4101],
+                    matchedWordPositions: [2],
+                    pageNumber: 2,
+                    surahNameArabic: 'البقرة',
+                    surahNumber: 2,
+                    verseKey: '2:2',
+                    words: [{ quranWordId: 4101, textUthmani: 'الْكِتَابُ', isAyahMarker: false }],
+                  },
+                ],
+              },
+              errors: null,
+            },
+          });
+          markStaleDetailSettled();
+        } catch (error) {
+          markStaleDetailFailed(error);
+          throw error;
+        }
+        return;
+      }
+
+      if (pathname.endsWith('/words/42/ayahs')) {
+        await route.fulfill({
+          json: {
+            isSuccess: true,
+            message: null,
+            data: {
+              page: 1,
+              pageSize: 20,
+              totalCount: 1,
+              items: [
+                {
+                  ayahNumber: 1,
+                  matchedWordIds: [4201],
+                  matchedWordPositions: [2],
+                  pageNumber: 564,
+                  surahNameArabic: 'القلم',
+                  surahNumber: 68,
+                  verseKey: '68:1',
+                  words: [{ quranWordId: 4201, textUthmani: 'وَٱلْقَلَمِ', isAyahMarker: false }],
+                },
+              ],
+            },
+            errors: null,
+          },
+        });
+        return;
+      }
+
+      if (pathname.endsWith('/words/43/ayahs')) {
+        overlayDetailAttempts++;
+        if (overlayDetailAttempts === 1) {
+          await route.fulfill({
+            status: 500,
+            json: {
+              isSuccess: false,
+              message: 'تعذر تحميل اختبار النافذة',
+              data: null,
+              errors: null,
+            },
+          });
+          return;
+        }
+
         await route.fulfill({
           json: {
             isSuccess: true,
@@ -145,13 +258,13 @@ authenticatedTest(
               items: [
                 {
                   ayahNumber: 2,
-                  matchedWordIds: [4101],
-                  matchedWordPositions: [2],
-                  pageNumber: 2,
-                  surahNameArabic: 'البقرة',
-                  surahNumber: 2,
-                  verseKey: '2:2',
-                  words: [{ quranWordId: 4101, textUthmani: 'الْكِتَابُ', isAyahMarker: false }],
+                  matchedWordIds: [4301],
+                  matchedWordPositions: [1],
+                  pageNumber: 415,
+                  surahNameArabic: 'السجدة',
+                  surahNumber: 32,
+                  verseKey: '32:2',
+                  words: [{ quranWordId: 4301, textUthmani: 'تَنزِيلُ', isAyahMarker: false }],
                 },
               ],
             },
@@ -186,6 +299,31 @@ authenticatedTest(
         return;
       }
 
+      if (pathname.endsWith('/words/43')) {
+        await route.fulfill({
+          json: {
+            isSuccess: true,
+            message: null,
+            data: {
+              tashkeelWordId: 43,
+              contextCode: 'N',
+              displayText: 'تنزيل',
+              typeLabel: { ar: 'اسم' },
+              broadLabel: { ar: 'اسم' },
+              caseOrFeature: null,
+              rootText: 'نزل',
+              lemmaText: 'تنزيل',
+              stemText: 'تنزيل',
+              occurrencesCount: 1,
+              ayahsCount: 1,
+              surahsCount: 1,
+            },
+            errors: null,
+          },
+        });
+        return;
+      }
+
       await route.fallback();
     });
 
@@ -209,10 +347,16 @@ authenticatedTest(
     // Rows are not clickable: the three statistic chips are the only interactive elements in a row
     // (word-types-table.component.html, `#rowCells`).
     await rows.first().getByTestId('word-count-chip').first().click();
+    await staleDetailStarted;
+    await rows.nth(1).getByTestId('word-count-chip').first().click();
 
     const entity = page.getByTestId('word-type-details-panel-entity');
     await expect(entity).toBeVisible();
-    await expect(entity).not.toBeEmpty();
+    await expect(entity).toHaveText('قلم');
+    await expect(page.getByTestId('ayah-match-card')).toContainText('القلم');
+    releaseStaleDetail();
+    await staleDetailSettled;
+    await expect(page.getByTestId('ayah-match-card')).not.toContainText('البقرة');
     await expect(page.locator('[data-linking-source-action]').first()).toBeVisible();
 
     const validDetailUrl = new URL(page.url());
@@ -226,6 +370,58 @@ authenticatedTest(
     expect(caseValue).not.toBeNull();
     expect(tense).not.toBeNull();
     expect(voice).not.toBeNull();
+
+    const encodedContext = encodeURIComponent(contextCode!).replace(/~/g, '%7E');
+    const frame = [
+      'v1',
+      'wordType',
+      '43',
+      encodedContext,
+      caseValue!,
+      tense!,
+      voice!,
+      'ayahs',
+      '1',
+    ].join('~');
+    const scopeLessOverlayUrl = new URL(validDetailUrl);
+    scopeLessOverlayUrl.searchParams.append('qdDetail', frame);
+    scopeLessOverlayUrl.searchParams.set('qdDetailOpen', '1');
+
+    await page.evaluate((url) => {
+      window.history.pushState({}, '', url);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }, scopeLessOverlayUrl.toString());
+
+    const overlay = page.getByTestId('detail-modal-shell');
+    await expect(overlay).toBeVisible();
+    await expect(overlay.getByTestId('overlay-word-type-panel-error')).toContainText(
+      'تعذر تحميل اختبار النافذة',
+    );
+    await expect(page.getByTestId('word-type-details-panel-entity')).toHaveText('قلم');
+    await expect(page.getByTestId('ayah-match-card').filter({ hasText: 'القلم' })).toBeVisible();
+    await expect(overlay.locator('[data-linking-source-action]')).toHaveCount(0);
+
+    const overlayRecovery = page.waitForResponse(
+      (response) =>
+        response.status() === 200 &&
+        new URL(response.url()).pathname === '/api/words/word-types/words/43/ayahs',
+    );
+    await overlay.getByRole('button', { name: 'إعادة المحاولة' }).click();
+    await overlayRecovery;
+    await expect(overlay.getByTestId('overlay-word-type-ayahs-view')).toContainText('السجدة');
+    expect(overlayDetailAttempts).toBe(2);
+
+    await overlay.getByTestId('detail-modal-close').click();
+    await expect(page.getByTestId('detail-modal-restore')).toBeVisible();
+    await expect(page).not.toHaveURL(/[?&]qdDetailOpen=1(?:&|$)/);
+
+    await page.getByTestId('detail-modal-restore').click();
+    await expect(page).toHaveURL(/[?&]qdDetailOpen=1(?:&|$)/);
+    await expect(page.getByTestId('detail-modal-shell')).toBeVisible();
+    await expect(page.getByTestId('overlay-word-type-ayahs-view')).toBeVisible();
+    await expect(
+      page.getByTestId('detail-modal-shell').locator('[data-linking-source-action]'),
+    ).toHaveCount(0);
 
     const blockedUnsafeDetailRequests: string[] = [];
     const detailRequestPattern = '**/api/words/word-types/words/**';
@@ -241,47 +437,6 @@ authenticatedTest(
     await expect(page.getByTestId('word-type-details-panel-entity')).toBeEmpty();
     await page.unroute(detailRequestPattern);
     expect(blockedUnsafeDetailRequests).toEqual([]);
-
-    const encodedContext = encodeURIComponent(contextCode!).replace(/~/g, '%7E');
-    const frame = [
-      'v1',
-      'wordType',
-      wordId!,
-      encodedContext,
-      caseValue!,
-      tense!,
-      voice!,
-      'ayahs',
-      '1',
-    ].join('~');
-    const scopeLessOverlayUrl = new URL('/dashboard/words/types', validDetailUrl.origin);
-    scopeLessOverlayUrl.searchParams.append('qdDetail', frame);
-    scopeLessOverlayUrl.searchParams.set('qdDetailOpen', '1');
-
-    const overlayAyahsResponse = page.waitForResponse(
-      (response) =>
-        response.status() === 200 &&
-        new URL(response.url()).pathname === `/api/words/word-types/words/${wordId!}/ayahs`,
-    );
-    await page.goto(scopeLessOverlayUrl.toString());
-    await overlayAyahsResponse;
-
-    const overlay = page.getByTestId('detail-modal-shell');
-    await expect(overlay).toBeVisible();
-    await expect(overlay.getByTestId('overlay-word-type-ayahs-view')).toBeVisible();
-    await expect(overlay.locator('[data-linking-source-action]')).toHaveCount(0);
-
-    await overlay.getByTestId('detail-modal-close').click();
-    await expect(page.getByTestId('detail-modal-restore')).toBeVisible();
-    await expect(page).not.toHaveURL(/[?&]qdDetailOpen=1(?:&|$)/);
-
-    await page.getByTestId('detail-modal-restore').click();
-    await expect(page).toHaveURL(/[?&]qdDetailOpen=1(?:&|$)/);
-    await expect(page.getByTestId('detail-modal-shell')).toBeVisible();
-    await expect(page.getByTestId('overlay-word-type-ayahs-view')).toBeVisible();
-    await expect(
-      page.getByTestId('detail-modal-shell').locator('[data-linking-source-action]'),
-    ).toHaveCount(0);
   },
 );
 

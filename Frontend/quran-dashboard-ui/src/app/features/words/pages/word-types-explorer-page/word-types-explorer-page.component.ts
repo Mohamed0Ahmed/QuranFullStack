@@ -1,4 +1,13 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnDestroy,
+  OnInit,
+  computed,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -9,7 +18,10 @@ import { AyahMatchesListComponent } from '../../components/ayah-matches-list/aya
 import { MissingSurahsListComponent } from '../../components/missing-surahs-list/missing-surahs-list.component';
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
-import { WordTypeFilterComponent, WordTypeScopeSelectedEvent } from '../../components/word-type-filter/word-type-filter.component';
+import {
+  WordTypeFilterComponent,
+  WordTypeScopeSelectedEvent,
+} from '../../components/word-type-filter/word-type-filter.component';
 import { WordTypeGroupedWordsListComponent } from '../../components/word-type-grouped-words-list/word-type-grouped-words-list.component';
 import { WordTypeScopeCountsComponent } from '../../components/word-type-scope-counts/word-type-scope-counts.component';
 import { WordTypeTableViewTabsComponent } from '../../components/word-type-table-view-tabs/word-type-table-view-tabs.component';
@@ -52,6 +64,7 @@ import {
   WordTableRowDto,
   WordTypeCase,
   WordTypeDetailView,
+  ParsedWordTypesQuery,
   WordTypeSort,
   WordTypeTableRowDto,
   WordTypeTableView,
@@ -64,8 +77,10 @@ import {
   WordTypeDetailScope,
   WordTypeDetailSelection,
   WordTypeDetailSelectionKind,
+  WordTypeGroupedSummaryDto,
+  WordTypesDetailTarget,
 } from '../../models/word-types-detail.models';
-import { WordTypesDetailFacade } from '../../state/word-types-detail.facade';
+import { WordTypesDetailSession } from '../../state/word-types-detail.session';
 import { WordTypesExplorerFacade } from '../../state/word-types-explorer.facade';
 import {
   buildWordTypesQueryParams,
@@ -119,24 +134,30 @@ const DETAIL_KIND_BY_TABLE_VIEW: Record<WordTypeTableView, WordTypeDetailSelecti
   templateUrl: './word-types-explorer-page.component.html',
   styleUrl: './word-types-explorer-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  providers: [WordTypesDetailSession],
 })
 export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly explorerFacade = inject(WordTypesExplorerFacade);
-  private readonly detailFacade = inject(WordTypesDetailFacade);
+  private readonly detailSession = inject(WordTypesDetailSession);
   private readonly explainerPreference = inject(WordsExplainerPreference);
-  private readonly searchDraftController = WordsDebouncedSearchDraftController.create('types', (value) => this.updateQueryParams({ search: value || null, page: null }));
+  private readonly searchDraftController = WordsDebouncedSearchDraftController.create(
+    'types',
+    (value) => this.updateQueryParams({ search: value || null, page: null }),
+  );
 
   private desktopQuery?: MediaQueryList;
-  private readonly onDesktopChange = (event: MediaQueryListEvent): void => this.isDesktop.set(event.matches);
+  private readonly onDesktopChange = (event: MediaQueryListEvent): void =>
+    this.isDesktop.set(event.matches);
 
   private querySyncSub?: Subscription;
 
   protected readonly pageSize = WORD_TYPES_PAGE_SIZE;
   protected readonly listState = this.explorerFacade.listState;
   protected readonly scopeCountsState = this.explorerFacade.scopeCountsState;
-  protected readonly panelState = this.detailFacade.panelState;
+  protected readonly panelState = this.detailSession.state;
+  private readonly routeDetailScope = signal<WordTypeDetailScope | null>(null);
   protected readonly isDesktop = signal(true);
   protected readonly searchDraft = this.searchDraftController.draft;
   private readonly filter = viewChild(WordTypeFilterComponent);
@@ -146,7 +167,13 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     const state = this.listState();
     const rows = state.rows;
     const selection = this.panelState().selection;
-    if (!rows || selection === null || !this.isSameScope(selection.scope, this.currentScope())) {
+    const selectionScope = selection?.kind === 'word' ? this.routeDetailScope() : selection?.scope;
+    if (
+      !rows ||
+      selection === null ||
+      selectionScope == null ||
+      !this.isSameScope(selectionScope, this.currentScope())
+    ) {
       return null;
     }
 
@@ -154,51 +181,90 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
       case 'words':
         return selection.kind !== 'word'
           ? null
-          : rows.items.find((row): row is WordTableRowDto => row.kind === 'word' && this.matchesWordIdentity(row, selection)) ?? null;
+          : (rows.items.find(
+              (row): row is WordTableRowDto =>
+                row.kind === 'word' && this.matchesWordIdentity(row, selection),
+            ) ?? null);
       case 'roots':
         return selection.kind !== 'root'
           ? null
-          : rows.items.find((row): row is RootTableRowDto => row.kind === 'root' && row.rootId === selection.rootId) ?? null;
+          : (rows.items.find(
+              (row): row is RootTableRowDto =>
+                row.kind === 'root' && row.rootId === selection.rootId,
+            ) ?? null);
       case 'stems':
         return selection.kind !== 'stem'
           ? null
-          : rows.items.find((row): row is StemTableRowDto => row.kind === 'stem' && row.stemId === selection.stemId) ?? null;
+          : (rows.items.find(
+              (row): row is StemTableRowDto =>
+                row.kind === 'stem' && row.stemId === selection.stemId,
+            ) ?? null);
       case 'lemmas':
         return selection.kind !== 'lemma'
           ? null
-          : rows.items.find((row): row is LemmaTableRowDto => row.kind === 'lemma' && row.lemmaId === selection.lemmaId) ?? null;
+          : (rows.items.find(
+              (row): row is LemmaTableRowDto =>
+                row.kind === 'lemma' && row.lemmaId === selection.lemmaId,
+            ) ?? null);
     }
   });
 
   protected readonly emptySelection = computed(() => this.panelState().selection === null);
-  protected readonly detailKind = computed<WordTypeDetailSelectionKind>(() =>
-    this.panelState().selection?.kind
-      ?? DETAIL_KIND_BY_TABLE_VIEW[this.listState().query.tableView],
+  protected readonly detailKind = computed<WordTypeDetailSelectionKind>(
+    () =>
+      this.panelState().selection?.kind ??
+      DETAIL_KIND_BY_TABLE_VIEW[this.listState().query.tableView],
   );
-  protected readonly detailEmptyLabel = computed(() =>
-    WORD_TYPE_DETAIL_PRESENTATIONS[this.detailKind()].emptyViewLabels[this.panelState().view],
+  protected readonly detailEmptyLabel = computed(
+    () => WORD_TYPE_DETAIL_PRESENTATIONS[this.detailKind()].emptyViewLabels[this.panelState().view],
   );
 
   protected readonly emptyAyahsPage = EMPTY_WORD_TYPE_AYAHS_PAGE;
   protected readonly emptyMemberWordsPage = EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE;
   protected readonly activeSummary = computed(() => wordTypeDetailSummaryView(this.panelState()));
-  protected readonly memberWordsForView = computed(() => wordTypeMemberWordsPageView(this.panelState()));
+  protected readonly memberWordsForView = computed(() =>
+    wordTypeMemberWordsPageView(this.panelState()),
+  );
   protected readonly ayahsPageForView = computed(() => wordTypeAyahsPageView(this.panelState()));
   protected readonly ayahParentFrame = computed(() => wordTypeAyahParentFrame(this.panelState()));
-  protected readonly linkingSource = computed(() => wordTypeLinkingSource(this.panelState()));
+  protected readonly linkingSource = computed(() =>
+    wordTypeLinkingSource(this.panelState(), this.routeDetailScope()),
+  );
 
-  protected get pageTitle() { return WORD_TYPES_PAGE_TITLE; }
-  protected get explainer() { return WORDS_EXPLAINER_CONTENT['word-types']; }
+  protected get pageTitle() {
+    return WORD_TYPES_PAGE_TITLE;
+  }
+  protected get explainer() {
+    return WORDS_EXPLAINER_CONTENT['word-types'];
+  }
   protected readonly explainerExpanded = signal(this.explainerPreference.isExpanded('word-types'));
-  protected get emptyLabel() { return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView]; }
-  protected get selectSubtypeLabel() { return WORD_TYPES_SELECT_SUBTYPE_LABEL; }
-  protected get errorLabel() { return WORD_TYPES_ERROR_LABEL; }
-  protected get retryLabel() { return WORD_TYPES_RETRY_LABEL; }
-  protected get tableLabel() { return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.listState().query.tableView]; }
-  protected get sortLabel() { return WORD_TYPES_SORT_LABEL; }
-  protected get sortOptions() { return WORD_TYPE_SORT_OPTIONS; }
-  protected get searchLabel() { return WORD_TYPES_SEARCH_LABEL; }
-  protected get searchPlaceholder() { return WORD_TYPES_SEARCH_PLACEHOLDER; }
+  protected get emptyLabel() {
+    return WORD_TYPE_TABLE_VIEW_EMPTY_LABELS[this.listState().query.tableView];
+  }
+  protected get selectSubtypeLabel() {
+    return WORD_TYPES_SELECT_SUBTYPE_LABEL;
+  }
+  protected get errorLabel() {
+    return WORD_TYPES_ERROR_LABEL;
+  }
+  protected get retryLabel() {
+    return WORD_TYPES_RETRY_LABEL;
+  }
+  protected get tableLabel() {
+    return WORD_TYPE_TABLE_VIEW_TABLE_LABELS[this.listState().query.tableView];
+  }
+  protected get sortLabel() {
+    return WORD_TYPES_SORT_LABEL;
+  }
+  protected get sortOptions() {
+    return WORD_TYPE_SORT_OPTIONS;
+  }
+  protected get searchLabel() {
+    return WORD_TYPES_SEARCH_LABEL;
+  }
+  protected get searchPlaceholder() {
+    return WORD_TYPES_SEARCH_PLACEHOLDER;
+  }
 
   protected onPresenceFlagChange(change: WordTypePresenceFlagChange): void {
     this.explorerFacade.selectPresenceFlag(change.dimension, change.value);
@@ -216,10 +282,16 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.searchDraftController.start();
     this.explorerFacade.bindToRoute(this.route);
-    this.detailFacade.bindToRoute(this.route);
 
-    this.querySyncSub = this.route.queryParamMap
-      .subscribe((params) => this.searchDraftController.syncCommitted(parseWordTypesQueryParams(params).search ?? ''));
+    this.querySyncSub = this.route.queryParamMap.subscribe((params) => {
+      const parsed = parseWordTypesQueryParams(params);
+      this.searchDraftController.syncCommitted(parsed.search ?? '');
+      const target = this.detailTargetFrom(parsed);
+      this.routeDetailScope.set(
+        target?.selection.kind === 'word' ? this.detailScopeFrom(parsed) : null,
+      );
+      this.detailSession.synchronize(target);
+    });
 
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
       this.desktopQuery = window.matchMedia(QD_BP_DESKTOP_MIN_QUERY);
@@ -230,7 +302,6 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.explorerFacade.unbindFromRoute();
-    this.detailFacade.unbindFromRoute();
     this.searchDraftController.destroy();
     this.querySyncSub?.unsubscribe();
     this.desktopQuery?.removeEventListener('change', this.onDesktopChange);
@@ -271,21 +342,28 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
     };
   });
 
-  private matchesWordIdentity(row: WordTableRowDto, selection: Extract<WordTypeDetailSelection, { kind: 'word' }>): boolean {
+  private matchesWordIdentity(
+    row: WordTableRowDto,
+    selection: Extract<WordTypeDetailSelection, { kind: 'word' }>,
+  ): boolean {
     const identity = normalizeWordTableRow(row);
-    return identity.tashkeelWordId === selection.identity.tashkeelWordId
-      && identity.contextCode === selection.identity.contextCode
-      && identity.case === selection.identity.case
-      && identity.tense === selection.identity.tense
-      && identity.voice === selection.identity.voice;
+    return (
+      identity.tashkeelWordId === selection.identity.tashkeelWordId &&
+      identity.contextCode === selection.identity.contextCode &&
+      identity.case === selection.identity.case &&
+      identity.tense === selection.identity.tense &&
+      identity.voice === selection.identity.voice
+    );
   }
 
   private isSameScope(current: WordTypeDetailScope, next: WordTypeDetailScope): boolean {
-    return current.type === next.type
-      && current.childCode === next.childCode
-      && current.case === next.case
-      && current.tense === next.tense
-      && current.voice === next.voice;
+    return (
+      current.type === next.type &&
+      current.childCode === next.childCode &&
+      current.case === next.case &&
+      current.tense === next.tense &&
+      current.voice === next.voice
+    );
   }
 
   protected onCountOpened(event: WordTypeCountOpenedEvent): void {
@@ -303,33 +381,80 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   ): void {
     const scope = this.currentScope();
     if (row.kind === 'word') {
-      this.detailFacade.selectRow(normalizeWordTableRow(row), scope, view);
+      const summary = normalizeWordTableRow(row);
+      const selection = {
+        kind: 'word',
+        identity: {
+          tashkeelWordId: summary.tashkeelWordId,
+          contextCode: summary.contextCode,
+          case: summary.case,
+          tense: summary.tense,
+          voice: summary.voice,
+        },
+      } as const;
+      this.routeDetailScope.set(scope);
+      this.detailSession.synchronize({
+        selection,
+        view,
+        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        seed: { kind: 'word', selection, summary },
+      });
     } else {
-      this.detailFacade.selectGroupedRow(row, scope, view);
+      const selection = this.groupedSelection(row, scope);
+      const summary: WordTypeGroupedSummaryDto = {
+        kind: row.kind,
+        dimensionId: this.groupedDimensionId(row),
+        displayText: row.displayText,
+        occurrencesCount: row.occurrencesCount,
+        ayahsCount: row.ayahsCount,
+        surahsCount: row.surahsCount,
+      };
+      this.routeDetailScope.set(null);
+      this.detailSession.synchronize({
+        selection,
+        view,
+        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+        seed: { kind: 'grouped', selection, summary },
+      });
     }
     this.updateQueryParams(buildWordTypeTableDetailQuery(row, scope, view, column));
   }
 
   protected onPanelViewChange(view: WordTypeDetailView): void {
-    this.detailFacade.setView(view);
-    this.updateQueryParams(buildWordTypesQueryParams({
-      view,
-      detailPage: canonicalWordTypesDetailPage(view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
-    }));
+    const selection = this.panelState().selection;
+    if (selection !== null) {
+      this.detailSession.synchronize({
+        selection,
+        view,
+        detailPage: DEFAULT_WORD_TYPES_DETAIL_PAGE,
+      });
+    }
+    this.updateQueryParams(
+      buildWordTypesQueryParams({
+        view,
+        detailPage: canonicalWordTypesDetailPage(view, DEFAULT_WORD_TYPES_DETAIL_PAGE),
+      }),
+    );
   }
 
   protected onDetailPageChange(page: number): void {
-    this.detailFacade.setDetailPage(page);
-    this.updateQueryParams(buildWordTypesQueryParams({
-      detailPage: canonicalWordTypesDetailPage(this.panelState().view, page),
-    }));
+    const selection = this.panelState().selection;
+    if (selection !== null) {
+      this.detailSession.synchronize({ selection, view: this.panelState().view, detailPage: page });
+    }
+    this.updateQueryParams(
+      buildWordTypesQueryParams({
+        detailPage: canonicalWordTypesDetailPage(this.panelState().view, page),
+      }),
+    );
   }
 
   protected clearSelection(): void {
     const selectedRow = this.selectedRow();
     const view = this.panelState().view;
     const column = this.toFocusColumn(this.listState().query.column);
-    this.detailFacade.clearSelection();
+    this.routeDetailScope.set(null);
+    this.detailSession.synchronize(null);
     this.updateQueryParams(clearWordTypesSelection());
 
     if (selectedRow) {
@@ -357,7 +482,7 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   protected retryDetail(): void {
-    this.detailFacade.retry();
+    this.detailSession.retry();
   }
 
   protected selectionTitle(): string {
@@ -365,7 +490,10 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
   }
 
   private toFocusColumn(column: string | null): WordTypeTableFocusColumn | null {
-    return column === 'identity' || column === 'occurrences' || column === 'ayahs' || column === 'surahs'
+    return column === 'identity' ||
+      column === 'occurrences' ||
+      column === 'ayahs' ||
+      column === 'surahs'
       ? column
       : null;
   }
@@ -376,6 +504,91 @@ export class WordTypesExplorerPageComponent implements OnInit, OnDestroy {
 
   protected missingSurahs() {
     return wordTypeMissingSurahViews(this.panelState());
+  }
+
+  private detailTargetFrom(parsed: ParsedWordTypesQuery): WordTypesDetailTarget | null {
+    const scope = this.detailScopeFrom(parsed);
+    if (scope === null) {
+      return null;
+    }
+    if (parsed.word !== null && parsed.contextCode.length > 0) {
+      return {
+        selection: {
+          kind: 'word',
+          identity: {
+            tashkeelWordId: parsed.word,
+            contextCode: parsed.contextCode,
+            case: scope.case,
+            tense: scope.tense,
+            voice: scope.voice,
+          },
+        },
+        view: parsed.view,
+        detailPage: parsed.detailPage,
+      };
+    }
+    if (parsed.root !== null) {
+      return {
+        selection: { kind: 'root', rootId: parsed.root, scope },
+        view: parsed.view,
+        detailPage: parsed.detailPage,
+      };
+    }
+    if (parsed.stem !== null) {
+      return {
+        selection: { kind: 'stem', stemId: parsed.stem, scope },
+        view: parsed.view,
+        detailPage: parsed.detailPage,
+      };
+    }
+    if (parsed.lemma !== null) {
+      return {
+        selection: { kind: 'lemma', lemmaId: parsed.lemma, scope },
+        view: parsed.view,
+        detailPage: parsed.detailPage,
+      };
+    }
+    return null;
+  }
+
+  private detailScopeFrom(parsed: ParsedWordTypesQuery): WordTypeDetailScope | null {
+    return parsed.detailType === null ||
+      parsed.detailCase === null ||
+      parsed.detailTense === null ||
+      parsed.detailVoice === null
+      ? null
+      : {
+          type: parsed.detailType,
+          childCode: parsed.detailChildCode,
+          case: parsed.detailCase,
+          tense: parsed.detailTense,
+          voice: parsed.detailVoice,
+        };
+  }
+
+  private groupedSelection(
+    row: Exclude<WordTypeTableRowDto, WordTableRowDto>,
+    scope: WordTypeDetailScope,
+  ) {
+    switch (row.kind) {
+      case 'root':
+        return { kind: 'root', rootId: row.rootId, scope } as const;
+      case 'stem':
+        return { kind: 'stem', stemId: row.stemId, scope } as const;
+      case 'lemma':
+        return { kind: 'lemma', lemmaId: row.lemmaId, scope } as const;
+    }
+  }
+
+  private groupedDimensionId(row: Exclude<WordTypeTableRowDto, WordTableRowDto>): number {
+    switch (row.kind) {
+      case 'root':
+        return row.rootId;
+      case 'stem':
+        return row.stemId;
+      case 'lemma':
+        return row.lemmaId;
+    }
   }
 
   private updateQueryParams(queryParams: Record<string, string | null>): void {
