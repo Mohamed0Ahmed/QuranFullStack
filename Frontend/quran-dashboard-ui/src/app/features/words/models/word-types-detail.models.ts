@@ -35,39 +35,56 @@ export interface WordTypeGroupedSummaryDto extends Omit<WordTypeGroupedSummaryWi
   kind: WordTypeGroupedKind;
 }
 
-export interface WordTypeGroupedMemberWordDto
-  extends Omit<WordTypeGroupedMemberWordWireDto, 'case' | 'tense' | 'voice'> {
+export interface WordTypeGroupedMemberWordDto extends Omit<
+  WordTypeGroupedMemberWordWireDto,
+  'case' | 'tense' | 'voice'
+> {
   case: WordTypeCase | null;
   tense: WordTypeTense | null;
   voice: WordTypeVoice | null;
 }
 
 export type WordTypeDetailSelection =
-  | { kind: 'word'; identity: WordTypeRowIdentity; scope: WordTypeDetailScope }
+  | { kind: 'word'; identity: WordTypeRowIdentity }
   | { kind: 'root'; rootId: number; scope: WordTypeDetailScope }
   | { kind: 'stem'; stemId: number; scope: WordTypeDetailScope }
   | { kind: 'lemma'; lemmaId: number; scope: WordTypeDetailScope };
 
 export type WordTypeDetailSelectionKind = WordTypeDetailSelection['kind'];
 
-export type WordTypeGroupedDetailSelection = Extract<WordTypeDetailSelection, { kind: 'root' | 'stem' | 'lemma' }>;
+export type WordTypeGroupedDetailSelection = Extract<
+  WordTypeDetailSelection,
+  { kind: 'root' | 'stem' | 'lemma' }
+>;
+
+export type WordTypesDetailSeed =
+  | {
+      readonly kind: 'word';
+      readonly selection: Extract<WordTypeDetailSelection, { kind: 'word' }>;
+      readonly summary: WordTypeSummaryDto;
+    }
+  | {
+      readonly kind: 'grouped';
+      readonly selection: WordTypeGroupedDetailSelection;
+      readonly summary: WordTypeGroupedSummaryDto;
+    };
+
+export interface WordTypesDetailTarget {
+  readonly selection: WordTypeDetailSelection;
+  readonly view: WordTypeDetailView;
+  readonly detailPage: number;
+  readonly seed?: WordTypesDetailSeed;
+}
 
 export interface WordTypesDetailState {
-  status: WordTypesLoadStatus;
-  // Kind-aware active selection and its discriminant. `selectedRow` remains the word-only compatibility
-  // projection; every kind's exact identity and stored scope live in `selection`.
-  selection: WordTypeDetailSelection | null;
-  kind: WordTypeDetailSelectionKind;
-  selectedRow: WordTypeRowIdentity | null;
-  view: WordTypeDetailView;
-  detailPage: number;
-  location: string | null;
-  // Word summaries populate `summary`; grouped summaries populate `groupedSummary`. Exactly one is
-  // non-null for an active selection.
-  summary: WordTypeSummaryDto | null;
-  groupedSummary: WordTypeGroupedSummaryDto | null;
-  words: PagedResultDto<WordTypeGroupedMemberWordDto> | null;
-  ayahs: PagedResultDto<WordTypeAyahMatchDto> | null;
-  surahs: WordTypeSurahsResponseDto | null;
-  errorMessage: string;
+  readonly status: WordTypesLoadStatus;
+  readonly selection: WordTypeDetailSelection | null;
+  readonly view: WordTypeDetailView;
+  readonly detailPage: number;
+  readonly summary: WordTypeSummaryDto | null;
+  readonly groupedSummary: WordTypeGroupedSummaryDto | null;
+  readonly words: PagedResultDto<WordTypeGroupedMemberWordDto> | null;
+  readonly ayahs: PagedResultDto<WordTypeAyahMatchDto> | null;
+  readonly surahs: WordTypeSurahsResponseDto | null;
+  readonly errorMessage: string;
 }

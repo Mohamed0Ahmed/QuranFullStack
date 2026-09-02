@@ -30,6 +30,7 @@ import {
   isWordTypeVoice,
 } from '../models/word-types.models';
 import {
+  WordTypeDetailScope,
   WordTypeDetailSelection,
   WordTypeDetailSelectionKind,
 } from '../models/word-types-detail.models';
@@ -180,9 +181,9 @@ export function buildWordTypesQueryParams(
   return params;
 }
 
-export function buildWordTypesDetailScopeQuery(
-  selection: Pick<WordTypeDetailSelection, 'scope'>,
-): WordTypesQueryChange {
+export function buildWordTypesDetailScopeQuery(selection: {
+  readonly scope: WordTypeDetailScope;
+}): WordTypesQueryChange {
   return {
     detailType: selection.scope.type,
     detailChildCode: selection.scope.childCode,

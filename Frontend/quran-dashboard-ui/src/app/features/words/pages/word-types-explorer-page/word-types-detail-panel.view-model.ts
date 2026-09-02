@@ -6,6 +6,7 @@ import {
   UniqueWordSurahItemDto,
 } from '../../models/unique-words.models';
 import {
+  WordTypeDetailScope,
   WordTypeGroupedMemberWordDto,
   WordTypesDetailState,
 } from '../../models/word-types-detail.models';
@@ -27,14 +28,17 @@ export const EMPTY_WORD_TYPE_AYAHS_PAGE: SharedPagedResultDto<AyahMatchDto> = {
   items: [],
 };
 
-export const EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE: SharedPagedResultDto<WordTypeGroupedMemberWordDto> = {
-  page: 1,
-  pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
-  totalCount: 0,
-  items: [],
-};
+export const EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE: SharedPagedResultDto<WordTypeGroupedMemberWordDto> =
+  {
+    page: 1,
+    pageSize: WORD_TYPES_DETAIL_PAGE_SIZE,
+    totalCount: 0,
+    items: [],
+  };
 
-export function wordTypeDetailSummaryView(panel: WordTypesDetailState): WordTypeDetailSummaryView | null {
+export function wordTypeDetailSummaryView(
+  panel: WordTypesDetailState,
+): WordTypeDetailSummaryView | null {
   const summary = panel.summary ?? panel.groupedSummary;
   return summary
     ? {
@@ -46,26 +50,44 @@ export function wordTypeDetailSummaryView(panel: WordTypesDetailState): WordType
     : null;
 }
 
-export function wordTypeLinkingSource(panel: WordTypesDetailState): LinkingSourceDescriptor | null {
+export function wordTypeLinkingSource(
+  panel: WordTypesDetailState,
+  routeWordScope: WordTypeDetailScope | null,
+): LinkingSourceDescriptor | null {
   const selection = panel.selection;
   const summary = wordTypeDetailSummaryView(panel);
   if (selection === null || summary === null) {
     return null;
   }
-  const scope = { ...selection.scope };
   switch (selection.kind) {
-    case 'word':
+    case 'word': {
+      if (routeWordScope === null) {
+        return null;
+      }
       return {
         kind: 'word-type',
-        selection: { kind: 'word', ...selection.identity, scope },
+        selection: { kind: 'word', ...selection.identity, scope: { ...routeWordScope } },
         label: summary.label,
       };
+    }
     case 'root':
-      return { kind: 'word-type', selection: { kind: 'root', rootId: selection.rootId, scope }, label: summary.label };
+      return {
+        kind: 'word-type',
+        selection: { kind: 'root', rootId: selection.rootId, scope: { ...selection.scope } },
+        label: summary.label,
+      };
     case 'stem':
-      return { kind: 'word-type', selection: { kind: 'stem', stemId: selection.stemId, scope }, label: summary.label };
+      return {
+        kind: 'word-type',
+        selection: { kind: 'stem', stemId: selection.stemId, scope: { ...selection.scope } },
+        label: summary.label,
+      };
     case 'lemma':
-      return { kind: 'word-type', selection: { kind: 'lemma', lemmaId: selection.lemmaId, scope }, label: summary.label };
+      return {
+        kind: 'word-type',
+        selection: { kind: 'lemma', lemmaId: selection.lemmaId, scope: { ...selection.scope } },
+        label: summary.label,
+      };
   }
 }
 
@@ -75,7 +97,9 @@ export function wordTypeMemberWordsPageView(
   return panel.words ?? EMPTY_WORD_TYPE_MEMBER_WORDS_PAGE;
 }
 
-export function wordTypeAyahsPageView(panel: WordTypesDetailState): SharedPagedResultDto<AyahMatchDto> {
+export function wordTypeAyahsPageView(
+  panel: WordTypesDetailState,
+): SharedPagedResultDto<AyahMatchDto> {
   const page = panel.ayahs;
   return page
     ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared).filter(isAyahMatch) }

@@ -29,7 +29,7 @@ import {
   WORD_TYPES_DETAIL_PAGE_SIZE,
   WordTypeDetailView,
 } from '../../models/word-types.models';
-import { WordTypesDetailController } from '../../state/word-types-detail.controller';
+import { WordTypesDetailSession } from '../../state/word-types-detail.session';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
@@ -46,13 +46,13 @@ import { EntityDetailOverlayHeaderStore } from '../entity-detail-overlay-header.
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,
   ],
-  providers: [WordTypesDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
+  providers: [WordTypesDetailSession, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './word-type-detail-overlay-adapter.component.html',
   styleUrl: './word-type-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeDetailOverlayAdapterComponent {
-  private readonly controller = inject(WordTypesDetailController);
+  private readonly detailSession = inject(WordTypesDetailSession);
   private readonly overlay = inject(DetailOverlayHistoryService);
   private readonly headerStore = inject(EntityDetailOverlayHeaderStore, { optional: true });
 
@@ -61,10 +61,10 @@ export class WordTypeDetailOverlayAdapterComponent {
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
   protected onRetry(): void {
-    this.controller.retryCurrentIdentity();
+    this.detailSession.retry();
   }
 
-  protected readonly panelState = this.controller.panelState;
+  protected readonly panelState = this.detailSession.state;
 
   readonly entityTitle = computed(() => this.panelState().summary?.displayText ?? '');
 
@@ -115,13 +115,16 @@ export class WordTypeDetailOverlayAdapterComponent {
     effect(() => {
       const frame = this.frame();
       untracked(() => {
-        this.controller.applyUrlState({
-          identity: {
-            tashkeelWordId: frame.tashkeelWordId,
-            contextCode: frame.contextCode,
-            case: frame.case,
-            tense: frame.tense,
-            voice: frame.voice,
+        this.detailSession.synchronize({
+          selection: {
+            kind: 'word',
+            identity: {
+              tashkeelWordId: frame.tashkeelWordId,
+              contextCode: frame.contextCode,
+              case: frame.case,
+              tense: frame.tense,
+              voice: frame.voice,
+            },
           },
           view: this.effectiveView(),
           detailPage: frame.detailPage,
