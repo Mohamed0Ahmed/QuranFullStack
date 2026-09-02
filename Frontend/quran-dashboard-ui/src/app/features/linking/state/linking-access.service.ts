@@ -1,20 +1,11 @@
-import { Injectable, computed, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 
 @Injectable({ providedIn: 'root' })
 export class LinkingAccessService {
-  private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
 
-  readonly isResolving = computed(
-    () => !this.currentUserStore.authStateKnown() || this.currentUserStore.loadState() === 'loading',
-  );
-
-  readonly canUseLinking = computed(
-    () =>
-      this.currentUserStore.authStateKnown() &&
-      this.currentUserStore.isAuthenticated() &&
-      this.currentUserStore.isActive() &&
-      this.currentUserStore.isOwner(),
-  );
+  readonly isResolving = this.authSession.isResolving;
+  readonly canUseLinking = this.authSession.isActiveOwner;
 }

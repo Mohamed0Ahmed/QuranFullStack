@@ -1,7 +1,9 @@
 import { environment } from '../src/environments/environment.development';
 import { expect, test } from './fixtures/auth';
+import { LOGTO_ORIGIN } from './fixtures/logto';
 
 const API_ORIGIN = environment.apiBaseUrl;
+const DEEP_RETURN_URL = '/dashboard?view=device-session&mode=exact#auth-return';
 const SESSION_COOKIE = '__Secure-quran-dashboard-session';
 const CSRF_COOKIE = 'XSRF-TOKEN';
 const CSRF_HEADER = 'X-XSRF-TOKEN';
@@ -27,6 +29,75 @@ test(
     ],
   },
   async ({ browser, context, page, deviceSessionPersona }) => {
+    let exchangePhase: 'initial' | 'callback-failure' | 'retry' = 'initial';
+    let initialExchangeCount = 0;
+    let callbackFailureExchangeCount = 0;
+    let retryExchangeCount = 0;
+    let releaseCallbackExchange = (): void => undefined;
+    const callbackExchangeRelease = new Promise<void>((resolve) => {
+      releaseCallbackExchange = resolve;
+    });
+    let markCallbackExchangeStarted = (): void => undefined;
+    const callbackExchangeStarted = new Promise<void>((resolve) => {
+      markCallbackExchangeStarted = resolve;
+    });
+
+    await context.route(`${API_ORIGIN}/api/auth/sessions`, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      if (exchangePhase === 'initial') {
+        initialExchangeCount += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ isSuccess: false, message: 'deterministic bootstrap failure' }),
+        });
+        return;
+      }
+      if (exchangePhase === 'callback-failure') {
+        callbackFailureExchangeCount += 1;
+        await route.fulfill({
+          status: 503,
+          contentType: 'application/json',
+          body: JSON.stringify({ isSuccess: false, message: 'deterministic callback failure' }),
+        });
+        return;
+      }
+
+      retryExchangeCount += 1;
+      markCallbackExchangeStarted();
+      await callbackExchangeRelease;
+      await route.continue();
+    });
+    await context.route(`${LOGTO_ORIGIN}/oidc/auth**`, (route) =>
+      route.fulfill({ status: 204 }),
+    );
+
+    await page.goto(DEEP_RETURN_URL);
+    await expect(page.getByRole('button', { name: 'تسجيل الدخول' })).toBeVisible();
+    expect(initialExchangeCount).toBe(1);
+
+    exchangePhase = 'callback-failure';
+    const authorizationRequestPromise = page.waitForRequest((request) =>
+      request.url().startsWith(`${LOGTO_ORIGIN}/oidc/auth`),
+    );
+    await page.getByRole('button', { name: 'تسجيل الدخول' }).click();
+    await authorizationRequestPromise;
+
+    await page.goto('/callback');
+    const retrySignIn = page.getByRole('button', { name: 'إعادة المحاولة' });
+    await expect(retrySignIn).toBeVisible();
+    expect(callbackFailureExchangeCount).toBe(1);
+
+    exchangePhase = 'retry';
+    const retryAuthorizationRequestPromise = page.waitForRequest((request) =>
+      request.url().startsWith(`${LOGTO_ORIGIN}/oidc/auth`),
+    );
+    await retrySignIn.click();
+    await retryAuthorizationRequestPromise;
+
     const bootstrapResponsePromise = page.waitForResponse((response) =>
       response.url() === `${API_ORIGIN}/api/auth/sessions`
       && response.request().method() === 'POST'
@@ -38,7 +109,10 @@ test(
       && response.status() === 200,
     );
 
-    await page.goto('/abwab');
+    await page.goto('/callback', { waitUntil: 'domcontentloaded' });
+    await callbackExchangeStarted;
+    await expect(page.getByText('جارٍ إكمال تسجيل الدخول…')).toBeVisible();
+    releaseCallbackExchange();
 
     const bootstrapResponse = await bootstrapResponsePromise;
     expect(new URL(bootstrapResponse.url()).protocol).toBe('https:');
@@ -51,8 +125,14 @@ test(
     expect(Object.hasOwn(meHeaders, 'authorization')).toBe(false);
     expect(await cookieBackedMe.json()).toMatchObject({
       isSuccess: true,
-      data: { sub: deviceSessionPersona.subject },
+      data: {
+        sub: deviceSessionPersona.subject,
+        permissions: [],
+      },
     });
+    await expect(page).toHaveURL(`${new URL(DEEP_RETURN_URL, 'https://localhost:4200')}`);
+    expect(retryExchangeCount).toBe(1);
+    await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
     const signOut = page.getByRole('button', { name: 'تسجيل الخروج' });
     await expect(signOut).toBeVisible();
 

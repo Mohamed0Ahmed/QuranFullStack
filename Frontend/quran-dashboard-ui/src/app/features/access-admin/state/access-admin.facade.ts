@@ -2,8 +2,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, firstValueFrom } from 'rxjs';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
-import { WriteAuthFailureCoordinator } from '../../../core/auth/write-auth-failure.coordinator';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AccessUserDetail } from '../../../core/api/generated/models/access-user-detail';
 import { AccessUserSummaryPagedResult } from '../../../core/api/generated/models/access-user-summary-paged-result';
@@ -41,8 +40,7 @@ export class AccessAdminFacade {
   private static readonly conflictMessage = 'تغيرت بيانات المستخدم. تم تحديث الحالة الحالية.';
 
   private readonly api = inject(AccessAdminApi);
-  private readonly currentUserStore = inject(CurrentUserStore);
-  private readonly writeAuthFailureCoordinator = inject(WriteAuthFailureCoordinator);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly draft = new AccessPermissionDraftStore();
 
   private readonly usersState = signal<AccessUserSummaryPagedResult | null>(null);
@@ -57,14 +55,8 @@ export class AccessAdminFacade {
   private usersRequestVersion = 0;
   private selectedUserRequestVersion = 0;
 
-  readonly canAccess = computed(() => this.currentUserStore.isActive() && this.currentUserStore.isOwner());
-  readonly accessStateKnown = computed(() => {
-    const loadState = this.currentUserStore.loadState();
-    if (loadState === 'ready' || loadState === 'error') {
-      return true;
-    }
-    return loadState === 'idle' && this.currentUserStore.authStateKnown();
-  });
+  readonly canAccess = this.authSession.isActiveOwner;
+  readonly accessStateKnown = computed(() => !this.authSession.isResolving());
   readonly users = computed(() => this.usersState()?.items ?? []);
   readonly userPage = computed(() => this.usersState()?.page ?? this.userQueryState().page);
   readonly userPageSize = computed(() => this.usersState()?.pageSize ?? this.userQueryState().pageSize);
@@ -304,16 +296,16 @@ export class AccessAdminFacade {
       return 'conflict';
     }
 
-    const authFailure = await this.writeAuthFailureCoordinator.handle(error);
-    if (authFailure) {
-      if (authFailure.kind === 'forbidden' && !this.canAccess()) {
+    const authFailureKind = await this.authSession.handleWriteAuthFailure(error);
+    if (authFailureKind) {
+      if (authFailureKind === 'forbidden' && !this.canAccess()) {
         this.clearProtectedState();
       }
       this.mutationMessageState.set({
-        text: authFailure.message ?? AccessAdminFacade.accessDeniedMessage,
+        text: failureMessage(error, AccessAdminFacade.accessDeniedMessage),
         tone: 'error',
       });
-      return authFailure.kind;
+      return authFailureKind;
     }
 
     this.mutationMessageState.set({

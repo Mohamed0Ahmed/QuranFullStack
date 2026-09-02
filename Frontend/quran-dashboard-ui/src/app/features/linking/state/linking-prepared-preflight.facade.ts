@@ -1,7 +1,7 @@
 import { Injectable, Signal, WritableSignal, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { LinkingPreparedPreflightApi } from '../data-access/linking-prepared-preflight.api';
 import {
   LinkingPreparedPreflightRequest,
@@ -31,7 +31,7 @@ const INITIAL_STATE: LinkingPreparedPreflightState = {
 
 @Injectable({ providedIn: 'root' })
 export class LinkingPreparedPreflightFacade {
-  private readonly currentUser = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly api = inject(LinkingPreparedPreflightApi);
   private readonly recovery = inject(LinkingRecoveryStore);
   private readonly poller = inject(LinkingStatusPollRunner);
@@ -40,7 +40,7 @@ export class LinkingPreparedPreflightFacade {
 
   constructor() {
     effect(() => {
-      const actorSub = this.currentUser.currentUser()?.sub ?? null;
+      const actorSub = this.authSession.subject();
       if (actorSub !== this.actorSub) {
         this.states.forEach((_state, key) => this.poller.cancel(this.pollKey(key)));
         this.states.clear();
@@ -172,8 +172,8 @@ export class LinkingPreparedPreflightFacade {
   }
 
   private requireActor(): string {
-    const actorSub = this.currentUser.currentUser()?.sub;
-    if (actorSub === undefined) {
+    const actorSub = this.authSession.subject();
+    if (actorSub === null) {
       throw new Error('يجب تسجيل الدخول قبل تحضير الربط.');
     }
     return actorSub;

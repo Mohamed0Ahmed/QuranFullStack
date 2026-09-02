@@ -1,7 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { LinkingExecutionApi } from '../data-access/linking-execution.api';
 import { LinkingJobStatusApi } from '../data-access/linking-job-status.api';
 import {
@@ -35,7 +35,7 @@ const INITIAL_STATE: LinkingExecutionState = {
 
 @Injectable({ providedIn: 'root' })
 export class LinkingExecutionStore {
-  private readonly currentUser = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly api = inject(LinkingExecutionApi);
   private readonly jobs = inject(LinkingJobStatusApi);
   private readonly recovery = inject(LinkingRecoveryStore);
@@ -47,7 +47,7 @@ export class LinkingExecutionStore {
 
   constructor() {
     effect(() => {
-      const actorSub = this.currentUser.currentUser()?.sub ?? null;
+      const actorSub = this.authSession.subject();
       if (actorSub !== this.actorSub) {
         this.poller.cancel(this.pollKey());
         this.actorSub = actorSub;
@@ -180,8 +180,8 @@ export class LinkingExecutionStore {
   }
 
   private requireActor(): string {
-    const actorSub = this.currentUser.currentUser()?.sub;
-    if (actorSub === undefined) {
+    const actorSub = this.authSession.subject();
+    if (actorSub === null) {
       throw new Error('يجب تسجيل الدخول قبل تنفيذ الربط.');
     }
     return actorSub;
