@@ -1,54 +1,96 @@
-@if (ownerAccount()) {
-  <section class="qd-surface qd-surface--quiet access-account-permissions__section" data-testid="access-owner-permissions" aria-labelledby="access-owner-permissions-title">
+@if (mode() === 'owner') {
+  <section
+    class="qd-surface qd-surface--quiet access-account-permissions__section"
+    data-testid="access-owner-permissions"
+    aria-labelledby="access-owner-permissions-title"
+  >
     <h3 id="access-owner-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
-    @if (ownerBypassApplies()) {
-      <p class="qd-text-muted">يحصل حساب المالك النشط على كامل صلاحيات الإدارة عبر تجاوز المالك، دون إسناد صلاحيات مباشرة.</p>
+    @if (user().status === 'active') {
+      <p class="qd-text-muted">
+        يحصل حساب المالك النشط على كامل صلاحيات الإدارة عبر تجاوز المالك، دون إسناد صلاحيات مباشرة.
+      </p>
     } @else {
-      <p class="qd-text-muted">لا يسري تجاوز المالك إلا على حساب مالك نشط، ولا تُسند الصلاحيات المباشرة لحسابات المالك من هنا.</p>
+      <p class="qd-text-muted">
+        لا يسري تجاوز المالك إلا على حساب مالك نشط، ولا تُسند الصلاحيات المباشرة لحسابات المالك من
+        هنا.
+      </p>
     }
     <p class="qd-text-muted">تُدار عضوية المالك عبر مطابقة المالكين، لا من هذه الصفحة.</p>
   </section>
-} @else if (variant() === 'unknown-status') {
-  <section class="qd-surface qd-surface--quiet access-account-permissions__section" data-testid="access-unknown-status" aria-labelledby="access-unknown-status-title">
+} @else if (mode() === 'unknown') {
+  <section
+    class="qd-surface qd-surface--quiet access-account-permissions__section"
+    data-testid="access-unknown-status"
+    aria-labelledby="access-unknown-status-title"
+  >
     <h3 id="access-unknown-status-title" class="qd-card-title">حالة الحساب غير معروفة</h3>
-    <p class="qd-text-muted">لا تعرف هذه الصفحة حالة هذا الحساب، فلا تُعرض الصلاحيات المباشرة ولا أي إجراء عليه.</p>
+    <p class="qd-text-muted">
+      لا تعرف هذه الصفحة حالة هذا الحساب، فلا تُعرض الصلاحيات المباشرة ولا أي إجراء عليه.
+    </p>
   </section>
-} @else if (variant() === 'disabled-non-owner') {
-  <section class="qd-surface qd-surface--quiet access-account-permissions__section" data-testid="access-disabled-permissions" aria-labelledby="access-disabled-permissions-title">
+} @else if (mode() === 'disabled') {
+  <section
+    class="qd-surface qd-surface--quiet access-account-permissions__section"
+    data-testid="access-disabled-permissions"
+    aria-labelledby="access-disabled-permissions-title"
+  >
     <h3 id="access-disabled-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
-    <p class="qd-text-muted">الحساب معطّل ولا يحمل صلاحيات مباشرة، ولا يمكن إسنادها قبل إعادة التفعيل.</p>
+    <p class="qd-text-muted">
+      الحساب معطّل ولا يحمل صلاحيات مباشرة، ولا يمكن إسنادها قبل إعادة التفعيل.
+    </p>
     <p class="qd-text-muted">إعادة التفعيل تبدأ بلا صلاحيات مباشرة سابقة.</p>
   </section>
 } @else {
-  <section class="qd-surface qd-surface--quiet access-account-permissions__section" data-testid="access-permissions-section" aria-labelledby="access-permissions-title">
+  <section
+    class="qd-surface qd-surface--quiet access-account-permissions__section"
+    data-testid="access-permissions-section"
+    aria-labelledby="access-permissions-title"
+  >
     <div class="access-account-permissions__section-header">
       <h3 id="access-permissions-title" class="qd-card-title">الصلاحيات المباشرة</h3>
       @if (hasUnsavedPermissions()) {
-        <span class="qd-sr-only" data-testid="access-permission-diff-summary-text">{{ labels.permissionDiffSummary(permissionDiff().granted.length, permissionDiff().revoked.length) }}</span>
+        <span class="qd-sr-only" data-testid="access-permission-diff-summary-text">{{
+          labels.permissionDiffSummary(
+            permissionDiff().granted.length,
+            permissionDiff().revoked.length
+          )
+        }}</span>
         <span
           class="access-account-permissions__diff-summary qd-ltr-isolate"
           data-testid="access-permission-diff-summary"
           dir="ltr"
           aria-hidden="true"
-        >+{{ permissionDiff().granted.length }} / −{{ permissionDiff().revoked.length }}</span>
+          >+{{ permissionDiff().granted.length }} / −{{ permissionDiff().revoked.length }}</span
+        >
       }
     </div>
 
-    @if (catalogueLoading()) {
-      <qd-panel-skeleton shape="text" testId="access-catalogue-loading" loadingLabel="جارٍ تحميل الصلاحيات…" />
-    } @else if (catalogueError(); as error) {
-      <qd-error-state
-        severity="read"
-        testId="access-catalogue-error"
-        actionTestId="access-catalogue-retry"
-        actionLabel="إعادة المحاولة"
-        [message]="error"
-        (action)="catalogueRetryRequested.emit()"
+    @if (catalogueLoading() && groups().length === 0) {
+      <qd-panel-skeleton
+        shape="text"
+        testId="access-catalogue-loading"
+        loadingLabel="جارٍ تحميل الصلاحيات…"
       />
     } @else {
+      @if (catalogueLoading()) {
+        <p class="qd-text-muted" data-testid="access-catalogue-loading">
+          جارٍ تحديث قائمة الصلاحيات…
+        </p>
+      }
+      @if (catalogueError(); as error) {
+        <qd-error-state
+          severity="read"
+          testId="access-catalogue-error"
+          actionTestId="access-catalogue-retry"
+          actionLabel="إعادة المحاولة"
+          [message]="error"
+          (action)="catalogueRetryRequested.emit()"
+        />
+      }
       @if (!canAssignPermissions()) {
         <p class="qd-text-muted" data-testid="access-permissions-unavailable">
-          إسناد الصلاحيات غير متاح مؤقتًا. الصلاحيات المعروضة للاطّلاع فقط، ولم يطرأ أي تغيير على الوصول الحالي.
+          إسناد الصلاحيات غير متاح مؤقتًا. الصلاحيات المعروضة للاطّلاع فقط، ولم يطرأ أي تغيير على
+          الوصول الحالي.
         </p>
       } @else if (user().status === 'pending') {
         <p class="qd-text-muted" data-testid="access-pending-permissions-note">
@@ -64,4 +106,17 @@
       />
     }
   </section>
+}
+
+@if (unknownPermissionCodes().length > 0) {
+  <div class="qd-text-muted" data-testid="access-unknown-permissions">
+    <p>صلاحيات محفوظة غير معروفة لهذا الإصدار، وستبقى دون تغيير:</p>
+    <ul>
+      @for (code of unknownPermissionCodes(); track code) {
+        <li>
+          <code class="qd-ltr-isolate" dir="ltr">{{ code }}</code>
+        </li>
+      }
+    </ul>
+  </div>
 }

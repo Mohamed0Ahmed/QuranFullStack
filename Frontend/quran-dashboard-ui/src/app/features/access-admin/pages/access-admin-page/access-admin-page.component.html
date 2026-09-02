@@ -5,11 +5,19 @@
       <p class="qd-page-header__description">متابعة الحسابات والصلاحيات المباشرة بعناية.</p>
     </header>
 
-    @if (!facade.accessStateKnown()) {
-      <qd-panel-skeleton shape="text" testId="access-admin-checking" loadingLabel="جارٍ التحقق من صلاحية الوصول…" />
-    } @else if (!facade.canAccess()) {
-      <qd-error-state severity="read" testId="access-admin-denied" message="لا تملك صلاحية إدارة الوصول." />
-    } @else {
+    @if (workflow.state().kind === 'checking') {
+      <qd-panel-skeleton
+        shape="text"
+        testId="access-admin-checking"
+        loadingLabel="جارٍ التحقق من صلاحية الوصول…"
+      />
+    } @else if (workflow.state().kind === 'denied') {
+      <qd-error-state
+        severity="read"
+        testId="access-admin-denied"
+        message="لا تملك صلاحية إدارة الوصول."
+      />
+    } @else if (ready(); as state) {
       <div data-testid="access-admin-panel-workspace" class="access-admin-page__layout">
         @if (isWide()) {
           <div class="qd-page-split access-admin-page__split">
@@ -24,8 +32,10 @@
         } @else {
           <div class="access-admin-page__context-bar" data-testid="access-selected-context-bar">
             <div class="access-admin-page__context-identity">
-              <span class="access-admin-page__context-name">{{ selectedIdentity() || labels.noSelectedContextLabel }}</span>
-              <qd-access-user-summary-card [user]="facade.selectedUser()" />
+              <span class="access-admin-page__context-name">{{
+                selectedIdentity() || labels.noSelectedContextLabel
+              }}</span>
+              <qd-access-user-summary-card [user]="selectedUser()" />
             </div>
             <form
               class="access-admin-page__context-search"
@@ -42,23 +52,23 @@
                   (input)="updateContextSearch($event)"
                 />
               </qd-form-field>
-              <button
-                type="submit"
-                qdAction="secondary"
-                data-testid="access-context-search-apply"
-              >{{ labels.contextSearchButton }}</button>
+              <button type="submit" qdAction="secondary" data-testid="access-context-search-apply">
+                {{ labels.contextSearchButton }}
+              </button>
             </form>
             <button
               type="button"
               qdAction="secondary"
               data-testid="access-open-user-list"
               (click)="openUserListSheet()"
-            >{{ labels.openUserListButton }}</button>
+            >
+              {{ labels.openUserListButton }}
+            </button>
           </div>
 
           <ng-container *ngTemplateOutlet="detailPanel" />
 
-          @if (facade.isDirty()) {
+          @if (state.dirty) {
             <div
               class="access-admin-page__review-dock access-admin-page__review-dock--pinned"
               data-testid="access-permission-draft-bar"
@@ -110,10 +120,14 @@
 </section>
 
 <ng-template #mutationSurface>
-  @if (facade.mutationMessage(); as mutation) {
+  @if (mutationMessage(); as mutation) {
     @if (mutation.tone === 'error') {
       <div aria-live="off">
-        <qd-error-state severity="write" testId="access-mutation-message-error" [message]="mutation.text" />
+        <qd-error-state
+          severity="write"
+          testId="access-mutation-message-error"
+          [message]="mutation.text"
+        />
       </div>
     } @else {
       <qd-notice
@@ -127,14 +141,14 @@
 
 <ng-template #userListPanel>
   <qd-access-user-list
-    [users]="facade.users()"
-    [selectedUserId]="facade.selectedUser()?.id ?? null"
-    [query]="facade.userQuery()"
-    [page]="facade.userPage()"
-    [pageSize]="facade.userPageSize()"
-    [totalCount]="facade.userTotalCount()"
-    [loading]="facade.usersLoading()"
-    [error]="facade.usersError()"
+    [users]="directory().users?.items ?? []"
+    [selectedUserId]="selectedUser()?.id ?? null"
+    [query]="directory().query"
+    [page]="directory().users?.page ?? directory().query.page"
+    [pageSize]="directory().users?.pageSize ?? directory().query.pageSize"
+    [totalCount]="directory().users?.totalCount ?? 0"
+    [loading]="directory().loading"
+    [error]="directory().error === '' ? labels.loadError : directory().error"
     (filtersChange)="updateUsers($event)"
     (userSelected)="selectUser($event)"
     (pageChange)="updateUserPage($event)"
@@ -148,12 +162,12 @@
     class="access-admin-page__detail"
     [identity]="selectedIdentity()"
     [layout]="detailLayout()"
-    [hasFooter]="facade.isDirty() && isWide()"
+    [hasFooter]="(ready()?.dirty ?? false) && isWide()"
     [noSelectionMessage]="labels.noSelectionMessage"
   >
     <ng-container ngProjectAs="[qdDetailsMetadata]">
       @if (isWide()) {
-        <qd-access-user-summary-card [user]="facade.selectedUser()" />
+        <qd-access-user-summary-card [user]="selectedUser()" />
       }
     </ng-container>
 
@@ -161,46 +175,63 @@
       <ng-container *ngTemplateOutlet="mutationSurface" />
     </div>
 
-    @if (facade.selectedUserLoading()) {
-      <qd-panel-skeleton shape="text" testId="access-user-loading" loadingLabel="جارٍ تحميل التفاصيل…" />
-    } @else if (facade.selectedUserError(); as userError) {
-      <qd-error-state severity="read" testId="access-user-error" [message]="userError" />
-    } @else if (facade.selectedUser(); as user) {
+    @if (ready()?.selected?.kind === 'loading') {
+      <qd-panel-skeleton
+        shape="text"
+        testId="access-user-loading"
+        loadingLabel="جارٍ تحميل التفاصيل…"
+      />
+    } @else if (ready()?.selected?.kind === 'error') {
+      <qd-error-state
+        severity="read"
+        testId="access-user-error"
+        [message]="$any(ready()?.selected).message || labels.loadError"
+      />
+    } @else if (selected(); as selectedState) {
       <qd-access-account-permissions
-        [user]="user"
-        [groups]="facade.permissionGroups()"
-        [selectedCodes]="facade.selectedPermissionCodes()"
-        [permissionDiff]="facade.permissionDiff()"
-        [hasUnsavedPermissions]="facade.isDirty()"
-        [catalogueLoading]="facade.catalogueLoading()"
-        [catalogueError]="facade.catalogueError()"
-        [canAssignPermissions]="facade.canAssignPermissions()"
-        [busyAction]="facade.busyAction()"
+        [user]="selectedState.account"
+        [mode]="selectedState.mode"
+        [groups]="ready()?.catalogue?.groups ?? []"
+        [selectedCodes]="selectedState.selectedCodes"
+        [unknownPermissionCodes]="selectedState.unknownPermissionCodes"
+        [permissionDiff]="selectedState.permissionDiff"
+        [hasUnsavedPermissions]="selectedState.dirty"
+        [catalogueLoading]="ready()?.catalogue?.loading ?? false"
+        [catalogueError]="ready()?.catalogue?.error === '' ? labels.loadError : (ready()?.catalogue?.error ?? null)"
+        [canAssignPermissions]="selectedState.canEditPermissions"
+        [busyAction]="ready()?.busyAction ?? null"
         (selectionChange)="updatePermissionCodes($event)"
         (catalogueRetryRequested)="reloadPermissionCatalogue()"
       />
 
       @if (lifecycleActionsApply()) {
         <qd-access-lifecycle-actions
-          [user]="user"
-          [busyAction]="facade.busyAction()"
+          [actions]="selectedState.actions"
+          [busyAction]="ready()?.busyAction ?? null"
           [acceptGrantsPermissions]="acceptWouldGrantPermissions()"
           (actionRequested)="requestLifecycleAction($event)"
         />
 
         <qd-access-change-review
-          [action]="pendingAction()"
-          [groups]="facade.permissionGroups()"
-          [permissionDiff]="facade.permissionDiff()"
-          [canAssignPermissions]="facade.canAssignPermissions()"
-          [busyAction]="facade.busyAction()"
+          [action]="selectedState.preparation?.action ?? null"
+          [groups]="ready()?.catalogue?.groups ?? []"
+          [permissionDiff]="selectedState.permissionDiff"
+          [showsPermissionDiff]="reviewShowsPermissionDiff()"
+          [canConfirm]="selectedState.preparation !== null && ready()?.busyAction === null"
+          [busyAction]="ready()?.busyAction ?? null"
           (confirmed)="confirmPendingAction($event)"
           (cancelled)="cancelPendingAction()"
         />
       }
     }
 
-    <div qdDetailsFooter class="access-admin-page__review-dock" data-testid="access-permission-draft-bar" [attr.aria-label]="labels.reviewDockLabel" role="group">
+    <div
+      qdDetailsFooter
+      class="access-admin-page__review-dock"
+      data-testid="access-permission-draft-bar"
+      [attr.aria-label]="labels.reviewDockLabel"
+      role="group"
+    >
       <ng-container *ngTemplateOutlet="reviewDock" />
     </div>
   </qd-details-workspace>
@@ -209,9 +240,25 @@
 <ng-template #reviewDock>
   <p class="qd-text-muted">تعديلات غير محفوظة على الصلاحيات المباشرة.</p>
   <div class="access-admin-page__dock-actions">
-    @if (canReplacePermissions(facade.selectedUser())) {
-      <button type="button" qdAction="primary" data-testid="access-request-permissions" [disabled]="facade.busyAction() !== null" (click)="requestPermissionSave()">مراجعة تعديل الصلاحيات</button>
+    @if (selected()?.actions?.includes('permissions')) {
+      <button
+        type="button"
+        qdAction="primary"
+        data-testid="access-request-permissions"
+        [disabled]="ready()?.busyAction !== null"
+        (click)="requestPermissionSave()"
+      >
+        مراجعة تعديل الصلاحيات
+      </button>
     }
-    <button type="button" qdAction="tertiary" data-testid="access-discard-draft" [disabled]="facade.busyAction() !== null" (click)="discardDraft()">{{ labels.discardChangesButton }}</button>
+    <button
+      type="button"
+      qdAction="tertiary"
+      data-testid="access-discard-draft"
+      [disabled]="ready()?.busyAction !== null"
+      (click)="discardDraft()"
+    >
+      {{ labels.discardChangesButton }}
+    </button>
   </div>
 </ng-template>
