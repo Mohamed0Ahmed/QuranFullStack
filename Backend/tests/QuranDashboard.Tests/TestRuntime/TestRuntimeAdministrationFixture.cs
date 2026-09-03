@@ -96,6 +96,59 @@ public sealed class TestRuntimeAdministrationFixture : IAsyncLifetime
         }
     }
 
+    public async Task ResetCapabilityAsync()
+    {
+        var contract = QuranDashboard.TestRuntime.DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
+        var existingRoles = new List<string>();
+        await using (var connection = new NpgsqlConnection(ServerAdministratorConnectionString))
+        {
+            await connection.OpenAsync();
+            foreach (var role in contract.Roles.AsDictionary().Values)
+            {
+                await using var command = new NpgsqlCommand(
+                    "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @role)",
+                    connection);
+                command.Parameters.AddWithValue("role", role);
+                if (await command.ExecuteScalarAsync() is true)
+                {
+                    existingRoles.Add(role);
+                }
+            }
+
+            foreach (var marker in contract.Markers.AsDictionary().Values)
+            {
+                await ExecuteAsync(
+                    connection,
+                    $"ALTER DATABASE quran_dashboard_test RESET \"{marker}\"");
+            }
+        }
+
+        if (existingRoles.Count == 0)
+        {
+            return;
+        }
+
+        var roleList = string.Join(", ", existingRoles.Select(QuoteIdentifier));
+        foreach (var database in new[] { "quran_dashboard", "quran_dashboard_test", "postgres" })
+        {
+            var databaseConnection = new NpgsqlConnectionStringBuilder(ServerAdministratorConnectionString)
+            {
+                Database = database,
+            };
+            await using var connection = new NpgsqlConnection(databaseConnection.ConnectionString);
+            await connection.OpenAsync();
+            await ExecuteAsync(connection, $"DROP OWNED BY {roleList}");
+        }
+
+        await using (var connection = new NpgsqlConnection(ServerAdministratorConnectionString))
+        {
+            await connection.OpenAsync();
+            await ExecuteAsync(connection, $"DROP ROLE {roleList}");
+        }
+    }
+
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"")}\"";
+
     private static async Task ExecuteAsync(NpgsqlConnection connection, string sql)
     {
         await using var command = new NpgsqlCommand(sql, connection);

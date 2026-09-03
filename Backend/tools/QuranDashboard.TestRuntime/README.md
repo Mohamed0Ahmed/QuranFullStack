@@ -46,10 +46,10 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- admin apply --login <lo
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin verify --login <local-login>
 ```
 
-Before the first capability operation for an operator login, a PostgreSQL superuser must perform this
-one-time, cluster-scoped bootstrap. Replace `<local-login>` with the intended operator role. These are
-the only parameter privileges the operator receives; do not grant `ALTER SYSTEM` or broader parameter
-authority:
+Before the first capability operation for a non-superuser operator login, a PostgreSQL superuser must
+perform this one-time, cluster-scoped bootstrap. Replace `<local-login>` with the intended operator role.
+These are the only parameter privileges the operator receives; do not grant `ALTER SYSTEM` or broader
+parameter authority:
 
 ```sql
 GRANT SET ON PARAMETER "quran_dashboard.test_runtime.enabled" TO <local-login>;
@@ -75,11 +75,12 @@ changes. `admin apply` and `refresh apply` validate all 16 grants before mutatio
 name as `administration.authority.parameter-set-missing` or `refresh.authority.parameter-set-missing`.
 
 `inspect`, `dry-run`, and `verify` do not retain database changes. `apply` is the only mutating mode. The
-runtime operator must be a non-superuser that is also the connected session login, owns the exact
-`quran_dashboard_test` database and the application-schema objects it reconciles, has `CREATEROLE` and
-`CREATEDB`, and has `SET` on exactly the 16 committed marker parameters above. Ordinary capability
-commands reject a superuser login. The command accepts only local PostgreSQL 18 and a server that is not
-in recovery. Repeating `apply` against compliant state is a no-op.
+runtime operator must be the connected session login. A non-superuser operator must own the exact
+`quran_dashboard_test` database and the application-schema objects it reconciles, have `CREATEROLE` and
+`CREATEDB`, and have `SET` on exactly the 16 committed marker parameters above. A superuser session is
+also supported, including for disposable-container capability provisioning. Every path still validates
+the marker parameter authority before mutation. The command accepts only local PostgreSQL 18 and a server
+that is not in recovery. Repeating `apply` against compliant state is a no-op.
 
 The workflow creates four stable `NOLOGIN` roles, removes unexpected direct or inherited membership,
 grants all four roles only to the selected login, and installs the capability/reset, contract-version,
