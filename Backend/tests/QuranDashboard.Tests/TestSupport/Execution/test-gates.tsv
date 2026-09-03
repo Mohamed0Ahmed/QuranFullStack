@@ -53,10 +53,11 @@ QuranDashboard.Tests.Quran.Import.ManifestChecksumTests	FoundationImport	Fast	Pi
 QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Database	TierB								Unmigrated
+QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleContractTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB		CanonicalReader	CanonicalQuranData	None	TestDatabase	None	MushafReaderCollection	Migrated
+QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB								Unmigrated
@@ -120,8 +121,8 @@ QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabRefusalTests	WordsSimpleI3rab	D
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSchemaShapeTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema							Unmigrated
-QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke								Unmigrated
+QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke		GuardedReader	CanonicalQuranData,MutableApplicationState	None	TestDatabase	None	SmokeDataCollection	Migrated
 QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke								Unmigrated

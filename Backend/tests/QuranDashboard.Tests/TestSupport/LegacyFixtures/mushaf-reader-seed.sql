@@ -1,10 +1,9 @@
 -- ======================================================================
--- Mushaf Reader — representative content slice (fixture seed, G2)
--- Feature 011 · read-only · deterministic · offline
+-- Legacy mutating/rehearsal tests — representative content slice
+-- Deterministic · offline
 -- ----------------------------------------------------------------------
--- Loaded by MushafReaderTestFixture into its own isolated database on the shared
--- Testcontainers Postgres runtime, cloned from the migrated template. Covers only
--- the rows the reader tests assert on; it is intentionally NOT the full DB.
+-- Loaded only by explicitly unmigrated scratch/rehearsal fixtures. Persistent reader
+-- fixtures never consume this slice; they use the complete Test Database Capability.
 --
 -- FK ordering note: quran_ayahs has nullable juz/hizb/rub FKs while
 -- quran_juzs/hizbs/rubs require first/last_ayah_id. To break the cycle, ayahs

@@ -6,11 +6,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfWordAnalysisReader> logger) : IWordAnalysisReader
 {
-    private static readonly JsonSerializerOptions FeaturesJsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
     public async Task<WordAnalysisOutcome> GetWordAnalysisAsync(string wordLocation, CancellationToken ct)
     {
         var core = await LoadCoreAsync(wordLocation, ct);
@@ -51,7 +46,23 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfW
             MapWord(core),
             MapIdentity(core),
             MapMorphology(core, headPosTag),
-            MapSegments(segments));
+            MushafReaderValueMapper.MapSegments(
+                segments.Select(segment => new WordAnalysisSegmentValue(
+                    segment.SegmentLocation,
+                    segment.SegmentNumber,
+                    segment.Kind,
+                    segment.FormArabicNormalized,
+                    segment.Pos,
+                    segment.PosArabicLabel,
+                    segment.PosEnglishLabel,
+                    segment.I3rabArabic,
+                    segment.I3rabRuleId,
+                    segment.RuleSignatureKey,
+                    segment.RuleFamily,
+                    segment.I3rabStatus,
+                    segment.FeaturesRaw,
+                    segment.FeaturesJson)).ToArray(),
+                logger));
 
         return new WordAnalysisOutcome.Found(response);
     }
@@ -223,73 +234,6 @@ public sealed class EfWordAnalysisReader(QuranDashboardDbContext db, ILogger<EfW
         core.VerbTense,
         core.VerbVoice,
         core.CaseFeature);
-
-    private IReadOnlyList<RenderedSegmentDto> MapSegments(IReadOnlyList<SegmentProjection> segments)
-    {
-        var rendered = new List<RenderedSegmentDto>(segments.Count);
-
-        foreach (var segment in segments)
-        {
-            var hasDisplayText = !string.IsNullOrWhiteSpace(segment.FormArabicNormalized);
-
-            rendered.Add(new RenderedSegmentDto(
-                segment.SegmentLocation,
-                segment.SegmentNumber,
-                segment.SegmentNumber,
-                segment.Kind,
-                hasDisplayText ? segment.FormArabicNormalized : null,
-                hasDisplayText ? "available" : "missing",
-                segment.Pos,
-                new LocalizedLabel(
-                    segment.PosArabicLabel ?? segment.Pos,
-                    segment.PosEnglishLabel ?? segment.Pos),
-                segment.I3rabArabic,
-                segment.I3rabRuleId,
-                segment.RuleSignatureKey,
-                segment.RuleFamily,
-                segment.I3rabStatus,
-                MapSegmentFeatures(segment)));
-        }
-
-        return rendered;
-    }
-
-    private SegmentFeaturesDto? MapSegmentFeatures(SegmentProjection segment)
-    {
-        if (string.IsNullOrWhiteSpace(segment.FeaturesRaw) && string.IsNullOrWhiteSpace(segment.FeaturesJson))
-        {
-            return null;
-        }
-
-        return new SegmentFeaturesDto(
-            segment.FeaturesRaw,
-            ParseFeaturesJson(segment.FeaturesJson, segment.SegmentLocation));
-    }
-
-    // quran-safety rule 3: corrupt features_json must not be swallowed silently. The return contract
-    // is unchanged (still empty on failure), but a corrupt row logs a Warning naming the segment so
-    // the underlying data issue stays visible.
-    private IReadOnlyList<JsonElement> ParseFeaturesJson(string? featuresJson, string segmentLocation)
-    {
-        if (string.IsNullOrWhiteSpace(featuresJson))
-        {
-            return [];
-        }
-
-        try
-        {
-            var parsed = JsonSerializer.Deserialize<List<JsonElement>>(featuresJson, FeaturesJsonOptions);
-            return parsed ?? (IReadOnlyList<JsonElement>)[];
-        }
-        catch (JsonException ex)
-        {
-            logger.LogWarning(
-                ex,
-                "Corrupt features_json JSON for segment {segmentLocation}; treating as empty",
-                segmentLocation);
-            return [];
-        }
-    }
 
     private sealed record WordCoreProjection(
         int WordId,

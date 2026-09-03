@@ -1,43 +1,27 @@
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 
 namespace QuranDashboard.Tests.Quran.WordsRoots;
 
 public sealed class RootsExplorerTestFixture : IAsyncLifetime
 {
-    private const string SeedResourceSuffix = "roots-explorer-seed.sql";
-
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
+    private readonly PersistentTestDatabaseReader database = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
     private ServiceProvider? rootProvider;
 
     public RecordingLoggerProvider LoggingProvider { get; } = new();
 
-    public string ConnectionString { get; private set; } = string.Empty;
+    public string ConnectionString => database.ReadOnlyConnectionString;
 
     public async Task InitializeAsync()
     {
-        var seedSql = await ReadEmbeddedSeedScriptAsync();
-
-        databaseLease =
-            ExternalReadOnlyDatabaseOptIn.TryLease(ExternalReadOnlyDatabaseOptIn.RootsExplorerConnectionVariable)
-            ?? await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(RootsExplorerTestFixture));
-
-        ConnectionString = databaseLease.ConnectionString;
+        await database.InitializeAsync();
 
         try
         {
             rootProvider = ownedProviders.Own(BuildServiceProvider());
-
-            if (databaseLease.IsExternal)
-            {
-                return;
-            }
-
-            await using var scope = rootProvider.CreateAsyncScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-            await SeedSliceAsync(dbContext, seedSql);
         }
         catch
         {
@@ -51,11 +35,7 @@ public sealed class RootsExplorerTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        await database.DisposeAsync();
     }
 
     public AsyncServiceScope CreateScope()
@@ -74,7 +54,7 @@ public sealed class RootsExplorerTestFixture : IAsyncLifetime
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
+                ["ConnectionStrings:QuranDashboardDb"] = database.BaseConnectionString,
             })
             .Build();
 
@@ -83,33 +63,9 @@ public sealed class RootsExplorerTestFixture : IAsyncLifetime
             .AddSingleton<ILoggerProvider>(LoggingProvider)
             .AddLogging()
             .AddApplication()
-            .AddInfrastructure(configuration)
+            .AddInfrastructure(
+                configuration,
+                DatabaseActivityPolicy.Testing(DatabaseActivityProfile.ReadOnly, []))
             .BuildServiceProvider();
-    }
-
-    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext, string sql)
-    {
-        var connection = dbContext.Database.GetDbConnection();
-        if (connection.State != ConnectionState.Open)
-        {
-            await connection.OpenAsync();
-        }
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private static async Task<string> ReadEmbeddedSeedScriptAsync()
-    {
-        var assembly = typeof(RootsExplorerTestFixture).Assembly;
-        var name = assembly.GetManifestResourceNames()
-            .First(n => n.EndsWith(SeedResourceSuffix, StringComparison.Ordinal));
-
-        await using var stream = assembly.GetManifestResourceStream(name)
-            ?? throw new InvalidOperationException($"Embedded seed script '{name}' was not found.");
-
-        using var reader = new StreamReader(stream);
-        return await reader.ReadToEndAsync();
     }
 }

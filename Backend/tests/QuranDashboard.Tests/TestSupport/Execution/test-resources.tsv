@@ -10,9 +10,9 @@ FullI3rabSchemaTestCollection	QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSche
 I3rabGenerationTestCollection	QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabGenerationTestFixture	Parallel	ResetPerTest					Unmigrated
 ImportTestCollection	QuranDashboard.Tests.Quran.Import.ImportTestFixture	Parallel	ResetPerTest					Unmigrated
 LinkingCollection	QuranDashboard.Tests.Api.Linking.LinkingTestFixture	Parallel	ResetPerTest					Unmigrated
-MorphologyExplorersCollection	QuranDashboard.Tests.Quran.WordsMorphologyExplorers.MorphologyExplorersTestFixture	Parallel	ImmutableSeed					Unmigrated
+MorphologyExplorersCollection	QuranDashboard.Tests.Quran.WordsMorphologyExplorers.MorphologyExplorersTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	None	Migrated
 MorphologyImportTestCollection	QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportTestFixture	Parallel	ResetPerTest					Unmigrated
-MushafReaderCollection	QuranDashboard.Tests.Quran.MushafReader.MushafReaderTestFixture	Parallel	ImmutableSeed					Unmigrated
+MushafReaderCollection	QuranDashboard.Tests.Quran.MushafReader.MushafReaderTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	ReadOnlyApi	Migrated
 MutashabihatImportTestCollection	QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTestFixture	Parallel	ResetPerTest					Unmigrated
 NavigationImportTestCollection	QuranDashboard.Tests.Quran.Navigation.NavigationImportTestFixture	Parallel	ResetPerTest					Unmigrated
 QuranTopicsBookImportTestCollection	QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTestFixture	NonParallel	FreshLeasePerCase					Unmigrated
@@ -20,15 +20,15 @@ PostgreSqlDatabaseSlotCollection	QuranDashboard.Tests.TestSupport.PostgreSql.Pos
 PhraseSearchApiCollection	QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateFixture	Parallel	ResetPerTest					Unmigrated
 PhraseIndexBuildActivationCollection	QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexBuildActivationFixture	NonParallel	FreshLeasePerCase					Unmigrated
 PhraseIndexFullCanonicalRehearsalCollection	QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalFixture	NonParallel	FreshLeasePerCase					Unmigrated
-RootsExplorerCollection	QuranDashboard.Tests.Quran.WordsRoots.RootsExplorerTestFixture	Parallel	ImmutableSeed					Unmigrated
+RootsExplorerCollection	QuranDashboard.Tests.Quran.WordsRoots.RootsExplorerTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	None	Migrated
 SmokeCollection	QuranDashboard.Tests.Smoke.SmokeApiFixture	Parallel	ResetPerTest					Unmigrated
-SmokeDataCollection	QuranDashboard.Tests.Smoke.Data.SmokeDataFixture	NonParallel	ImmutableSeed					Unmigrated
+SmokeDataCollection	QuranDashboard.Tests.Smoke.Data.SmokeDataFixture	Parallel	PersistentCapability	None	None	TestDatabase	ReadOnlyApi	Migrated
 FullCanonicalArtifactProvisioningCollection	QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningFixture	Parallel	ResetPerTest					Unmigrated
 TafsirImportTestCollection	QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTestFixture	Parallel	ResetPerTest					Unmigrated
 TestRuntimeAdministrationCollection	QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationFixture	NonParallel	FreshLeasePerCase					Unmigrated
 TestRuntimeResetCollection	QuranDashboard.Tests.TestRuntime.TestRuntimeResetFixture	NonParallel	ResetPerTest					Unmigrated
 TestRuntimeRefreshCollection	QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshFixture	NonParallel	FreshLeasePerCase					Unmigrated
 TranslationImportTestCollection	QuranDashboard.Tests.Quran.Translations.TranslationImportTestFixture	Parallel	ResetPerTest					Unmigrated
-UniqueWordsCollection	QuranDashboard.Tests.Quran.Words.UniqueWordsTestFixture	Parallel	ImmutableSeed					Unmigrated
+UniqueWordsCollection	QuranDashboard.Tests.Quran.Words.UniqueWordsTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	None	Migrated
 WordsDisplayTestCollection	QuranDashboard.Tests.Quran.WordsDisplay.WordsDisplayTestFixture	Parallel	ResetPerTest					Unmigrated
-WordTypesCollection	QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesTestFixture	Parallel	ImmutableSeed					Unmigrated
+WordTypesCollection	QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	ReadOnlyApi	Migrated
