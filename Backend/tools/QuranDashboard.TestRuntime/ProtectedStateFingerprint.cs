@@ -1,0 +1,351 @@
+using System.Buffers.Binary;
+using System.Data;
+using System.Security.Cryptography;
+using System.Text;
+using Npgsql;
+using NpgsqlTypes;
+
+namespace QuranDashboard.TestRuntime;
+
+internal sealed record ProtectedStateFingerprintComponents(
+    string CanonicalQuranData,
+    string SystemCatalogue,
+    string SchemaState);
+
+internal sealed record ProtectedStateFingerprintReport(
+    string Algorithm,
+    string Fingerprint,
+    ProtectedStateFingerprintComponents Components,
+    int CanonicalTableCount,
+    int SystemCatalogueTableCount,
+    int SchemaTableCount,
+    int ProtectedSequenceCount,
+    int DumpFilesRetained);
+
+internal static class ProtectedStateFingerprint
+{
+    private static readonly Encoding Utf8 = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
+
+    internal static async Task<ProtectedStateFingerprintReport> ComputeAsync(
+        NpgsqlConnection connection,
+        DatabaseContract contract,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await connection.BeginTransactionAsync(
+            IsolationLevel.RepeatableRead,
+            cancellationToken);
+        await ExecuteAsync(
+            connection,
+            transaction,
+            "SET TRANSACTION READ ONLY; SET LOCAL timezone = 'UTC'; SET LOCAL datestyle = 'ISO, YMD'; SET LOCAL intervalstyle = 'iso_8601'; SET LOCAL bytea_output = 'hex'; SET LOCAL extra_float_digits = 3",
+            cancellationToken);
+
+        var report = await ComputeAsync(connection, transaction, contract, cancellationToken);
+        await transaction.RollbackAsync(cancellationToken);
+        return report;
+    }
+
+    internal static async Task<ProtectedStateFingerprintReport> ComputeAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        DatabaseContract contract,
+        CancellationToken cancellationToken = default)
+    {
+        var canonical = await HashTablesAsync(
+            connection,
+            transaction,
+            "canonical-quran-data",
+            contract.DataClasses.CanonicalQuranData,
+            cancellationToken);
+        var catalogue = await HashTablesAsync(
+            connection,
+            transaction,
+            "system-catalogue",
+            contract.DataClasses.SystemCatalogue,
+            cancellationToken);
+        var schema = await HashSchemaAsync(connection, transaction, contract, cancellationToken);
+        var aggregate = HashValues(
+            ("canonical-quran-data", canonical.Hash),
+            ("system-catalogue", catalogue.Hash),
+            ("schema-state", schema.Hash));
+
+        return new ProtectedStateFingerprintReport(
+            "sha256",
+            aggregate,
+            new ProtectedStateFingerprintComponents(canonical.Hash, catalogue.Hash, schema.Hash),
+            contract.DataClasses.CanonicalQuranData.Length,
+            contract.DataClasses.SystemCatalogue.Length,
+            contract.DataClasses.SchemaState.Length,
+            schema.ProtectedSequenceCount,
+            0);
+    }
+
+    private static async Task<ComponentHash> HashTablesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string component,
+        IReadOnlyCollection<string> tables,
+        CancellationToken cancellationToken)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Append(hash, component);
+        foreach (var table in tables.Order(StringComparer.Ordinal))
+        {
+            Append(hash, $"table:{table}");
+            await AppendQueryAsync(
+                hash,
+                connection,
+                transaction,
+                $"SELECT pg_catalog.row_to_json(row_value)::text FROM public.{QuoteIdentifier(table)} AS row_value ORDER BY pg_catalog.row_to_json(row_value)::text COLLATE \"C\"",
+                null,
+                cancellationToken);
+        }
+
+        return new ComponentHash(Convert.ToHexStringLower(hash.GetHashAndReset()), 0);
+    }
+
+    private static async Task<ComponentHash> HashSchemaAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        DatabaseContract contract,
+        CancellationToken cancellationToken)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        Append(hash, "schema-state");
+
+        await AppendNamedQueryAsync(
+            hash,
+            "relations-and-columns",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       namespace.nspname,
+                       relation.relname,
+                       relation.relkind,
+                       relation.relpersistence,
+                       relation.relreplident,
+                       attribute.attnum,
+                       attribute.attname,
+                       pg_catalog.format_type(attribute.atttypid, attribute.atttypmod),
+                       attribute.attnotnull,
+                       attribute.attidentity,
+                       attribute.attgenerated,
+                       pg_catalog.pg_get_expr(default_value.adbin, default_value.adrelid, true),
+                       collation_value.collname)::text
+            FROM pg_catalog.pg_class AS relation
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+            LEFT JOIN pg_catalog.pg_attribute AS attribute
+              ON attribute.attrelid = relation.oid
+             AND attribute.attnum > 0
+             AND NOT attribute.attisdropped
+            LEFT JOIN pg_catalog.pg_attrdef AS default_value
+              ON default_value.adrelid = relation.oid
+             AND default_value.adnum = attribute.attnum
+            LEFT JOIN pg_catalog.pg_collation AS collation_value ON collation_value.oid = attribute.attcollation
+            WHERE namespace.nspname = 'public'
+              AND relation.relkind IN ('r', 'p', 'v', 'm', 'f')
+            ORDER BY relation.relname COLLATE "C", attribute.attnum
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "constraints",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       relation.relname,
+                       constraint_value.conname,
+                       constraint_value.contype,
+                       constraint_value.condeferrable,
+                       constraint_value.condeferred,
+                       constraint_value.convalidated,
+                       pg_catalog.pg_get_constraintdef(constraint_value.oid, true))::text
+            FROM pg_catalog.pg_constraint AS constraint_value
+            INNER JOIN pg_catalog.pg_class AS relation ON relation.oid = constraint_value.conrelid
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+            WHERE namespace.nspname = 'public'
+            ORDER BY relation.relname COLLATE "C", constraint_value.conname COLLATE "C"
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "indexes",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(tablename, indexname, indexdef)::text
+            FROM pg_catalog.pg_indexes
+            WHERE schemaname = 'public'
+            ORDER BY tablename COLLATE "C", indexname COLLATE "C"
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "extensions",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(extension.extname, extension.extversion, namespace.nspname, extension.extrelocatable)::text
+            FROM pg_catalog.pg_extension AS extension
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = extension.extnamespace
+            ORDER BY extension.extname COLLATE "C"
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "triggers",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       relation.relname,
+                       trigger_value.tgname,
+                       pg_catalog.pg_get_triggerdef(trigger_value.oid, true))::text
+            FROM pg_catalog.pg_trigger AS trigger_value
+            INNER JOIN pg_catalog.pg_class AS relation ON relation.oid = trigger_value.tgrelid
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+            WHERE namespace.nspname = 'public'
+              AND NOT trigger_value.tgisinternal
+            ORDER BY relation.relname COLLATE "C", trigger_value.tgname COLLATE "C"
+            """,
+            cancellationToken);
+
+        var migrationHash = await HashTablesAsync(
+            connection,
+            transaction,
+            "migration-history",
+            contract.DataClasses.SchemaState,
+            cancellationToken);
+        Append(hash, "migration-history");
+        Append(hash, migrationHash.Hash);
+
+        Append(hash, "sequences");
+        var protectedSequenceCount = 0;
+        await using (var command = new NpgsqlCommand(
+                         """
+                         SELECT pg_catalog.jsonb_build_array(
+                                    sequences.schemaname,
+                                    sequences.sequencename,
+                                    sequences.data_type,
+                                    sequences.start_value,
+                                    sequences.min_value,
+                                    sequences.max_value,
+                                    sequences.increment_by,
+                                    sequences.cycle,
+                                    sequences.cache_size,
+                                    owned_relation.relname,
+                                    owned_attribute.attname,
+                                    CASE
+                                        WHEN owned_relation.relname = ANY(@mutable_tables) THEN NULL
+                                        ELSE sequences.last_value
+                                    END)::text,
+                                owned_relation.relname IS NULL OR NOT (owned_relation.relname = ANY(@mutable_tables))
+                         FROM pg_catalog.pg_sequences AS sequences
+                         INNER JOIN pg_catalog.pg_class AS sequence_relation
+                           ON sequence_relation.relname = sequences.sequencename
+                         INNER JOIN pg_catalog.pg_namespace AS sequence_namespace
+                           ON sequence_namespace.oid = sequence_relation.relnamespace
+                          AND sequence_namespace.nspname = sequences.schemaname
+                         LEFT JOIN pg_catalog.pg_depend AS dependency
+                           ON dependency.classid = 'pg_catalog.pg_class'::pg_catalog.regclass
+                          AND dependency.objid = sequence_relation.oid
+                          AND dependency.refclassid = 'pg_catalog.pg_class'::pg_catalog.regclass
+                          AND dependency.deptype IN ('a', 'i')
+                         LEFT JOIN pg_catalog.pg_class AS owned_relation ON owned_relation.oid = dependency.refobjid
+                         LEFT JOIN pg_catalog.pg_attribute AS owned_attribute
+                           ON owned_attribute.attrelid = dependency.refobjid
+                          AND owned_attribute.attnum = dependency.refobjsubid
+                         WHERE sequences.schemaname = 'public'
+                         ORDER BY sequences.sequencename COLLATE "C"
+                         """,
+                         connection,
+                         transaction))
+        {
+            command.Parameters.AddWithValue(
+                "mutable_tables",
+                NpgsqlDbType.Array | NpgsqlDbType.Text,
+                contract.DataClasses.MutableApplicationState);
+            await using var reader = await command.ExecuteReaderAsync(
+                System.Data.CommandBehavior.SequentialAccess,
+                cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                Append(hash, reader.GetString(0));
+                if (reader.GetBoolean(1))
+                {
+                    protectedSequenceCount++;
+                }
+            }
+        }
+
+        return new ComponentHash(Convert.ToHexStringLower(hash.GetHashAndReset()), protectedSequenceCount);
+    }
+
+    private static async Task AppendNamedQueryAsync(
+        IncrementalHash hash,
+        string name,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        Append(hash, name);
+        await AppendQueryAsync(hash, connection, transaction, sql, null, cancellationToken);
+    }
+
+    private static async Task AppendQueryAsync(
+        IncrementalHash hash,
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        Action<NpgsqlParameterCollection>? addParameters,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        addParameters?.Invoke(command.Parameters);
+        await using var reader = await command.ExecuteReaderAsync(
+            System.Data.CommandBehavior.SequentialAccess,
+            cancellationToken);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            Append(hash, reader.GetString(0));
+        }
+    }
+
+    private static async Task ExecuteAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static string HashValues(params (string Name, string Value)[] values)
+    {
+        using var hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+        foreach (var value in values)
+        {
+            Append(hash, value.Name);
+            Append(hash, value.Value);
+        }
+
+        return Convert.ToHexStringLower(hash.GetHashAndReset());
+    }
+
+    private static void Append(IncrementalHash hash, string value)
+    {
+        var bytes = Utf8.GetBytes(value);
+        Span<byte> length = stackalloc byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32BigEndian(length, bytes.Length);
+        hash.AppendData(length);
+        hash.AppendData(bytes);
+    }
+
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
+
+    private sealed record ComponentHash(string Hash, int ProtectedSequenceCount);
+}

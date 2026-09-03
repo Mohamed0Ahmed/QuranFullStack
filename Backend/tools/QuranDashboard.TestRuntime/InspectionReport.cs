@@ -70,4 +70,6 @@ internal sealed record TestRuntimeReport(
     IReadOnlyList<ContractViolation> Violations,
     string? FailureType = null,
     CapabilityAdministrationReport? Administration = null,
-    AdvisoryLockReport? AdvisoryLock = null);
+    AdvisoryLockReport? AdvisoryLock = null,
+    ProtectedStateFingerprintReport? ProtectedStateFingerprint = null,
+    MutableResetReport? MutableReset = null);

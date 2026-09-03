@@ -1,0 +1,524 @@
+using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
+using Npgsql;
+using NpgsqlTypes;
+
+namespace QuranDashboard.TestRuntime;
+
+internal sealed record MutableResetReport(
+    string Phase,
+    string Status,
+    int ResetTableCount,
+    int EmptyTableCount,
+    bool SingletonValid,
+    bool SequencesPreserved,
+    bool ProtectedStateMatches,
+    string? BeforeFingerprint,
+    string? AfterFingerprint,
+    string ExpectedFingerprint,
+    int ApiPort,
+    int? ApiProcessId,
+    bool ApiProcessAlive,
+    bool ApiPortOpen,
+    int ActiveDatabaseConnections,
+    bool RecoveryAttempted);
+
+internal static class MutableStateResetter
+{
+    internal static async Task<TestRuntimeReport> ExecuteAsync(
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation targetValidation,
+        TestRuntimeReport inspection,
+        string runId,
+        string lockCommand,
+        string expectedFingerprint,
+        int apiPort,
+        int? apiProcessId,
+        string phase,
+        CancellationToken cancellationToken = default)
+    {
+        var resetTables = contract.DataClasses.MutableApplicationState
+            .Where(table => table != contract.LinkingDataBaseline.Table)
+            .Order(StringComparer.Ordinal)
+            .ToArray();
+        if (!inspection.Succeeded)
+        {
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "refused",
+                resetTables.Length,
+                violations: inspection.Violations);
+        }
+
+        await using var connection = new NpgsqlConnection(targetValidation.Connection!.ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        var ownsLock = await AdvisoryLockProtocol.VerifyOwnershipAsync(
+            connection,
+            contract.AdvisoryLock.Key,
+            runId,
+            lockCommand,
+            AdvisoryLockMode.Exclusive,
+            cancellationToken);
+        if (!ownsLock)
+        {
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "refused",
+                resetTables.Length,
+                violations:
+                [
+                    new ContractViolation(
+                        "lock.exclusive-ownership.required",
+                        "Use the supported runner with an exclusive TestRuntime keeper for this run."),
+                ]);
+        }
+
+        var roleReady = await ScalarBoolAsync(
+            connection,
+            """
+            SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @role AND NOT rolcanlogin)
+               AND pg_catalog.pg_has_role(session_user, @role, 'MEMBER')
+            """,
+            contract.Roles.Resetter,
+            cancellationToken);
+        if (!roleReady)
+        {
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "refused",
+                resetTables.Length,
+                violations: [new ContractViolation("mutable-reset.resetter-role.invalid")]);
+        }
+
+        var processAlive = apiProcessId is not null && IsProcessAlive(apiProcessId.Value);
+        var portOpen = await IsPortOpenAsync(apiPort, cancellationToken);
+        var activeConnections = await CountUnexpectedConnectionsAsync(
+            connection,
+            contract.AdvisoryLock.Key,
+            runId,
+            lockCommand,
+            cancellationToken);
+        if (processAlive || portOpen || activeConnections != 0)
+        {
+            var violations = new List<ContractViolation>();
+            if (processAlive)
+            {
+                violations.Add(new ContractViolation("mutable-reset.api-process-live"));
+            }
+
+            if (portOpen)
+            {
+                violations.Add(new ContractViolation("mutable-reset.api-port-live", apiPort.ToString()));
+            }
+
+            if (activeConnections != 0)
+            {
+                violations.Add(new ContractViolation(
+                    "mutable-reset.database-writer-live",
+                    activeConnections.ToString()));
+            }
+
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "refused",
+                resetTables.Length,
+                apiProcessAlive: processAlive,
+                apiPortOpen: portOpen,
+                activeDatabaseConnections: activeConnections,
+                violations: violations);
+        }
+
+        var before = await ProtectedStateFingerprint.ComputeAsync(connection, contract, cancellationToken);
+        if (!string.Equals(before.Fingerprint, expectedFingerprint, StringComparison.OrdinalIgnoreCase))
+        {
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "protected-corrupt",
+                resetTables.Length,
+                beforeFingerprint: before.Fingerprint,
+                protectedStateMatches: false,
+                violations: [new ContractViolation("protected-state.fingerprint.mismatch")]);
+        }
+
+        var sequencesBefore = await ReadMutableSequenceValuesAsync(connection, contract, cancellationToken);
+        var emptyTableCount = 0;
+        var singletonValid = false;
+        try
+        {
+            await using var transaction = await connection.BeginTransactionAsync(cancellationToken);
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"SET LOCAL ROLE {QuoteIdentifier(contract.Roles.Resetter)}",
+                cancellationToken);
+            var selectedRole = await ScalarStringAsync(
+                connection,
+                transaction,
+                "SELECT current_user",
+                cancellationToken);
+            if (selectedRole != contract.Roles.Resetter)
+            {
+                throw new InvalidOperationException("The resetter role could not be selected.");
+            }
+
+            var targets = string.Join(", ", resetTables.Select(table => $"public.{QuoteIdentifier(table)}"));
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"TRUNCATE TABLE {targets} CONTINUE IDENTITY RESTRICT",
+                cancellationToken);
+
+            await using (var baseline = new NpgsqlCommand(
+                             $"""
+                             UPDATE public.{QuoteIdentifier(contract.LinkingDataBaseline.Table)}
+                             SET generation = @generation,
+                                 updated_at_utc = @updated_at_utc
+                             WHERE id = @id
+                             """,
+                             connection,
+                             transaction))
+            {
+                baseline.Parameters.AddWithValue("generation", contract.LinkingDataBaseline.Generation);
+                baseline.Parameters.AddWithValue("updated_at_utc", contract.LinkingDataBaseline.UpdatedAtUtc);
+                baseline.Parameters.AddWithValue("id", contract.LinkingDataBaseline.Id);
+                if (await baseline.ExecuteNonQueryAsync(cancellationToken) != 1)
+                {
+                    throw new InvalidOperationException("The linking data singleton is missing.");
+                }
+            }
+
+            foreach (var table in resetTables)
+            {
+                var count = await ScalarLongAsync(
+                    connection,
+                    transaction,
+                    $"SELECT count(*) FROM public.{QuoteIdentifier(table)}",
+                    cancellationToken);
+                if (count != 0)
+                {
+                    throw new InvalidOperationException("A mutable reset table is not empty.");
+                }
+
+                emptyTableCount++;
+            }
+
+            singletonValid = await ScalarBoolAsync(
+                connection,
+                transaction,
+                $"""
+                SELECT count(*) = 1
+                   AND bool_and(id = @id AND generation = @generation AND updated_at_utc = @updated_at_utc)
+                FROM public.{QuoteIdentifier(contract.LinkingDataBaseline.Table)}
+                """,
+                contract.LinkingDataBaseline,
+                cancellationToken);
+            if (!singletonValid)
+            {
+                throw new InvalidOperationException("The linking data singleton is invalid.");
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (Exception exception) when (exception is PostgresException or InvalidOperationException)
+        {
+            return CreateReport(
+                contract,
+                validation,
+                inspection,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                phase,
+                "dirty",
+                resetTables.Length,
+                emptyTableCount,
+                singletonValid,
+                beforeFingerprint: before.Fingerprint,
+                protectedStateMatches: true,
+                violations:
+                [
+                    new ContractViolation(
+                        "mutable-reset.cleanup-failed",
+                        exception is PostgresException postgres ? postgres.SqlState : exception.GetType().Name),
+                ]);
+        }
+
+        var sequencesAfter = await ReadMutableSequenceValuesAsync(connection, contract, cancellationToken);
+        var sequencesPreserved = sequencesBefore.Count == sequencesAfter.Count
+                                 && sequencesBefore.All(sequence =>
+                                     sequencesAfter.TryGetValue(sequence.Key, out var value)
+                                     && value == sequence.Value);
+        var after = await ProtectedStateFingerprint.ComputeAsync(connection, contract, cancellationToken);
+        var protectedStateMatches = string.Equals(
+            before.Fingerprint,
+            after.Fingerprint,
+            StringComparison.Ordinal);
+        var violationsAfter = new List<ContractViolation>();
+        if (!sequencesPreserved)
+        {
+            violationsAfter.Add(new ContractViolation("mutable-reset.sequence.changed"));
+        }
+
+        if (!protectedStateMatches)
+        {
+            violationsAfter.Add(new ContractViolation("protected-state.fingerprint.mismatch"));
+        }
+
+        var status = violationsAfter.Count == 0 ? "clean" : "protected-corrupt";
+        return CreateReport(
+            contract,
+            validation,
+            inspection,
+            expectedFingerprint,
+            apiPort,
+            apiProcessId,
+            phase,
+            status,
+            resetTables.Length,
+            emptyTableCount,
+            singletonValid,
+            sequencesPreserved,
+            protectedStateMatches,
+            before.Fingerprint,
+            after.Fingerprint,
+            violations: violationsAfter);
+    }
+
+    private static TestRuntimeReport CreateReport(
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        TestRuntimeReport inspection,
+        string expectedFingerprint,
+        int apiPort,
+        int? apiProcessId,
+        string phase,
+        string status,
+        int resetTableCount,
+        int emptyTableCount = 0,
+        bool singletonValid = false,
+        bool sequencesPreserved = false,
+        bool protectedStateMatches = false,
+        string? beforeFingerprint = null,
+        string? afterFingerprint = null,
+        bool apiProcessAlive = false,
+        bool apiPortOpen = false,
+        int activeDatabaseConnections = 0,
+        IReadOnlyList<ContractViolation>? violations = null)
+    {
+        var reportedViolations = violations ?? [];
+        return new TestRuntimeReport(
+            "reset",
+            status == "clean",
+            DatabaseInspector.ToContractReport(contract, validation),
+            inspection.Target,
+            inspection.Migration,
+            inspection.Catalogue,
+            inspection.Markers,
+            inspection.Privileges,
+            reportedViolations,
+            MutableReset: new MutableResetReport(
+                phase,
+                status,
+                resetTableCount,
+                emptyTableCount,
+                singletonValid,
+                sequencesPreserved,
+                protectedStateMatches,
+                beforeFingerprint,
+                afterFingerprint,
+                expectedFingerprint.ToLowerInvariant(),
+                apiPort,
+                apiProcessId,
+                apiProcessAlive,
+                apiPortOpen,
+                activeDatabaseConnections,
+                phase == "initial"));
+    }
+
+    private static async Task<Dictionary<string, long?>> ReadMutableSequenceValuesAsync(
+        NpgsqlConnection connection,
+        DatabaseContract contract,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT sequences.sequencename, sequences.last_value
+            FROM pg_catalog.pg_sequences AS sequences
+            INNER JOIN pg_catalog.pg_class AS sequence_relation ON sequence_relation.relname = sequences.sequencename
+            INNER JOIN pg_catalog.pg_namespace AS sequence_namespace
+              ON sequence_namespace.oid = sequence_relation.relnamespace
+             AND sequence_namespace.nspname = sequences.schemaname
+            INNER JOIN pg_catalog.pg_depend AS dependency
+              ON dependency.classid = 'pg_catalog.pg_class'::pg_catalog.regclass
+             AND dependency.objid = sequence_relation.oid
+             AND dependency.refclassid = 'pg_catalog.pg_class'::pg_catalog.regclass
+             AND dependency.deptype IN ('a', 'i')
+            INNER JOIN pg_catalog.pg_class AS owned_relation ON owned_relation.oid = dependency.refobjid
+            WHERE sequences.schemaname = 'public'
+              AND owned_relation.relname = ANY(@tables)
+            ORDER BY sequences.sequencename COLLATE "C"
+            """;
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue(
+            "tables",
+            NpgsqlDbType.Array | NpgsqlDbType.Text,
+            contract.DataClasses.MutableApplicationState);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var values = new Dictionary<string, long?>(StringComparer.Ordinal);
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            values[reader.GetString(0)] = reader.IsDBNull(1) ? null : reader.GetInt64(1);
+        }
+
+        return values;
+    }
+
+    private static async Task<int> CountUnexpectedConnectionsAsync(
+        NpgsqlConnection connection,
+        long lockKey,
+        string runId,
+        string lockCommand,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT count(*)::integer
+            FROM pg_catalog.pg_stat_activity AS activity
+            WHERE activity.datname = current_database()
+              AND activity.pid <> pg_catalog.pg_backend_pid()
+              AND activity.backend_type = 'client backend'
+              AND NOT (
+                  activity.application_name = @application_name
+                  AND EXISTS (
+                      SELECT 1
+                      FROM pg_catalog.pg_locks AS advisory_lock
+                      WHERE advisory_lock.pid = activity.pid
+                        AND advisory_lock.locktype = 'advisory'
+                        AND advisory_lock.granted
+                        AND advisory_lock.objsubid = 1
+                        AND advisory_lock.mode = 'ExclusiveLock'
+                        AND ((advisory_lock.classid::bigint << 32) | advisory_lock.objid::bigint) = @key))
+            """;
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("application_name", $"qdtr:{runId}:{lockCommand}");
+        command.Parameters.AddWithValue("key", lockKey);
+        return (int)(await command.ExecuteScalarAsync(cancellationToken))!;
+    }
+
+    private static bool IsProcessAlive(int processId)
+    {
+        try
+        {
+            using var process = Process.GetProcessById(processId);
+            return !process.HasExited;
+        }
+        catch (ArgumentException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> IsPortOpenAsync(int port, CancellationToken cancellationToken)
+    {
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromMilliseconds(250));
+        using var client = new TcpClient();
+        try
+        {
+            await client.ConnectAsync(IPAddress.Loopback, port, timeout.Token);
+            return true;
+        }
+        catch (Exception exception) when (exception is SocketException or OperationCanceledException)
+        {
+            return false;
+        }
+    }
+
+    private static async Task<bool> ScalarBoolAsync(
+        NpgsqlConnection connection,
+        string sql,
+        string role,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("role", role);
+        return (bool)(await command.ExecuteScalarAsync(cancellationToken))!;
+    }
+
+    private static async Task<bool> ScalarBoolAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        LinkingDataBaseline baseline,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("id", baseline.Id);
+        command.Parameters.AddWithValue("generation", baseline.Generation);
+        command.Parameters.AddWithValue("updated_at_utc", baseline.UpdatedAtUtc);
+        return (bool)(await command.ExecuteScalarAsync(cancellationToken))!;
+    }
+
+    private static async Task<long> ScalarLongAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        return (long)(await command.ExecuteScalarAsync(cancellationToken))!;
+    }
+
+    private static async Task<string> ScalarStringAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        return (string)(await command.ExecuteScalarAsync(cancellationToken))!;
+    }
+
+    private static async Task ExecuteAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string sql,
+        CancellationToken cancellationToken)
+    {
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
+}
