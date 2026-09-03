@@ -30,3 +30,11 @@ superseding ADR; adding a second convention ad hoc is not allowed.
 
 The complete journey, gate, and artifact policy is defined in the
 [Risk-Based Testing Strategy](../testing/risk-based-strategy.md).
+
+## Database lifecycle supersession
+
+[ADR 0002](./0002-persistent-full-data-test-database.md) supersedes this decision's compact-fixture and
+hermetic-database requirements and changes the hard 12-minute gate into a measured active-gate target.
+The Playwright-only convention, Chromium scope, risk-based journey selection, independent oracle
+requirement, semantic selectors, and Backend ownership of exhaustive business and persistence coverage
+remain accepted.
