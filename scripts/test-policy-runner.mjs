@@ -324,10 +324,11 @@ export function planPrePrSelection({
   const requiredCandidates = backendCatalog.filter((entry) =>
     entry.kind !== 'Release'
     && entry.gate !== 'Pipeline'
+    && !isEmptyScratchEntry(entry, backendResources)
     && !isFullDataEntry(entry, backendResources),
   );
   const affectedCandidates = backendCatalog.filter((entry) =>
-    entry.gate === 'Pipeline'
+    (entry.gate === 'Pipeline' || isEmptyScratchEntry(entry, backendResources))
     && (featureSet.has(entry.feature) || entry.concerns.some((concern) => concernSet.has(concern))),
   );
   const explicitCandidates = explicitPolicy === null
@@ -382,6 +383,11 @@ function isFullDataEntry(entry, resourceCatalog) {
     return entry.kind === 'Canonical' || entry.kind === 'Release';
   }
   return effectiveBackendPolicy(entry, resourceCatalog).target === 'FullRehearsal';
+}
+
+function isEmptyScratchEntry(entry, resourceCatalog) {
+  return entry.migrationState === 'Migrated'
+    && effectiveBackendPolicy(entry, resourceCatalog).target === 'EmptyScratch';
 }
 
 function deduplicateEntries(entries) {

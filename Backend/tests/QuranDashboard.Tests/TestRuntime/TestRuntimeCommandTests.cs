@@ -261,6 +261,27 @@ public sealed class TestRuntimeCommandTests
     }
 
     [Fact]
+    public async Task LockHold_EarlyFailureIsOneCompactJsonLineForTheRepositoryRunner()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["lock", "hold", "--mode", "exclusive", "--run-id", "missing-target", "--command", "scratch-rehearsal"],
+            output,
+            error);
+
+        exitCode.Should().Be(3);
+        var lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
+        lines.Should().ContainSingle();
+        using var report = JsonDocument.Parse(lines.Single());
+        report.RootElement.GetProperty("command").GetString().Should().Be("lock-hold");
+        report.RootElement.GetProperty("violations")[0].GetProperty("code").GetString()
+            .Should().Be("target.connection-string.missing");
+        error.ToString().Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task ContractValidate_WithCommittedContract_ClassifiesTheCurrentEfModelExactlyOnce()
     {
         using var output = new StringWriter();

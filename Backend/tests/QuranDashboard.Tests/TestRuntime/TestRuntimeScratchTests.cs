@@ -231,6 +231,28 @@ public sealed class TestRuntimeScratchTests(TestRuntimeScratchFixture fixture)
         (await CountScratchDatabasesAsync()).Should().Be(0);
     }
 
+    [Fact]
+    public async Task BackendDelegate_RoutesAMigratedScratchClassThroughTheRepositoryRunner()
+    {
+        var repositoryRoot = LocateRepositoryRoot();
+        var startInfo = new ProcessStartInfo(Path.Combine(repositoryRoot, "Backend", "scripts", "test-backend"));
+        startInfo.ArgumentList.Add("feature");
+        startInfo.ArgumentList.Add("--class");
+        startInfo.ArgumentList.Add("QuranDashboard.Tests.Api.Access.AccessMigrationPathTests");
+        startInfo.ArgumentList.Add("--no-build");
+        startInfo.WorkingDirectory = repositoryRoot;
+        startInfo.Environment[TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable] = fixture.ConnectionString;
+
+        var run = await ProcessExecution.RunAsync(startInfo, TimeSpan.FromMinutes(2));
+
+        run.TimedOut.Should().BeFalse(run.Output);
+        run.ExitCode.Should().Be(0, run.Output);
+        run.Output.Should().Contain("delegating EmptyScratch class through scripts/test");
+        run.Output.Should().Contain("EmptyScratchDestructiveRehearsal");
+        run.Output.Should().NotContain(fixture.CredentialSentinel).And.NotContain("connectionString");
+        (await CountScratchDatabasesAsync()).Should().Be(0);
+    }
+
     private async Task<(int ExitCode, JsonElement Report)> ExecuteAsync(IReadOnlyList<string> args)
     {
         using var output = new StringWriter();
