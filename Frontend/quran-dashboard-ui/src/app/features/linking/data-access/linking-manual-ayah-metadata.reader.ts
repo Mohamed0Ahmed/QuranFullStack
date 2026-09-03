@@ -5,7 +5,7 @@ import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { MushafAyahStudyApi } from '../../mushaf/data-access/mushaf-ayah-study.api';
 import { AyahCoreDto } from '../../mushaf/models/mushaf.models';
 import { MushafReaderCache, MushafReaderCacheKeys } from '../../mushaf/state/mushaf-reader-cache';
-import { LinkingManualMushafAyahReference } from '../models/linking-manual-mushaf.models';
+import { parseQuranVerseKey, type QuranVerseKey } from '../../../shared/quran/quran-location';
 
 const METADATA_READ_SOURCES = {
   tafsirSource: null,
@@ -14,7 +14,6 @@ const METADATA_READ_SOURCES = {
 } as const;
 
 export interface LinkingManualAyahMetadata {
-  readonly reference: LinkingManualMushafAyahReference;
   readonly surahNameArabic: string;
   readonly ayahNumber: number;
   readonly textUthmani: string;
@@ -26,7 +25,7 @@ export class LinkingManualAyahMetadataReader {
   private readonly ayahStudyApi = inject(MushafAyahStudyApi);
   private readonly cache = inject(MushafReaderCache);
 
-  readMetadata(verseKey: string): Observable<LinkingManualAyahMetadata> {
+  readMetadata(verseKey: QuranVerseKey): Observable<LinkingManualAyahMetadata> {
     return this.cache
       .getOrLoad(MushafReaderCacheKeys.ayahStudy(verseKey, METADATA_READ_SOURCES), () =>
         this.ayahStudyApi.getAyahStudy(verseKey, METADATA_READ_SOURCES),
@@ -35,22 +34,21 @@ export class LinkingManualAyahMetadataReader {
   }
 }
 
-function validateCoreResponse(response: ApiResponse<{ ayah: AyahCoreDto }>, verseKey: string): AyahCoreDto {
+function validateCoreResponse(
+  response: ApiResponse<{ ayah: AyahCoreDto }>,
+  verseKey: QuranVerseKey,
+): AyahCoreDto & { verseKey: QuranVerseKey } {
   const core = response.data?.ayah;
-  if (!response.isSuccess || !core || core.verseKey !== verseKey) {
+  const parsed = parseQuranVerseKey(core?.verseKey);
+  if (!response.isSuccess || !core || !parsed || parsed.key !== verseKey || core.verseKey !== parsed.key) {
     throw new Error(response.message || 'تعذر تحميل بيانات آية المصحف.');
   }
-  return core;
+  return { ...core, verseKey: parsed.key };
 }
 
-function toManualMetadata(ayah: AyahCoreDto): LinkingManualAyahMetadata {
+function toManualMetadata(ayah: AyahCoreDto & { verseKey: QuranVerseKey }): LinkingManualAyahMetadata {
   const display = splitAyahMarker(ayah.textUthmani, ayah.ayahNumber);
   return {
-    reference: {
-      verseKey: ayah.verseKey,
-      pageNumber: ayah.pageFrom,
-      displayHint: ayah.verseKey,
-    },
     surahNameArabic: ayah.surahNameArabic,
     ayahNumber: ayah.ayahNumber,
     textUthmani: display.text,

@@ -24,6 +24,7 @@ import { wordTypeDetailFrameFromAnalysis } from '../../utils/word-type-detail-fr
 import { SegmentDataRowsComponent } from '../segment-data-rows/segment-data-rows.component';
 import { SegmentRenderedWordComponent } from '../segment-rendered-word/segment-rendered-word.component';
 import { WordMorphologySummaryComponent } from '../word-morphology-summary/word-morphology-summary.component';
+import type { QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 const FIRST_LOAD_SEGMENT_PLACEHOLDER_COUNT = 3;
 
@@ -47,7 +48,7 @@ const FIRST_LOAD_SEGMENT_PLACEHOLDER_COUNT = 3;
 export class SelectedWordSectionComponent {
   readonly analysis = input<WordAnalysisViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
   readonly embedded = input(false);
 
   readonly sectionFocus = output<void>();

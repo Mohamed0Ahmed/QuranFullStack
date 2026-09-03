@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { ApiResponse } from '../../../core/data-access/api-response.model';
 import { AyahStudyDto, MushafReaderSources } from '../models/mushaf.models';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export type AyahStudySourceParams = Pick<
   MushafReaderSources,
@@ -17,7 +18,7 @@ export class MushafAyahStudyApi {
   private readonly baseUrl = environment.apiBaseUrl;
 
   getAyahStudy(
-    verseKey: string,
+    verseKey: QuranVerseKey,
     sources: AyahStudySourceParams,
   ): Observable<ApiResponse<AyahStudyDto>> {
     let params = new HttpParams();

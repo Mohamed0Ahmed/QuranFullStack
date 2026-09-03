@@ -27,11 +27,16 @@ import {
   LOADING_LABEL,
   WORD_DRILLDOWN_VIEW_LABELS,
 } from '../../models/unique-words.labels';
-import { WordDrilldownState, WordDrilldownView } from '../../models/unique-words.models';
+import {
+  AyahMatchDto,
+  WordDrilldownState,
+  WordDrilldownView,
+} from '../../models/unique-words.models';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { mapUniqueWordSummaryDisplayText } from '../../utils/unique-words-display.mapper';
 import { QuranSourceLinkingActionsComponent } from '../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
 import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
+import { parseQuranVerseKey } from '../../../../shared/quran/quran-location';
 
 @Component({
   selector: 'qd-word-drilldown-modal',
@@ -132,6 +137,21 @@ export class WordDrilldownModalComponent {
   protected readonly drilldownViews: readonly WordDrilldownView[] = ['surahs', 'missing', 'ayahs'];
 
   protected readonly hasSelection = computed(() => (this.inline() ? this.state().isOpen : true));
+
+  protected readonly ayahsPage = computed(() => {
+    const page = this.state().ayahs;
+    if (!page) {
+      return null;
+    }
+    const items = page.items.flatMap((match): AyahMatchDto[] => {
+      const verse = parseQuranVerseKey(match.verseKey);
+      if (!verse) {
+        return [];
+      }
+      return [{ ...match, verseKey: verse.key }];
+    });
+    return { ...page, items };
+  });
 
   protected drilldownLabel(view: WordDrilldownView): string {
     return WORD_DRILLDOWN_VIEW_LABELS[view];

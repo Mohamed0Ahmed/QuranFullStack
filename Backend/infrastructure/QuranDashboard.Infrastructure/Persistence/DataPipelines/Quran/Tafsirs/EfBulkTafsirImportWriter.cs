@@ -99,7 +99,7 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
             var successResult = new TafsirImportResult(
                 runAtUtc,
                 TafsirImportConstants.PassVerdict,
-                Persisted: true,
+                Persisted: false,
                 force,
                 totals,
                 acceptanceChecks,
@@ -109,14 +109,13 @@ public sealed class EfBulkTafsirImportWriter : ITafsirImportWriter
 
             await acceptanceReportWrite(successResult, ct);
 
-            successResult = successResult with
-            {
-                InfoNotes = ["Tafsir import committed; all hard checks passed."]
-            };
-
             await transaction.CommitAsync(ct);
 
-            return successResult;
+            return successResult with
+            {
+                Persisted = true,
+                InfoNotes = ["Tafsir import committed; all hard checks passed."]
+            };
         }
         catch
         {

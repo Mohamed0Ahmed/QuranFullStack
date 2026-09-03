@@ -17,6 +17,7 @@ export interface PhraseSimilarityResultHooks {
   readonly resetBuild: () => void;
   readonly navigate: (state: PhraseSimilarityUrlState, replaceUrl: boolean) => void;
   readonly setError: (message: string) => void;
+  readonly acceptPopulation: (totalAyahCount: number) => void;
 }
 
 @Injectable()
@@ -86,6 +87,7 @@ export class PhraseSimilarityResultStore {
         this.totalAyahCount.set(result.totalAyahCount);
         this.totalOccurrenceCount.set(result.totalOccurrenceCount);
         this.queryPhrase.set(result.queryPhrase);
+        hooks.acceptPopulation(result.totalAyahCount);
         this.acceptedRouteKey = routeKey;
         this.status.set(result.totalAyahCount === 0 ? 'empty' : 'success');
       }),

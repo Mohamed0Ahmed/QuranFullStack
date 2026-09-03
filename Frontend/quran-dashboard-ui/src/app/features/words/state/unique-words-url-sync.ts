@@ -2,7 +2,8 @@ import { ParamMap } from '@angular/router';
 
 import { uniqueWordsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
-import { parsePosCodeParam, parsePositiveIntParam } from './words-association-filters';
+import { parsePosCodeParam } from './words-association-filters';
+import { parseWordsPositiveSafeInteger } from './words-route-integer';
 
 import {
   DEFAULT_AYAH_PAGE,
@@ -25,10 +26,12 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
     queryParams.get(UNIQUE_WORDS_QUERY_KEYS.sort),
   );
 
-  const page = parsePositiveInt(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.page)) ?? DEFAULT_LIST_PAGE;
+  const page =
+    parseWordsPositiveSafeInteger(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.page)) ??
+    DEFAULT_LIST_PAGE;
 
   const wordRaw = queryParams.get(UNIQUE_WORDS_QUERY_KEYS.word);
-  const wordId = wordRaw === null ? null : parsePositiveInt(wordRaw);
+  const wordId = wordRaw === null ? null : parseWordsPositiveSafeInteger(wordRaw);
 
   const viewRaw = wordId !== null ? queryParams.get(UNIQUE_WORDS_QUERY_KEYS.view) : null;
   const view: WordDrilldownView | null =
@@ -36,12 +39,12 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
 
   const ayahPage =
     view === 'ayahs'
-      ? parsePositiveInt(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.ayahPage)) ?? DEFAULT_AYAH_PAGE
+      ? (parseWordsPositiveSafeInteger(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.ayahPage)) ??
+        DEFAULT_AYAH_PAGE)
       : null;
 
-  const typeCode = view === 'ayahs'
-    ? parsePosCodeParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.typeCode))
-    : null;
+  const typeCode =
+    view === 'ayahs' ? parsePosCodeParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.typeCode)) : null;
 
   return {
     search: queryParams.get(UNIQUE_WORDS_QUERY_KEYS.search) ?? '',
@@ -50,7 +53,7 @@ export function parseUniqueWordsQueryParams(queryParams: ParamMap): ParsedUnique
     ranges: parseRangeFilters(queryParams, UNIQUE_WORDS_RANGE_METRICS),
     association: {
       primaryType: parsePosCodeParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.primaryType)),
-      rootId: parsePositiveIntParam(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.rootId)),
+      rootId: parseWordsPositiveSafeInteger(queryParams.get(UNIQUE_WORDS_QUERY_KEYS.rootId)),
     },
     wordId,
     view,
@@ -87,11 +90,11 @@ export function buildUniqueWordsQueryParams(
     params[UNIQUE_WORDS_QUERY_KEYS.primaryType] = changes.primaryType ?? null;
   }
   if (changes.rootId !== undefined) {
-    params[UNIQUE_WORDS_QUERY_KEYS.rootId] = changes.rootId === null ? null : String(changes.rootId);
+    params[UNIQUE_WORDS_QUERY_KEYS.rootId] =
+      changes.rootId === null ? null : String(changes.rootId);
   }
   if (changes.wordId !== undefined) {
-    params[UNIQUE_WORDS_QUERY_KEYS.word] =
-      changes.wordId === null ? null : String(changes.wordId);
+    params[UNIQUE_WORDS_QUERY_KEYS.word] = changes.wordId === null ? null : String(changes.wordId);
   }
   if (changes.view !== undefined) {
     params[UNIQUE_WORDS_QUERY_KEYS.view] = changes.view ?? null;
@@ -166,12 +169,4 @@ export function buildUniqueWordsDeepLink(
     path: uniqueWordsRoutePath(kind),
     queryParams: buildUniqueWordsQueryParams(queryParams),
   };
-}
-
-function parsePositiveInt(value: string | null): number | null {
-  if (value === null || !/^[1-9]\d*$/.test(value)) {
-    return null;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return parsed;
 }

@@ -1,12 +1,11 @@
 import { LinkingSourceDescriptor, LinkingWordTypeScope } from '../models/linking-source.models';
-import { manualMushafVerseKeys } from './manual-link-shape';
 
 export function linkingSourceKey(source: LinkingSourceDescriptor): string {
   switch (source.kind) {
     case 'manual-mushaf-ayahs':
       return source.contextKey === null
-        ? joinKey(source.kind, ...manualMushafVerseKeys(source))
-        : joinKey(source.kind, 'context', source.contextKey, ...manualMushafVerseKeys(source));
+        ? joinKey(source.kind, ...source.verseKeys)
+        : joinKey(source.kind, 'context', source.contextKey, ...source.verseKeys);
     case 'unique-word':
       return joinKey(source.kind, source.mode, source.wordId, ...source.typeCodes);
     case 'root':

@@ -4,12 +4,7 @@ import { PermissionCode } from '../../../../core/auth/permission-code';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { QdControlDirective } from '../../../../shared/ui/form-field/control.directive';
 import { QdFormFieldComponent } from '../../../../shared/ui/form-field/form-field.component';
-import {
-  AccessPermissionDiff,
-  AccessUserWorkflowAction,
-  acceptGrantsPermissions,
-  hasPermissionChanges,
-} from '../../models/access-admin.models';
+import { AccessPermissionDiff, AccessUserWorkflowAction } from '../../models/access-admin.models';
 import { AccessPermissionGroup, permissionLabelFor } from '../../models/access-admin-permissions';
 
 @Component({
@@ -24,7 +19,8 @@ export class AccessChangeReviewComponent {
   readonly action = input.required<AccessUserWorkflowAction | null>();
   readonly groups = input.required<readonly AccessPermissionGroup[]>();
   readonly permissionDiff = input.required<AccessPermissionDiff>();
-  readonly canAssignPermissions = input(false);
+  readonly showsPermissionDiff = input(false);
+  readonly canConfirm = input(false);
   readonly busyAction = input<string | null>(null);
 
   readonly confirmed = output<string>();
@@ -37,22 +33,6 @@ export class AccessChangeReviewComponent {
       this.action();
       this.reason.set('');
     });
-  }
-
-  protected showsPermissionDiff(): boolean {
-    const action = this.action();
-    if (action === 'permissions') {
-      return this.canAssignPermissions();
-    }
-    return action === 'accept' && this.grantsPermissionsOnAcceptance();
-  }
-
-  protected grantsPermissionsOnAcceptance(): boolean {
-    return acceptGrantsPermissions(this.canAssignPermissions(), this.permissionDiff());
-  }
-
-  protected isNoOpPermissionSave(): boolean {
-    return this.action() === 'permissions' && !this.hasUnsavedPermissions();
   }
 
   protected permissionLabel(code: PermissionCode): string {
@@ -71,13 +51,9 @@ export class AccessChangeReviewComponent {
   }
 
   protected confirm(): void {
-    if (!this.action() || this.busyAction() || this.isNoOpPermissionSave()) {
+    if (!this.action() || this.busyAction() || !this.canConfirm()) {
       return;
     }
     this.confirmed.emit(this.reason().trim());
-  }
-
-  private hasUnsavedPermissions(): boolean {
-    return this.canAssignPermissions() && hasPermissionChanges(this.permissionDiff());
   }
 }

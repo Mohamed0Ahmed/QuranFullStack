@@ -98,7 +98,7 @@ public sealed class EfBulkTranslationImportWriter : ITranslationImportWriter
             var successResult = new TranslationImportResult(
                 runAtUtc,
                 TranslationImportConstants.PassVerdict,
-                Persisted: true,
+                Persisted: false,
                 force,
                 totals,
                 acceptanceChecks,
@@ -108,14 +108,13 @@ public sealed class EfBulkTranslationImportWriter : ITranslationImportWriter
 
             await acceptanceReportWrite(successResult, ct);
 
-            successResult = successResult with
-            {
-                InfoNotes = ["Translation import committed; all hard checks passed."]
-            };
-
             await transaction.CommitAsync(ct);
 
-            return successResult;
+            return successResult with
+            {
+                Persisted = true,
+                InfoNotes = ["Translation import committed; all hard checks passed."]
+            };
         }
         catch
         {

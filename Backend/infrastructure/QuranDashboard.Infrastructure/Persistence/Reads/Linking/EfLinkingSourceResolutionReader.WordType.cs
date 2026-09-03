@@ -27,20 +27,21 @@ public sealed partial class EfLinkingSourceResolutionReader
         LinkingWordTypeSelection.Word selection,
         CancellationToken cancellationToken)
     {
-        var wordExists = await _dbContext.QuranWordsUniqueTashkeel
-            .AsNoTracking()
-            .AnyAsync(word => word.Id == selection.TashkeelWordId, cancellationToken);
-        if (!wordExists)
-        {
-            throw NotFound("tashkeelWordId", selection.TashkeelWordId);
-        }
-
-        var identity = new WordTypeRowIdentity(
+        var identity = WordTypeRowIdentity.Create(
             selection.TashkeelWordId,
             selection.ContextCode,
             selection.Case,
             selection.Tense,
-            selection.Voice);
+            selection.Voice)
+            ?? throw InvalidPersistedWordTypeData("word identity");
+
+        var wordExists = await _dbContext.QuranWordsUniqueTashkeel
+            .AsNoTracking()
+            .AnyAsync(word => word.Id == identity.TashkeelWordId, cancellationToken);
+        if (!wordExists)
+        {
+            throw NotFound("tashkeelWordId", identity.TashkeelWordId);
+        }
 
         return await EfWordTypesReader.MatchedMorphologyQuery(_dbContext, identity)
             .Select(morphology => new LinkingMatchedWordRow(
@@ -56,16 +57,25 @@ public sealed partial class EfLinkingSourceResolutionReader
         CancellationToken cancellationToken)
     {
         var kind = ToGroupedDimensionKind(selection.Kind);
-        await GuardDimensionExistsAsync(kind, selection.DimensionId, cancellationToken);
+        var persistedScope = selection.Scope;
+        var scope = WordTypeScope.Create(
+            persistedScope.Type,
+            persistedScope.ChildCode,
+            persistedScope.Case,
+            persistedScope.Tense,
+            persistedScope.Voice)
+            ?? throw InvalidPersistedWordTypeData("dimension scope");
+        var groupedSelection = WordTypeGroupedSelection.Create(kind, selection.DimensionId, scope)
+            ?? throw InvalidPersistedWordTypeData("dimension selection");
 
-        var scope = selection.Scope;
-        var context = EfWordTypesReader.ToGroupedReadContext(
-            new WordTypeFilter(scope.Type, scope.ChildCode, scope.Case, scope.Tense, scope.Voice));
-        var parameters = EfWordTypesReader.BuildGroupedDetailParameters(context, selection.DimensionId);
+        await GuardDimensionExistsAsync(groupedSelection.Kind, groupedSelection.DimensionId, cancellationToken);
+
+        var context = EfWordTypesReader.ToGroupedReadContext(groupedSelection.Scope);
+        var parameters = EfWordTypesReader.BuildGroupedDetailParameters(context, groupedSelection.DimensionId);
 
         var sql = $"""
             WITH base AS (
-                {EfWordTypesReader.BaseRowsSql(context, kind)}
+                {EfWordTypesReader.BaseRowsSql(context, groupedSelection.Kind)}
             )
             SELECT DISTINCT
                 base.ayah_id AS "{nameof(LinkingMatchedWordRow.AyahId)}",
@@ -84,15 +94,15 @@ public sealed partial class EfLinkingSourceResolutionReader
         int dimensionId,
         CancellationToken cancellationToken)
     {
-        var exists = kind switch
+        var exists = kind.RouteKey switch
         {
-            WordTypeGroupedDimensionKind.Root => await _dbContext.QuranRoots
+            "roots" => await _dbContext.QuranRoots
                 .AsNoTracking()
                 .AnyAsync(root => root.Id == dimensionId, cancellationToken),
-            WordTypeGroupedDimensionKind.Stem => await _dbContext.QuranStems
+            "stems" => await _dbContext.QuranStems
                 .AsNoTracking()
                 .AnyAsync(stem => stem.Id == dimensionId, cancellationToken),
-            WordTypeGroupedDimensionKind.Lemma => await _dbContext.QuranLemmas
+            "lemmas" => await _dbContext.QuranLemmas
                 .AsNoTracking()
                 .AnyAsync(lemma => lemma.Id == dimensionId, cancellationToken),
             _ => throw new ArgumentOutOfRangeException(
@@ -103,19 +113,25 @@ public sealed partial class EfLinkingSourceResolutionReader
 
         if (!exists)
         {
-            throw NotFound(kind.ToDtoKind() + "Id", dimensionId);
+            throw NotFound(kind.DtoKind + "Id", dimensionId);
         }
     }
 
     private static WordTypeGroupedDimensionKind ToGroupedDimensionKind(
-        LinkingWordTypeSelectionKind kind) => kind switch
+        LinkingWordTypeSelectionKind kind)
     {
-        LinkingWordTypeSelectionKind.Root => WordTypeGroupedDimensionKind.Root,
-        LinkingWordTypeSelectionKind.Stem => WordTypeGroupedDimensionKind.Stem,
-        LinkingWordTypeSelectionKind.Lemma => WordTypeGroupedDimensionKind.Lemma,
-        _ => throw new ArgumentOutOfRangeException(
-            nameof(kind),
-            kind,
-            "A word type dimension selection must be root, stem, or lemma."),
-    };
+        var routeKey = kind switch
+        {
+            LinkingWordTypeSelectionKind.Root => "roots",
+            LinkingWordTypeSelectionKind.Stem => "stems",
+            LinkingWordTypeSelectionKind.Lemma => "lemmas",
+            _ => throw InvalidPersistedWordTypeData("dimension kind"),
+        };
+
+        return WordTypeGroupedDimensionKind.Create(routeKey)
+            ?? throw InvalidPersistedWordTypeData("dimension kind");
+    }
+
+    private static InvalidOperationException InvalidPersistedWordTypeData(string component) =>
+        new($"Persisted linking word type {component} is invalid.");
 }

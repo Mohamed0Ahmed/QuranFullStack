@@ -25,6 +25,7 @@ public interface ITafsirImportReportBuilder
         string profile,
         TafsirSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         TafsirImportTotals totals,
         IReadOnlyList<TafsirCheckResult> postCopyChecks,

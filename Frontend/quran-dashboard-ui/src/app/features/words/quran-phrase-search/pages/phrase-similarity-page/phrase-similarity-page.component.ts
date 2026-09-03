@@ -4,9 +4,7 @@ import {
   OnDestroy,
   OnInit,
   computed,
-  effect,
   inject,
-  untracked,
 } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 
@@ -23,10 +21,7 @@ import { PhraseTextMode, isPhraseTextMode } from '../../models/phrase-repetition
 import { isPhraseSimilarityResultSort } from '../../models/phrase-similarity.models';
 import { PhraseSimilarityFacade } from '../../state/phrase-similarity.facade';
 import { manualDifferenceOptions } from '../../state/phrase-similarity-threshold';
-import {
-  PhraseSimilarityAyahSelectionStore,
-  phraseSimilarityResultSetKey,
-} from '../../state/phrase-similarity-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 
 @Component({
   selector: 'qd-phrase-similarity-page',
@@ -47,7 +42,7 @@ import {
 })
 export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
   protected readonly facade = inject(PhraseSimilarityFacade);
-  protected readonly ayahSelection = inject(PhraseSimilarityAyahSelectionStore);
+  protected readonly ayahSelection = inject(PhraseLinkingAyahSelectionStore);
   private readonly route = inject(ActivatedRoute);
 
   protected readonly state = this.facade.state;
@@ -81,21 +76,6 @@ export class PhraseSimilarityPageComponent implements OnInit, OnDestroy {
     }
     return `تم تحميل ${state.totalAyahCount} آية في ${state.totalOccurrenceCount} موضعًا`;
   });
-
-  constructor() {
-    effect(() => {
-      const state = this.state();
-      const resultSetKey = phraseSimilarityResultSetKey(
-        state.route.build,
-        state.route.resolution,
-        this.facade.minimumMatchedWords(),
-      );
-      untracked(() => {
-        this.ayahSelection.synchronizeResultSet(resultSetKey);
-        this.ayahSelection.setTotalAyahCount(state.totalAyahCount);
-      });
-    });
-  }
 
   ngOnInit(): void {
     this.facade.bindToRoute(this.route);

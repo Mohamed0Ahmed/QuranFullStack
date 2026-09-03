@@ -107,7 +107,9 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   protected readonly emptyWordsPage: PagedResultDto<StemWordItemDto> = { page: 1, pageSize: STEM_DETAIL_PAGE_SIZE, totalCount: 0, items: [] };
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapStemAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapStemAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
   protected readonly lemmasCount = computed(() => {
     const lemmas = this.panelState().lemmas;
@@ -346,4 +348,8 @@ export class StemsExplorerPageComponent implements OnInit, OnDestroy {
   private defaultColumnForEvent(view: StemView, wordView: StemWordView | undefined): StemTableColumnKey {
     return this.defaultColumnForView(view, wordView ?? 'simple');
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }

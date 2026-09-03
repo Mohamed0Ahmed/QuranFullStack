@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output, viewChild } from '@angular/core';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 
 import {
   MushafPageViewModel,
@@ -33,8 +34,8 @@ export class MushafPageAreaComponent {
   readonly page = input<MushafPageViewModel | null>(null);
   readonly loadState = input.required<ResourceLoadState>();
   readonly surahCatalogByJuz = input.required<readonly MushafSurahJuzGroupDto[]>();
-  readonly highlightedVerseKey = input<string | null>(null);
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly highlightedVerseKey = input<QuranVerseKey | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
   readonly canSelectAyahs = input(false);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
@@ -43,8 +44,8 @@ export class MushafPageAreaComponent {
 
   readonly pageChange = output<number>();
   readonly surahJump = output<number>();
-  readonly ayahSelect = output<string>();
-  readonly wordSelect = output<string>();
+  readonly ayahSelect = output<QuranVerseKey>();
+  readonly wordSelect = output<QuranWordLocation>();
   readonly ayahSelectionModeChange = output<void>();
   readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
   private readonly headerNavigation = viewChild(MushafHeaderNavigationComponent);

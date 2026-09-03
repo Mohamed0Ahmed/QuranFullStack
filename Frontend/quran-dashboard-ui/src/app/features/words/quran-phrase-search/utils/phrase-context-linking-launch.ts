@@ -1,13 +1,22 @@
 import { PhraseContextLinkingSelectionResponse } from '../../../../core/api/generated/models/phrase-context-linking-selection-response';
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
-import { isVerseKey } from '../../../linking/models/linking-source.models';
-import { PhraseContextAyahSelectionSnapshot } from '../state/phrase-context-ayah-selection.store';
+import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
+import { PhraseLinkingAyahSelectionSnapshot } from '../state/phrase-linking-ayah-selection.store';
+import {
+  compareQuranVerseKeys,
+  parseQuranVerseKey,
+  type QuranVerseKey,
+} from '../../../../shared/quran/quran-location';
+
+type CanonicalContextAyah = PhraseContextLinkingSelectionResponse['ayahs'][number] & {
+  readonly verseKey: QuranVerseKey;
+};
 
 export function createPhraseContextLinkingLaunch(
   response: PhraseContextLinkingSelectionResponse,
   query: string,
-  selection: PhraseContextAyahSelectionSnapshot,
+  selection: PhraseLinkingAyahSelectionSnapshot,
 ): LinkingSourceLaunch | null {
   const normalizedQuery = query.trim();
   if (
@@ -17,12 +26,11 @@ export function createPhraseContextLinkingLaunch(
     return null;
   }
 
-  const sortedAyahs = [...response.ayahs].sort(compareAyahs);
-  const manualAyahs = sortedAyahs.map((ayah) => ({
-    verseKey: ayah.verseKey,
-    pageNumber: ayah.pageNumber,
-    displayHint: ayah.verseKey,
-  }));
+  const canonicalAyahs = canonicalContextAyahs(response.ayahs);
+  if (canonicalAyahs === null) {
+    return null;
+  }
+  const sortedAyahs = canonicalAyahs.sort(compareAyahs);
   const selectedWords = sortedAyahs.flatMap((ayah) =>
     [...new Set(ayah.selectedQuranWordIds)]
       .sort((left, right) => left - right)
@@ -33,27 +41,18 @@ export function createPhraseContextLinkingLaunch(
     return null;
   }
 
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `البحث عن «${normalizedQuery}»`,
-      contextKey: null,
-      manualAyahs,
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords,
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `البحث عن «${normalizedQuery}»`,
+    contextKey: null,
+    verseKeys: sortedAyahs.map((ayah) => ayah.verseKey),
+    selectedWords,
+    configuration: 'explicit',
+  });
 }
 
 function isCompleteResponse(
   response: PhraseContextLinkingSelectionResponse,
-  selection: PhraseContextAyahSelectionSnapshot,
+  selection: PhraseLinkingAyahSelectionSnapshot,
 ): boolean {
   if (
     response.activeBuildId.trim().length === 0 ||
@@ -72,7 +71,7 @@ function isCompleteResponse(
       !Number.isSafeInteger(ayah.ayahId) ||
       ayah.ayahId <= 0 ||
       ayahIds.has(ayah.ayahId) ||
-      !isVerseKey(ayah.verseKey) ||
+      !isCanonicalVerseKey(ayah.verseKey) ||
       verseKeys.has(ayah.verseKey) ||
       !Number.isSafeInteger(ayah.pageNumber) ||
       ayah.pageNumber < 1 ||
@@ -93,10 +92,25 @@ function isCompleteResponse(
 }
 
 function compareAyahs(
-  left: PhraseContextLinkingSelectionResponse['ayahs'][number],
-  right: PhraseContextLinkingSelectionResponse['ayahs'][number],
+  left: CanonicalContextAyah,
+  right: CanonicalContextAyah,
 ): number {
-  const [leftSurah, leftAyah] = left.verseKey.split(':').map(Number);
-  const [rightSurah, rightAyah] = right.verseKey.split(':').map(Number);
-  return leftSurah - rightSurah || leftAyah - rightAyah || left.ayahId - right.ayahId;
+  return compareQuranVerseKeys(left.verseKey, right.verseKey) || left.ayahId - right.ayahId;
+}
+
+function canonicalContextAyahs(
+  ayahs: PhraseContextLinkingSelectionResponse['ayahs'],
+): CanonicalContextAyah[] | null {
+  const parsed = ayahs.map((ayah) => {
+    const verse = parseQuranVerseKey(ayah.verseKey);
+    return verse && verse.key === ayah.verseKey ? { ...ayah, verseKey: verse.key } : null;
+  });
+  return parsed.some((ayah) => ayah === null)
+    ? null
+    : parsed.filter((ayah): ayah is CanonicalContextAyah => ayah !== null);
+}
+
+function isCanonicalVerseKey(value: unknown): boolean {
+  const parsed = parseQuranVerseKey(value);
+  return parsed !== null && parsed.key === value;
 }

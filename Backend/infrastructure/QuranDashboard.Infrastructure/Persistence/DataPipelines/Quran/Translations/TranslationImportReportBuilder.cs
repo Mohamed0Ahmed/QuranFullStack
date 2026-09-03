@@ -69,6 +69,7 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
         string profile,
         TranslationSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         TranslationImportTotals totals,
         IReadOnlyList<TranslationCheckResult> postCopyChecks,
@@ -91,13 +92,13 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
             source,
             runAtUtc,
             TranslationImportConstants.PassVerdict,
-            persisted: true,
+            persisted,
             forced,
             totals,
             allChecks,
             errors: [],
             BuildWarnings(source),
-            BuildSuccessInfoNotes(source, totals));
+            BuildSuccessInfoNotes(source, totals, persisted));
     }
 
     private static TranslationImportReport Build(
@@ -181,11 +182,14 @@ public sealed class TranslationImportReportBuilder : ITranslationImportReportBui
 
     private static IReadOnlyList<string> BuildSuccessInfoNotes(
         TranslationSourceData source,
-        TranslationImportTotals totals)
+        TranslationImportTotals totals,
+        bool persisted)
     {
         var notes = new List<string>
         {
-            "Translation import passed validation; acceptance reports written before commit."
+            persisted
+                ? "Translation import committed; all hard checks passed."
+                : "Translation import passed validation; database commit is not yet proven."
         };
 
         if (source.Sources.Any(row => row.ContainsInlineFootnotes || row.ContainsHtmlMarkup))

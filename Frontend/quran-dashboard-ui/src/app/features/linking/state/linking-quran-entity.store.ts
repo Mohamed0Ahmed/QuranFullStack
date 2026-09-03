@@ -6,6 +6,7 @@ import {
   LinkingQuranWordEntity,
   linkingEntityKey,
 } from '../models/linking-entities.models';
+import { parseQuranVerseKey } from '../../../shared/quran/quran-location';
 
 export class LinkingCanonicalDataConflictError extends Error {}
 
@@ -28,9 +29,18 @@ export class LinkingQuranEntityStore {
     const pageWords = new Map<string, LinkingQuranWordEntity>();
     const entityKeys: string[] = [];
     for (const dto of ayahs) {
+      const verse = parseQuranVerseKey(dto.verseKey);
+      if (
+        !verse ||
+        verse.key !== dto.verseKey ||
+        verse.surahNumber !== dto.surahNumber ||
+        verse.ayahNumber !== dto.ayahNumber
+      ) {
+        throw new LinkingCanonicalDataConflictError('بيانات موضع آية الربط غير صالحة.');
+      }
       const ayah: LinkingQuranAyahEntity = Object.freeze({
         id: dto.ayahId,
-        verseKey: dto.verseKey,
+        verseKey: verse.key,
         surahNumber: dto.surahNumber,
         surahNameArabic: dto.surahNameArabic,
         ayahNumber: dto.ayahNumber,

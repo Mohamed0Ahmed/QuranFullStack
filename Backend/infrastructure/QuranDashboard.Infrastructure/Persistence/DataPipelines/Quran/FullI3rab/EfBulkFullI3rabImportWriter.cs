@@ -97,7 +97,7 @@ public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
             var successResult = new FullI3rabImportResult(
                 runAtUtc,
                 FullI3rabImportConstants.PassVerdict,
-                Persisted: true,
+                Persisted: false,
                 force,
                 totals,
                 acceptanceChecks,
@@ -107,14 +107,13 @@ public sealed class EfBulkFullI3rabImportWriter : IFullI3rabImportWriter
 
             await acceptanceReportWrite(successResult, ct);
 
-            successResult = successResult with
-            {
-                InfoNotes = ["Full i'rab import committed; all hard checks passed."]
-            };
-
             await transaction.CommitAsync(ct);
 
-            return successResult;
+            return successResult with
+            {
+                Persisted = true,
+                InfoNotes = ["Full i'rab import committed; all hard checks passed."]
+            };
         }
         catch
         {

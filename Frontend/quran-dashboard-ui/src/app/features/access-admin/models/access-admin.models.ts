@@ -49,73 +49,12 @@ export interface AccessPermissionDiff {
   readonly revoked: readonly PermissionCode[];
 }
 
-export function hasPermissionChanges(diff: AccessPermissionDiff): boolean {
-  return diff.granted.length > 0 || diff.revoked.length > 0;
-}
-
 export type AccessUserLifecycleAction = 'accept' | 'disable' | 'reactivate';
 
 export type AccessUserWorkflowAction = AccessUserLifecycleAction | 'permissions';
-
-export interface AccessUserPermissionTarget {
-  readonly isOwner: boolean;
-  readonly status: string;
-}
-
-export const ACCESS_ACCOUNT_VARIANTS = [
-  'pending-non-owner',
-  'active-non-owner',
-  'disabled-non-owner',
-  'active-owner',
-  'pending-owner',
-  'disabled-owner',
-  'unknown-status',
-] as const;
-
-export type AccessAccountVariant = (typeof ACCESS_ACCOUNT_VARIANTS)[number];
-
-export function accessAccountVariant(
-  user: AccessUserPermissionTarget | null,
-): AccessAccountVariant | null {
-  if (user === null) {
-    return null;
-  }
-  const status = user.status;
-  if (status !== 'pending' && status !== 'active' && status !== 'disabled') {
-    return 'unknown-status';
-  }
-  return user.isOwner ? `${status}-owner` : `${status}-non-owner`;
-}
-
-export function accessLifecycleActionsApply(user: AccessUserPermissionTarget | null): boolean {
-  const variant = accessAccountVariant(user);
-  return (
-    variant === 'pending-non-owner' ||
-    variant === 'active-non-owner' ||
-    variant === 'disabled-non-owner'
-  );
-}
 
 export type AccessLifecycleTone = AccessUserStatus | 'unknown';
 
 export function accessLifecycleTone(status: string): AccessLifecycleTone {
   return status === 'pending' || status === 'active' || status === 'disabled' ? status : 'unknown';
-}
-
-export function canSelectUserPermissions(user: AccessUserPermissionTarget | null): boolean {
-  return user !== null && !user.isOwner && (user.status === 'pending' || user.status === 'active');
-}
-
-export function canReplaceUserPermissions(
-  user: AccessUserPermissionTarget | null,
-  canAssignPermissions: boolean,
-): boolean {
-  return canSelectUserPermissions(user) && user?.status === 'active' && canAssignPermissions;
-}
-
-export function acceptGrantsPermissions(
-  canAssignPermissions: boolean,
-  diff: AccessPermissionDiff,
-): boolean {
-  return canAssignPermissions && diff.granted.length > 0;
 }

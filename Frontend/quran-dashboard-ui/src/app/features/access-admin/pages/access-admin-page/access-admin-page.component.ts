@@ -6,14 +6,11 @@ import {
   OnDestroy,
   OnInit,
   computed,
-  effect,
   inject,
   linkedSignal,
   signal,
-  untracked,
 } from '@angular/core';
 
-import { AccessUserDetail } from '../../../../core/api/generated/models/access-user-detail';
 import { QD_BP_WIDE_QUERY } from '../../../../shared/layout/breakpoints';
 import { QdActionDirective } from '../../../../shared/ui/action/action.directive';
 import { ConfirmDialogComponent } from '../../../../shared/ui/confirm-dialog/confirm-dialog.component';
@@ -33,13 +30,26 @@ import { ACCESS_ADMIN_LABELS } from '../../models/access-admin.labels';
 import {
   AccessUserListFilters,
   AccessUserLifecycleAction,
-  AccessUserWorkflowAction,
-  acceptGrantsPermissions,
-  accessLifecycleActionsApply,
   accessUserNameLabel,
-  canReplaceUserPermissions,
 } from '../../models/access-admin.models';
-import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/access-admin.facade';
+import {
+  AccessAccountWorkflowSession,
+  AccessAccountWorkflowState,
+  AccessWorkflowDirectoryState,
+  AccessWorkflowSelectedState,
+} from '../../state/access-account-workflow.session';
+
+type ReadyState = Extract<AccessAccountWorkflowState, { kind: 'ready' }>;
+type SelectedReadyState = Exclude<
+  AccessWorkflowSelectedState,
+  { kind: 'none' | 'loading' | 'error' }
+>;
+const emptyDirectory: AccessWorkflowDirectoryState = {
+  users: null,
+  query: { page: 1, pageSize: 25 },
+  loading: false,
+  error: null,
+};
 
 @Component({
   selector: 'qd-access-admin-page',
@@ -64,45 +74,78 @@ import { AccessAdminFacade, AccessAdminMutationOutcome } from '../../state/acces
   templateUrl: './access-admin-page.component.html',
   styleUrl: './access-admin-page.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  providers: [AccessAdminFacade],
 })
 export class AccessAdminPageComponent implements OnInit, OnDestroy {
-  protected readonly facade = inject(AccessAdminFacade);
+  protected readonly workflow = inject(AccessAccountWorkflowSession);
+  protected readonly ready = computed<ReadyState | null>(() => {
+    const state = this.workflow.state();
+    return state.kind === 'ready' ? state : null;
+  });
+  protected readonly selected = computed<SelectedReadyState | null>(() => {
+    const selected = this.ready()?.selected;
+    return selected &&
+      selected.kind !== 'none' &&
+      selected.kind !== 'loading' &&
+      selected.kind !== 'error'
+      ? selected
+      : null;
+  });
+  protected readonly selectedUser = computed(() => this.selected()?.account ?? null);
+  protected readonly directory = computed(() => this.ready()?.directory ?? emptyDirectory);
 
   protected readonly userSwitchAwaitingDiscard = signal<number | null>(null);
   protected readonly routeLeaveAwaitingDecision = signal(false);
-  protected readonly pendingAction = signal<AccessUserWorkflowAction | null>(null);
   protected readonly userListSheetOpen = signal(false);
   protected readonly isWide = signal(true);
-  protected readonly contextSearch = linkedSignal(() => this.facade.userQuery().search ?? '');
-
-  protected readonly lifecycleActionsApply = computed(() =>
-    accessLifecycleActionsApply(this.facade.selectedUser()),
-  );
+  protected readonly contextSearch = linkedSignal(() => this.ready()?.directory.query.search ?? '');
   protected readonly selectedIdentity = computed(() => {
-    const user = this.facade.selectedUser();
+    const user = this.selectedUser();
     return user === null ? '' : accessUserNameLabel(user);
   });
-  protected readonly detailLayout = computed(() =>
-    this.facade.selectedUser() !== null ||
-    this.facade.selectedUserLoading() ||
-    this.facade.selectedUserError() !== null
-      ? 'selection'
-      : 'no-selection',
+  protected readonly detailLayout = computed(() => {
+    const selected = this.ready()?.selected;
+    return selected && selected.kind !== 'none' ? 'selection' : 'no-selection';
+  });
+  protected readonly lifecycleActionsApply = computed(
+    () => this.selected()?.actions.some((action) => action !== 'permissions') ?? false,
   );
+  protected readonly acceptWouldGrantPermissions = computed(() => {
+    const selected = this.selected();
+    return (
+      selected?.kind === 'pending' && selected.dirty && this.ready()?.catalogue.canAssign === true
+    );
+  });
+  protected readonly reviewShowsPermissionDiff = computed(() => {
+    const selected = this.selected();
+    const action = selected?.preparation?.action;
+    return action === 'permissions' || (action === 'accept' && selected?.dirty === true);
+  });
+  protected readonly mutationMessage = computed(() => {
+    const message = this.ready()?.message;
+    if (!message) return null;
+    if (message.kind === 'success') {
+      return { text: this.labels.mutationSuccess, tone: 'success' as const };
+    }
+    if (message.kind === 'conflict') {
+      return { text: message.text || this.labels.conflictNotice, tone: 'notice' as const };
+    }
+    const fallback =
+      message.kind === 'denied'
+        ? this.labels.accessDeniedError
+        : message.kind === 'conflict-reload-error'
+          ? this.labels.conflictReloadError
+          : this.labels.writeError;
+    return { text: message.text || fallback, tone: 'error' as const };
+  });
 
   private wideQuery?: MediaQueryList;
-  private readonly onWideChange = (event: MediaQueryListEvent): void => this.isWide.set(event.matches);
+  private readonly onWideChange = (event: MediaQueryListEvent): void =>
+    this.isWide.set(event.matches);
   private routeLeaveDecision: Promise<boolean> | null = null;
   private routeLeaveResolver: ((allowed: boolean) => void) | null = null;
 
   constructor() {
-    effect(() => {
-      if (this.facade.canAccess()) {
-        untracked(() => void this.facade.load());
-      }
-    });
-
+    void this.workflow.load();
     inject(DestroyRef).onDestroy(() => this.settleRouteLeave(false));
   }
 
@@ -124,7 +167,7 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
   }
 
   hasUnsavedChanges(): boolean {
-    return this.facade.isDirty();
+    return this.ready()?.dirty ?? false;
   }
 
   confirmRouteLeave(): Promise<boolean> {
@@ -149,22 +192,6 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
     this.settleRouteLeave(false);
   }
 
-  private settleRouteLeave(allowed: boolean): void {
-    const resolve = this.routeLeaveResolver;
-    this.routeLeaveResolver = null;
-    this.routeLeaveDecision = null;
-    this.routeLeaveAwaitingDecision.set(false);
-    resolve?.(allowed);
-  }
-
-  protected canReplacePermissions(user: AccessUserDetail | null): boolean {
-    return canReplaceUserPermissions(user, this.facade.canAssignPermissions());
-  }
-
-  protected acceptWouldGrantPermissions(): boolean {
-    return acceptGrantsPermissions(this.facade.canAssignPermissions(), this.facade.permissionDiff());
-  }
-
   protected openUserListSheet(): void {
     this.userListSheetOpen.set(true);
   }
@@ -176,7 +203,7 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
   protected applyContextSearch(event: Event): void {
     event.preventDefault();
     const search = this.contextSearch().trim();
-    void this.facade.updateUserQuery({ search: search || undefined });
+    void this.workflow.updateUserQuery({ search: search || undefined });
     this.openUserListSheet();
   }
 
@@ -185,13 +212,20 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
   }
 
   protected selectUser(userId: number): void {
-    if (this.facade.isDirty()) {
+    const ready = this.ready();
+    if (!ready || ready.busyAction !== null) {
+      return;
+    }
+    const selected = this.selected();
+    if (selected?.account.id === userId && !selected.conflictBlocked) {
+      return;
+    }
+    if (ready.dirty) {
       this.userSwitchAwaitingDiscard.set(userId);
       return;
     }
-    this.pendingAction.set(null);
     this.closeUserListSheet();
-    void this.facade.selectUser(userId);
+    void this.workflow.selectUser(userId);
   }
 
   protected discardDraftAndSwitchUser(): void {
@@ -200,74 +234,56 @@ export class AccessAdminPageComponent implements OnInit, OnDestroy {
     if (userId === null) {
       return;
     }
-    this.pendingAction.set(null);
     this.closeUserListSheet();
-    this.facade.discardDraft();
-    void this.facade.selectUser(userId);
+    this.workflow.discardDraft();
+    void this.workflow.selectUser(userId);
   }
 
   protected keepEditingDraft(): void {
     this.userSwitchAwaitingDiscard.set(null);
   }
 
-  protected discardDraft(): void {
-    this.facade.discardDraft();
-  }
-
   protected updateUsers(filters: AccessUserListFilters): void {
-    void this.facade.updateUserQuery(filters);
+    void this.workflow.updateUserQuery(filters);
   }
 
   protected updateUserPage(page: number): void {
-    void this.facade.updateUserQuery({ page });
+    void this.workflow.updateUserQuery({ page });
   }
 
   protected updatePermissionCodes(codes: string[]): void {
-    this.facade.setSelectedPermissionCodes(new Set(codes));
+    this.workflow.setPermissionCodes(new Set(codes));
+  }
+
+  protected discardDraft(): void {
+    this.workflow.discardDraft();
   }
 
   protected reloadPermissionCatalogue(): void {
-    void this.facade.loadPermissionCatalogue();
+    void this.workflow.retryCatalogue();
   }
 
   protected requestLifecycleAction(kind: AccessUserLifecycleAction): void {
-    this.pendingAction.set(kind);
+    this.workflow.prepare(kind);
   }
 
   protected requestPermissionSave(): void {
-    if (this.facade.busyAction()) {
-      return;
-    }
-    this.pendingAction.set('permissions');
+    this.workflow.prepare('permissions');
   }
 
   protected cancelPendingAction(): void {
-    this.pendingAction.set(null);
+    this.workflow.cancelPreparation();
   }
 
   protected confirmPendingAction(reason: string): void {
-    void this.runAction(reason);
+    void this.workflow.commit(reason);
   }
 
-  private async runAction(reason: string): Promise<void> {
-    const kind = this.pendingAction();
-    if (!kind) {
-      return;
-    }
-    const outcome =
-      kind === 'accept'
-        ? await this.facade.acceptSelectedUser(reason)
-        : kind === 'disable'
-          ? await this.facade.disableSelectedUser(reason)
-          : kind === 'reactivate'
-            ? await this.facade.reactivateSelectedUser(reason)
-            : await this.facade.replaceSelectedPermissions(reason);
-    this.resetWorkflowAfter(outcome);
-  }
-
-  private resetWorkflowAfter(outcome: AccessAdminMutationOutcome): void {
-    if (outcome === 'success' || outcome === 'conflict' || outcome === 'forbidden' || outcome === 'unauthorized') {
-      this.pendingAction.set(null);
-    }
+  private settleRouteLeave(allowed: boolean): void {
+    const resolve = this.routeLeaveResolver;
+    this.routeLeaveResolver = null;
+    this.routeLeaveDecision = null;
+    this.routeLeaveAwaitingDecision.set(false);
+    resolve?.(allowed);
   }
 }

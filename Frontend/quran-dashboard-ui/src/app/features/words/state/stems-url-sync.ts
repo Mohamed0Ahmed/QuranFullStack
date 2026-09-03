@@ -2,7 +2,7 @@ import { ParamMap } from '@angular/router';
 
 import { stemsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
-import { parsePositiveIntParam } from './words-association-filters';
+import { parseWordsPositiveSafeInteger } from './words-route-integer';
 
 import {
   DEFAULT_STEM_DETAIL_PAGE,
@@ -30,14 +30,15 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
   // default on anything unknown, so one ordering can never be cached under two tokens.
   const sort: StemSort = normalizeStemSort(queryParams.get(STEMS_QUERY_KEYS.sort));
 
-  const page = parsePositiveInt(queryParams.get(STEMS_QUERY_KEYS.page)) ?? DEFAULT_STEMS_LIST_PAGE;
+  const page =
+    parseWordsPositiveSafeInteger(queryParams.get(STEMS_QUERY_KEYS.page)) ??
+    DEFAULT_STEMS_LIST_PAGE;
 
   const stemRaw = queryParams.get(STEMS_QUERY_KEYS.stem);
-  const stemId = stemRaw === null ? null : parsePositiveInt(stemRaw);
+  const stemId = stemRaw === null ? null : parseWordsPositiveSafeInteger(stemRaw);
 
   const viewRaw = stemId !== null ? queryParams.get(STEMS_QUERY_KEYS.view) : null;
-  const view: StemView =
-    viewRaw !== null && isStemView(viewRaw) ? viewRaw : DEFAULT_STEM_VIEW;
+  const view: StemView = viewRaw !== null && isStemView(viewRaw) ? viewRaw : DEFAULT_STEM_VIEW;
 
   const wordViewRaw = view === 'words' ? queryParams.get(STEMS_QUERY_KEYS.wordView) : null;
   const wordView: StemWordView =
@@ -45,15 +46,17 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
 
   const surahViewRaw = view === 'surahs' ? queryParams.get(STEMS_QUERY_KEYS.surahView) : null;
   const surahView: StemSurahView =
-    surahViewRaw !== null && isStemSurahView(surahViewRaw) ? surahViewRaw : DEFAULT_STEM_SURAHS_VIEW;
+    surahViewRaw !== null && isStemSurahView(surahViewRaw)
+      ? surahViewRaw
+      : DEFAULT_STEM_SURAHS_VIEW;
 
   const detailPage = isPaginatedStemView(view)
-    ? parsePositiveInt(queryParams.get(STEMS_QUERY_KEYS.detailPage)) ?? DEFAULT_STEM_DETAIL_PAGE
+    ? (parseWordsPositiveSafeInteger(queryParams.get(STEMS_QUERY_KEYS.detailPage)) ??
+      DEFAULT_STEM_DETAIL_PAGE)
     : DEFAULT_STEM_DETAIL_PAGE;
 
-  const typeCodeRaw = view === 'ayahs' || view === 'words'
-    ? queryParams.get(STEMS_QUERY_KEYS.typeCode)
-    : null;
+  const typeCodeRaw =
+    view === 'ayahs' || view === 'words' ? queryParams.get(STEMS_QUERY_KEYS.typeCode) : null;
   const typeCode = normalizeOptionalText(typeCodeRaw);
 
   return {
@@ -62,8 +65,8 @@ export function parseStemsQueryParams(queryParams: ParamMap): ParsedStemsQuery {
     page,
     ranges: parseRangeFilters(queryParams, STEMS_RANGE_METRICS),
     association: {
-      rootId: parsePositiveIntParam(queryParams.get(STEMS_QUERY_KEYS.rootId)),
-      lemmaId: parsePositiveIntParam(queryParams.get(STEMS_QUERY_KEYS.lemmaId)),
+      rootId: parseWordsPositiveSafeInteger(queryParams.get(STEMS_QUERY_KEYS.rootId)),
+      lemmaId: parseWordsPositiveSafeInteger(queryParams.get(STEMS_QUERY_KEYS.lemmaId)),
     },
     stemId,
     view,
@@ -148,14 +151,6 @@ export function buildStemsDeepLink(options: StemsQueryChange = {}): StemsDeepLin
     path: stemsRoutePath(),
     queryParams: buildStemsQueryParams(options),
   };
-}
-
-function parsePositiveInt(value: string | null): number | null {
-  if (value === null || !/^[1-9]\d*$/.test(value)) {
-    return null;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return parsed;
 }
 
 function normalizeOptionalText(value: string | null): string | null {

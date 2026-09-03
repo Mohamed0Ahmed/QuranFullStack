@@ -1,3 +1,5 @@
+using QuranDashboard.Application.Abstractions.Quran.PhraseSearch;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.PhraseSearch;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.PhraseSearch;
@@ -10,6 +12,115 @@ public sealed class PhraseSearchComputePipelineTests
     private const int ComputeQueueLimit = 8;
     private const string ComputeTimeoutMessage = "استغرق حساب نتائج العبارة وقتًا أطول من المسموح";
     private const string ComputeTimeoutCode = "phrase_compute_timeout";
+
+    [Theory]
+    [InlineData("structural-creation")]
+    [InlineData("only")]
+    [InlineData("all-except")]
+    [InlineData("unknown-ayah")]
+    [InlineData("empty-resolution")]
+    [InlineData("ayah-corruption")]
+    [InlineData("word-order")]
+    [InlineData("word-subset")]
+    [InlineData("word-corruption")]
+    public void LinkingSelection_UsesCanonicalMembershipAndOrderingRules(string scenario)
+    {
+        static PhraseLinkingAyahSelection Create(
+            PhraseLinkingAyahSelectionMode mode,
+            IReadOnlyList<int> ayahIds)
+        {
+            PhraseLinkingAyahSelection.TryCreate(mode, ayahIds, out var selection).Should().BeTrue();
+            return selection!;
+        }
+
+        switch (scenario)
+        {
+            case "structural-creation":
+                PhraseLinkingAyahSelection.TryCreate(
+                    PhraseLinkingAyahSelectionMode.Only,
+                    [0],
+                    out _).Should().BeFalse();
+                PhraseLinkingAyahSelection.TryCreate(
+                    PhraseLinkingAyahSelectionMode.AllExcept,
+                    [2, 2],
+                    out _).Should().BeFalse();
+                PhraseLinkingAyahSelection.TryCreate(
+                    (PhraseLinkingAyahSelectionMode)byte.MaxValue,
+                    [],
+                    out _).Should().BeFalse();
+
+                var submitted = new[] { 3, 1 };
+                var immutable = Create(PhraseLinkingAyahSelectionMode.Only, submitted);
+                submitted[0] = 9;
+                immutable.OverrideAyahIds.Should().Equal(3, 1);
+                break;
+
+            case "only":
+                PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.Only, [30, 10]),
+                        [10, 20, 30])
+                    .Should().Equal(10, 30);
+                break;
+
+            case "all-except":
+                PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.AllExcept, [20]),
+                        [10, 20, 30])
+                    .Should().Equal(10, 30);
+                break;
+
+            case "unknown-ayah":
+                PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.Only, [40]),
+                        [10, 20, 30])
+                    .Should().BeNull();
+                break;
+
+            case "empty-resolution":
+                PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.Only, []),
+                        [10, 20])
+                    .Should().BeNull();
+                PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.AllExcept, [10, 20]),
+                        [10, 20])
+                    .Should().BeNull();
+                break;
+
+            case "ayah-corruption":
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.AllExcept, []),
+                        [10, 10]))
+                    .Should().Throw<InvalidDataException>();
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.ResolveAyahIds(
+                        Create(PhraseLinkingAyahSelectionMode.AllExcept, []),
+                        [0, 10]))
+                    .Should().Throw<InvalidDataException>();
+                break;
+
+            case "word-order":
+                PhraseLinkingSelectionResolver.OrderSelectedWords([11, 12, 13], [13, 11])
+                    .Should().Equal(11, 13);
+                break;
+
+            case "word-subset":
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.OrderSelectedWords([11, 12], []))
+                    .Should().Throw<InvalidDataException>();
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.OrderSelectedWords([11, 12], [13]))
+                    .Should().Throw<InvalidDataException>();
+                break;
+
+            case "word-corruption":
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.OrderSelectedWords([11, 11], [11]))
+                    .Should().Throw<InvalidDataException>();
+                FluentActions.Invoking(() => PhraseLinkingSelectionResolver.OrderSelectedWords([0, 11], [11]))
+                    .Should().Throw<InvalidDataException>();
+                break;
+
+            default:
+                throw new InvalidOperationException($"Unknown test scenario '{scenario}'.");
+        }
+    }
 
     [Fact]
     public async Task ComputePolicy_QueuesRequestsAndRejectsTheOverflowWithoutConcurrentExecution()

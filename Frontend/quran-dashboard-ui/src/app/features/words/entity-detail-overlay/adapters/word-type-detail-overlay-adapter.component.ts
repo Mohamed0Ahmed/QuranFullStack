@@ -18,7 +18,10 @@ import { MissingSurahsListComponent } from '../../components/missing-surahs-list
 import { SurahOccurrencesListComponent } from '../../components/surah-occurrences-list/surah-occurrences-list.component';
 import { WordTypeDetailsPanelComponent } from '../../components/word-type-details-panel/word-type-details-panel.component';
 import { AyahMatchDto } from '../../models/unique-words.models';
-import { WORD_TYPE_DETAIL_PRESENTATIONS, WORD_TYPES_NOT_FOUND_LABEL } from '../../models/word-types.labels';
+import {
+  WORD_TYPE_DETAIL_PRESENTATIONS,
+  WORD_TYPES_NOT_FOUND_LABEL,
+} from '../../models/word-types.labels';
 import {
   DEFAULT_WORD_TYPES_DETAIL_PAGE,
   DEFAULT_WORD_TYPES_DETAIL_VIEW,
@@ -26,12 +29,11 @@ import {
   WORD_TYPES_DETAIL_PAGE_SIZE,
   WordTypeDetailView,
 } from '../../models/word-types.models';
-import { WordTypesDetailController } from '../../state/word-types-detail.controller';
+import { WordTypesDetailSession } from '../../state/word-types-detail.session';
 import { mapWordTypeAyahMatchToShared } from '../../utils/word-type-ayah-match.mapper';
 import { WORDS_DETAIL_RETRY_LABEL } from '../../models/words-shared.labels';
 import { QdErrorStateComponent } from '../../../../shared/ui/error-state/error-state.component';
 import { EntityDetailOverlayHeaderStore } from '../entity-detail-overlay-header.store';
-import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.models';
 
 @Component({
   selector: 'qd-word-type-detail-overlay-adapter',
@@ -44,13 +46,13 @@ import { LinkingSourceDescriptor } from '../../../linking/models/linking-source.
     SurahOccurrencesListComponent,
     WordTypeDetailsPanelComponent,
   ],
-  providers: [WordTypesDetailController, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
+  providers: [WordTypesDetailSession, { provide: DETAIL_OVERLAY_LINK_MODE, useValue: 'append' }],
   templateUrl: './word-type-detail-overlay-adapter.component.html',
   styleUrl: './word-type-detail-overlay-adapter.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class WordTypeDetailOverlayAdapterComponent {
-  private readonly controller = inject(WordTypesDetailController);
+  private readonly detailSession = inject(WordTypesDetailSession);
   private readonly overlay = inject(DetailOverlayHistoryService);
   private readonly headerStore = inject(EntityDetailOverlayHeaderStore, { optional: true });
 
@@ -59,27 +61,14 @@ export class WordTypeDetailOverlayAdapterComponent {
   protected readonly retryLabel = WORDS_DETAIL_RETRY_LABEL;
 
   protected onRetry(): void {
-    this.controller.retryCurrentIdentity();
+    this.detailSession.retry();
   }
 
-  protected readonly panelState = this.controller.panelState;
+  protected readonly panelState = this.detailSession.state;
 
   readonly entityTitle = computed(() => this.panelState().summary?.displayText ?? '');
 
   readonly entityAyahCount = computed(() => this.panelState().summary?.ayahsCount ?? null);
-
-  protected readonly linkingSource = computed(() => {
-    const selection = this.panelState().selection;
-    const summary = this.panelState().summary;
-    if (selection === null || selection.kind !== 'word' || summary === null) {
-      return null;
-    }
-    return {
-      kind: 'word-type',
-      selection: { kind: 'word', ...selection.identity, scope: { ...selection.scope } },
-      label: summary.displayText,
-    } satisfies LinkingSourceDescriptor;
-  });
 
   protected readonly effectiveView = computed<WordTypeDetailView>(() =>
     this.frame().view === 'words' ? DEFAULT_WORD_TYPES_DETAIL_VIEW : this.frame().view,
@@ -94,7 +83,9 @@ export class WordTypeDetailOverlayAdapterComponent {
 
   protected readonly ayahsPageForView = computed(() => {
     const page = this.panelState().ayahs;
-    return page ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared) } : this.emptyAyahsPage;
+    return page
+      ? { ...page, items: page.items.map(mapWordTypeAyahMatchToShared).filter(isAyahMatch) }
+      : this.emptyAyahsPage;
   });
 
   protected readonly mentionedSurahs = computed(() =>
@@ -124,13 +115,16 @@ export class WordTypeDetailOverlayAdapterComponent {
     effect(() => {
       const frame = this.frame();
       untracked(() => {
-        this.controller.applyUrlState({
-          identity: {
-            tashkeelWordId: frame.tashkeelWordId,
-            contextCode: frame.contextCode,
-            case: frame.case,
-            tense: frame.tense,
-            voice: frame.voice,
+        this.detailSession.synchronize({
+          selection: {
+            kind: 'word',
+            identity: {
+              tashkeelWordId: frame.tashkeelWordId,
+              contextCode: frame.contextCode,
+              case: frame.case,
+              tense: frame.tense,
+              voice: frame.voice,
+            },
           },
           view: this.effectiveView(),
           detailPage: frame.detailPage,
@@ -143,7 +137,6 @@ export class WordTypeDetailOverlayAdapterComponent {
 
     effect(() => this.headerStore?.setTitle(this.entityTitle()));
     effect(() => this.headerStore?.setAyahCount(this.entityAyahCount()));
-    effect(() => this.headerStore?.setLinkingSource(this.linkingSource()));
     inject(DestroyRef).onDestroy(() => this.headerStore?.clear());
   }
 
@@ -164,4 +157,8 @@ export class WordTypeDetailOverlayAdapterComponent {
 
     this.overlay.replaceTopFrame({ ...frame, view: this.effectiveView(), detailPage: page });
   }
+}
+
+function isAyahMatch(value: AyahMatchDto | null): value is AyahMatchDto {
+  return value !== null;
 }

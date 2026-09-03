@@ -97,6 +97,7 @@ public sealed class ImportTranslationsHandler
                         command.Profile,
                         source,
                         command.Force,
+                        candidateResult.Persisted,
                         candidateResult.RunAtUtc,
                         candidateResult.Totals,
                         candidateResult.Checks,
@@ -105,6 +106,22 @@ public sealed class ImportTranslationsHandler
                     await reportEmitter.WriteSuccessAsync(report, reportDir, token);
                 },
                 ct);
+
+            if (result.Persisted)
+            {
+                var report = reportBuilder.BuildCandidateSuccess(
+                    sourcePath,
+                    command.Profile,
+                    source,
+                    command.Force,
+                    result.Persisted,
+                    result.RunAtUtc,
+                    result.Totals,
+                    result.Checks,
+                    expectedCounts);
+                successWarningCount = report.Warnings.Count;
+                await reportEmitter.WriteSuccessAsync(report, reportDir, ct);
+            }
         }
         catch (InvalidOperationException ex) when (ex.Message == TranslationInvariants.TargetsNotEmpty)
         {

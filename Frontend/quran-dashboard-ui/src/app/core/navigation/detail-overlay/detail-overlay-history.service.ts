@@ -9,6 +9,7 @@ import {
   DetailFrame,
   DetailOverlayUrlState,
   detailFramesEqual,
+  detailStacksEqual,
 } from './detail-overlay.models';
 import { parseDetailOverlayParams, serializeDetailOverlayState } from './detail-overlay-url-codec';
 import {
@@ -30,14 +31,15 @@ export class DetailOverlayHistoryService {
 
   private readonly _state = signal<DetailOverlayUrlState>(CLOSED_DETAIL_OVERLAY_STATE);
   private readonly _urlEpoch = signal(0);
-  private readonly _capRejectionCount = signal(0);
+  private readonly _capRejected = signal(false);
   private started = false;
+  private synchronizedUrl: string | null = null;
 
   readonly state: Signal<DetailOverlayUrlState> = this._state.asReadonly();
 
   readonly urlEpoch: Signal<number> = this._urlEpoch.asReadonly();
 
-  readonly capRejectionCount: Signal<number> = this._capRejectionCount.asReadonly();
+  readonly capRejected: Signal<boolean> = this._capRejected.asReadonly();
 
   readonly isOpen = computed(() => this.state().visibility === 'open' && this.state().stack.length > 0);
   readonly isRetainedClosed = computed(() => this.state().visibility === 'closed' && this.state().stack.length > 0);
@@ -73,7 +75,7 @@ export class DetailOverlayHistoryService {
       return false;
     }
     if (current.stack.length >= DETAIL_OVERLAY_MAX_FRAMES) {
-      this._capRejectionCount.update((count) => count + 1);
+      this._capRejected.set(true);
       return false;
     }
 
@@ -187,12 +189,17 @@ export class DetailOverlayHistoryService {
   }
 
   private syncFromUrl(): void {
+    const urlChanged = this.synchronizedUrl !== null && this.synchronizedUrl !== this.router.url;
+    this.synchronizedUrl = this.router.url;
     const paramMap = this.router.routerState.snapshot.root.queryParamMap;
     const { state, isCanonical } = parseDetailOverlayParams(
       paramMap.getAll(DETAIL_OVERLAY_QUERY_KEYS.frame),
       paramMap.get(DETAIL_OVERLAY_QUERY_KEYS.open),
     );
 
+    if (urlChanged || !this.statesEqual(this.state(), state)) {
+      this._capRejected.set(false);
+    }
     this._state.set(state);
     this._urlEpoch.update((epoch) => epoch + 1);
 
@@ -342,5 +349,9 @@ export class DetailOverlayHistoryService {
 
   private currentBaseSignature(): string {
     return this.router.serializeUrl(this.buildUrlTree(CLOSED_DETAIL_OVERLAY_STATE));
+  }
+
+  private statesEqual(a: DetailOverlayUrlState, b: DetailOverlayUrlState): boolean {
+    return a.visibility === b.visibility && detailStacksEqual(a.stack, b.stack);
   }
 }

@@ -24,6 +24,7 @@ import {
   MUTASHABIHAT_LOADING_MESSAGE,
   ResourceLoadState,
 } from '../../models/mushaf.models';
+import { parseQuranVerseKey } from '../../../../shared/quran/quran-location';
 import {
   createMutashabihatLinkingLaunch,
   MutashabihatLinkingOccurrence,
@@ -274,8 +275,12 @@ export class MutashabihatGroupsCardComponent {
   }
 
   protected onAyahNavigate(occurrence: MutashabihatOccurrenceDto): void {
+    const verse = parseQuranVerseKey(occurrence.verseKey);
+    if (!verse) {
+      return;
+    }
     this.ayahNavigate.emit({
-      verseKey: occurrence.verseKey,
+      verseKey: verse.key,
       pageNumber: occurrence.pageNumber,
     });
   }

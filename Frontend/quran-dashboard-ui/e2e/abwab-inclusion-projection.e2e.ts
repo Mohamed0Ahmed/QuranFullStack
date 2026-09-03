@@ -14,6 +14,8 @@ const PREPARE_LINKING = resolve(process.cwd(), 'e2e/prepare-linking.mjs');
 const SOURCE_NAME = 'Abwab inclusion source';
 const TARGET_NAME = 'Abwab inclusion target';
 const INCLUSION_PERMISSION = ABWAB_PERMISSION_CODES.inclusions.create;
+const CYCLE_MESSAGE = 'ستؤدي إضافة أبواب المصدر إلى دورة غير صالحة بين الأبواب';
+const STALE_NOTICE = 'تغير الباب المستهدف. تم تحديث مصادر الباب، فراجع اختيارك قبل المحاولة مجددًا.';
 
 interface AccessUserDetail {
   id: number;
@@ -199,6 +201,180 @@ test(
   },
 );
 
+test(
+  'a revoked inclusion Permission removes stale write controls without readable or durable state drift',
+  {
+    annotation: [
+      { type: 'critical' },
+      { type: 'mutating' },
+      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'journey', description: 'abwab.inclusion-revoked-permission' },
+    ],
+  },
+  async ({ page, request, permissionLifecyclePersona }, testInfo) => {
+    prepareLinking();
+    const persona = permissionLifecyclePersona;
+    const source = await createDoorPrerequisite(request, persona.ownerAccessToken, SOURCE_NAME);
+    const target = await createDoorPrerequisite(request, persona.ownerAccessToken, TARGET_NAME);
+    await linkSourcePrerequisite(request, persona.ownerAccessToken, source.id);
+    await grantExactInclusionPermission(request, persona.ownerAccessToken, persona.userId);
+
+    const beforeTree = await readPublicTree(request, 'tree before revoked inclusion');
+    const beforeTopology = await readPublicData<InclusionTopology>(
+      request,
+      `/api/abwab/doors/${target.id}/inclusions`,
+      'topology before revoked inclusion',
+    );
+    const beforeSnapshot = await readPublicData<DoorLinkSnapshot>(
+      request,
+      `/api/abwab/doors/${target.id}/links/snapshot`,
+      'target links before revoked inclusion',
+    );
+    const beforeProjection = await readPublicData<MushafAyahDoors>(
+      request,
+      '/api/mushaf/ayahs/1:1/doors',
+      'Mushaf projection before revoked inclusion',
+    );
+
+    await page.goto(`/abwab?modal=inclusions-${target.id}`);
+    const dialog = page.getByRole('dialog', { name: 'إدارة مصادر الباب', exact: true });
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'إضافة أبواب مصدر', exact: true }).click();
+    const sourceDoor = dialog.getByRole('treeitem', { name: new RegExp(SOURCE_NAME) });
+    await sourceDoor.press('Enter');
+    await expect(sourceDoor).toHaveAttribute('aria-selected', 'true');
+
+    const intercepted = deferred<void>();
+    const release = deferred<void>();
+    await page.route(`**/api/abwab/doors/${target.id}/inclusions`, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      intercepted.resolve();
+      await release.promise;
+      await route.continue();
+    });
+    const mutationResponse = page.waitForResponse((response) =>
+      response.request().method() === 'POST'
+      && new URL(response.url()).pathname === `/api/abwab/doors/${target.id}/inclusions`);
+    await dialog.getByRole('button', { name: 'إضافة باب مصدر', exact: true }).click();
+    await intercepted.promise;
+    await revokeInclusionPermission(request, persona.ownerAccessToken, persona.userId);
+    release.resolve();
+    expect((await mutationResponse).status()).toBe(403);
+
+    await expect(dialog).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`/abwab\\?modal=inclusions-${target.id}$`));
+    await expect(dialog.getByText(TARGET_NAME, { exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'إضافة أبواب مصدر', exact: true })).toHaveCount(0);
+    await expect(dialog.getByRole('button', { name: 'إغلاق', exact: true })).toBeFocused();
+
+    expect(await readPublicTree(request, 'tree after revoked inclusion')).toEqual(beforeTree);
+    expect(await readPublicData<InclusionTopology>(
+      request,
+      `/api/abwab/doors/${target.id}/inclusions`,
+      'topology after revoked inclusion',
+    )).toEqual(beforeTopology);
+    expect(await readPublicData<DoorLinkSnapshot>(
+      request,
+      `/api/abwab/doors/${target.id}/links/snapshot`,
+      'target links after revoked inclusion',
+    )).toEqual(beforeSnapshot);
+    expect(await readPublicData<MushafAyahDoors>(
+      request,
+      '/api/mushaf/ayahs/1:1/doors',
+      'Mushaf projection after revoked inclusion',
+    )).toEqual(beforeProjection);
+    await expectNoBlockingAccessibilityViolations(page, testInfo);
+  },
+);
+
+test(
+  'semantic inclusion conflict remains distinct from evidence-proven stale target feedback',
+  {
+    annotation: [
+      { type: 'critical' },
+      { type: 'mutating' },
+      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'journey', description: 'abwab.inclusion-conflict-evidence' },
+    ],
+  },
+  async ({ page, request, permissionLifecyclePersona }, testInfo) => {
+    const persona = permissionLifecyclePersona;
+    const cycleSource = await createDoorPrerequisite(request, persona.ownerAccessToken, 'Abwab cycle source');
+    const staleSource = await createDoorPrerequisite(request, persona.ownerAccessToken, 'Abwab stale source');
+    const target = await createDoorPrerequisite(request, persona.ownerAccessToken, TARGET_NAME);
+    const cycleSourceVersion = findDoor(
+      (await readPublicTree(request, 'tree before reverse inclusion')).data,
+      cycleSource.id,
+    ).version;
+    await addInclusionPrerequisite(
+      request,
+      persona.ownerAccessToken,
+      cycleSource.id,
+      cycleSourceVersion,
+      target.id,
+    );
+    await grantExactInclusionPermission(request, persona.ownerAccessToken, persona.userId);
+
+    await page.goto(`/abwab?modal=inclusions-${target.id}`);
+    const dialog = page.getByRole('dialog', { name: 'إدارة مصادر الباب', exact: true });
+    await expect(dialog).toBeVisible();
+    const startAdd = dialog.getByRole('button', { name: 'إضافة أبواب مصدر', exact: true });
+    await startAdd.focus();
+    await expect(startAdd).toBeFocused();
+    await startAdd.press('Enter');
+    await dialog.getByRole('treeitem', { name: /Abwab cycle source/ }).press('Enter');
+    const cycleResponse = page.waitForResponse((response) =>
+      response.request().method() === 'POST'
+      && new URL(response.url()).pathname === `/api/abwab/doors/${target.id}/inclusions`);
+    await dialog.getByRole('button', { name: 'إضافة باب مصدر', exact: true }).click();
+    expect((await cycleResponse).status()).toBe(409);
+    await expect(dialog.getByTestId('abwab-inclusions-modal-write-error')).toContainText(CYCLE_MESSAGE);
+    await expect(dialog.getByTestId('abwab-inclusions-modal-notice')).not.toContainText(STALE_NOTICE);
+
+    await page.reload();
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole('button', { name: 'إضافة أبواب مصدر', exact: true }).click();
+    await dialog.getByRole('treeitem', { name: /Abwab stale source/ }).press('Enter');
+
+    const intercepted = deferred<void>();
+    const release = deferred<void>();
+    await page.route(`**/api/abwab/doors/${target.id}/inclusions`, async (route) => {
+      if (route.request().method() !== 'POST') {
+        await route.continue();
+        return;
+      }
+      intercepted.resolve();
+      await release.promise;
+      await route.continue();
+    });
+    const staleResponse = page.waitForResponse((response) =>
+      response.request().method() === 'POST'
+      && new URL(response.url()).pathname === `/api/abwab/doors/${target.id}/inclusions`);
+    await dialog.getByRole('button', { name: 'إضافة باب مصدر', exact: true }).click();
+    await intercepted.promise;
+    const targetVersion = findDoor(
+      (await readPublicTree(request, 'tree before external target edit')).data,
+      target.id,
+    ).version;
+    await renameDoorPrerequisite(
+      request,
+      persona.ownerAccessToken,
+      target.id,
+      targetVersion,
+      `${TARGET_NAME} externally changed`,
+    );
+    release.resolve();
+    expect((await staleResponse).status()).toBe(409);
+
+    await expect(dialog.getByTestId('abwab-inclusions-modal-notice')).toContainText(STALE_NOTICE);
+    await expect(dialog.getByTestId('abwab-inclusions-modal-write-error')).toHaveCount(0);
+    await expectNoBlockingAccessibilityViolations(page, testInfo);
+  },
+);
+
 function prepareLinking(): void {
   execFileSync(process.execPath, [PREPARE_LINKING], {
     cwd: process.cwd(),
@@ -346,6 +522,69 @@ async function grantExactInclusionPermission(
   });
 }
 
+async function revokeInclusionPermission(
+  request: APIRequestContext,
+  ownerAccessToken: string,
+  userId: number,
+): Promise<void> {
+  const detail = await readPublicData<AccessUserDetail>(
+    request,
+    `/api/access/users/${userId}`,
+    'load actor before inclusion Permission revocation',
+    bearerHeaders(ownerAccessToken),
+  );
+  const response = await request.put(`${API_ORIGIN}/api/access/users/${userId}/permissions`, {
+    headers: bearerHeaders(ownerAccessToken),
+    data: {
+      expectedVersion: detail.version,
+      permissionCodes: [],
+      reason: 'E2E revoked Abwab inclusion Permission.',
+    },
+  });
+  const permissions = await readApiData<AccessUserPermissions>(
+    response,
+    'revoke inclusion permission',
+    200,
+  );
+  expect(permissions.permissionCodes).toEqual([]);
+}
+
+async function addInclusionPrerequisite(
+  request: APIRequestContext,
+  ownerAccessToken: string,
+  targetDoorId: number,
+  expectedTargetDoorVersion: number,
+  sourceDoorId: number,
+): Promise<void> {
+  await readAuthorizedData(
+    request,
+    ownerAccessToken,
+    `/api/abwab/doors/${targetDoorId}/inclusions`,
+    'create reverse inclusion prerequisite',
+    { expectedTargetDoorVersion, sourceDoorIds: [sourceDoorId] },
+  );
+}
+
+async function renameDoorPrerequisite(
+  request: APIRequestContext,
+  ownerAccessToken: string,
+  doorId: number,
+  version: number,
+  name: string,
+): Promise<void> {
+  const response = await request.put(`${API_ORIGIN}/api/abwab/doors/${doorId}`, {
+    headers: bearerHeaders(ownerAccessToken),
+    data: {
+      name,
+      description: null,
+      representativeAyahText: null,
+      aliases: [],
+      version,
+    },
+  });
+  await readApiData<AbwabDoor>(response, 'externally update target door', 200);
+}
+
 async function readPublicTree(
   request: APIRequestContext,
   operation: string,
@@ -430,4 +669,15 @@ function describeBusinessState(data: unknown): string {
 
 function bearerHeaders(accessToken: string): Record<string, string> {
   return { Authorization: `Bearer ${accessToken}` };
+}
+
+function deferred<T>(): {
+  readonly promise: Promise<T>;
+  readonly resolve: (value: T | PromiseLike<T>) => void;
+} {
+  let resolvePromise!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((resolve) => {
+    resolvePromise = resolve;
+  });
+  return { promise, resolve: resolvePromise };
 }

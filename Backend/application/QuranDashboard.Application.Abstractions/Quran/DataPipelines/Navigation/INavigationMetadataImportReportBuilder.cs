@@ -24,6 +24,7 @@ public interface INavigationMetadataImportReportBuilder
         string sourcePath,
         NavigationMetadataSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         NavigationImportTotals totals,
         IReadOnlyList<NavigationCheckResult> checks,

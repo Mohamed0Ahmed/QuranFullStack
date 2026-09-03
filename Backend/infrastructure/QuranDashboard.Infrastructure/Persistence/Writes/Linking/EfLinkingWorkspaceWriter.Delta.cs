@@ -39,27 +39,25 @@ internal sealed partial class EfLinkingWorkspaceWriter
         db.Entry(source).Property(entity => entity.Version).OriginalValue = delta.SourceVersion;
 
         var current = await LoadDeltaStateAsync(source, cancellationToken);
-        var normalized = ApplyDelta(current, delta.Changes);
+        var normalizedChanges = ApplyDelta(current, delta.Changes);
         var compact = await LoadCompactSourceAsync(source, revision, cancellationToken);
-        ValidateDeltaState(source, current, compact);
-        await EnsureSelectedWordsAsync([.. current.SelectedWords.Values], cancellationToken);
+        var configuration = ValidateDeltaState(source, current, compact);
+        await EnsureSelectedWordsAsync(configuration.SelectedWords, cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
         source.Label = current.Label;
-        source.InclusionMode = current.InclusionMode;
-        source.AutomaticWordMatchesEnabled = current.AutomaticWordMatchesEnabled;
-        source.ManualLinkShape = current.ManualLinkShape;
+        source.InclusionMode = configuration.InclusionMode;
+        source.AutomaticWordMatchesEnabled = configuration.AutomaticWordMatchesEnabled;
+        source.ManualLinkShape = configuration.ManualLinkShape;
         source.UpdatedAtUtc = now;
         source.UpdatedBy = userId;
         StampWorkspace(workspace, userId, now);
 
-        await ReplaceOverridesAsync(source.Id, [.. current.AyahOverrides], cancellationToken);
-        await ReplaceSelectedWordsAsync(source.Id, [.. current.SelectedWords.Values], cancellationToken);
+        await ReplaceOverridesAsync(source.Id, configuration.AyahOverrides, cancellationToken);
+        await ReplaceSelectedWordsAsync(source.Id, configuration.SelectedWords, cancellationToken);
         await ReplaceDescriptionsAsync(
             source.Id,
-            [.. current.Descriptions
-                .OrderBy(entry => entry.Key)
-                .Select(entry => new LinkingWorkspaceAyahDescriptions(entry.Key, entry.Value))],
+            configuration.NormalizedDescriptions,
             userId,
             now,
             cancellationToken);
@@ -71,7 +69,7 @@ internal sealed partial class EfLinkingWorkspaceWriter
             source.Id,
             source.Version,
             revision,
-            normalized);
+            normalizedChanges);
     }
 
     private async Task<DeltaState> LoadDeltaStateAsync(
@@ -235,14 +233,14 @@ internal sealed partial class EfLinkingWorkspaceWriter
             cancellationToken);
     }
 
-    private static void ValidateDeltaState(
+    private static LinkingSourceConfiguration ValidateDeltaState(
         LinkingWorkspaceSource source,
         DeltaState state,
         LinkingResolvedSourceCompact compact)
     {
         EnsureLabel(state.Label);
-        var configuration = new LinkingWorkspaceConfigurationInput(
-            state.Label,
+        if (!LinkingSourceConfiguration.TryCreate(
+            source.SourceKind,
             state.InclusionMode,
             [.. state.AyahOverrides],
             [.. state.SelectedWords.Values],
@@ -250,10 +248,13 @@ internal sealed partial class EfLinkingWorkspaceWriter
             state.ManualLinkShape,
             [.. state.Descriptions.SelectMany(entry =>
                 entry.Value.Select((body, index) =>
-                    new LinkingWorkspaceDescriptionInput(entry.Key, index + 1, body)))]);
-        EnsureConfigurationCoherence(
-            source.SourceKind == LinkingSourceKind.ManualMushafAyahs,
-            configuration);
+                    new LinkingWorkspaceDescriptionInput(entry.Key, index + 1, body)))],
+            out var configuration,
+            out var violation))
+        {
+            throw new LinkingWorkspaceViolationException(violation);
+        }
+
         var memberIds = compact.AyahIds.ToHashSet();
         var invalidAyah = state.AyahOverrides
             .Concat(state.SelectedWords.Values.Select(word => word.AyahId))
@@ -265,14 +266,6 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 LinkingWorkspaceViolationCode.AyahReferenceUnknown,
                 "changes.ayahId",
                 invalidAyah.ToString(CultureInfo.InvariantCulture)));
-        }
-
-        if (source.SourceKind != LinkingSourceKind.ManualMushafAyahs && state.SelectedWords.Count > 0)
-        {
-            throw new LinkingWorkspaceViolationException(new LinkingWorkspaceViolation(
-                LinkingWorkspaceViolationCode.WordsNotAllowedOnAutomaticSource,
-                "changes.quranWordId",
-                null));
         }
 
         var wordsByAyah = compact.Ayahs.ToDictionary(
@@ -288,7 +281,7 @@ internal sealed partial class EfLinkingWorkspaceWriter
                 invalidWord.QuranWordId.ToString(CultureInfo.InvariantCulture)));
         }
 
-        _ = NormalizeDescriptions(configuration.Descriptions);
+        return configuration;
     }
 
     private sealed class DeltaState(

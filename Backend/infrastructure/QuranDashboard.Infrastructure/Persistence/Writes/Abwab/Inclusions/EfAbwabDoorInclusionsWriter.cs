@@ -1,11 +1,12 @@
 using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
+using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 internal sealed partial class EfAbwabDoorInclusionsWriter(
     QuranDashboardDbContext db,
-    AbwabDoorInclusionSyncLock syncLock,
-    EfAbwabDoorInclusionSynchronizer synchronizer) : IAbwabDoorInclusionsWriter
+    LinkingWriteLockProtocol lockProtocol,
+    AbwabDoorInclusionReconciler reconciler) : IAbwabDoorInclusionsWriter
 {
     public async Task<AbwabDoorInclusionAddWriteResult> AddAsync(
         int targetDoorId,
@@ -47,7 +48,12 @@ internal sealed partial class EfAbwabDoorInclusionsWriter(
 
             return result;
         }
-        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        catch (AbwabDoorInclusionReconciliationConflictException)
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            return new AbwabDoorInclusionAddWriteResult.SynchronizationUnavailable();
+        }
+        catch (AbwabDoorInclusionReconciliationUnavailableException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new AbwabDoorInclusionAddWriteResult.SynchronizationUnavailable();

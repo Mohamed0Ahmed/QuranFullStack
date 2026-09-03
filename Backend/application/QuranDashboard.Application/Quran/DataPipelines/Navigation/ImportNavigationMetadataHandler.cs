@@ -94,6 +94,7 @@ public sealed class ImportNavigationMetadataHandler
                         sourcePath,
                         source,
                         command.Force,
+                        candidateResult.Persisted,
                         candidateResult.RunAtUtc,
                         candidateResult.Totals,
                         candidateResult.Checks,
@@ -102,6 +103,21 @@ public sealed class ImportNavigationMetadataHandler
                     await reportEmitter.WriteSuccessAsync(report, reportDir, token);
                 },
                 ct);
+
+            if (result.Persisted)
+            {
+                var report = reportBuilder.BuildCandidateSuccess(
+                    sourcePath,
+                    source,
+                    command.Force,
+                    result.Persisted,
+                    result.RunAtUtc,
+                    result.Totals,
+                    result.Checks,
+                    expectedCounts);
+                successWarningCount = report.Warnings.Count;
+                await reportEmitter.WriteSuccessAsync(report, reportDir, ct);
+            }
         }
         catch (InvalidOperationException ex) when (ex.Message == NavigationMetadataInvariants.TargetsNotEmpty)
         {

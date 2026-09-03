@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input } from '@an
 import { QdActionDirective } from '../../../../../shared/ui/action/action.directive';
 import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/error-state.component';
 import { LINKING_LABELS } from '../../../../linking/models/linking.labels';
-import { PhraseSimilarityAyahSelectionStore } from '../../state/phrase-similarity-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 import { PhraseSimilarityLinkingCoordinator } from '../../state/phrase-similarity-linking.coordinator';
 
 @Component({
@@ -15,7 +15,7 @@ import { PhraseSimilarityLinkingCoordinator } from '../../state/phrase-similarit
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseSimilarityLinkingActionsComponent {
-  private readonly selection = inject(PhraseSimilarityAyahSelectionStore);
+  private readonly selection = inject(PhraseLinkingAyahSelectionStore);
   protected readonly linking = inject(PhraseSimilarityLinkingCoordinator);
 
   readonly disabled = input(false);

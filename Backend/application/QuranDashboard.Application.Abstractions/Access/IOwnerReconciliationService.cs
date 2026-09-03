@@ -52,18 +52,21 @@ public interface IOwnerReconciliationStore
         OwnerBootstrapConfiguration configuration,
         CancellationToken cancellationToken);
 
-    Task<IOwnerReconciliationLease?> TryAcquireLeaseAsync(CancellationToken cancellationToken);
+    Task<OwnerReconciliationCommitResult> TryCommitAsync(
+        OwnerReconciliationCommitIntent intent,
+        CancellationToken cancellationToken);
 }
 
-public interface IOwnerReconciliationLease : IAsyncDisposable
+public sealed record OwnerReconciliationCommitIntent(
+    OwnerBootstrapConfiguration ExpectedConfiguration,
+    OwnerReconciliationSnapshot PlanningSnapshot,
+    OwnerReconciliationMutation PreparedMutation);
+
+public enum OwnerReconciliationCommitResult
 {
-    Task<OwnerReconciliationSnapshot> ReadSnapshotAsync(
-        OwnerBootstrapConfiguration configuration,
-        CancellationToken cancellationToken);
-
-    Task ApplyAsync(OwnerReconciliationMutation mutation, CancellationToken cancellationToken);
-
-    Task CommitAsync(CancellationToken cancellationToken);
+    Applied,
+    StateChanged,
+    LockUnavailable,
 }
 
 public sealed record OwnerReconciliationSnapshot(
@@ -76,6 +79,7 @@ public sealed record OwnerReconciliationUser(
     string NormalizedEmail,
     string? DisplayName,
     UserStatus Status,
+    int? RoleId,
     bool IsOwner,
     string? RoleName,
     IReadOnlyList<OwnerReconciliationGrant> DirectGrants);

@@ -82,6 +82,7 @@ public sealed class ImportFullI3rabHandler
                         sourcePath,
                         source,
                         command.Force,
+                        candidateResult.Persisted,
                         candidateResult.RunAtUtc,
                         candidateResult.Totals,
                         candidateResult.Checks,
@@ -90,6 +91,21 @@ public sealed class ImportFullI3rabHandler
                     await reportEmitter.WriteOrThrowAsync(report, reportDir, token);
                 },
                 ct);
+
+            if (result.Persisted)
+            {
+                var report = reportBuilder.BuildCandidateSuccess(
+                    sourcePath,
+                    source,
+                    command.Force,
+                    result.Persisted,
+                    result.RunAtUtc,
+                    result.Totals,
+                    result.Checks,
+                    expectedCounts);
+                successWarningCount = source.Warnings.Count;
+                await reportEmitter.WriteOrThrowAsync(report, reportDir, ct);
+            }
         }
         catch (InvalidOperationException ex) when (ex.Message == FullI3rabInvariants.TargetsNotEmpty)
         {

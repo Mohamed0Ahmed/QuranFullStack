@@ -7,6 +7,7 @@ import { AbwabSnapshotFacade } from '../../abwab/state/abwab-snapshot.facade';
 import { MushafAyahDoorsApi } from '../data-access/mushaf-ayah-doors.api';
 import { ResourceLoadState } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 const EMPTY_LOAD_STATE: ResourceLoadState = {
   isLoading: false,
@@ -18,7 +19,7 @@ const EMPTY_LOAD_STATE: ResourceLoadState = {
 export class MushafAyahDoorsStore implements OnDestroy {
   private readonly api = inject(MushafAyahDoorsApi);
   private readonly tree = inject(AbwabSnapshotFacade);
-  private readonly verseKeyState = signal<string | null>(null);
+  private readonly verseKeyState = signal<QuranVerseKey | null>(null);
   private readonly responseState = signal<MushafAyahDoorsResponse | null>(null);
   private readonly loadStateValue = signal<ResourceLoadState>(EMPTY_LOAD_STATE);
   private requestSubscription: Subscription | null = null;
@@ -39,7 +40,7 @@ export class MushafAyahDoorsStore implements OnDestroy {
     return collectRelatedDoors(snapshot.liveRoots, new Set(response.doorIds));
   });
 
-  load(verseKey: string | null): void {
+  load(verseKey: QuranVerseKey | null): void {
     if (verseKey === null) {
       this.clear();
       return;
@@ -74,7 +75,7 @@ export class MushafAyahDoorsStore implements OnDestroy {
     this.cancelRequest();
   }
 
-  private fetch(verseKey: string): void {
+  private fetch(verseKey: QuranVerseKey): void {
     const token = ++this.requestToken;
     this.loadStateValue.set({ isLoading: true, isEmpty: false, errorMessage: null });
     this.requestSubscription = subscribeToApiLoad(

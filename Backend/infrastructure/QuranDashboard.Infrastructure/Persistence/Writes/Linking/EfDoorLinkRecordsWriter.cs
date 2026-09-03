@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Domain.Linking;
 using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
@@ -7,8 +6,8 @@ namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 internal sealed partial class EfDoorLinkRecordsWriter(
     QuranDashboardDbContext db,
-    AbwabDoorInclusionSyncLock syncLock,
-    IAbwabDoorInclusionSynchronizer inclusionSynchronizer) : IDoorLinkRecordsWriter
+    LinkingWriteLockProtocol lockProtocol,
+    AbwabDoorInclusionReconciler inclusionReconciler) : IDoorLinkRecordsWriter
 {
     public async Task<DoorLinkMutationWriteResult> ReplaceWordsAsync(
         int doorId,
@@ -22,6 +21,7 @@ internal sealed partial class EfDoorLinkRecordsWriter(
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
             var door = await LockDoorAsync(doorId, cancellationToken);
             var invalidDoor = ValidateDoor(door, expectedDoorVersion);
             if (invalidDoor is not null)
@@ -56,11 +56,6 @@ internal sealed partial class EfDoorLinkRecordsWriter(
                     true);
             }
 
-            await inclusionSynchronizer.MarkTargetUnitOverriddenAsync(
-                doorId,
-                unitId,
-                actorUserId,
-                cancellationToken);
             var affectedContributionIds = await LoadMappedContributionIdsAsync(
                 doorId,
                 unitId,
@@ -80,9 +75,9 @@ internal sealed partial class EfDoorLinkRecordsWriter(
                 actorUserId,
                 false,
                 cancellationToken);
-            await inclusionSynchronizer.SynchronizeAsync(
+            await inclusionReconciler.ReconcileTargetEditAsync(
                 doorId,
-                AbwabDoorInclusionMutationSet.Create([], [unitId], [], []),
+                unitId,
                 actorUserId,
                 cancellationToken);
             await BumpDoorAsync(door!, actorUserId, now, cancellationToken);
@@ -92,12 +87,12 @@ internal sealed partial class EfDoorLinkRecordsWriter(
                 new DoorLinkMutationDto(1, door!.Version),
                 false);
         }
-        catch (AbwabDoorInclusionSynchronizationConflictException)
+        catch (AbwabDoorInclusionReconciliationConflictException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new DoorLinkMutationWriteResult.DoorVersionStale();
         }
-        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        catch (AbwabDoorInclusionReconciliationUnavailableException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new DoorLinkMutationWriteResult.SynchronizationUnavailable();

@@ -16,8 +16,9 @@ import {
 } from '../../../../../core/navigation/detail-overlay/detail-overlay-ayah-link.directive';
 import { QdDataTableComponent } from '../../../../../shared/ui/data-table/data-table.component';
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
-import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
+import { parseQuranVerseKey } from '../../../../../shared/quran/quran-location';
 
 interface ContextAyahRow {
   readonly ayah: PhraseContextAyahDto;
@@ -41,7 +42,7 @@ const COMPACT_ROW_HEIGHT = 104;
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseContextOccurrenceListComponent {
-  protected readonly selection = inject(PhraseContextAyahSelectionStore);
+  protected readonly selection = inject(PhraseLinkingAyahSelectionStore);
 
   readonly ayahs = input.required<readonly PhraseContextAyahDto[]>();
   readonly totalCount = input.required<number>();
@@ -60,18 +61,22 @@ export class PhraseContextOccurrenceListComponent {
   private lastResultSetKey = '';
 
   protected readonly rows = computed<readonly ContextAyahRow[]>(() =>
-    this.ayahs().map((ayah) => {
+    this.ayahs().flatMap((ayah) => {
+      const verse = parseQuranVerseKey(ayah.verseKey);
+      if (!verse) {
+        return [];
+      }
       const deepLink = buildMushafDeepLink({
         pageNumber: ayah.pageFrom,
-        ayah: ayah.verseKey,
-        focusAyah: ayah.verseKey,
+        ayah: verse.key,
+        focusAyah: verse.key,
         panel: 'ayah',
       });
-      return {
+      return [{
         ayah,
         highlights: ayah.highlights,
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
-      };
+      }];
     }),
   );
 

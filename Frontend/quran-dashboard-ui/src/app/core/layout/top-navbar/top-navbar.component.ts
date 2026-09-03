@@ -13,7 +13,6 @@ import {
 } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
-import { OidcSecurityService } from 'angular-auth-oidc-client';
 
 import { AppNavigationComponent, NAV_GROUP_ONLY_ROUTE } from '../app-navigation/app-navigation.component';
 import { NavItem } from '../../navigation/nav-items';
@@ -23,8 +22,7 @@ import { QdActionDirective } from '../../../shared/ui/action/action.directive';
 import { QdModalShellComponent } from '../../../shared/ui/modal-shell/modal-shell.component';
 import { ScrollLockService } from '../../../shared/ui/modal-scroll-lock/scroll-lock.service';
 import { QD_BP_WIDE_QUERY } from '../../../shared/layout/breakpoints';
-import { AuthReturnLocationStore } from '../../auth/auth-return-location.store';
-import { CurrentUserStore } from '../../auth/current-user.store';
+import { AuthSessionStore } from '../../auth/auth-session.store';
 import { LinkingAccessService } from '../../../features/linking/state/linking-access.service';
 import { LinkingFocusCoordinator } from '../../../features/linking/state/linking-focus.coordinator';
 import { LinkingWorkspaceStore } from '../../../features/linking/state/linking-workspace.store';
@@ -60,9 +58,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   private readonly elementRef = inject(ElementRef);
   private readonly injector = inject(Injector);
   private readonly themeService = inject(ThemeService);
-  private readonly oidcSecurityService = inject(OidcSecurityService);
-  private readonly currentUserStore = inject(CurrentUserStore);
-  private readonly authReturnLocationStore = inject(AuthReturnLocationStore);
+  private readonly authSession = inject(AuthSessionStore);
   private readonly scrollLock = inject(ScrollLockService);
   private readonly linkingAccess = inject(LinkingAccessService);
   private readonly linkingFocus = inject(LinkingFocusCoordinator);
@@ -85,12 +81,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
     return count === 0 ? 'مساحة الربط' : `مساحة الربط، ${count} مصادر`;
   });
 
-  private readonly isActiveOwner = computed(
-    () =>
-      this.currentUserStore.authStateKnown() &&
-      this.currentUserStore.isActive() &&
-      this.currentUserStore.isOwner(),
-  );
+  private readonly isActiveOwner = this.authSession.isActiveOwner;
 
   readonly allItems = computed(() => NAV_MENU.filter((item) => this.isItemVisible(item)));
   readonly desktopItems: NavItem[] = [
@@ -108,7 +99,7 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
 
   protected readonly isDark = toSignal(this.themeService.isDark$, { initialValue: false });
 
-  protected readonly isAuthenticated = this.currentUserStore.isAuthenticated;
+  protected readonly isAuthenticated = this.authSession.isAuthenticated;
 
   ngOnInit(): void {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -239,16 +230,11 @@ export class TopNavbarComponent implements OnInit, OnDestroy {
   }
 
   signIn(): void {
-    this.oidcSecurityService.authorize();
+    this.authSession.startSignIn();
   }
 
   async signOut(): Promise<void> {
-    try {
-      await this.currentUserStore.revokeCurrentSession();
-    } finally {
-      this.authReturnLocationStore.clear();
-      this.oidcSecurityService.logoff().subscribe();
-    }
+    await this.authSession.signOut();
   }
 
   private applyWide(matches: boolean): void {

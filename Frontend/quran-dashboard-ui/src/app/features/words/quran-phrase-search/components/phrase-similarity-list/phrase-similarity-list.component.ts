@@ -18,8 +18,9 @@ import {
 import { QdDataTableComponent } from '../../../../../shared/ui/data-table/data-table.component';
 import { PaginationComponent } from '../../../../../shared/ui/pagination/pagination.component';
 import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
+import { parseQuranVerseKey } from '../../../../../shared/quran/quran-location';
 import { PHRASE_SIMILARITY_AYAH_PAGE_SIZE } from '../../models/phrase-similarity.models';
-import { PhraseSimilarityAyahSelectionStore } from '../../state/phrase-similarity-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
 
 interface SimilarityAyahRow {
@@ -50,7 +51,7 @@ const matchPercentFormatter = new Intl.NumberFormat('en-US', {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseSimilarityListComponent {
-  protected readonly selection = inject(PhraseSimilarityAyahSelectionStore);
+  protected readonly selection = inject(PhraseLinkingAyahSelectionStore);
 
   readonly items = input.required<readonly PhraseSimilarityAyahDto[]>();
   readonly queryPhrase = input.required<PhraseSimilarityPhraseDto>();
@@ -69,11 +70,12 @@ export class PhraseSimilarityListComponent {
   protected readonly isRowSelected = (row: SimilarityAyahRow): boolean =>
     this.selection.isSelected(row.ayah.ayahId);
   protected readonly rows = computed<readonly SimilarityAyahRow[]>(() =>
-    this.items().map((ayah) => ({
-      ayah,
-      matchPercentLabel: matchPercentFormatter.format(ayah.bestMatchPercent),
-      mushafTarget: target(ayah),
-    })),
+    this.items().flatMap((ayah) => {
+      const mushafTarget = target(ayah);
+      return mushafTarget
+        ? [{ ayah, matchPercentLabel: matchPercentFormatter.format(ayah.bestMatchPercent), mushafTarget }]
+        : [];
+    }),
   );
   private readonly table = viewChild(QdDataTableComponent<SimilarityAyahRow>);
   private lastResultSetKey = '';
@@ -122,11 +124,15 @@ function checkboxValue(event: Event): boolean {
   return event.target instanceof HTMLInputElement && event.target.checked;
 }
 
-function target(ayah: PhraseSimilarityAyahDto): DetailOverlayBaseTarget {
+function target(ayah: PhraseSimilarityAyahDto): DetailOverlayBaseTarget | null {
+  const verse = parseQuranVerseKey(ayah.verseKey);
+  if (!verse) {
+    return null;
+  }
   const deepLink = buildMushafDeepLink({
     pageNumber: ayah.pageFrom,
-    ayah: ayah.verseKey,
-    focusAyah: ayah.verseKey,
+    ayah: verse.key,
+    focusAyah: verse.key,
     panel: 'ayah',
   });
   return { basePath: deepLink.path, queryParams: deepLink.queryParams };

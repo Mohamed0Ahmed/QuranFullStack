@@ -41,11 +41,10 @@ export class AbwabDoorLinkEditorComponent {
   protected readonly edit = computed(() => this.state().edit);
   protected readonly editableAyahs = computed<readonly AbwabDoorLinkEditableAyah[]>(() => {
     const edit = this.edit();
-    return edit.ayahs.map((ayah, index) => ({
-      ayah: toAbwabLinkingAyah(ayah),
-      ayahId: ayah.ayahId,
-      position: index + 1,
-    }));
+    return edit.ayahs.flatMap((ayah, index) => {
+      const mapped = toAbwabLinkingAyah(ayah);
+      return mapped ? [{ ayah: mapped, ayahId: ayah.ayahId, position: index + 1 }] : [];
+    });
   });
   protected readonly selectedWordCount = computed(() =>
     this.edit().ayahs.reduce((count, ayah) => count + ayah.selectedWordIds.length, 0),

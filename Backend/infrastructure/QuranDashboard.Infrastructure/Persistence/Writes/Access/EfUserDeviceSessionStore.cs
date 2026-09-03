@@ -19,6 +19,8 @@ public sealed class EfUserDeviceSessionStore(QuranDashboardDbContext db) : IUser
             .Select(user => user.Id)
             .SingleAsync(cancellationToken);
 
+        await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
         if (!string.IsNullOrWhiteSpace(previousToken))
         {
             var previousHash = Hash(previousToken);
@@ -43,6 +45,7 @@ public sealed class EfUserDeviceSessionStore(QuranDashboardDbContext db) : IUser
 
         db.Set<UserDeviceSession>().Add(session);
         await db.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
 
         return new IssuedUserDeviceSession(session.Id, token, csrfToken, expiresAtUtc);
     }

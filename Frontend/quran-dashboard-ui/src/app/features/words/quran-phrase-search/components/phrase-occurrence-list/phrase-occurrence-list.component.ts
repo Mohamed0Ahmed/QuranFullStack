@@ -16,6 +16,7 @@ import { buildMushafDeepLink } from '../../../../mushaf/state/mushaf-url-sync';
 import { QuranSourceLinkingActionsComponent } from '../../../../linking/components/quran-source-linking-actions/quran-source-linking-actions.component';
 import { createPhraseRepetitionLinkingLaunch } from '../../utils/phrase-repetition-linking-source';
 import { PhraseHighlightedAyahComponent } from '../phrase-highlighted-ayah/phrase-highlighted-ayah.component';
+import { parseQuranVerseKey } from '../../../../../shared/quran/quran-location';
 
 interface PhraseOccurrenceRow {
   readonly occurrence: PhraseOccurrenceDto;
@@ -46,17 +47,21 @@ export class PhraseOccurrenceListComponent {
   readonly pageChange = output<number>();
 
   protected readonly rows = computed<readonly PhraseOccurrenceRow[]>(() =>
-    this.response().items.map((occurrence) => {
+    this.response().items.flatMap((occurrence) => {
+      const verse = parseQuranVerseKey(occurrence.verseKey);
+      if (!verse) {
+        return [];
+      }
       const deepLink = buildMushafDeepLink({
         pageNumber: occurrence.pageFrom,
-        ayah: occurrence.verseKey,
-        focusAyah: occurrence.verseKey,
+        ayah: verse.key,
+        focusAyah: verse.key,
         panel: 'ayah',
       });
-      return {
+      return [{
         occurrence,
         mushafTarget: { basePath: deepLink.path, queryParams: deepLink.queryParams },
-      };
+      }];
     }),
   );
   protected readonly linkingLaunch = computed(() =>

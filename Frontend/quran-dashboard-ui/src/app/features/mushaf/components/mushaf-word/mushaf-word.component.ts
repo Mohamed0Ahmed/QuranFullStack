@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 
 import { toQuranWordDisplayText } from '../../../../shared/quran/quran-word-display-text';
+import type { QuranVerseKey, QuranWordLocation } from '../../../../shared/quran/quran-location';
 import { MushafWordDto } from '../../models/mushaf.models';
 import {
   MushafDoorResolvedColorSlot,
@@ -28,14 +29,14 @@ const DOOR_DETAILS_HOVER_DELAY_MS = 200;
 })
 export class MushafWordComponent implements OnDestroy {
   readonly word = input.required<MushafWordDto>();
-  readonly highlightedVerseKey = input<string | null>(null);
-  readonly selectedWordLocation = input<string | null>(null);
+  readonly highlightedVerseKey = input<QuranVerseKey | null>(null);
+  readonly selectedWordLocation = input<QuranWordLocation | null>(null);
   readonly ayahSelectionMode = input(false);
   readonly selectedVerseKeys = input<readonly string[]>([]);
   readonly doorHighlight = input<MushafDoorResolvedHighlight | null>(null);
 
-  readonly ayahSelect = output<string>();
-  readonly wordSelect = output<string>();
+  readonly ayahSelect = output<QuranVerseKey>();
+  readonly wordSelect = output<QuranWordLocation>();
   readonly doorDetailsRequest = output<MushafDoorDetailsRequest | null>();
 
   private pressTimer: ReturnType<typeof setTimeout> | null = null;

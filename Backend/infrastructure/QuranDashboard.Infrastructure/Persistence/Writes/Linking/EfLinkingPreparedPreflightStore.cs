@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
@@ -13,12 +12,11 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
     QuranDashboardDbContext db,
     ILinkingDataRevisionWriterStore revisionStore,
     ILinkingScalabilityPolicy policy,
-    LinkingJobQueueSignal queueSignal) : ILinkingPreparedPreflightStore
+    LinkingJobQueueSignal queueSignal,
+    LinkingWriteLockProtocol lockProtocol) : ILinkingPreparedPreflightStore
 {
     private const int RequestSchemaVersion = 1;
     private const int SnapshotSchemaVersion = 1;
-    private const int ActorLockNamespace = 193648317;
-    private const int PreparationLockNamespace = 193648318;
 
     public async Task<LinkingPreparedPreflightReceipt> EnqueueAsync(
         int actorUserId,
@@ -28,10 +26,9 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
         var requestDocument = LinkingPreparedPreflightRequestHasher.ComputeCanonicalDocument(request);
         var requestHash = LinkingPreparedPreflightRequestHasher.ComputeHash(requestDocument);
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-        await TakeAdvisoryLockAsync(ActorLockNamespace, actorUserId, cancellationToken);
-        await TakeAdvisoryLockAsync(
-            PreparationLockNamespace,
-            PreparationLockKey(request.PreparationKey),
+        await lockProtocol.AcquirePreparedEnqueueAsync(
+            actorUserId,
+            request.PreparationKey,
             cancellationToken);
 
         var existing = await db.LinkingPreparedPreflights
@@ -394,14 +391,20 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             .Select(row => new LinkingWorkspaceDescriptionInput(row.AyahId, row.OrderValue, row.Body))
             .ToListAsync(cancellationToken);
         var descriptor = LinkingSourceStorage.Decode(source, [.. manualRows.Select(row => row.VerseKey)]);
-        var configuration = new LinkingWorkspaceConfigurationInput(
-            descriptor.Label,
+        if (!LinkingSourceConfiguration.TryCreate(
+            descriptor.Kind,
             source.InclusionMode,
             overrides,
             words,
             source.AutomaticWordMatchesEnabled,
             source.ManualLinkShape,
-            descriptions);
+            descriptions,
+            out var configuration,
+            out _))
+        {
+            throw new InvalidDataException("The stored linking workspace configuration is incoherent.");
+        }
+
         return new WorkspaceSnapshot(
             source.Version,
             new LinkingPreparedInlineSource(descriptor, configuration),
@@ -419,14 +422,6 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             }
         }
     }
-
-    private async Task TakeAdvisoryLockAsync(
-        int lockNamespace,
-        int key,
-        CancellationToken cancellationToken) =>
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"SELECT pg_advisory_xact_lock({lockNamespace}, {key})",
-            cancellationToken);
 
     private async Task<long> LockRevisionAsync(
         IDbContextTransaction transaction,
@@ -456,9 +451,6 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             .ToListAsync(cancellationToken))
         .SingleOrDefault();
 
-    private static int PreparationLockKey(Guid key) =>
-        BitConverter.ToInt32(SHA256.HashData(key.ToByteArray()), 0);
-
     private sealed record WorkspaceSnapshot(
         uint Version,
         LinkingPreparedInlineSource Source,
@@ -481,7 +473,12 @@ internal sealed partial class EfLinkingPreparedPreflightStore(
             uint? sourceVersion,
             IReadOnlyList<string> manualVerseKeys)
         {
-            var mode = LinkingPreparedPreflightRequestHasher.ContributionModeOf(source);
+            if (source.Descriptor.Kind != source.Configuration.SourceKind)
+            {
+                throw new InvalidDataException("The prepared linking source configuration is incoherent.");
+            }
+
+            var mode = source.Configuration.ContributionMode;
             var descriptorVerseKeys = source.Descriptor is LinkingSourceDescriptor.ManualMushafAyahs manual
                 ? manual.VerseKeys.Select(verseKey => verseKey.Value).ToList()
                 : manualVerseKeys;

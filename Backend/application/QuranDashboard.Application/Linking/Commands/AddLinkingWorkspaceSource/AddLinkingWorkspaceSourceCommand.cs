@@ -6,5 +6,5 @@ namespace QuranDashboard.Application.Linking.Commands.AddLinkingWorkspaceSource;
 public sealed record AddLinkingWorkspaceSourceCommand(
     int UserId,
     LinkingSourceDescriptor Descriptor,
-    LinkingWorkspaceConfigurationInput? InitialConfiguration,
+    LinkingSourceConfiguration? InitialConfiguration,
     uint? WorkspaceVersion);

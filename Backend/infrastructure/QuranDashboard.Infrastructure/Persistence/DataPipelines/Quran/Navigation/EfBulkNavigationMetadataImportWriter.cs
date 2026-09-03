@@ -147,7 +147,7 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
             var successResult = new NavigationMetadataImportResult(
                 runAtUtc,
                 NavigationImportConstants.AcceptedVerdict,
-                Persisted: true,
+                Persisted: false,
                 force,
                 totals,
                 acceptanceChecks,
@@ -156,7 +156,7 @@ public sealed class EfBulkNavigationMetadataImportWriter : INavigationMetadataIm
 
             await acceptanceReportWrite(successResult, ct);
             await transaction.CommitAsync(ct);
-            return successResult;
+            return successResult with { Persisted = true };
         }
         catch
         {

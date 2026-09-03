@@ -1,6 +1,6 @@
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
-using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Domain.Linking;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -17,6 +17,7 @@ internal sealed partial class EfDoorLinkRecordsWriter
         await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
+            await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
             var door = await LockDoorAsync(doorId, cancellationToken);
             var invalidDoor = ValidateDoor(door, expectedDoorVersion);
             if (invalidDoor is not null)
@@ -64,11 +65,12 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 .Select(ayah => ayah.AyahId)
                 .Distinct()
                 .ToList();
-            var synchronizedUnitIds = await inclusionSynchronizer.PrepareTargetUnitSuppressionsAsync(
+            var reconciliation = await inclusionReconciler.ReconcileTargetDeleteAsync(
                 doorId,
                 selectedIds,
                 actorUserId,
                 cancellationToken);
+            var synchronizedUnitIds = reconciliation.SynchronizedUnitIds;
             var synchronizedUnitIdSet = synchronizedUnitIds.ToHashSet();
             var directUnitIds = selectedIds
                 .Where(unitId => !synchronizedUnitIdSet.Contains(unitId))
@@ -83,12 +85,6 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 .Distinct()
                 .OrderBy(id => id)
                 .ToListAsync(cancellationToken);
-
-            await inclusionSynchronizer.SynchronizeAsync(
-                doorId,
-                AbwabDoorInclusionMutationSet.Create([], [], selectedIds, []),
-                actorUserId,
-                cancellationToken);
 
             await db.Database.ExecuteSqlInterpolatedAsync(
                 $"""
@@ -122,12 +118,12 @@ internal sealed partial class EfDoorLinkRecordsWriter
                 new DoorLinkMutationDto(selectedIds.Count, door!.Version),
                 false);
         }
-        catch (AbwabDoorInclusionSynchronizationConflictException)
+        catch (AbwabDoorInclusionReconciliationConflictException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new DoorLinkMutationWriteResult.DoorVersionStale();
         }
-        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        catch (AbwabDoorInclusionReconciliationUnavailableException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new DoorLinkMutationWriteResult.SynchronizationUnavailable();
@@ -213,6 +209,12 @@ internal sealed partial class EfDoorLinkRecordsWriter
             UPDATE linking_source_contributions contribution
             SET updated_at = {now},
                 updated_by = {actorUserId},
+                resolved_ayah_count = (
+                    SELECT COUNT(DISTINCT unit_ayah.ayah_id)::integer
+                    FROM linking_source_contribution_units mapping
+                    JOIN linking_unit_ayahs unit_ayah ON unit_ayah.unit_id = mapping.unit_id
+                    WHERE mapping.source_contribution_id = contribution.id),
+                resolved_at_utc = {now},
                 deleted_at = CASE
                     WHEN EXISTS (
                         SELECT 1

@@ -1,4 +1,3 @@
-using QuranDashboard.Application.Abstractions.Quran.Words;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes;
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
 
@@ -63,7 +62,7 @@ public sealed partial class EfWordTypesReader
         FROM grouped
         """;
 
-    private static string RowsSql(WordTypeReadContext context, WordTypeSortSpec sort, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
+    private static string RowsSql(WordTypeReadContext context, string sortToken, WordTypeGroupedDimensionKind? groupedDimension = null) => $"""
         WITH base AS (
             {BaseRowsSql(context, groupedDimension)}
         ), grouped AS (
@@ -156,7 +155,7 @@ public sealed partial class EfWordTypesReader
         LEFT JOIN root_winners ON root_winners.tashkeel_word_id = g.tashkeel_word_id AND root_winners.context_code = g.context_code
         LEFT JOIN lemma_winners ON lemma_winners.tashkeel_word_id = g.tashkeel_word_id AND lemma_winners.context_code = g.context_code
         LEFT JOIN stem_winners ON stem_winners.tashkeel_word_id = g.tashkeel_word_id AND stem_winners.context_code = g.context_code
-        ORDER BY {OrderBy(sort)}
+        ORDER BY {OrderBy(sortToken)}
         OFFSET @skip LIMIT @take
         """;
 
@@ -245,7 +244,7 @@ public sealed partial class EfWordTypesReader
     private static string GroupedDimensionPredicate(WordTypeGroupedDimensionKind? groupedDimension) =>
         groupedDimension is null
             ? string.Empty
-            : $"AND m.{GroupedDimensionColumns(groupedDimension.Value).IdColumn} = @dimensionId";
+            : $"AND m.{GroupedDimensionColumns(groupedDimension).IdColumn} = @dimensionId";
 
     private static string TypePredicate(WordTypeReadContext context)
     {
@@ -403,22 +402,22 @@ public sealed partial class EfWordTypesReader
         return "NULL::text";
     }
 
-    // Words-view ORDER BY. Every arm returns a compiler-known CONSTANT selected by an enum switch —
-    // the direction is baked into each constant, so no request text ever reaches the SQL string. The
+    // Words-view ORDER BY. Every arm returns a compiler-known constant selected by the canonical sort
+    // token, so no request text ever reaches the SQL string. The
     // per-view tie chain (Mushaf order, then the identity pair) is identical in BOTH directions, so
     // reversing a column never reshuffles its ties.
-    private static string OrderBy(WordTypeSortSpec sort) => (sort.Column, sort.Direction) switch
+    private static string OrderBy(string sortToken) => sortToken switch
     {
-        (WordTypeSortColumn.Occurrences, WordSortDirection.Descending) => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Occurrences, WordSortDirection.Ascending) => "g.occurrences_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Ayahs, WordSortDirection.Descending) => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Ayahs, WordSortDirection.Ascending) => "g.ayahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Surahs, WordSortDirection.Descending) => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Surahs, WordSortDirection.Ascending) => "g.surahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Alpha, WordSortDirection.Ascending) => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
-        (WordTypeSortColumn.Alpha, WordSortDirection.Descending) => "g.display_text DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "occurrences" => "g.occurrences_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "occurrences-asc" => "g.occurrences_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "ayahs" => "g.ayahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "ayahs-asc" => "g.ayahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "surahs" => "g.surahs_count DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "surahs-asc" => "g.surahs_count, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "alpha" => "g.display_text, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "alpha-desc" => "g.display_text DESC, g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
         // mushaf-order is ascending-only by contract (the parser rejects any suffix on it).
-        (WordTypeSortColumn.MushafOrder, _) => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
+        "mushaf-order" => "g.first_word_order_in_mushaf, g.tashkeel_word_id, g.context_code",
         _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypeSortSpec)} value."),
     };
 

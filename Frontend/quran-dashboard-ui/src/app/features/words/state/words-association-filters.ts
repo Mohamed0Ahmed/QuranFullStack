@@ -16,13 +16,6 @@ export type AssociationOptionsResult =
   | { readonly status: 'success'; readonly options: readonly AssociationOption[] }
   | { readonly status: 'error' };
 
-export function parsePositiveIntParam(value: string | null): number | null {
-  if (value === null || !/^[1-9]\d*$/.test(value)) {
-    return null;
-  }
-  return Number.parseInt(value, 10);
-}
-
 // Case is preserved: the backend compares against the catalogue code verbatim. The regex only checks
 // shape (a short alphanumeric code) — the picker emits real codes from the word-types tree, and an
 // unknown-but-well-formed code is rejected server-side (400).

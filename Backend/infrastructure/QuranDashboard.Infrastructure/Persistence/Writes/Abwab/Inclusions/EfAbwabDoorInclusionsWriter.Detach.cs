@@ -1,8 +1,5 @@
 using QuranDashboard.Application.Abstractions.Abwab.Inclusions;
 using QuranDashboard.Application.Abstractions.Linking;
-using QuranDashboard.Domain.Abwab;
-using QuranDashboard.Domain.Linking;
-using QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
@@ -47,12 +44,12 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
             await transaction.RollbackAsync(cancellationToken);
             return new AbwabDoorInclusionDetachWriteResult.StaleTargetVersion();
         }
-        catch (AbwabDoorInclusionSynchronizationConflictException)
+        catch (AbwabDoorInclusionReconciliationConflictException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new AbwabDoorInclusionDetachWriteResult.SynchronizationUnavailable();
         }
-        catch (AbwabDoorInclusionSynchronizationUnavailableException)
+        catch (AbwabDoorInclusionReconciliationUnavailableException)
         {
             await transaction.RollbackAsync(cancellationToken);
             return new AbwabDoorInclusionDetachWriteResult.SynchronizationUnavailable();
@@ -71,7 +68,7 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
         int actorUserId,
         CancellationToken cancellationToken)
     {
-        await syncLock.TakeAfterGlobalLocksBeforeDoorAndUnitLocksAsync(cancellationToken);
+        await lockProtocol.AcquireDoorInclusionGraphMutationAsync(cancellationToken);
 
         var activeInclusions = await db.AbwabDoorInclusions.AsNoTracking()
             .Where(inclusion => inclusion.DeletedAtUtc == null)
@@ -99,7 +96,7 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
         var lockedDoors = await LockDoorsAsync(doorIdsToLock, cancellationToken);
         if (lockedDoors.Count != doorIdsToLock.Length)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
 
         var targetDoor = lockedDoors.Single(door => door.Id == targetDoorId);
@@ -118,69 +115,17 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
             && candidate.TargetDoorId == targetDoorId
             && candidate.DeletedAtUtc == null,
             cancellationToken);
-        var contribution = await db.LinkingSourceContributions.SingleOrDefaultAsync(candidate =>
-            candidate.DoorInclusionId == inclusionId
-            && candidate.SourceKind == LinkingSourceKind.DoorInclusion
-            && candidate.DeletedAtUtc == null,
-            cancellationToken);
-        if (inclusion is null || contribution is null || contribution.DoorId != targetDoorId)
+        if (inclusion is null)
         {
-            throw new AbwabDoorInclusionSynchronizationUnavailableException();
+            throw new AbwabDoorInclusionReconciliationUnavailableException();
         }
 
-        var syncs = await db.AbwabDoorInclusionUnitSyncs
-            .Where(sync => sync.DoorInclusionId == inclusionId)
-            .OrderBy(sync => sync.SourceUnitId)
-            .ToListAsync(cancellationToken);
-        if (syncs.Any(sync => sync.State switch
-            {
-                AbwabDoorInclusionSyncState.Active => sync.TargetUnitId is null,
-                AbwabDoorInclusionSyncState.Overridden => sync.TargetUnitId is null,
-                AbwabDoorInclusionSyncState.Suppressed => sync.TargetUnitId is not null,
-                _ => true,
-            }))
-        {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
-        }
-
-        var targetUnitIds = syncs
-            .Where(sync => sync.TargetUnitId is not null)
-            .Select(sync => sync.TargetUnitId!.Value)
-            .Order()
-            .ToArray();
-        var mappings = await db.LinkingSourceContributionUnits
-            .Where(mapping => mapping.SourceContributionId == contribution.Id)
-            .OrderBy(mapping => mapping.UnitId)
-            .ToListAsync(cancellationToken);
-        if (!mappings.Select(mapping => mapping.UnitId).SequenceEqual(targetUnitIds))
-        {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
-        }
-
-        var snapshots = await AbwabDoorInclusionSourceSnapshot.LoadAsync(
-            db,
-            targetUnitIds,
-            cancellationToken);
-        if (snapshots.Count != targetUnitIds.Length)
-        {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
-        }
-
-        await synchronizer.SynchronizeAsync(
-            targetDoorId,
-            AbwabDoorInclusionMutationSet.Create([], [], targetUnitIds, []),
+        var removedUnitCount = await reconciler.ReconcileDetachAsync(
+            inclusion,
             actorUserId,
             cancellationToken);
 
         var now = DateTimeOffset.UtcNow;
-        db.LinkingSourceContributionUnits.RemoveRange(mappings);
-        db.AbwabDoorInclusionUnitSyncs.RemoveRange(syncs);
-        contribution.ResolvedAyahCount = 0;
-        contribution.ResolvedAtUtc = now;
-        contribution.UpdatedAtUtc = now;
-        contribution.UpdatedBy = actorUserId;
-        contribution.DeletedAtUtc = now;
-        contribution.DeletedBy = actorUserId;
         inclusion.UpdatedAtUtc = now;
         inclusion.UpdatedBy = actorUserId;
         inclusion.DeletedAtUtc = now;
@@ -189,63 +134,10 @@ internal sealed partial class EfAbwabDoorInclusionsWriter
         targetDoor.UpdatedBy = actorUserId;
         await db.SaveChangesAsync(cancellationToken);
 
-        await DeleteDetachedUnitsAsync(targetUnitIds, cancellationToken);
-        var affectedAyahIds = snapshots.Values
-            .SelectMany(snapshot => snapshot.Ayahs)
-            .Select(ayah => ayah.AyahId)
-            .Distinct()
-            .Order()
-            .ToArray();
-        await new RelationalDoorStateRebuilder(db).RebuildAsync(
-            targetDoorId,
-            affectedAyahIds,
-            actorUserId,
-            true,
-            cancellationToken);
-
         return new AbwabDoorInclusionDetachWriteResult.Success(
             new AbwabDoorInclusionDetachResultDto(
                 inclusionId,
-                targetUnitIds.Length,
+                removedUnitCount,
                 targetDoor.Version));
-    }
-
-    private async Task DeleteDetachedUnitsAsync(
-        IReadOnlyCollection<long> targetUnitIds,
-        CancellationToken cancellationToken)
-    {
-        if (targetUnitIds.Count == 0)
-        {
-            return;
-        }
-
-        var ids = targetUnitIds.Distinct().Order().ToArray();
-        var hasContributionMappings = await db.LinkingSourceContributionUnits.AsNoTracking()
-            .AnyAsync(mapping => ids.Contains(mapping.UnitId), cancellationToken);
-        var hasSyncMappings = await db.AbwabDoorInclusionUnitSyncs.AsNoTracking()
-            .AnyAsync(sync => ids.Contains(sync.SourceUnitId)
-                || (sync.TargetUnitId != null && ids.Contains(sync.TargetUnitId.Value)), cancellationToken);
-        if (hasContributionMappings || hasSyncMappings)
-        {
-            throw new AbwabDoorInclusionSynchronizationConflictException();
-        }
-
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"""
-            DELETE FROM linking_unit_ayah_descriptions
-            WHERE unit_ayah_id IN (
-                SELECT id FROM linking_unit_ayahs WHERE unit_id = ANY ({ids}));
-
-            DELETE FROM linking_unit_ayah_words
-            WHERE unit_ayah_id IN (
-                SELECT id FROM linking_unit_ayahs WHERE unit_id = ANY ({ids}));
-
-            DELETE FROM linking_unit_ayahs
-            WHERE unit_id = ANY ({ids});
-
-            DELETE FROM linking_units
-            WHERE id = ANY ({ids});
-            """,
-            cancellationToken);
     }
 }

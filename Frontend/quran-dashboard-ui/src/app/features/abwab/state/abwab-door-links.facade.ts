@@ -7,6 +7,7 @@ import { ABWAB_LABELS } from '../models/abwab.labels';
 import { AbwabSnapshotFacade } from './abwab-snapshot.facade';
 import { AbwabDoorLinkEditController } from './abwab-door-link-edit.controller';
 import { AbwabDoorLinksStore } from './abwab-door-links.store';
+import { ACTIVE_OWNER, AbwabMutationOutcome, AbwabMutationPolicy } from './abwab-mutation.policy';
 
 @Injectable({ providedIn: 'root' })
 export class AbwabDoorLinksFacade {
@@ -14,6 +15,7 @@ export class AbwabDoorLinksFacade {
   private readonly store = inject(AbwabDoorLinksStore);
   private readonly tree = inject(AbwabSnapshotFacade);
   private readonly editController = inject(AbwabDoorLinkEditController);
+  private readonly mutationPolicy = inject(AbwabMutationPolicy);
   private snapshotRequest: Subscription | null = null;
   private mutationRequest: Subscription | null = null;
   private generation = 0;
@@ -165,24 +167,16 @@ export class AbwabDoorLinksFacade {
     this.mutationRequest?.unsubscribe();
     this.store.setEditWriteState('saving', null);
     const generation = this.generation;
-    this.mutationRequest = this.api.replaceWords(state.openDoorId, state.edit.unitId, {
-      expectedDoorVersion: state.edit.expectedDoorVersion,
-      selectedWords: state.edit.ayahs.flatMap((ayah) =>
-        ayah.selectedWordIds.map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
-      ),
-    }).subscribe({
-      next: (response) => {
-        if (!this.isCurrent(generation)) {
-          return;
-        }
-        if (!response.isSuccess || response.data == null) {
-          this.store.setEditWriteState('save-error', response.message ?? ABWAB_LABELS.doorLinkWordsSaveError);
-          return;
-        }
-        this.completeMutation(response.data.doorVersion, response.message ?? ABWAB_LABELS.doorLinkWordsUpdatedAnnouncement);
-      },
-      error: (error: unknown) => this.handleMutationError('edit', error, generation),
-    });
+    const { openDoorId, edit } = state;
+    this.mutationRequest = this.mutationPolicy.execute(
+      ACTIVE_OWNER,
+      () => this.api.replaceWords(openDoorId, edit.unitId!, {
+        expectedDoorVersion: edit.expectedDoorVersion!,
+        selectedWords: edit.ayahs.flatMap((ayah) =>
+          ayah.selectedWordIds.map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
+        ),
+      }),
+    ).subscribe((outcome) => this.handleMutationOutcome('edit', outcome, generation));
   }
 
   requestDelete(): void {
@@ -214,23 +208,15 @@ export class AbwabDoorLinksFacade {
     this.mutationRequest?.unsubscribe();
     this.store.setDeleteWriteState('writing', null);
     const generation = this.generation;
-    this.mutationRequest = this.api.deleteLinks(state.openDoorId, {
-      expectedDoorVersion: state.doorVersion,
-      selectionMode: state.selection.mode === 'all-except' ? 'all_except' : 'only',
-      unitIds: [...state.selection.unitIds],
-    }).subscribe({
-      next: (response) => {
-        if (!this.isCurrent(generation)) {
-          return;
-        }
-        if (!response.isSuccess || response.data == null) {
-          this.store.setDeleteWriteState('error', response.message ?? ABWAB_LABELS.doorLinksDeleteError);
-          return;
-        }
-        this.completeMutation(response.data.doorVersion, response.message ?? ABWAB_LABELS.doorLinksDeletedAnnouncement);
-      },
-      error: (error: unknown) => this.handleMutationError('delete', error, generation),
-    });
+    const { openDoorId, doorVersion } = state;
+    this.mutationRequest = this.mutationPolicy.execute(
+      ACTIVE_OWNER,
+      () => this.api.deleteLinks(openDoorId, {
+        expectedDoorVersion: doorVersion,
+        selectionMode: state.selection.mode === 'all-except' ? 'all_except' : 'only',
+        unitIds: [...state.selection.unitIds],
+      }),
+    ).subscribe((outcome) => this.handleMutationOutcome('delete', outcome, generation));
   }
 
   clearNotice(): void {
@@ -277,20 +263,39 @@ export class AbwabDoorLinksFacade {
     this.store.failSnapshot(message);
   }
 
-  private handleMutationError(kind: 'edit' | 'delete', error: unknown, generation: number): void {
+  private handleMutationOutcome(
+    kind: 'edit' | 'delete',
+    outcome: AbwabMutationOutcome<{ readonly doorVersion: number }>,
+    generation: number,
+  ): void {
     if (!this.isCurrent(generation)) {
       return;
     }
-    const fallback = kind === 'edit' ? ABWAB_LABELS.doorLinkWordsSaveError : ABWAB_LABELS.doorLinksDeleteError;
-    const message = doorLinkResponseMessage(error) ?? fallback;
-    if (isDoorLinkStaleResponse(error)) {
-      this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
-      this.loadSnapshot(true);
+    const failureFallback = kind === 'edit'
+      ? ABWAB_LABELS.doorLinkWordsSaveError
+      : ABWAB_LABELS.doorLinksDeleteError;
+    if (outcome.kind !== 'success') {
+      const message = outcome.message;
+      if (outcome.kind === 'conflict' && isDoorLinkStaleCode(outcome.conflictCode)) {
+        this.store.markStale(message || ABWAB_LABELS.doorLinksStale);
+        this.loadSnapshot(true);
+      } else if (kind === 'edit') {
+        this.store.setEditWriteState('save-error', message);
+      } else {
+        this.store.setDeleteWriteState('error', message);
+      }
       return;
     }
-    kind === 'edit'
-      ? this.store.setEditWriteState('save-error', message)
-      : this.store.setDeleteWriteState('error', message);
+    if (outcome.data === null) {
+      kind === 'edit'
+        ? this.store.setEditWriteState('save-error', outcome.envelope?.message ?? failureFallback)
+        : this.store.setDeleteWriteState('error', outcome.envelope?.message ?? failureFallback);
+      return;
+    }
+    const announcement = kind === 'edit'
+      ? ABWAB_LABELS.doorLinkWordsUpdatedAnnouncement
+      : ABWAB_LABELS.doorLinksDeletedAnnouncement;
+    this.completeMutation(outcome.data.doorVersion, outcome.envelope?.message ?? announcement);
   }
 
   private completeMutation(doorVersion: number, message: string): void {
@@ -342,6 +347,10 @@ export class AbwabDoorLinksFacade {
     this.snapshotRequest = null;
     this.mutationRequest = null;
   }
+}
+
+function isDoorLinkStaleCode(code: string | null): boolean {
+  return code === 'DOOR_LINKS_STALE' || code === 'LINKING_DATA_STALE';
 }
 
 function doorLinkResponseMessage(error: unknown): string | null {

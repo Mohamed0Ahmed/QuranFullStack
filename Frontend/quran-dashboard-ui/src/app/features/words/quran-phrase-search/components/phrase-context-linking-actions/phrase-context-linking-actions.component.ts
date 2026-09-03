@@ -4,7 +4,7 @@ import { QdActionDirective } from '../../../../../shared/ui/action/action.direct
 import { QdErrorStateComponent } from '../../../../../shared/ui/error-state/error-state.component';
 import { LINKING_LABELS } from '../../../../linking/models/linking.labels';
 import { PhraseContextUrlState } from '../../models/phrase-context.models';
-import { PhraseContextAyahSelectionStore } from '../../state/phrase-context-ayah-selection.store';
+import { PhraseLinkingAyahSelectionStore } from '../../state/phrase-linking-ayah-selection.store';
 import { PhraseContextLinkingCoordinator } from '../../state/phrase-context-linking.coordinator';
 
 @Component({
@@ -16,7 +16,7 @@ import { PhraseContextLinkingCoordinator } from '../../state/phrase-context-link
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class PhraseContextLinkingActionsComponent {
-  private readonly selection = inject(PhraseContextAyahSelectionStore);
+  private readonly selection = inject(PhraseLinkingAyahSelectionStore);
   protected readonly linking = inject(PhraseContextLinkingCoordinator);
 
   readonly route = input.required<PhraseContextUrlState>();

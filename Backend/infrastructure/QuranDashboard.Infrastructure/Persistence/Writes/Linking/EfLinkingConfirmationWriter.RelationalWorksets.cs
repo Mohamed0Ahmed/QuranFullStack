@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Linking;
 using QuranDashboard.Application.Abstractions.Linking.Preflight;
+using QuranDashboard.Infrastructure.Persistence.Writes.Abwab.Inclusions;
 
 namespace QuranDashboard.Infrastructure.Persistence.Writes.Linking;
 
@@ -19,20 +20,19 @@ internal sealed partial class EfLinkingConfirmationWriter
             actorUserId,
             cancellationToken);
         await CreateRelationalWorksetsAsync(preflightId, doorId, cancellationToken);
-        var previousSnapshots = await LoadPreviousUnitSnapshotsAsync(
-            preflightId,
-            doorId,
-            cancellationToken);
         await ValidateUnitIdentitiesAsync(preflightId, doorId, cancellationToken);
         await InsertPreparedUnitsAsync(doorId, actorUserId, cancellationToken);
         await MapPreparedUnitsAsync(preflightId, doorId, cancellationToken);
         await InsertPreparedUnitChildrenAsync(actorUserId, cancellationToken);
         await SynchronizePreparedContributionLinksAsync(cancellationToken);
         await CreateRelationalOrphanWorksetAsync(cancellationToken);
-        var mutations = await CreatePreparedMutationSetAsync(previousSnapshots, cancellationToken);
-        await inclusionSynchronizer.SynchronizeAsync(
+        var sourceChange = await CreatePreparedSourceChangeAsync(cancellationToken);
+        await inclusionReconciler.ReconcileSourceChangeAsync(
             doorId,
-            mutations,
+            sourceChange.AddedUnitIds,
+            sourceChange.SurvivingCandidateUnitIds,
+            sourceChange.DeletedUnitIds,
+            sourceChange.Replacements,
             actorUserId,
             cancellationToken);
         await RemoveRelationalOrphanUnitsAsync(cancellationToken);

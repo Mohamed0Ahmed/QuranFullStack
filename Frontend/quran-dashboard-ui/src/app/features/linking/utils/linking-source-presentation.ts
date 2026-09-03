@@ -7,12 +7,11 @@ import {
   WORD_TYPE_VOICE_LABELS,
 } from '../../words/models/word-types.labels';
 import { LinkingSourceDescriptor, LinkingWordTypeScope } from '../models/linking-source.models';
-import { manualMushafVerseKeys } from './manual-link-shape';
 
 export function linkingSourcePresentation(source: LinkingSourceDescriptor): string {
   switch (source.kind) {
     case 'manual-mushaf-ayahs': {
-      const verseCount = manualMushafVerseKeys(source).length;
+      const verseCount = source.verseKeys.length;
       return verseCount === 1 ? 'آية من المصحف' : `${verseCount} آيات من المصحف`;
     }
     case 'unique-word':

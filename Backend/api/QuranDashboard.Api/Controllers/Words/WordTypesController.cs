@@ -1,24 +1,13 @@
 using QuranDashboard.Application.Abstractions.Quran.Words.WordTypes.Responses;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeAyahs;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeRows;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSummary;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeScopeCounts;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeSurahs;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTable;
-using QuranDashboard.Application.Quran.Words.WordTypes.Queries.GetWordTypeTree;
+using QuranDashboard.Application.Quran.Words.WordTypes;
 
 namespace QuranDashboard.Api.Controllers.Words;
 
 [ApiController]
 [Route("api/words/word-types")]
 public sealed partial class WordTypesController(
-    GetWordTypeTreeHandler treeHandler,
-    GetWordTypeRowsHandler rowsHandler,
-    GetWordTypeTableHandler tableHandler,
-    GetWordTypeScopeCountsHandler scopeCountsHandler,
-    GetWordTypeSummaryHandler summaryHandler,
-    GetWordTypeAyahsHandler ayahsHandler,
-    GetWordTypeSurahsHandler surahsHandler) : ControllerBase
+    WordTypesCatalogueExplorer catalogueExplorer,
+    WordTypeWordExplorer wordExplorer) : ControllerBase
 {
     private const int DefaultPage = 1;
     private const int DefaultListPageSize = 1000;
@@ -27,14 +16,8 @@ public sealed partial class WordTypesController(
     [HttpGet("tree")]
     public async Task<ActionResult<ApiResponse<WordTypeTreeDto>>> GetTree(CancellationToken cancellationToken)
     {
-        var outcome = await treeHandler.HandleAsync(new GetWordTypeTreeQuery(), cancellationToken);
-
-        return outcome switch
-        {
-            GetWordTypeTreeOutcome.Success success =>
-                Ok(ApiResponse<WordTypeTreeDto>.Ok(success.Tree, ApiMessages.WordTypesTreeLoaded)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeTreeOutcome)} variant."),
-        };
+        var tree = await catalogueExplorer.GetTreeAsync(cancellationToken);
+        return Ok(ApiResponse<WordTypeTreeDto>.Ok(tree, ApiMessages.WordTypesTreeLoaded));
     }
 
     [HttpGet("words")]
@@ -53,21 +36,21 @@ public sealed partial class WordTypesController(
         [FromQuery] bool? hasLemma,
         CancellationToken cancellationToken)
     {
-        var outcome = await rowsHandler.HandleAsync(
-            new GetWordTypeRowsQuery(type, childCode, caseFilter, tense, voice, search, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma),
-            cancellationToken);
+        var outcome = await catalogueExplorer.GetRowsAsync(
+            type, childCode, caseFilter, tense, voice, search, sort,
+            page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeRowsOutcome.Success success =>
+            WordTypesCatalogueResult.Rows.Success success =>
                 Ok(ApiResponse<PagedResult<WordTypeRowDto>>.Ok(success.Page, ApiMessages.WordTypesRowsLoaded)),
-            GetWordTypeRowsOutcome.InvalidFilter =>
+            WordTypesCatalogueResult.Rows.InvalidFilter =>
                 BadRequest(ApiResponse<PagedResult<WordTypeRowDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeRowsOutcome.InvalidSort =>
+            WordTypesCatalogueResult.Rows.InvalidSort =>
                 BadRequest(ApiResponse<PagedResult<WordTypeRowDto>>.Fail(ApiMessages.WordTypesInvalidSort)),
-            GetWordTypeRowsOutcome.InvalidPaging =>
+            WordTypesCatalogueResult.Rows.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeRowDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeRowsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypesCatalogueResult.Rows)} variant."),
         };
     }
 
@@ -88,23 +71,23 @@ public sealed partial class WordTypesController(
         [FromQuery] bool? hasLemma,
         CancellationToken cancellationToken)
     {
-        var outcome = await tableHandler.HandleAsync(
-            new GetWordTypeTableQuery(type, childCode, caseFilter, tense, voice, search, tableView, sort, page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma),
-            cancellationToken);
+        var outcome = await catalogueExplorer.GetTableAsync(
+            tableView, type, childCode, caseFilter, tense, voice, search, sort,
+            page ?? DefaultPage, pageSize ?? DefaultListPageSize, hasRoot, hasStem, hasLemma, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeTableOutcome.Success success =>
+            WordTypesCatalogueResult.Table.Success success =>
                 Ok(ApiResponse<PagedResult<WordTypeTableRowDto>>.Ok(success.Page, ApiMessages.WordTypesTableLoaded)),
-            GetWordTypeTableOutcome.InvalidTableView =>
-                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidTableView)),
-            GetWordTypeTableOutcome.InvalidFilter =>
+            WordTypesCatalogueResult.Table.InvalidFilter =>
                 BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            GetWordTypeTableOutcome.InvalidSort =>
+            WordTypesCatalogueResult.Table.InvalidTableView =>
+                BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidTableView)),
+            WordTypesCatalogueResult.Table.InvalidSort =>
                 BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidSort)),
-            GetWordTypeTableOutcome.InvalidPaging =>
+            WordTypesCatalogueResult.Table.InvalidPaging =>
                 BadRequest(ApiResponse<PagedResult<WordTypeTableRowDto>>.Fail(ApiMessages.WordTypesInvalidPaging)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeTableOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypesCatalogueResult.Table)} variant."),
         };
     }
 
@@ -121,17 +104,16 @@ public sealed partial class WordTypesController(
         [FromQuery] bool? hasLemma,
         CancellationToken cancellationToken)
     {
-        var outcome = await scopeCountsHandler.HandleAsync(
-            new GetWordTypeScopeCountsQuery(type, childCode, caseFilter, tense, voice, search, hasRoot, hasStem, hasLemma),
-            cancellationToken);
+        var outcome = await catalogueExplorer.GetScopeCountsAsync(
+            type, childCode, caseFilter, tense, voice, search, hasRoot, hasStem, hasLemma, cancellationToken);
 
         return outcome switch
         {
-            GetWordTypeScopeCountsOutcome.Success success =>
+            WordTypesCatalogueResult.ScopeCounts.Success success =>
                 Ok(ApiResponse<WordTypeScopeCountsDto>.Ok(success.Counts, ApiMessages.WordTypesScopeCountsLoaded)),
-            GetWordTypeScopeCountsOutcome.InvalidFilter =>
+            WordTypesCatalogueResult.ScopeCounts.InvalidFilter =>
                 BadRequest(ApiResponse<WordTypeScopeCountsDto>.Fail(ApiMessages.WordTypesInvalidFilter)),
-            _ => throw new InvalidOperationException($"Unhandled {nameof(GetWordTypeScopeCountsOutcome)} variant."),
+            _ => throw new InvalidOperationException($"Unhandled {nameof(WordTypesCatalogueResult.ScopeCounts)} variant."),
         };
     }
 

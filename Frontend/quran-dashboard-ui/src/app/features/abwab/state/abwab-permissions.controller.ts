@@ -1,6 +1,6 @@
 import { Injectable, computed, inject } from '@angular/core';
 
-import { CurrentUserStore } from '../../../core/auth/current-user.store';
+import { AuthSessionStore } from '../../../core/auth/auth-session.store';
 import { ABWAB_PERMISSION_CODES, PermissionCode } from '../../../core/auth/permission-code';
 import { AbwabModalKind } from '../models/abwab.models';
 
@@ -43,18 +43,10 @@ const BULK_PERMISSIONS = [
 
 @Injectable()
 export class AbwabPermissionsController {
-  private readonly currentUserStore = inject(CurrentUserStore);
+  private readonly authSession = inject(AuthSessionStore);
 
-  readonly isResolved = computed(() => {
-    if (!this.currentUserStore.authStateKnown()) {
-      return false;
-    }
-
-    return !this.currentUserStore.isAuthenticated() || this.currentUserStore.loadState() !== 'loading';
-  });
-  readonly isOwner = computed(
-    () => this.currentUserStore.isActive() && this.currentUserStore.isOwner(),
-  );
+  readonly isResolved = computed(() => !this.authSession.isResolving());
+  readonly isOwner = this.authSession.isActiveOwner;
 
   readonly canCreateDoor = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.createDoor));
   readonly canEditDoor = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.editDoor));
@@ -84,11 +76,11 @@ export class AbwabPermissionsController {
   readonly canDeleteTemplateNode = computed(() => this.can(ABWAB_WRITE_PERMISSIONS.deleteTemplateNode));
 
   can(permission: PermissionCode): boolean {
-    return this.currentUserStore.can(permission);
+    return this.authSession.can(permission);
   }
 
   canAny(permissions: readonly PermissionCode[]): boolean {
-    return this.currentUserStore.canAny(permissions);
+    return this.authSession.canAny(permissions);
   }
 
   canOpenModal(kind: AbwabModalKind): boolean {

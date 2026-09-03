@@ -2,6 +2,7 @@ import { MushafSimilarAyahsApi } from '../data-access/mushaf-similar-ayahs.api';
 import { ResourceLoadState, SimilarAyahsDto } from '../models/mushaf.models';
 import { subscribeToApiLoad } from './mushaf-api-load.helpers';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
+import type { QuranVerseKey } from '../../../shared/quran/quran-location';
 
 export interface SimilarAyahsLoadBindings {
   setSimilarAyahs(value: SimilarAyahsDto | null): void;
@@ -17,7 +18,7 @@ export class SimilarAyahsLoadRunner {
 
   constructor(private readonly bindings: SimilarAyahsLoadBindings) {}
 
-  loadImmediate(verseKey: string): void {
+  loadImmediate(verseKey: QuranVerseKey): void {
     this.clearPending();
     const requestToken = this.bindings.bumpRequestToken();
     this.runLoad(verseKey, requestToken);
@@ -38,7 +39,7 @@ export class SimilarAyahsLoadRunner {
     this.bindings.setLoadState({ isLoading: false, isEmpty: false, errorMessage: null });
   }
 
-  private applyCached(verseKey: string): boolean {
+  private applyCached(verseKey: QuranVerseKey): boolean {
     const cached = this.bindings.readerCache.peek<SimilarAyahsDto>(
       MushafReaderCacheKeys.similarAyahs(verseKey),
     );
@@ -51,7 +52,7 @@ export class SimilarAyahsLoadRunner {
     return true;
   }
 
-  private runLoad(verseKey: string, requestToken: number): void {
+  private runLoad(verseKey: QuranVerseKey, requestToken: number): void {
     if (this.applyCached(verseKey)) {
       return;
     }

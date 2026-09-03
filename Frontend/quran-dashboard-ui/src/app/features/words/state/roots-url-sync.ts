@@ -3,6 +3,7 @@ import { ParamMap } from '@angular/router';
 import { rootsRoutePath } from '../../../core/navigation/route-paths';
 import { parseRangeFilters } from './words-range-filters';
 import { parsePosCodeParam } from './words-association-filters';
+import { parseWordsPositiveSafeInteger } from './words-route-integer';
 
 import {
   DEFAULT_ROOT_DETAIL_PAGE,
@@ -30,14 +31,15 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
   // default on anything unknown, so one ordering can never be cached under two tokens.
   const sort: RootSort = normalizeRootSort(queryParams.get(ROOTS_QUERY_KEYS.sort));
 
-  const page = parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.page)) ?? DEFAULT_ROOTS_LIST_PAGE;
+  const page =
+    parseWordsPositiveSafeInteger(queryParams.get(ROOTS_QUERY_KEYS.page)) ??
+    DEFAULT_ROOTS_LIST_PAGE;
 
   const rootRaw = queryParams.get(ROOTS_QUERY_KEYS.root);
-  const rootId = rootRaw === null ? null : parsePositiveInt(rootRaw);
+  const rootId = rootRaw === null ? null : parseWordsPositiveSafeInteger(rootRaw);
 
   const viewRaw = rootId !== null ? queryParams.get(ROOTS_QUERY_KEYS.view) : null;
-  const view: RootView =
-    viewRaw !== null && isRootView(viewRaw) ? viewRaw : DEFAULT_ROOT_VIEW;
+  const view: RootView = viewRaw !== null && isRootView(viewRaw) ? viewRaw : DEFAULT_ROOT_VIEW;
 
   const wordViewRaw = view === 'words' ? queryParams.get(ROOTS_QUERY_KEYS.wordView) : null;
   const wordView: RootWordView =
@@ -45,15 +47,19 @@ export function parseRootsQueryParams(queryParams: ParamMap): ParsedRootsQuery {
 
   const surahViewRaw = view === 'surahs' ? queryParams.get(ROOTS_QUERY_KEYS.surahView) : null;
   const surahView: RootSurahView =
-    surahViewRaw !== null && isRootSurahView(surahViewRaw) ? surahViewRaw : DEFAULT_ROOT_SURAHS_VIEW;
+    surahViewRaw !== null && isRootSurahView(surahViewRaw)
+      ? surahViewRaw
+      : DEFAULT_ROOT_SURAHS_VIEW;
 
   const detailPage = isPaginatedRootView(view)
-    ? parsePositiveInt(queryParams.get(ROOTS_QUERY_KEYS.detailPage)) ?? DEFAULT_ROOT_DETAIL_PAGE
+    ? (parseWordsPositiveSafeInteger(queryParams.get(ROOTS_QUERY_KEYS.detailPage)) ??
+      DEFAULT_ROOT_DETAIL_PAGE)
     : DEFAULT_ROOT_DETAIL_PAGE;
 
-  const typeCode = view === 'ayahs' || view === 'words'
-    ? parsePosCodeParam(queryParams.get(ROOTS_QUERY_KEYS.typeCode))
-    : null;
+  const typeCode =
+    view === 'ayahs' || view === 'words'
+      ? parsePosCodeParam(queryParams.get(ROOTS_QUERY_KEYS.typeCode))
+      : null;
 
   return {
     search: queryParams.get(ROOTS_QUERY_KEYS.search) ?? '',
@@ -135,12 +141,4 @@ export function buildRootsDeepLink(options: RootsQueryChange = {}): RootsDeepLin
     path: rootsRoutePath(),
     queryParams: buildRootsQueryParams(options),
   };
-}
-
-function parsePositiveInt(value: string | null): number | null {
-  if (value === null || !/^[1-9]\d*$/.test(value)) {
-    return null;
-  }
-  const parsed = Number.parseInt(value, 10);
-  return parsed;
 }

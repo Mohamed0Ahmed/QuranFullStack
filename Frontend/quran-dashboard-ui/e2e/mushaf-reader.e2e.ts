@@ -274,6 +274,113 @@ test('a page deep link hydrates the reader', async ({ page }) => {
   await expect(page).toHaveURL(/[?&]page=5(&|$)/);
 });
 
+test(
+  'malformed and mismatching Quran locations fail closed before reader state and HTTP',
+  {
+    annotation: [
+      { type: 'critical' },
+      { type: 'read-only' },
+      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'journey', description: 'quran-location.sanitization' },
+    ],
+  },
+  async ({ page }) => {
+  const readerRequests: string[] = [];
+  page.on('request', (request) => {
+    const pathname = decodeURIComponent(new URL(request.url()).pathname);
+    if (pathname.includes('/api/mushaf/ayahs/') || pathname.includes('/api/mushaf/words/')) {
+      readerRequests.push(pathname);
+    }
+  });
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem('qd-location-test-seeded') === 'true') {
+      return;
+    }
+    sessionStorage.setItem('qd-location-test-seeded', 'true');
+    sessionStorage.setItem(
+      'qd-mushaf-reader-session',
+      JSON.stringify({
+        pageNumber: 1,
+        ayah: '2:1',
+        focusAyah: null,
+        word: '2:1:1',
+        segment: '2:1:1:1',
+        panel: 'word',
+        ayahTab: 'tafsir',
+        wordTab: 'segments',
+        sources: {
+          tafsirSource: null,
+          translationSource: null,
+          fullI3rabSource: null,
+        },
+      }),
+    );
+  });
+
+  await page.goto(
+    '/dashboard/mushaf?page=1&ayah=1%3A1%3A2&word=1%3A1%3A0&segment=1%3A1%3A0%3A1&panel=word',
+  );
+  await expect(page.getByTestId('mushaf-reader-page')).toHaveAttribute('dir', 'rtl');
+  await expect(page.getByTestId('mushaf-page-jump-trigger')).toHaveText('1');
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return {
+        ayah: url.searchParams.get('ayah'),
+        word: url.searchParams.get('word'),
+        segment: url.searchParams.get('segment'),
+      };
+    })
+    .toEqual({ ayah: null, word: null, segment: null });
+
+  await page.goto(
+    '/dashboard/mushaf?page=1&ayah=001%3A001&focusAyah=001%3A002&word=002%3A001%3A001&segment=2%3A1%3A1%3A1&panel=ayah',
+  );
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return {
+        ayah: url.searchParams.get('ayah'),
+        focusAyah: url.searchParams.get('focusAyah'),
+        word: url.searchParams.get('word'),
+        segment: url.searchParams.get('segment'),
+      };
+    })
+    .toEqual({ ayah: '1:1', focusAyah: '1:2', word: null, segment: null });
+
+  await page.goto('/dashboard/mushaf?page=1&word=001%3A001%3A001&panel=word');
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return {
+        ayah: url.searchParams.get('ayah'),
+        word: url.searchParams.get('word'),
+      };
+    })
+    .toEqual({ ayah: '1:1', word: '1:1:1' });
+  await expect(page.getByTestId('mushaf-reader-page')).toHaveAttribute('dir', 'rtl');
+
+  await page.goto('/dashboard/mushaf');
+  await expect
+    .poll(() => {
+      const url = new URL(page.url());
+      return {
+        ayah: url.searchParams.get('ayah'),
+        word: url.searchParams.get('word'),
+      };
+    })
+    .toEqual({ ayah: '1:1', word: '1:1:1' });
+
+  const savedSession = await page.evaluate(() =>
+    JSON.parse(sessionStorage.getItem('qd-mushaf-reader-session') ?? 'null'),
+  );
+  expect(savedSession).toMatchObject({ ayah: '1:1', word: '1:1:1', segment: null });
+  expect(readerRequests).not.toContainEqual(expect.stringContaining('1:1:2'));
+  expect(readerRequests).not.toContainEqual(expect.stringContaining('1:1:0'));
+  expect(readerRequests).not.toContainEqual(expect.stringContaining('2:1:1'));
+  },
+);
+
 test('the surah jump picker moves the reader to another page', async ({ page }) => {
   await page.goto('/dashboard/mushaf');
   await expect(page.getByTestId('mushaf-page-jump-trigger')).toHaveText('1');

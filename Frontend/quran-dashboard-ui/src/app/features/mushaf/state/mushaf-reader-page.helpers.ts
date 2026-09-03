@@ -1,6 +1,7 @@
 import { MushafPagesApi } from '../data-access/mushaf-pages.api';
 import { MushafPageViewModel } from '../models/mushaf.models';
 import { MushafReaderCache, MushafReaderCacheKeys } from './mushaf-reader-cache';
+import type { QuranWordLocation } from '../../../shared/quran/quran-location';
 
 export function prefetchAdjacentMushafPages(
   previousPageNumber: number | null,
@@ -23,7 +24,7 @@ export function prefetchAdjacentMushafPages(
 
 export function isAyahMarkerOnMushafPage(
   page: MushafPageViewModel | null,
-  wordLocation: string,
+  wordLocation: QuranWordLocation,
 ): boolean {
   if (!page) {
     return false;

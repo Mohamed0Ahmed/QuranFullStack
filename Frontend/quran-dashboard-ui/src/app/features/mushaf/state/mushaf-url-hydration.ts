@@ -5,10 +5,11 @@ import {
   WordAnalysisTab,
 } from '../models/mushaf.models';
 import { MushafUrlSnapshot } from './mushaf-url-sync';
+import type { QuranVerseKey, QuranWordLocation } from '../../../shared/quran/quran-location';
 
 export interface MushafUrlHydrationCurrent {
-  selectedAyahKey: string | null;
-  selectedWordLocation: string | null;
+  selectedAyahKey: QuranVerseKey | null;
+  selectedWordLocation: QuranWordLocation | null;
   urlExplicitSources: MushafReaderSources;
   // F1 stranded-load recovery. Callers MUST pass true ONLY on the first hydration after a route
   // (re)bind while the resource is still loading — a prior load was interrupted by teardown and
@@ -28,10 +29,10 @@ export interface MushafUrlHydrationHandlers {
     segmentLocation: string | null,
   ): void;
   clearWordSelection(): void;
-  setWord(wordLocation: string, reload: boolean): void;
+  setWord(wordLocation: QuranWordLocation, reload: boolean): void;
   setUrlExplicitSources(sources: MushafReaderSources): void;
   clearAyahSelection(): void;
-  setAyah(verseKey: string, reload: boolean): void;
+  setAyah(verseKey: QuranVerseKey, reload: boolean): void;
 }
 
 type AuthoritativeUrlSlice = Pick<

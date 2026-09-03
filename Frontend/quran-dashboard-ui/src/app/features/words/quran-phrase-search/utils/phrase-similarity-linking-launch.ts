@@ -1,8 +1,17 @@
 import { PhraseSimilarityLinkingSelectionResponse } from '../../../../core/api/generated/models/phrase-similarity-linking-selection-response';
 import { isCanonicalQuranWordId } from '../../../linking/models/linking-manual-mushaf.models';
 import { LinkingSourceLaunch } from '../../../linking/models/linking-source-launch.models';
-import { isVerseKey } from '../../../linking/models/linking-source.models';
-import { PhraseSimilarityAyahSelectionSnapshot } from '../state/phrase-similarity-ayah-selection.store';
+import { ManualLinkingSourceFactory } from '../../../linking/utils/manual-linking-source.factory';
+import { PhraseLinkingAyahSelectionSnapshot } from '../state/phrase-linking-ayah-selection.store';
+import {
+  compareQuranVerseKeys,
+  parseQuranVerseKey,
+  type QuranVerseKey,
+} from '../../../../shared/quran/quran-location';
+
+type CanonicalSimilarityAyah = PhraseSimilarityLinkingSelectionResponse['ayahs'][number] & {
+  readonly verseKey: QuranVerseKey;
+};
 
 export interface PhraseSimilarityLinkingPopulationSnapshot {
   readonly resultSetKey: string;
@@ -13,7 +22,7 @@ export interface PhraseSimilarityLinkingPopulationSnapshot {
   readonly queryVariantId: number;
   readonly queryDisplayText: string;
   readonly queryWordCount: number;
-  readonly selection: PhraseSimilarityAyahSelectionSnapshot;
+  readonly selection: PhraseLinkingAyahSelectionSnapshot;
 }
 
 export function createPhraseSimilarityLinkingLaunch(
@@ -24,31 +33,22 @@ export function createPhraseSimilarityLinkingLaunch(
     return null;
   }
 
-  const sortedAyahs = [...response.ayahs].sort(compareAyahs);
-  return {
-    source: {
-      kind: 'manual-mushaf-ayahs',
-      label: `متشابهات العبارة «${response.query.displayText}»`,
-      contextKey: null,
-      manualAyahs: sortedAyahs.map((ayah) => ({
-        verseKey: ayah.verseKey,
-        pageNumber: ayah.pageNumber,
-        displayHint: ayah.verseKey,
-      })),
-    },
-    initialConfiguration: {
-      inclusionMode: 'all-except',
-      ayahOverrideIds: [],
-      selectedWords: sortedAyahs.flatMap((ayah) =>
-        [...ayah.selectedQuranWordIds]
-          .sort((left, right) => left - right)
-          .map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
-      ),
-      automaticWordMatchesEnabled: null,
-      manualLinkShape: 'independent',
-      descriptions: [],
-    },
-  };
+  const canonicalAyahs = canonicalSimilarityAyahs(response.ayahs);
+  if (canonicalAyahs === null) {
+    return null;
+  }
+  const sortedAyahs = canonicalAyahs.sort(compareAyahs);
+  return ManualLinkingSourceFactory.createLaunch({
+    label: `متشابهات العبارة «${response.query.displayText}»`,
+    contextKey: null,
+    verseKeys: sortedAyahs.map((ayah) => ayah.verseKey),
+    selectedWords: sortedAyahs.flatMap((ayah) =>
+      [...ayah.selectedQuranWordIds]
+        .sort((left, right) => left - right)
+        .map((quranWordId) => ({ ayahId: ayah.ayahId, quranWordId })),
+    ),
+    configuration: 'explicit',
+  });
 }
 
 function isCompleteResponse(
@@ -78,7 +78,7 @@ function isCompleteResponse(
       !Number.isSafeInteger(ayah.ayahId) ||
       ayah.ayahId <= 0 ||
       ayahIds.has(ayah.ayahId) ||
-      !isVerseKey(ayah.verseKey) ||
+      !isCanonicalVerseKey(ayah.verseKey) ||
       verseKeys.has(ayah.verseKey) ||
       !Number.isSafeInteger(ayah.pageNumber) ||
       ayah.pageNumber < 1 ||
@@ -119,12 +119,27 @@ function isMatchingQuery(
 }
 
 function compareAyahs(
-  left: PhraseSimilarityLinkingSelectionResponse['ayahs'][number],
-  right: PhraseSimilarityLinkingSelectionResponse['ayahs'][number],
+  left: CanonicalSimilarityAyah,
+  right: CanonicalSimilarityAyah,
 ): number {
-  const [leftSurah, leftAyah] = left.verseKey.split(':').map(Number);
-  const [rightSurah, rightAyah] = right.verseKey.split(':').map(Number);
-  return leftSurah - rightSurah || leftAyah - rightAyah || left.ayahId - right.ayahId;
+  return compareQuranVerseKeys(left.verseKey, right.verseKey) || left.ayahId - right.ayahId;
+}
+
+function canonicalSimilarityAyahs(
+  ayahs: PhraseSimilarityLinkingSelectionResponse['ayahs'],
+): CanonicalSimilarityAyah[] | null {
+  const parsed = ayahs.map((ayah) => {
+    const verse = parseQuranVerseKey(ayah.verseKey);
+    return verse && verse.key === ayah.verseKey ? { ...ayah, verseKey: verse.key } : null;
+  });
+  return parsed.some((ayah) => ayah === null)
+    ? null
+    : parsed.filter((ayah): ayah is CanonicalSimilarityAyah => ayah !== null);
+}
+
+function isCanonicalVerseKey(value: unknown): boolean {
+  const parsed = parseQuranVerseKey(value);
+  return parsed !== null && parsed.key === value;
 }
 
 function sameBuild(left: string, right: string): boolean {

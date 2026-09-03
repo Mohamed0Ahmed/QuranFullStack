@@ -50,6 +50,7 @@ public sealed class FullI3rabImportReportBuilder : IFullI3rabImportReportBuilder
         string sourcePath,
         FullI3rabSourceData source,
         bool forced,
+        bool persisted,
         DateTimeOffset runAtUtc,
         FullI3rabImportTotals totals,
         IReadOnlyList<FullI3rabCheckResult> postCopyChecks,
@@ -64,12 +65,14 @@ public sealed class FullI3rabImportReportBuilder : IFullI3rabImportReportBuilder
             source,
             runAtUtc,
             FullI3rabImportConstants.PassVerdict,
-            persisted: true,
+            persisted,
             forced,
             totals,
             allChecks,
             errors: [],
-            infoNotes: ["Full i'rab import passed validation; acceptance reports written before commit."]);
+            infoNotes: persisted
+                ? ["Full i'rab import committed; all hard checks passed."]
+                : ["Full i'rab import passed validation; database commit is not yet proven."]);
     }
 
     private static FullI3rabImportReport Build(

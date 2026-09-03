@@ -15,9 +15,11 @@ public sealed class FullI3rabImportTests(FullI3rabImportTestFixture fixture) : I
         await fixture.SeedSyntheticAyahsAsync(FullI3rabSyntheticSeed.DefaultAyahs);
 
         var packageDir = await packages.WriteAsync();
+        var reportDir = fixture.CreateTempDir();
         var result = await fixture.RunImportAsync(
             packageDir,
-            new FullI3rabExpectedCounts(Sources: 1, AyahsPerSource: 3));
+            new FullI3rabExpectedCounts(Sources: 1, AyahsPerSource: 3),
+            reportDir);
 
         result.Succeeded.Should().BeTrue(result.Message);
         result.Totals.Should().NotBeNull();
@@ -77,6 +79,11 @@ public sealed class FullI3rabImportTests(FullI3rabImportTestFixture fixture) : I
         {
             link.EntryId.Should().BeGreaterThan(0);
         }
+
+        var reportJson = await File.ReadAllTextAsync(
+            Path.Combine(reportDir, FullI3rabImportConstants.JsonReportFileName));
+        using var reportDocument = JsonDocument.Parse(reportJson);
+        reportDocument.RootElement.GetProperty("persisted").GetBoolean().Should().BeTrue();
     }
 
     [Fact]
