@@ -50,12 +50,14 @@ internal static class TestGateCatalog
         ["ImmutableSeed", "ResetPerTest", "UniqueKeyIsolation", "FreshLeasePerCase"],
         StringComparer.Ordinal);
 
-    // The one class whose fixture owns an exclusive PostgreSQL server instead of a database leased from the
-    // shared runtime. Backend/scripts/test-backend splits any lane that selects it alongside shared-runtime
-    // classes into two sequential invocations, so the two server majors never run at once. The name is a
-    // constant here and a string in that script; ExclusivePostgreSqlClass_IsADiscoveredTestClass and the
-    // script's own catalog check are what stop the two from drifting apart in silence.
-    internal const string ExclusivePostgreSqlClass = "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests";
+    // These classes own an exclusive PostgreSQL 18 server instead of leasing a database from the shared
+    // PostgreSQL 16 runtime. The repository runner keeps them in a separate process shard.
+    internal static IReadOnlySet<string> ExclusivePostgreSqlClasses { get; } = new HashSet<string>(
+        [
+            "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests",
+            "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests",
+        ],
+        StringComparer.Ordinal);
 
     internal static IReadOnlyList<string> PipelineClassPrefixes { get; } =
     [
@@ -182,8 +184,8 @@ internal static class TestGateCatalog
         var classes = classNames.Order(StringComparer.Ordinal).ToArray();
 
         return new PostgreSqlOwnershipShards(
-            classes.Where(className => className != ExclusivePostgreSqlClass).ToArray(),
-            classes.Where(className => className == ExclusivePostgreSqlClass).ToArray());
+            classes.Where(className => !ExclusivePostgreSqlClasses.Contains(className)).ToArray(),
+            classes.Where(ExclusivePostgreSqlClasses.Contains).ToArray());
     }
 
     private static IReadOnlyList<Type> DiscoverTestTypes()

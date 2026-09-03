@@ -13,11 +13,13 @@ ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/
 DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
 CALLER_DIR="$(pwd -P)"
 
-# The one test class whose fixture owns an exclusive postgres:18-alpine server instead of a database leased
-# from the shared postgres:16-alpine runtime. A lane that selects it together with any other class runs as
-# two sequential invocations so the two servers never exist at once. TestGateCatalog.ExclusivePostgreSqlClass
-# is the same name on the C# side, and the catalog check below fails the lane if this one ever goes stale.
-EXCLUSIVE_POSTGRES_CLASS="QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
+# Test classes whose fixtures own an exclusive postgres:18-alpine server instead of a database leased from
+# the shared postgres:16-alpine runtime. A lane that selects one together with shared-runtime classes runs
+# as two sequential invocations so the servers never exist at once.
+EXCLUSIVE_POSTGRES_CLASSES=(
+  "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
+  "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests"
+)
 FULL_CANONICAL_ARTIFACT_SHA256="3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
 POSTGRES_CONTAINER_FILTERS=(
   --filter "label=com.qurandashboard.test.owner=backend-tests"
@@ -205,12 +207,22 @@ feature_exists=false
 pipeline_feature_exists=false
 class_exists=false
 test_class_exists=false
-exclusive_class_cataloged=false
+declare -A exclusive_class_cataloged=()
+is_exclusive_postgres_class() {
+  local candidate="$1"
+  local exclusive_class
+  for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
+    [[ "${candidate}" == "${exclusive_class}" ]] && return 0
+  done
+  return 1
+}
 
 while IFS=$'\t' read -r class_name feature kind gate concerns; do
   [[ -n "${class_name}" ]] || continue
 
-  [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_class_cataloged=true
+  if is_exclusive_postgres_class "${class_name}"; then
+    exclusive_class_cataloged["${class_name}"]=true
+  fi
   [[ "${kind}" == "Release" ]] && release_classes+=("${class_name}")
 
   if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
@@ -306,13 +318,13 @@ fi
 if [[ "${#selected_classes[@]}" -eq 0 ]]; then
   fail_usage "The selector resolved to no catalog rows."
 fi
-if [[ "${exclusive_class_cataloged}" != true ]]; then
-  echo "ERROR: the exclusive-PostgreSQL test class is missing from the catalog: ${EXCLUSIVE_POSTGRES_CLASS}" >&2
-  echo "       This script names it to split lanes that would otherwise start postgres 16 and postgres 18" >&2
-  echo "       in one test process. Renaming or removing that class requires updating this script and" >&2
-  echo "       TestGateCatalog.ExclusivePostgreSqlClass together." >&2
-  exit 1
-fi
+for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
+  if [[ "${exclusive_class_cataloged[${exclusive_class}]:-}" != true ]]; then
+    echo "ERROR: an exclusive-PostgreSQL test class is missing from the catalog: ${exclusive_class}" >&2
+    echo "       Update this script and TestGateCatalog.ExclusivePostgreSqlClasses together." >&2
+    exit 1
+  fi
+done
 
 if [[ "${build_mode}" == "build" ]]; then
   dotnet build "${SOLUTION}" \
@@ -409,7 +421,7 @@ fi
 
 exclusive_selected=false
 for class_name in "${selected_classes[@]}"; do
-  [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && exclusive_selected=true
+  is_exclusive_postgres_class "${class_name}" && exclusive_selected=true
 done
 
 declare -a shard_labels=()
@@ -422,13 +434,15 @@ if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selecte
   if [[ "${lane}" == "pre-pr" ]]; then
     # Negative terms retain the Full Backend gate's discovery of uncataloged non-release classes while
     # ensuring a cataloged scheduled/release-only class cannot enter the ordinary PR execution path.
-    shared_filter="FullyQualifiedName!~${EXCLUSIVE_POSTGRES_CLASS}."
+    for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
+      shared_filter="${shared_filter:+${shared_filter}&}FullyQualifiedName!~${exclusive_class}."
+    done
     for class_name in "${release_classes[@]}"; do
       shared_filter+="&FullyQualifiedName!~${class_name}."
     done
   else
     for class_name in "${selected_classes[@]}"; do
-      [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]] && continue
+      is_exclusive_postgres_class "${class_name}" && continue
       shared_filter="${shared_filter:+${shared_filter}|}(FullyQualifiedName~${class_name}.)"
     done
   fi
@@ -436,7 +450,12 @@ if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selecte
   shard_labels+=("1/2 shared postgres:16-alpine runtime")
   shard_filters+=("${shared_filter}")
   shard_labels+=("2/2 exclusive postgres:18-alpine server")
-  shard_filters+=("(FullyQualifiedName~${EXCLUSIVE_POSTGRES_CLASS}.)")
+  exclusive_filter=""
+  for class_name in "${selected_classes[@]}"; do
+    is_exclusive_postgres_class "${class_name}" || continue
+    exclusive_filter="${exclusive_filter:+${exclusive_filter}|}(FullyQualifiedName~${class_name}.)"
+  done
+  shard_filters+=("${exclusive_filter}")
 else
   shard_labels+=("1/1")
   shard_filters+=("${filter}")
@@ -457,7 +476,7 @@ done
 if [[ "${#shard_filters[@]}" -eq 1 ]]; then
   echo "expanded filter: ${shard_filters[0]:-<unfiltered>}"
 else
-  echo "postgres ownership: ${EXCLUSIVE_POSTGRES_CLASS} owns an exclusive server, so this lane runs as two"
+  echo "postgres ownership: selected classes own an exclusive server, so this lane runs as two"
   echo "  sequential invocations and never holds two database servers at once."
   for index in "${!shard_filters[@]}"; do
     echo "expanded filter (${shard_labels[$index]}): ${shard_filters[$index]:-<unfiltered>}"
@@ -777,8 +796,8 @@ if [[ "${list_tests}" == true ]]; then
   exit 0
 fi
 
-# The shard split above is by class: one shard runs everything, or shard 2 runs the exclusive-PostgreSQL
-# class alone and shard 1 runs the rest. That is what makes per-shard canonical attribution possible.
+# The shard split above is by class: one shard runs everything, or shard 2 runs exclusive-PostgreSQL
+# classes and shard 1 runs the rest. That is what makes per-shard canonical attribution possible.
 shard_runs_class() {
   local shard_index="$1"
   local class_name="$2"
@@ -787,9 +806,9 @@ shard_runs_class() {
     return 0
   fi
   if [[ "${shard_index}" -eq 1 ]]; then
-    [[ "${class_name}" == "${EXCLUSIVE_POSTGRES_CLASS}" ]]
+    is_exclusive_postgres_class "${class_name}"
   else
-    [[ "${class_name}" != "${EXCLUSIVE_POSTGRES_CLASS}" ]]
+    ! is_exclusive_postgres_class "${class_name}"
   fi
 }
 
