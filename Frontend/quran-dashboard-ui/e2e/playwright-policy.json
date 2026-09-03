@@ -46,20 +46,8 @@
       "sha256": "b6a94f93f9ff3dd0a4742f1e1979b2c89cbc66d510935d3ee8e4a10c46c3cd0a"
     },
     {
-      "file": "mushaf-ayah-study.e2e.ts",
-      "sha256": "2e9f92cce6448e37e1621fae32a9841171e7fa6345467902df43e18b5bdb766e"
-    },
-    {
-      "file": "mushaf-reader.e2e.ts",
-      "sha256": "f2ef308d29657c50ab3fe9191be75b5482ecb42dfa184bd3bd6314682074451e"
-    },
-    {
       "file": "phrase-search-available.e2e.ts",
-      "sha256": "3c2e881a48b9c0721d7113906df65e5e2e207858b095cceeaad4681b3c719421"
-    },
-    {
-      "file": "phrase-search-unavailable-stale.e2e.ts",
-      "sha256": "8cb35507fed342a728138ea37fb6c2ca2fbe293fdc8b8b848bea02b7a743b59e"
+      "sha256": "c851e2ff2935beba201f971df191927333949f730f8edc4fc473e5b9a887da64"
     },
     {
       "file": "shell-nav.e2e.ts",
@@ -67,7 +55,7 @@
     },
     {
       "file": "words-explorers.e2e.ts",
-      "sha256": "a100e0fe48ac736b77aae0bb740b68f86beda1bcb6afdd156a756508f8c819d0"
+      "sha256": "f0d1e65975693af5a1c33f06e81f0be5cb03562ae16fe89c73530b96e76b1ca2"
     }
   ]
 }

@@ -9,9 +9,13 @@ const discovery = execFileSync(
   ['test', '--list', '--reporter=./scripts/discover-playwright-journeys.mjs'],
   { cwd: process.cwd(), encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] },
 );
-const journeys = JSON.parse(discovery);
-if (!Array.isArray(journeys) || journeys.length === 0) {
+const discoveredJourneys = JSON.parse(discovery);
+if (!Array.isArray(discoveredJourneys) || discoveredJourneys.length === 0) {
   throw new Error('Critical Playwright execution received an empty discovery selection.');
+}
+const journeys = discoveredJourneys.filter((journey) => journey.state !== 'canonical-read');
+if (journeys.length === 0) {
+  throw new Error('Legacy critical Playwright execution discovered no non-canonical journeys.');
 }
 const supportedArtifacts = new Set(COMPACT_ARTIFACT_IDS);
 if (journeys.some((journey) => !supportedArtifacts.has(journey.artifact))) {

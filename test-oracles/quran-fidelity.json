@@ -415,9 +415,5 @@
             "textUthmani": "٧",
             "isAyahMarker": true
         }
-    ],
-    "canonicalSource": {
-        "dumpSha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d",
-        "manifestCreatedUtc": "2026-08-26T11:52:38Z"
-    }
+    ]
 }

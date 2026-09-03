@@ -17,7 +17,11 @@ const playwrightOutputDirectory = process.env['E2E_PLAYWRIGHT_OUTPUT_DIRECTORY']
 const tlsCertificate = process.env['E2E_TLS_CERTIFICATE'];
 const tlsPrivateKey = process.env['E2E_TLS_PRIVATE_KEY'];
 const chromiumExecutable = process.env['E2E_CHROMIUM_EXECUTABLE'];
+const canonicalReadExecution = process.env['E2E_DATABASE_MODE'] === 'persistent-read-only';
 const frontendCommand = sealedExecution ? 'node e2e/run-frontend.mjs' : 'npm run start:https';
+const backendCommand = canonicalReadExecution
+  ? 'node e2e/run-canonical-backend.mjs'
+  : 'node e2e/run-backend.mjs';
 if (sealedExecution && !playwrightOutputDirectory) {
   throw new Error('Sealed execution requires a private Playwright output directory.');
 }
@@ -75,16 +79,20 @@ export default defineConfig({
     },
     {
       ...SHARED_WEB_SERVER_OPTIONS,
-      command: 'node e2e/run-backend.mjs',
+      command: backendCommand,
       gracefulShutdown: { signal: 'SIGTERM', timeout: 60_000 },
       env: {
         ASPNETCORE_ENVIRONMENT: 'Testing',
         ASPNETCORE_URLS: 'https://localhost:5015',
-        Testing__DatabaseActivity__Profile: 'Mutable',
-        Testing__DatabaseActivity__EnabledBackgroundActivities__0:
-          'LinkingPreparedPreflightProcessor',
-        Testing__DatabaseActivity__EnabledBackgroundActivities__1:
-          'LinkingConfirmationJobProcessor',
+        Testing__DatabaseActivity__Profile: canonicalReadExecution ? 'ReadOnly' : 'Mutable',
+        ...(canonicalReadExecution
+          ? {}
+          : {
+              Testing__DatabaseActivity__EnabledBackgroundActivities__0:
+                'LinkingPreparedPreflightProcessor',
+              Testing__DatabaseActivity__EnabledBackgroundActivities__1:
+                'LinkingConfirmationJobProcessor',
+            }),
         Auth__Authority: `${new URL(environment.logto.endpoint).origin}/oidc`,
         Auth__Audience: environment.logto.resource,
         Auth__InteractiveClientId: environment.logto.appId,

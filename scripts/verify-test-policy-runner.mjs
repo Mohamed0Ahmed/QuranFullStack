@@ -57,6 +57,7 @@ const focused = planFocusedSelection({
   backendMethods: ['Tests.Fast.Contract_case'],
   buildMode: 'build',
   playwrightSelections: [
+    { file: 'e2e/mushaf-reader.e2e.ts', line: 42, effectiveGroup: 'CanonicalReader' },
     { file: 'e2e/guarded.e2e.ts', line: 41, effectiveGroup: 'GuardedReader' },
   ],
   authorizeFullData: false,
@@ -71,6 +72,7 @@ assert.deepEqual(
   [
     'Tests.Fast.Contract_case',
     'Tests.Reader',
+    'e2e/mushaf-reader.e2e.ts:42',
     'e2e/guarded.e2e.ts:41',
     'Tests.FixtureUpgraded',
     'Tests.Legacy',
@@ -80,6 +82,10 @@ assert.equal(focused.commands[0].id, 'backend-build');
 assert.deepEqual(
   focused.commands.find(({ id }) => id === 'backend-method-Tests.Fast.Contract_case').arguments,
   ['feature', '--test', 'Tests.Fast.Contract_case', '--no-build'],
+);
+assert.deepEqual(
+  focused.commands.find(({ id }) => id === 'playwright-e2e/mushaf-reader.e2e.ts:42').arguments,
+  ['run', 'e2e:canonical:focused', '--', 'e2e/mushaf-reader.e2e.ts:42'],
 );
 assert.deepEqual(
   focused.commands.find(({ id }) => id === 'playwright-e2e/guarded.e2e.ts:41').arguments,
@@ -165,6 +171,7 @@ assert.deepEqual(ordinaryPrePr.requiredGates, ['backend-risk', 'frontend-policy-
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Fast'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Legacy'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
+assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-canonical-critical'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-critical'));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
