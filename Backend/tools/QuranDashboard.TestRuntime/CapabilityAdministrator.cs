@@ -286,12 +286,8 @@ internal static class CapabilityAdministrator
             violations.Add(new ContractViolation("administration.login.not-session-user"));
         }
 
-        if (isSuperuser)
-        {
-            violations.Add(new ContractViolation("administration.login.superuser"));
-        }
-
         if (mode == CapabilityAdministrationMode.Apply
+            && !isSuperuser
             && !(canCreateRoles && canCreateDatabases && ownsTarget))
         {
             violations.Add(new ContractViolation("administration.authority.insufficient"));

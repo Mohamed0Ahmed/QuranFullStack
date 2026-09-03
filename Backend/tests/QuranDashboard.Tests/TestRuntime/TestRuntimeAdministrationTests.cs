@@ -118,6 +118,47 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
     }
 
     [Fact]
+    public async Task Apply_AsSuperuser_SupportsDisposableContainerCapabilityProvisioning()
+    {
+        await fixture.ResetCapabilityAsync();
+        var serverConnection = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString);
+        var targetConnection = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString)
+        {
+            Database = "quran_dashboard_test",
+        };
+        try
+        {
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            var exitCode = await QuranDashboard.TestRuntime.TestRuntimeCommand.ExecuteAsync(
+                [
+                    "admin",
+                    "apply",
+                    "--login",
+                    serverConnection.Username!,
+                    "--run-id",
+                    "superuser-container-provisioning",
+                ],
+                output,
+                error,
+                name => name == QuranDashboard.TestRuntime.TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
+                    ? targetConnection.ConnectionString
+                    : null);
+
+            exitCode.Should().Be(0, output.ToString());
+            error.ToString().Should().BeEmpty();
+            using var report = JsonDocument.Parse(output.ToString());
+            report.RootElement.GetProperty("administration").GetProperty("compliant").GetBoolean()
+                .Should().BeTrue();
+            report.RootElement.GetProperty("violations").GetArrayLength().Should().Be(0);
+        }
+        finally
+        {
+            await fixture.ResetCapabilityAsync();
+        }
+    }
+
+    [Fact]
     public async Task DirectCapabilityMutation_WithoutExpectedExclusiveOwner_IsRefusedWithRunnerGuidance()
     {
         await fixture.SetMarkerParameterPrivilegesAsync(granted: true);

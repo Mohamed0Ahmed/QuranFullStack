@@ -978,10 +978,10 @@ internal static class CapabilityRefresher
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT NOT role.rolsuper
-                   AND role.rolcreatedb
-                   AND role.rolcreaterole
-                   AND (NOT @targetExists OR pg_catalog.pg_get_userbyid(database.datdba) = @login)
+            SELECT role.rolsuper
+                   OR (role.rolcreatedb
+                       AND role.rolcreaterole
+                       AND (NOT @targetExists OR pg_catalog.pg_get_userbyid(database.datdba) = @login))
             FROM pg_catalog.pg_roles AS role
             LEFT JOIN pg_catalog.pg_database AS database ON database.datname = @targetDatabase
             WHERE role.rolname = @login
