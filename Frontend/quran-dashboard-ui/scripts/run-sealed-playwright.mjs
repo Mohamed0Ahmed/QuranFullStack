@@ -176,7 +176,7 @@ try {
     ? [process.execPath, [resolve(FRONTEND_ROOT, 'scripts/run-critical-playwright-journeys.mjs')]]
     : mode === '--focused'
       ? [playwright, ['test', focusedSelector, '--workers=1']]
-      : [playwright, ['test', '--workers=1']];
+      : [process.execPath, [resolve(FRONTEND_ROOT, 'scripts/run-noncanonical-playwright-tests.mjs')]];
   const child = await runWithSanitizedOutput(command[0], command[1], environment, executionLog);
   exitCode = child.exitCode;
 

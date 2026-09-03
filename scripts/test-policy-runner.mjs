@@ -362,6 +362,13 @@ export function planPrePrSelection({
     ...executablePartitions.flatMap(({ selections }) => selections.map(selectionCommand)),
     command('frontend-pre-pr', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'test:pre-pr']),
     command('playwright-typecheck', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:typecheck']),
+    command(
+      'playwright-canonical-critical',
+      'Frontend/quran-dashboard-ui',
+      'npm',
+      ['run', 'e2e:canonical:critical'],
+      'CanonicalReader',
+    ),
     command('playwright-critical', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:critical']),
   ];
 
@@ -509,11 +516,14 @@ function minimumResourcePolicy(policy) {
 
 function selectionCommand(selection) {
   if (selection.kind === 'playwright') {
+    const script = selection.group === 'CanonicalReader'
+      ? 'e2e:canonical:focused'
+      : 'e2e:focused';
     return command(
       `playwright-${selection.selector}`,
       'Frontend/quran-dashboard-ui',
       'npm',
-      ['run', 'e2e:focused', '--', selection.selector],
+      ['run', script, '--', selection.selector],
       selection.group,
     );
   }

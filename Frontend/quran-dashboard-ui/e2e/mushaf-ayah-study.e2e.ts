@@ -12,6 +12,15 @@ async function openAyahStudy(page: Page, group: AyahStudyGroup = 'sources'): Pro
   await expect(page.getByTestId('selected-ayah-section')).toBeVisible();
 }
 
+test.describe(
+  'canonical Ayah study reads',
+  {
+    annotation: [
+      { type: 'canonical-read' },
+      { type: 'fixture-policy', description: 'canonical-read-only' },
+    ],
+  },
+  () => {
 test('selecting a word opens the word analysis tab', async ({ page }) => {
   await openReader(page);
   await selectFirstWord(page);
@@ -80,10 +89,10 @@ test('switching the tafsir source writes the source into the URL', async ({ page
   await expect(selector).toBeVisible();
 
   // showPicker() only renders the trigger when more than one source exists
-  // (source-selector.component.ts); one seeded source renders a static label and nothing to click.
+  // (source-selector.component.ts); one available source renders a static label and nothing to click.
   test.skip(
     await selector.getByTestId('source-single-option').isVisible(),
-    'single tafsir source seeded',
+    'only one tafsir source is available',
   );
 
   await selector.getByTestId('source-selector-trigger').click();
@@ -105,3 +114,5 @@ test('switching the tafsir source writes the source into the URL', async ({ page
   // `@if (showPicker())` and unmounts while the card reloads.
   await expect(page).toHaveURL(/[?&]tafsirSource=/);
 });
+  },
+);

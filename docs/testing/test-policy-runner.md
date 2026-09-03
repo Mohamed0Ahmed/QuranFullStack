@@ -25,7 +25,7 @@ Focused implementation examples preserve exact selectors:
 ```bash
 scripts/test focused --backend-class QuranDashboard.Tests.Api.Access.AccessRolesTests --build
 scripts/test focused --backend-test QuranDashboard.Tests.Api.Access.AccessRolesTests.Some_case --no-build
-scripts/test focused --playwright e2e/mushaf-reader.e2e.ts:277 --no-build
+scripts/test focused --playwright e2e/mushaf-reader.e2e.ts:412 --no-build
 ```
 
 Migrated Backend readers require `ConnectionStrings__QuranDashboardTest` to name the verified local
@@ -36,11 +36,17 @@ activity profile. `GuardedReader` fixtures additionally retain the shared TestRu
 their lifetime. Missing capability state fails before VSTest starts, and no reader command provisions,
 migrates, restores, seeds, or starts a database writer.
 
-Focused Playwright selection remains inside the existing sealed provisioning, credential-stripping,
-loopback-egress, and sanitized-evidence runner while the database lifecycle is still legacy.
+Focused `CanonicalReader` Playwright selection now runs through the persistent capability path. The
+delegate performs `QuranDashboard.TestRuntime inspect`, starts one reusable Testing `ReadOnly` API host
+against `quran_dashboard_test`, and keeps Playwright's two-worker parallelism. The API applies the
+restricted reader role and read-only transactions, with Permission synchronization and every Linking
+background writer omitted. Canonical execution acquires no advisory lock and never provisions, restores,
+resets, migrates, or rebuilds database state. Guarded, mutating, and legacy Playwright selections remain
+on their existing runner until their migration tickets land.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
-typecheck, and critical Chromium gates. Add only the affected pipeline/contract scope:
+typecheck, persistent canonical-read critical Chromium gate, and the remaining legacy critical gate.
+Add only the affected pipeline/contract scope:
 
 ```bash
 scripts/test pre-pr --feature FoundationImport --dry-run

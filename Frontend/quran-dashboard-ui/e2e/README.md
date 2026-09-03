@@ -1,5 +1,26 @@
 # Playwright provisioning and database modes
 
+## Persistent canonical reads
+
+Canonical Mushaf, word-explorer, and PhraseSearch reads use the persistent Test Database Capability.
+Provide the existing local capability connection through `ConnectionStrings__QuranDashboardTest`; the
+runner validates it through `QuranDashboard.TestRuntime inspect` and never creates or refreshes it:
+
+```bash
+npm run e2e:canonical
+npm run e2e:canonical:critical
+npm run e2e:canonical:focused -- e2e/mushaf-reader.e2e.ts:412
+```
+
+These commands run only tests whose effective policy is `CanonicalReader`. They start one reusable API
+host with the Testing `ReadOnly` profile, the restricted reader role, read-only transactions, and no
+startup/background writers. Canonical readers retain two-worker Playwright parallelism, require no
+advisory lock or reset, and consume the reviewed expectations under repository-root `test-oracles/`.
+Missing or unhealthy capability state fails before the browser starts.
+
+The artifact-backed commands below remain temporary only for the guarded, mutating, and explicitly
+unmigrated scenarios. Their later migration and the final runner cutover are separate tickets.
+
 Required critical and full evidence uses two explicit phases. Controlled provisioning may use the
 network and any short-lived artifact/dependency credentials available to the job:
 

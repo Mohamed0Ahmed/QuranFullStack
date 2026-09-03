@@ -1,0 +1,47 @@
+{
+  "contractVersion": 1,
+  "review": {
+    "reviewedOn": "2026-08-31",
+    "authority": "source-review",
+    "method": "Exact query, occurrence, context, and similarity expectations reviewed against the pinned Quran Foundation word source and completed PhraseSearch index report; this oracle is not generated from the runtime database."
+  },
+  "sourceIdentities": [
+    {
+      "id": "quran-foundation-uthmani",
+      "version": "1",
+      "sha256": "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+      "role": "word-identities-and-text",
+      "provenance": "Exact Quran word IDs, locations, and Uthmani text for verses 1:1, 11:41, and 27:30 were reviewed against resources/import-sources/quran-foundation/words/uthmani.json."
+    },
+    {
+      "id": "phrase-search-full-build-report",
+      "version": "2026.08.29",
+      "sha256": "2010f1cd2c0fe7a23a55eea196902d6b0fa165abe2acf9db5a5ed6f7ff7f17e0",
+      "role": "exact-and-similarity-outcomes",
+      "provenance": "The completed PhraseSearch index report was independently reviewed for successful exact and similarity outcomes for the selected Basmala query."
+    }
+  ],
+  "query": {
+    "raw": "بسم الله الرحمن الرحيم",
+    "displayText": "بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ",
+    "wordCount": 4,
+    "selectedQuranWordIds": [1, 2, 3, 4]
+  },
+  "repetitions": {
+    "displayText": "بسم الله الرحمان الرحيم",
+    "verseKeys": ["1:1", "27:30"]
+  },
+  "context": {
+    "verseKeys": ["1:1", "27:30"],
+    "selectedVerseKey": "1:1"
+  },
+  "similarity": {
+    "maximumDifferences": 2,
+    "minimumMatchedWords": 2,
+    "verseKeys": ["1:1", "27:30", "11:41"],
+    "nonIdenticalVerseKey": "11:41",
+    "matchedCount": 2,
+    "differencePositions": [3, 4],
+    "nonIdenticalVisibleText": "مَجْر۪ىٰهَا"
+  }
+}
