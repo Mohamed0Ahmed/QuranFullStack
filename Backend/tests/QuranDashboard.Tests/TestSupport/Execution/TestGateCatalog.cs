@@ -43,7 +43,7 @@ internal static class TestGateCatalog
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedConcerns { get; } = new HashSet<string>(
-        ["Authorization", "Cli", "Execution", "Schema", "Startup"],
+        ["Authorization", "Cli", "Contract", "Execution", "Safety", "Schema", "Source", "Startup"],
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedStatePolicies { get; } = new HashSet<string>(
@@ -86,6 +86,29 @@ internal static class TestGateCatalog
     internal static IReadOnlyList<TestGateEntry> GateEntries => GateEntryLoader.Value;
 
     internal static IReadOnlyList<TestResourceEntry> ResourceEntries => ResourceEntryLoader.Value;
+
+    internal static EffectiveTestPolicy ResolveEffectivePolicy(TestGateEntry entry)
+    {
+        if (entry.Policy is null)
+        {
+            throw new InvalidDataException(
+                $"Backend test class {entry.ClassName} is explicitly unmigrated and has no executable policy.");
+        }
+
+        TestResourcePolicyMetadata? resourcePolicy = null;
+        if (entry.ResourceCollection is not null)
+        {
+            var resource = ResourceEntries.SingleOrDefault(candidate =>
+                candidate.CollectionName == entry.ResourceCollection)
+                ?? throw new InvalidDataException(
+                    $"Backend test class {entry.ClassName} references unknown resource collection {entry.ResourceCollection}.");
+            resourcePolicy = resource.Policy
+                ?? throw new InvalidDataException(
+                    $"Migrated Backend test class {entry.ClassName} references unmigrated resource collection {entry.ResourceCollection}.");
+        }
+
+        return TestPolicyContract.Combine(entry.Policy, resourcePolicy);
+    }
 
     internal static IReadOnlyList<string> DiscoverTestClasses()
     {
@@ -214,47 +237,97 @@ internal static class TestGateCatalog
 
     private static IReadOnlyList<TestGateEntry> LoadGateEntries()
     {
+        var path = CatalogPath("test-gates.tsv");
         return ReadRows(
                 "test-gates.tsv",
-                ["FullyQualifiedClassName", "Feature", "Kind", "Gate", "Concerns"],
+                [
+                    "FullyQualifiedClassName",
+                    "Feature",
+                    "Kind",
+                    "Gate",
+                    "Concerns",
+                    "BackendPolicy",
+                    "DataReads",
+                    "DataWrites",
+                    "DatabaseTarget",
+                    "DestructiveSubtype",
+                    "ResourceCollection",
+                    "MigrationState",
+                ],
                 requiredColumnCount: 4)
-            .Select(columns => new TestGateEntry(
-                columns[0],
-                columns[1],
-                columns[2],
-                columns[3],
-                columns[4]
-                    .Split(
-                        ',',
-                        StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .ToHashSet(StringComparer.Ordinal)))
+            .Select((columns, index) =>
+            {
+                var parsed = TestPolicyMetadataParser.ParseClassPolicy(
+                    columns,
+                    path,
+                    index + 2);
+                return new TestGateEntry(
+                    columns[0],
+                    columns[1],
+                    columns[2],
+                    columns[3],
+                    columns[4]
+                        .Split(
+                            ',',
+                            StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .ToHashSet(StringComparer.Ordinal),
+                    parsed.MigrationState,
+                    parsed.Policy,
+                    parsed.MigrationState == TestPolicyMigrationState.Migrated
+                        ? columns[10] == "None"
+                            ? null
+                            : columns[10]
+                        : null);
+            })
             .ToArray();
     }
 
     private static IReadOnlyList<TestResourceEntry> LoadResourceEntries()
     {
+        var path = CatalogPath("test-resources.tsv");
         return ReadRows(
                 "test-resources.tsv",
-                ["CollectionName", "ResourceClassName", "ParallelPolicy", "StatePolicy"],
+                [
+                    "CollectionName",
+                    "ResourceClassName",
+                    "ParallelPolicy",
+                    "StatePolicy",
+                    "SetupWrites",
+                    "ResetBehavior",
+                    "DatabaseTarget",
+                    "StartupEffects",
+                    "MigrationState",
+                ],
                 requiredColumnCount: 4)
-            .Select(columns => new TestResourceEntry(
-                columns[0],
-                columns[1],
-                columns[2],
-                columns[3]))
+            .Select((columns, index) =>
+            {
+                var parsed = TestPolicyMetadataParser.ParseResourcePolicy(
+                    columns,
+                    path,
+                    index + 2);
+                return new TestResourceEntry(
+                    columns[0],
+                    columns[1],
+                    columns[2],
+                    columns[3],
+                    parsed.MigrationState,
+                    parsed.Policy);
+            })
             .ToArray();
     }
+
+    private static string CatalogPath(string fileName) => Path.Combine(
+        AppContext.BaseDirectory,
+        "TestSupport",
+        "Execution",
+        fileName);
 
     private static IReadOnlyList<string[]> ReadRows(
         string fileName,
         IReadOnlyList<string> expectedHeader,
         int requiredColumnCount)
     {
-        var path = Path.Combine(
-            AppContext.BaseDirectory,
-            "TestSupport",
-            "Execution",
-            fileName);
+        var path = CatalogPath(fileName);
 
         if (!File.Exists(path))
         {
@@ -309,13 +382,18 @@ internal sealed record TestGateEntry(
     string Feature,
     string Kind,
     string Gate,
-    IReadOnlySet<string> Concerns);
+    IReadOnlySet<string> Concerns,
+    TestPolicyMigrationState MigrationState,
+    BackendTestPolicyMetadata? Policy,
+    string? ResourceCollection);
 
 internal sealed record TestResourceEntry(
     string CollectionName,
     string ResourceClassName,
     string ParallelPolicy,
-    string StatePolicy);
+    string StatePolicy,
+    TestPolicyMigrationState MigrationState,
+    TestResourcePolicyMetadata? Policy);
 
 internal sealed record DiscoveredCollectedTestClass(
     string ClassName,

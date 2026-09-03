@@ -1,0 +1,235 @@
+#!/usr/bin/env node
+
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import {
+  parseBackendPolicyCatalog,
+  parseBackendResourceCatalog,
+  planFocusedSelection,
+  planPrePrSelection,
+} from './test-policy-runner.mjs';
+
+const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const FRONTEND_ROOT = resolve(REPOSITORY_ROOT, 'Frontend/quran-dashboard-ui');
+const BACKEND_CATALOG = resolve(
+  REPOSITORY_ROOT,
+  'Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv',
+);
+const BACKEND_RESOURCE_CATALOG = resolve(
+  REPOSITORY_ROOT,
+  'Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-resources.tsv',
+);
+
+let options;
+try {
+  options = parseArguments(process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  printUsage();
+  process.exit(2);
+}
+
+const backendCatalog = parseBackendPolicyCatalog(readFileSync(BACKEND_CATALOG, 'utf8'));
+const backendResources = parseBackendResourceCatalog(
+  readFileSync(BACKEND_RESOURCE_CATALOG, 'utf8'),
+);
+let plan;
+try {
+  if (options.mode === 'focused') {
+    plan = planFocusedSelection({
+      backendCatalog,
+      backendResources,
+      backendClasses: options.backendClasses,
+      backendMethods: options.backendMethods,
+      buildMode: options.buildMode,
+      playwrightSelections: resolvePlaywrightSelections(options.playwrightSelectors),
+      authorizeFullData: options.authorizeFullData,
+    });
+  } else {
+    plan = planPrePrSelection({
+      backendCatalog,
+      backendResources,
+      affectedFeatures: options.affectedFeatures,
+      affectedConcerns: options.affectedConcerns,
+      authorizeFullData: options.authorizeFullData,
+      explicitPolicy: options.explicitPolicy,
+    });
+  }
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
+
+const materializedPlan = {
+  ...plan,
+  commands: plan.commands.map((command) => ({
+    ...command,
+    cwd: resolve(REPOSITORY_ROOT, command.cwd),
+  })),
+};
+
+if (options.dryRun) {
+  console.log(JSON.stringify(materializedPlan, null, 2));
+  process.exit(0);
+}
+
+const hasWithheldFullData = plan.authorizationRequired?.length > 0;
+if (hasWithheldFullData) {
+  console.error('Full-data Destructive Rehearsal authorization is required for:');
+  for (const className of plan.authorizationRequired) {
+    console.error(`  ${className}`);
+  }
+  console.error('Safe selected checks will continue; review the targets, then rerun with --authorize-full-data.');
+}
+
+for (const command of materializedPlan.commands) {
+  const group = command.group ? ` group=${command.group}` : '';
+  console.log(`[scripts/test] ${command.id}${group}`);
+  const result = spawnSync(command.executable, command.arguments, {
+    cwd: command.cwd,
+    env: process.env,
+    stdio: 'inherit',
+  });
+  if (result.error) {
+    console.error(`[scripts/test] ${command.id} could not start: ${result.error.message}`);
+    process.exit(1);
+  }
+  if (result.status !== 0) {
+    process.exit(result.status ?? 1);
+  }
+}
+
+if (hasWithheldFullData) {
+  console.error('Safe checks completed, but full-data rehearsals remain withheld.');
+  process.exit(2);
+}
+
+function resolvePlaywrightSelections(selectors) {
+  if (selectors.length === 0) {
+    return [];
+  }
+
+  const discovery = spawnSync('npm', ['run', '--silent', 'e2e:discover:policies'], {
+    cwd: FRONTEND_ROOT,
+    encoding: 'utf8',
+    env: process.env,
+  });
+  if (discovery.error || discovery.status !== 0) {
+    throw new Error(
+      `Playwright policy discovery failed:\n${discovery.error?.message ?? discovery.stderr ?? discovery.stdout}`,
+    );
+  }
+
+  let tests;
+  try {
+    tests = JSON.parse(discovery.stdout);
+  } catch (error) {
+    throw new Error(`Playwright policy discovery returned invalid JSON: ${error.message}`);
+  }
+
+  return selectors.map((selector) => {
+    const match = /^(.*\.e2e\.ts):([1-9][0-9]*)$/.exec(selector);
+    if (!match) {
+      throw new Error(`Playwright selector must be an exact file:line: ${selector}`);
+    }
+    const normalizedFile = match[1].startsWith('e2e/') ? match[1] : `e2e/${match[1]}`;
+    const line = Number(match[2]);
+    const matches = tests.filter((test) => test.file === normalizedFile && test.line === line);
+    if (matches.length === 0) {
+      throw new Error(`Unknown Playwright file:line selector: ${selector}`);
+    }
+    const groups = new Set(matches.map(({ effectiveGroup }) => effectiveGroup));
+    if (groups.size !== 1) {
+      throw new Error(`Playwright selector has contradictory project policies: ${selector}`);
+    }
+    return { file: normalizedFile, line, effectiveGroup: matches[0].effectiveGroup };
+  });
+}
+
+function parseArguments(arguments_) {
+  const mode = arguments_[0];
+  if (!['focused', 'pre-pr'].includes(mode)) {
+    throw new Error('The first argument must be focused or pre-pr.');
+  }
+  const parsed = {
+    mode,
+    backendClasses: [],
+    backendMethods: [],
+    playwrightSelectors: [],
+    affectedFeatures: [],
+    affectedConcerns: [],
+    authorizeFullData: false,
+    buildMode: '',
+    dryRun: false,
+    explicitPolicy: null,
+  };
+
+  for (let index = 1; index < arguments_.length; index += 1) {
+    const argument = arguments_[index];
+    if (argument === '--backend-class') {
+      requireMode(mode, 'focused', argument);
+      parsed.backendClasses.push(requireValue(arguments_, ++index, argument));
+    } else if (argument === '--backend-test') {
+      requireMode(mode, 'focused', argument);
+      parsed.backendMethods.push(requireValue(arguments_, ++index, argument));
+    } else if (argument === '--playwright') {
+      requireMode(mode, 'focused', argument);
+      parsed.playwrightSelectors.push(requireValue(arguments_, ++index, argument));
+    } else if (argument === '--feature') {
+      requireMode(mode, 'pre-pr', argument);
+      parsed.affectedFeatures.push(requireValue(arguments_, ++index, argument));
+    } else if (argument === '--concern') {
+      requireMode(mode, 'pre-pr', argument);
+      parsed.affectedConcerns.push(requireValue(arguments_, ++index, argument));
+    } else if (argument === '--authorize-full-data') {
+      parsed.authorizeFullData = true;
+    } else if (argument === '--policy') {
+      requireMode(mode, 'pre-pr', argument);
+      if (parsed.explicitPolicy !== null) {
+        throw new Error('Choose at most one explicit scheduled/release policy.');
+      }
+      parsed.explicitPolicy = requireValue(arguments_, ++index, argument);
+    } else if (argument === '--build' || argument === '--no-build') {
+      requireMode(mode, 'focused', argument);
+      if (parsed.buildMode) {
+        throw new Error('Choose exactly one of --build or --no-build.');
+      }
+      parsed.buildMode = argument === '--build' ? 'build' : 'no-build';
+    } else if (argument === '--dry-run') {
+      parsed.dryRun = true;
+    } else if (argument === '--help' || argument === '-h') {
+      printUsage();
+      process.exit(0);
+    } else {
+      throw new Error(`Unknown argument: ${argument}`);
+    }
+  }
+
+  if (mode === 'focused' && !parsed.buildMode) {
+    throw new Error('Focused mode requires exactly one of --build or --no-build.');
+  }
+  return parsed;
+}
+
+function requireMode(actual, expected, option) {
+  if (actual !== expected) {
+    throw new Error(`${option} is valid only in ${expected} mode.`);
+  }
+}
+
+function requireValue(arguments_, index, option) {
+  const value = arguments_[index];
+  if (!value || value.startsWith('--')) {
+    throw new Error(`${option} requires a value.`);
+  }
+  return value;
+}
+
+function printUsage() {
+  console.log(`Usage:
+  scripts/test focused (--backend-class CLASS | --backend-test METHOD | --playwright FILE:LINE)... --build|--no-build [--authorize-full-data] [--dry-run]
+  scripts/test pre-pr [--feature FEATURE] [--concern CONCERN] [--policy scheduled|release] [--authorize-full-data] [--dry-run]`);
+}

@@ -6,6 +6,24 @@ import CriticalJourneyDiscoveryReporter from './discover-playwright-journeys.mjs
 
 const frontendRoot = fileURLToPath(new URL('..', import.meta.url));
 const e2eRoot = join(frontendRoot, 'e2e');
+const policyContract = {
+  schemaVersion: 1,
+  fixtureProfiles: {
+    canonical: {
+      setupWrites: [],
+      resetBehavior: 'none',
+      databaseTarget: 'test-database',
+      startupEffects: ['read-only-api'],
+    },
+    mutating: {
+      setupWrites: ['mutable-application-state'],
+      resetBehavior: 'mutable-application-state',
+      databaseTarget: 'test-database',
+      startupEffects: ['mutable-api'],
+    },
+  },
+  migrationInventory: [],
+};
 
 function annotation(type, description) {
   return description === undefined ? { type } : { type, description };
@@ -30,6 +48,7 @@ function discover(annotationGroups) {
   let stdout = '';
   let stderr = '';
   const reporter = new CriticalJourneyDiscoveryReporter({
+    policyContract,
     stdout: { write: (value) => (stdout += value) },
     stderr: { write: (value) => (stderr += value) },
   });
@@ -57,20 +76,20 @@ function verifyFailure(name, annotationGroups, expectedMessage) {
 
 const requiredReadOnly = [
   annotation('critical'),
-  annotation('read-only'),
-  annotation('artifact', 'compact-cross-stack-base'),
+  annotation('canonical-read'),
+  annotation('fixture-policy', 'canonical'),
   annotation('journey', 'quran-fidelity.reader'),
 ];
 
 verifySuccess('selects a complete critical read-only journey', [requiredReadOnly], [
   {
-    artifact: 'compact-cross-stack-base',
     file: 'contract.e2e.ts',
+    fixtureProfile: 'canonical',
     journey: 'quran-fidelity.reader',
     line: 4,
     mobile: false,
     project: 'default',
-    state: 'read-only',
+    state: 'canonical-read',
     title: 'contract journey 1',
   },
 ]);
@@ -80,13 +99,13 @@ verifySuccess(
   [[...requiredReadOnly, annotation('mobile')]],
   [
     {
-      artifact: 'compact-cross-stack-base',
       file: 'contract.e2e.ts',
+      fixtureProfile: 'canonical',
       journey: 'quran-fidelity.reader',
       line: 4,
       mobile: true,
       project: 'default',
-      state: 'read-only',
+      state: 'canonical-read',
       title: 'contract journey 1',
     },
   ],
@@ -94,20 +113,20 @@ verifySuccess(
 
 verifyFailure(
   'rejects missing required metadata',
-  [[annotation('critical'), annotation('read-only'), annotation('journey', 'quran-fidelity.reader')]],
-  /missing required artifact annotation/i,
+  [[annotation('critical'), annotation('canonical-read'), annotation('journey', 'quran-fidelity.reader')]],
+  /exactly one fixture-policy annotation/i,
 );
 
 verifyFailure(
   'rejects contradictory state metadata',
-  [[...requiredReadOnly, annotation('mutating')]],
-  /contradictory.*mutating.*read-only/i,
+  [[...requiredReadOnly, annotation('guarded-read')]],
+  /exactly one state policy/i,
 );
 
 verifyFailure(
   'rejects duplicated metadata on one journey',
-  [[...requiredReadOnly, annotation('artifact', 'another-artifact')]],
-  /duplicate artifact annotations/i,
+  [[...requiredReadOnly, annotation('fixture-policy', 'mutating')]],
+  /exactly one fixture-policy annotation/i,
 );
 
 verifyFailure(
@@ -122,6 +141,10 @@ verifyFailure(
   /unsupported annotation.*desktop/i,
 );
 
-verifyFailure('rejects an empty critical selection', [[]], /no critical journeys were discovered/i);
+verifyFailure(
+  'rejects an empty critical selection',
+  [[annotation('canonical-read'), annotation('fixture-policy', 'canonical')]],
+  /no critical journeys were discovered/i,
+);
 
 console.log('Playwright journey discovery contract passed.');
