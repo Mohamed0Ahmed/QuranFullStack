@@ -190,6 +190,18 @@ internal static class CapabilityRefresher
                 violations.Add(new ContractViolation("refresh.authority.insufficient"));
             }
 
+            if (request.Mode == CapabilityRefreshMode.Apply)
+            {
+                var missingParameters = await CapabilityAdministrator.ReadMissingMarkerParameterPrivilegesAsync(
+                    maintenance,
+                    contract,
+                    request.SelectedLogin,
+                    cancellationToken);
+                violations.AddRange(missingParameters.Select(parameter => new ContractViolation(
+                    "refresh.authority.parameter-set-missing",
+                    parameter)));
+            }
+
             sessions.AddRange(await ReadSessionsAsync(maintenance, contract.Targets.TestDatabase, cancellationToken));
         }
 
@@ -967,7 +979,8 @@ internal static class CapabilityRefresher
     {
         const string sql = """
             SELECT role.rolsuper
-                   OR (role.rolcreatedb AND role.rolcreaterole
+                   OR (role.rolcreatedb
+                       AND role.rolcreaterole
                        AND (NOT @targetExists OR pg_catalog.pg_get_userbyid(database.datdba) = @login))
             FROM pg_catalog.pg_roles AS role
             LEFT JOIN pg_catalog.pg_database AS database ON database.datname = @targetDatabase

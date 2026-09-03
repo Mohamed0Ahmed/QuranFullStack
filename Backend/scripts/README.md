@@ -12,7 +12,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `export-swagger` | Builds the API (Release) without build servers, defaults the Swagger host to `Development` for startup-option validation, and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
-| `create-smoke-dump` | Regenerates the canonical `quran_*` data dump the backend smoke data tier restores: `resources/db-dumps/quran-canonical/{quran-canonical.dump,manifest.json}` |
+| `create-smoke-dump` | Legacy scheduled/release helper for the still-unmigrated PhraseSearch rehearsal dump; ordinary canonical smoke reads use `quran_dashboard_test` and never restore it |
 | `test-artifacts status\|verify [--lane LANE\|--artifact ID]` | Read-only inspection of the tracked test-artifact lock; `verify` adds hashes and strict external-manifest checks |
 | `test-artifacts provision-full-canonical\|verify-full-canonical ...` | Local-first scheduled/release full-canonical provision-once and sealed shared-state verification; `provision` requires `QURAN_TEST_ARTIFACT_ROOT` |
 | `test-artifacts previous-release-upgrade` | Read-only fail-closed verification of the adopted previous-release declaration, local Git inventories, and locked representative artifact; it never opens or mutates a database |
@@ -25,6 +25,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
 | `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `QuranDashboard.TestRuntime refresh inspect\|dry-run\|apply\|verify` | Explicitly plans, builds, validates, and guardedly installs `quran_dashboard_test` from committed migrations and canonical pipelines; see the TestRuntime README |
+| `QuranDashboard.TestRuntime rehearsal inspect\|hold\|cleanup` | Validates and locks an explicitly supplied manual full-data index/recovery Rehearsal Database; cleanup is separately confirmed and never automatic; see the TestRuntime README |
 | `export-abwab-snapshot` | DataImporter verb that captures the current Abwab relational snapshot across the eight-table schema without Linking or Linking-dependent inclusion-sync rows; see the export-only workflow below |
 | `import-abwab-snapshot` | DataImporter verb that restores one verified v4 Abwab snapshot into empty current-schema targets; see the standalone import workflow below |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |

@@ -6,15 +6,13 @@ using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.TestSupport.Http;
-using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-// Leases its own migrated clone per case instead of injecting the collection fixture: the load-bearing
-// claim is what a never-synchronized database does at boot, which no shared, already-populated fixture
-// can show. AccessSchemaDriftTests joins the same non-parallel collection the same way.
-[Collection(nameof(AccessProcessGlobalCollection))]
-public sealed class PermissionCatalogueStartupSyncTests
+// Creates a migrated schema per case inside the runner-owned scratch database: the load-bearing claim is
+// what a never-synchronized database does at boot, which no shared, already-populated schema can show.
+[Collection(nameof(PermissionCatalogueStartupScratchCollection))]
+public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixture fixture)
 {
     private const string OwnerSub = "catalogue-startup-owner";
     private const string CataloguePath = "/api/access/permissions";
@@ -174,9 +172,9 @@ public sealed class PermissionCatalogueStartupSyncTests
     private static IReadOnlyList<string> CanonicalCodes =>
         AbwabPermissionCatalogue.All.Select(permission => permission.Code).ToArray();
 
-    private static Task<PostgreSqlDatabaseLease> LeaseMigratedDatabaseAsync()
+    private Task<AccessMigrationDatabase> LeaseMigratedDatabaseAsync()
     {
-        return PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(PermissionCatalogueStartupSyncTests));
+        return fixture.CreateMigratedDatabaseAsync();
     }
 
     private static IReadOnlyList<string> ReadItemCodes(JsonElement data)

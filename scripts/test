@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +23,12 @@ const BACKEND_RESOURCE_CATALOG = resolve(
   REPOSITORY_ROOT,
   'Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-resources.tsv',
 );
+const TEST_RUNTIME_ASSEMBLY = resolve(
+  REPOSITORY_ROOT,
+  'Backend/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll',
+);
+const SCRATCH_LOCK_COMMAND = 'scratch-rehearsal';
+const FULL_REHEARSAL_LOCK_COMMAND = 'full-rehearsal';
 
 let options;
 try {
@@ -88,18 +95,260 @@ if (hasWithheldFullData) {
 for (const command of materializedPlan.commands) {
   const group = command.group ? ` group=${command.group}` : '';
   console.log(`[scripts/test] ${command.id}${group}`);
+  const status = command.group === 'EmptyScratchDestructiveRehearsal'
+    ? await executeEmptyScratch(command)
+    : command.group === 'FullDataDestructiveRehearsal' && command.rehearsalSubtype
+      ? await executeFullRehearsal(command)
+    : executeCommand(command);
+  if (status !== 0) {
+    process.exit(status);
+  }
+}
+
+function executeCommand(command, environment = process.env) {
   const result = spawnSync(command.executable, command.arguments, {
     cwd: command.cwd,
-    env: process.env,
+    env: environment,
     stdio: 'inherit',
   });
   if (result.error) {
     console.error(`[scripts/test] ${command.id} could not start: ${result.error.message}`);
-    process.exit(1);
+    return 1;
   }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
+  return result.status ?? 1;
+}
+
+async function executeEmptyScratch(command) {
+  if (!command.scratchSubtype) {
+    console.error(`[scripts/test] ${command.id} has no approved empty-scratch subtype.`);
+    return 2;
   }
+
+  const runId = createScratchRunId();
+  const keeper = await startScratchKeeper(runId);
+  if (!keeper) {
+    return 3;
+  }
+
+  let created = false;
+  let commandStatus = 1;
+  let cleanupStatus = 0;
+  try {
+    const reap = runScratchLifecycle('reap', runId);
+    if (reap.status !== 0) {
+      return reap.status;
+    }
+
+    const creation = runScratchLifecycle('create', runId, command.scratchSubtype);
+    if (creation.status !== 0) {
+      return creation.status;
+    }
+    created = true;
+
+    const environment = {
+      ...process.env,
+      QURAN_DASHBOARD_TEST_RUN_ID: runId,
+      QURAN_DASHBOARD_TEST_LOCK_COMMAND: SCRATCH_LOCK_COMMAND,
+      QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE: command.scratchSubtype,
+    };
+    commandStatus = executeCommand(command, environment);
+  } finally {
+    if (created) {
+      cleanupStatus = runScratchLifecycle('cleanup', runId).status;
+    }
+    keeper.stdin.end();
+    await waitForExit(keeper);
+  }
+
+  return cleanupStatus === 0 ? commandStatus : cleanupStatus;
+}
+
+async function executeFullRehearsal(command) {
+  if (!['phrase-search-index-build', 'recovery'].includes(command.rehearsalSubtype)) {
+    console.error(
+      `[scripts/test] ${command.id} is not an index/recovery full-data rehearsal supported by this explicit capability.`,
+    );
+    return 2;
+  }
+
+  const runId = createScratchRunId();
+  const keeper = await startFullRehearsalKeeper(runId, command.rehearsalSubtype);
+  if (!keeper) {
+    return 3;
+  }
+
+  let commandStatus = 1;
+  try {
+    const environment = {
+      ...process.env,
+      QURAN_DASHBOARD_TEST_RUN_ID: runId,
+      QURAN_DASHBOARD_TEST_LOCK_COMMAND: FULL_REHEARSAL_LOCK_COMMAND,
+      QURAN_DASHBOARD_TEST_FULL_REHEARSAL_SUBTYPE: command.rehearsalSubtype,
+    };
+    commandStatus = executeCommand(command, environment);
+  } finally {
+    // Full Rehearsal Databases are manually provisioned capabilities. Success and failure both
+    // preserve the database; only `TestRuntime rehearsal cleanup apply` may remove it.
+    keeper.stdin.end();
+    await waitForExit(keeper);
+  }
+  return commandStatus;
+}
+
+function runScratchLifecycle(action, runId, subtype = null) {
+  const arguments_ = [
+    TEST_RUNTIME_ASSEMBLY,
+    'scratch',
+    action,
+    '--run-id',
+    runId,
+    '--command',
+    SCRATCH_LOCK_COMMAND,
+  ];
+  if (subtype !== null) {
+    arguments_.push('--subtype', subtype);
+  }
+  const result = spawnSync('dotnet', arguments_, {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    encoding: 'utf8',
+  });
+  if (result.stdout) {
+    process.stdout.write(result.stdout);
+  }
+  if (result.stderr) {
+    process.stderr.write(result.stderr);
+  }
+  if (result.error) {
+    console.error(`[scripts/test] scratch ${action} could not start: ${result.error.message}`);
+    return { status: 1 };
+  }
+  return { status: result.status ?? 1 };
+}
+
+async function startScratchKeeper(runId) {
+  const keeper = spawn('dotnet', [
+    TEST_RUNTIME_ASSEMBLY,
+    'lock',
+    'hold',
+    '--mode',
+    'exclusive',
+    '--run-id',
+    runId,
+    '--command',
+    SCRATCH_LOCK_COMMAND,
+    '--release-on-stdin-close',
+  ], {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  keeper.stderr.pipe(process.stderr);
+
+  const firstLine = await readFirstLine(keeper.stdout, keeper);
+  if (firstLine === null) {
+    await waitForExit(keeper);
+    return null;
+  }
+  process.stdout.write(`${firstLine}\n`);
+  let report;
+  try {
+    report = JSON.parse(firstLine);
+  } catch {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    console.error('[scripts/test] TestRuntime keeper returned invalid JSON.');
+    return null;
+  }
+  if (!report.succeeded || report.advisoryLock?.status !== 'acquired') {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    return null;
+  }
+
+  keeper.stdout.pipe(process.stdout);
+  return keeper;
+}
+
+async function startFullRehearsalKeeper(runId, subtype) {
+  const keeper = spawn('dotnet', [
+    TEST_RUNTIME_ASSEMBLY,
+    'rehearsal',
+    'hold',
+    '--subtype',
+    subtype,
+    '--run-id',
+    runId,
+    '--command',
+    FULL_REHEARSAL_LOCK_COMMAND,
+    '--release-on-stdin-close',
+  ], {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  keeper.stderr.pipe(process.stderr);
+
+  const firstLine = await readFirstLine(keeper.stdout, keeper);
+  if (firstLine === null) {
+    await waitForExit(keeper);
+    return null;
+  }
+  process.stdout.write(`${firstLine}\n`);
+  let report;
+  try {
+    report = JSON.parse(firstLine);
+  } catch {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    console.error('[scripts/test] full Rehearsal Database validation returned invalid JSON.');
+    return null;
+  }
+  if (!report.succeeded
+      || report.fullRehearsal?.capabilityState !== 'ready'
+      || report.advisoryLock?.status !== 'acquired') {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    return null;
+  }
+
+  keeper.stdout.pipe(process.stdout);
+  return keeper;
+}
+
+function readFirstLine(stream, child) {
+  return new Promise((resolveLine) => {
+    let buffered = '';
+    const onData = (chunk) => {
+      buffered += chunk.toString();
+      const newline = buffered.indexOf('\n');
+      if (newline >= 0) {
+        cleanup();
+        resolveLine(buffered.slice(0, newline));
+      }
+    };
+    const onClose = () => {
+      cleanup();
+      resolveLine(buffered.length > 0 ? buffered : null);
+    };
+    const cleanup = () => {
+      stream.off('data', onData);
+      child.off('close', onClose);
+    };
+    stream.on('data', onData);
+    child.on('close', onClose);
+  });
+}
+
+function waitForExit(child) {
+  if (child.exitCode !== null) {
+    return Promise.resolve(child.exitCode);
+  }
+  return new Promise((resolveExit) => child.once('close', (code) => resolveExit(code ?? 1)));
+}
+
+function createScratchRunId() {
+  return randomBytes(16).toString('hex');
 }
 
 if (hasWithheldFullData) {

@@ -73,7 +73,45 @@ internal sealed record TestRuntimeReport(
     AdvisoryLockReport? AdvisoryLock = null,
     ProtectedStateFingerprintReport? ProtectedStateFingerprint = null,
     MutableResetReport? MutableReset = null,
-    CapabilityRefreshReport? Refresh = null);
+    CapabilityRefreshReport? Refresh = null,
+    ScratchLifecycleReport? Scratch = null,
+    FullRehearsalReport? FullRehearsal = null);
+
+internal sealed record FullRehearsalReport(
+    string Mode,
+    string? Database,
+    string Subtype,
+    string CapabilityState,
+    string? CanonicalPipeline,
+    string? CanonicalInputProvenance,
+    string? ProtectedStateFingerprint,
+    string? ComputedProtectedStateFingerprint,
+    string? MigrationHead,
+    string? DatabaseMigrationHead,
+    string? ProvisionedAtUtc,
+    bool Fresh,
+    bool ExclusiveLockOwned,
+    bool Removed,
+    IReadOnlyList<string> Guidance,
+    int DumpFilesRetained);
+
+internal sealed record FullRehearsalRecoveryEvidence(
+    string PayloadSha256,
+    string SourceProtectedStateFingerprint,
+    bool PayloadRemoved);
+
+internal sealed record ScratchLifecycleReport(
+    string Mode,
+    string? Database,
+    string Owner,
+    string? RunId,
+    string? Subtype,
+    string Template,
+    bool ReceiptRecorded,
+    bool Validated,
+    bool Removed,
+    IReadOnlyList<string> RemovedDatabases,
+    int DumpFilesRetained);
 
 internal sealed record CapabilityRefreshReport(
     string Mode,

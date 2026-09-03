@@ -1,13 +1,13 @@
 using QuranDashboard.TestArtifacts;
 
-namespace QuranDashboard.Tests.Smoke.Data;
+namespace QuranDashboard.Tests.Quran.PhraseSearch;
 
 // Absent and stale are opposite verdicts on purpose. A machine that never generated the artifact is an
 // ordinary machine, so the whole tier skips. A dump that is present but no longer matches this tree is
 // not ordinary: running it would exercise the reads against data the schema no longer describes and
 // report green, so it throws. A stale dump quietly skipping is the single failure this gate exists to
 // make impossible.
-internal static class SmokeDumpGate
+internal static class PhraseSearchRehearsalDumpGate
 {
     public const string DumpFileName = "quran-canonical.dump";
     public const string RegenerateCommand = "Backend/scripts/create-smoke-dump --yes";
@@ -58,7 +58,7 @@ internal static class SmokeDumpGate
         $"Place the approved content at sha256/{DumpSha256}/ and set that environment variable.";
 
     // Called before the container is started, so a stale artifact costs a hash rather than a restore.
-    public static SmokeDumpManifest VerifyAndRead(int restoreImageMajorVersion)
+    public static PhraseSearchRehearsalDumpManifest VerifyAndRead(int restoreImageMajorVersion)
     {
         if (DumpFile is null || ManifestFile is null)
         {
@@ -79,7 +79,7 @@ internal static class SmokeDumpGate
                 $"Canonical smoke manifest does not match the approved identity. Expected {ManifestSha256}, actual {manifestSha256}.");
         }
 
-        var manifest = SmokeDumpManifest.ReadFrom(ManifestFile);
+        var manifest = PhraseSearchRehearsalDumpManifest.ReadFrom(ManifestFile);
 
         var actualSha256 = ComputeSha256(DumpFile);
         if (!string.Equals(actualSha256, DumpSha256, StringComparison.Ordinal)
@@ -162,29 +162,5 @@ internal static class SmokeDumpGate
 
         using var context = new QuranDashboardDbContext(options);
         return context.Database.GetMigrations().ToArray();
-    }
-}
-
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-internal sealed class SmokeDumpFactAttribute : FactAttribute
-{
-    public SmokeDumpFactAttribute()
-    {
-        if (SmokeDumpGate.IsAbsent)
-        {
-            Skip = SmokeDumpGate.AbsentReason;
-        }
-    }
-}
-
-[AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
-internal sealed class SmokeDumpTheoryAttribute : TheoryAttribute
-{
-    public SmokeDumpTheoryAttribute()
-    {
-        if (SmokeDumpGate.IsAbsent)
-        {
-            Skip = SmokeDumpGate.AbsentReason;
-        }
     }
 }

@@ -3,8 +3,7 @@ import { resolve } from 'node:path';
 import type { APIRequestContext, Page } from '@playwright/test';
 import type { PhraseSimilarityLinkingSelectionResponse } from '../src/app/core/api/generated/models/phrase-similarity-linking-selection-response';
 
-import oracleData from '../../../test-artifacts/compact-phrase-search-ready/oracle.json';
-import manifestData from '../../../test-artifacts/compact-phrase-search-ready/manifest.json';
+import oracleData from '../../../test-oracles/phrase-search.json';
 import {
   WORDS_PHRASES_CONTEXT_SEGMENT,
   WORDS_PHRASES_REPETITIONS_SEGMENT,
@@ -23,39 +22,25 @@ const API_ORIGIN = environment.apiBaseUrl;
 const PREPARE_LINKING = resolve(process.cwd(), 'e2e/prepare-linking.mjs');
 
 interface PhraseReadyOracle {
-  artifactId: string;
-  phraseSearch: {
-    activeBuildId: string;
-    sourceFingerprint: string;
-    readiness: 'available';
-    query: {
-      raw: string;
-      displayText: string;
-      exactTokenIds: number[];
-    };
-    repetitions: {
-      displayText: string;
-      verseKeys: string[];
-    };
-    context: {
-      verseKeys: string[];
-      selectedVerseKey: string;
-      selectedQuranWordIds: number[];
-    };
-    similarity: {
-      maximumDifferences: number;
-      verseKeys: string[];
-      nonIdenticalVerseKey: string;
-    };
+  query: {
+    raw: string;
+    displayText: string;
+    wordCount: number;
+    selectedQuranWordIds: number[];
   };
-}
-
-interface PhraseReadyManifest {
-  artifactId: string;
-  phraseSearch: {
-    sourceFingerprint: string;
-    readiness: 'available';
-    activeBuildId: string;
+  repetitions: {
+    displayText: string;
+    verseKeys: string[];
+  };
+  context: {
+    verseKeys: string[];
+    selectedVerseKey: string;
+  };
+  similarity: {
+    maximumDifferences: number;
+    verseKeys: string[];
+    nonIdenticalVerseKey: string;
+    nonIdenticalVisibleText: string;
   };
 }
 
@@ -94,7 +79,6 @@ interface LinkingWorkspace {
 }
 
 const oracle = oracleData as PhraseReadyOracle;
-const manifest = manifestData as PhraseReadyManifest;
 
 test(
   'an Owner follows the reviewed PhraseSearch path and persists Add to Workspace',
@@ -110,13 +94,6 @@ test(
     const accessibility = createAccessibilityAudit(testInfo);
     try {
       prepareLinking();
-      expect(oracle.artifactId).toBe('compact-phrase-search-ready');
-      expect(manifest.artifactId).toBe(oracle.artifactId);
-      expect(manifest.phraseSearch).toEqual({
-        activeBuildId: oracle.phraseSearch.activeBuildId,
-        sourceFingerprint: oracle.phraseSearch.sourceFingerprint,
-        readiness: oracle.phraseSearch.readiness,
-      });
 
       const capabilitiesBefore = await readPublicData<PhraseCapabilities>(
         request,
@@ -124,15 +101,15 @@ test(
         'ready PhraseSearch capabilities before the journey',
       );
       expect(capabilitiesBefore).toMatchObject({
-        activeBuildId: manifest.phraseSearch.activeBuildId,
         exactReady: true,
         similarityReady: true,
       });
+      expect(capabilitiesBefore.activeBuildId).not.toBe('');
       expect(capabilitiesBefore.modes).toContainEqual(
         expect.objectContaining({
           mode: 'simple',
-          supportedLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
-          similarityLengths: expect.arrayContaining([oracle.phraseSearch.query.exactTokenIds.length]),
+          supportedLengths: expect.arrayContaining([oracle.query.wordCount]),
+          similarityLengths: expect.arrayContaining([oracle.query.wordCount]),
         }),
       );
 
@@ -165,18 +142,18 @@ async function exerciseContextAndPersist(
 ): Promise<void> {
   await page.goto(phraseSearchRoutePath(WORDS_PHRASES_CONTEXT_SEGMENT));
   const query = page.getByRole('textbox', { name: 'العبارة المراد استكشاف سياقها' });
-  await query.fill(oracle.phraseSearch.query.raw);
+  await query.fill(oracle.query.raw);
   await page.getByRole('button', { name: 'بحث', exact: true }).click();
 
-  await expect(page.getByText(oracle.phraseSearch.query.displayText, { exact: true })).toBeVisible();
+  await expect(page.getByText(oracle.query.displayText, { exact: true })).toBeVisible();
   await expect(page.getByLabel('ملخص نتائج السياق')).toContainText(
-    `${oracle.phraseSearch.context.verseKeys.length} آية`,
+    `${oracle.context.verseKeys.length} آية`,
   );
-  for (const verseKey of oracle.phraseSearch.context.verseKeys) {
+  for (const verseKey of oracle.context.verseKeys) {
     await expect(page.getByRole('link', { name: `فتح الآية ${verseKey} في المصحف` })).toBeVisible();
   }
 
-  const selectedVerseKey = oracle.phraseSearch.context.selectedVerseKey;
+  const selectedVerseKey = oracle.context.selectedVerseKey;
   expect(selectedVerseKey).toBe('1:1');
   const selectedMushafLink = page.getByRole('link', {
     name: `فتح الآية ${selectedVerseKey} في المصحف`,
@@ -233,7 +210,7 @@ async function exerciseContextAndPersist(
   expect(persistedSource?.descriptor).toEqual({
     contextKey: null,
     kind: 'manual-mushaf-ayahs',
-    label: `البحث عن «${oracle.phraseSearch.query.raw}»`,
+    label: `البحث عن «${oracle.query.raw}»`,
     lemmaId: null,
     manualAyahs: [{ verseKey: selectedVerseKey }],
     mode: null,
@@ -251,7 +228,7 @@ async function exerciseContextAndPersist(
   const persistedAyahId = persistedSource?.manualAyahs[0]?.ayahId;
   expect(persistedAyahId).toBeGreaterThan(0);
   expect(persistedSource?.selectedWords).toEqual(
-    oracle.phraseSearch.context.selectedQuranWordIds.map((quranWordId) => ({
+    oracle.query.selectedQuranWordIds.map((quranWordId) => ({
       ayahId: persistedAyahId,
       quranWordId,
     })),
@@ -261,7 +238,7 @@ async function exerciseContextAndPersist(
     .getByRole('checkbox', { name: 'تحديد كل الآيات المطابقة', exact: true })
     .check();
   await expect(page.getByLabel('ملخص نتائج السياق')).toContainText(
-    `${oracle.phraseSearch.context.verseKeys.length} آية محددة`,
+    `${oracle.context.verseKeys.length} آية محددة`,
   );
   const validContextUrl = page.url();
   const invalidContextUrl = new URL(validContextUrl);
@@ -274,7 +251,7 @@ async function exerciseContextAndPersist(
 }
 
 async function exerciseRepetitions(page: Page, accessibility: AccessibilityAudit): Promise<void> {
-  const phraseLength = oracle.phraseSearch.query.exactTokenIds.length;
+  const phraseLength = oracle.query.wordCount;
   await page.goto(
     `${phraseSearchRoutePath(WORDS_PHRASES_REPETITIONS_SEGMENT)}?length=${phraseLength}`,
   );
@@ -282,13 +259,13 @@ async function exerciseRepetitions(page: Page, accessibility: AccessibilityAudit
   const search = page.getByRole('search');
   await search.getByRole('searchbox', {
     name: `بحث داخل عبارات ${phraseLength} كلمات`,
-  }).fill(oracle.phraseSearch.query.raw);
+  }).fill(oracle.query.raw);
   await search.getByRole('button', { name: 'بحث', exact: true }).click();
 
-  const phrase = page.getByText(oracle.phraseSearch.repetitions.displayText, { exact: true });
+  const phrase = page.getByText(oracle.repetitions.displayText, { exact: true });
   await expect(phrase).toBeVisible();
   await phrase.click();
-  for (const verseKey of oracle.phraseSearch.repetitions.verseKeys) {
+  for (const verseKey of oracle.repetitions.verseKeys) {
     await expect(page.getByRole('link', { name: `فتح الآية ${verseKey} في المصحف` })).toBeVisible();
   }
   await accessibility.expectNoBlockingViolations(page);
@@ -297,28 +274,28 @@ async function exerciseRepetitions(page: Page, accessibility: AccessibilityAudit
 async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit): Promise<void> {
   await page.goto(phraseSearchRoutePath(WORDS_PHRASES_SIMILARITY_SEGMENT));
   const query = page.getByRole('textbox', { name: 'العبارة المرجعية' });
-  await query.fill(oracle.phraseSearch.query.raw);
+  await query.fill(oracle.query.raw);
   await page.getByRole('button', { name: 'بحث', exact: true }).click();
 
   const comparisonRange = page.getByLabel('مدى المقارنة');
-  await comparisonRange.selectOption(String(oracle.phraseSearch.similarity.maximumDifferences));
+  await comparisonRange.selectOption(String(oracle.similarity.maximumDifferences));
   await expect(page.getByLabel('ملخص النتائج')).toContainText(
-    `${oracle.phraseSearch.similarity.verseKeys.length} آية`,
+    `${oracle.similarity.verseKeys.length} آية`,
   );
-  for (const verseKey of oracle.phraseSearch.similarity.verseKeys) {
+  for (const verseKey of oracle.similarity.verseKeys) {
     await expect(page.getByRole('link', { name: `فتح الآية ${verseKey} في المصحف` })).toBeVisible();
   }
   await expect(
     page.getByRole('link', {
-      name: `فتح الآية ${oracle.phraseSearch.similarity.nonIdenticalVerseKey} في المصحف`,
+      name: `فتح الآية ${oracle.similarity.nonIdenticalVerseKey} في المصحف`,
     }),
-  ).toContainText('مَجْر۪ىٰهَا');
+  ).toContainText(oracle.similarity.nonIdenticalVisibleText);
 
   const selectAll = page
     .getByRole('table', { name: 'جدول الآيات المطابقة والمتشابهة', exact: true })
     .getByRole('checkbox', { name: 'تحديد كل آيات نتائج التشابه', exact: true });
   await selectAll.check();
-  const excludedVerseKey = oracle.phraseSearch.similarity.nonIdenticalVerseKey;
+  const excludedVerseKey = oracle.similarity.nonIdenticalVerseKey;
   const excludedAyah = page.getByRole('checkbox', { name: `تحديد الآية ${excludedVerseKey}` });
   const excludedAyahId = Number(await excludedAyah.getAttribute('data-ayah-id'));
   expect(excludedAyahId).toBeGreaterThan(0);
@@ -337,8 +314,7 @@ async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit)
       expect(route.request().postDataJSON()).toEqual({
         ayahIds: [excludedAyahId],
         minimumMatchedWords:
-          oracle.phraseSearch.query.exactTokenIds.length -
-          oracle.phraseSearch.similarity.maximumDifferences,
+          oracle.query.wordCount - oracle.similarity.maximumDifferences,
         resolutionRef: expect.any(String),
         selectionMode: 'all-except',
       });
@@ -379,8 +355,7 @@ async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit)
   expect(freshRequestBody).toEqual({
     ayahIds: [],
     minimumMatchedWords:
-      oracle.phraseSearch.query.exactTokenIds.length -
-      oracle.phraseSearch.similarity.maximumDifferences,
+      oracle.query.wordCount - oracle.similarity.maximumDifferences,
     resolutionRef: expect.any(String),
     selectionMode: 'all-except',
   });
@@ -388,10 +363,10 @@ async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit)
     (left, right) => compareVerseKeys(left.verseKey, right.verseKey) || left.ayahId - right.ayahId,
   );
   expect(acceptedSelection.selectedAyahCount).toBe(
-    oracle.phraseSearch.similarity.verseKeys.length,
+    oracle.similarity.verseKeys.length,
   );
   expect(canonicalAyahs.map((ayah) => ayah.verseKey)).toEqual(
-    [...oracle.phraseSearch.similarity.verseKeys].sort(compareVerseKeys),
+    [...oracle.similarity.verseKeys].sort(compareVerseKeys),
   );
   for (const ayah of canonicalAyahs) {
     expect(ayah.selectedQuranWordIds).toEqual(
@@ -409,10 +384,10 @@ async function exerciseSimilarity(page: Page, accessibility: AccessibilityAudit)
   expect(sourceRequestBody.descriptor).toMatchObject({
     contextKey: null,
     kind: 'manual-mushaf-ayahs',
-    label: `متشابهات العبارة «${oracle.phraseSearch.query.displayText}»`,
+    label: `متشابهات العبارة «${oracle.query.displayText}»`,
     manualAyahs: canonicalAyahs.map((ayah) => ({ verseKey: ayah.verseKey })),
   });
-  await expect(dialog).toContainText(`متشابهات العبارة «${oracle.phraseSearch.query.displayText}»`);
+  await expect(dialog).toContainText(`متشابهات العبارة «${oracle.query.displayText}»`);
   await accessibility.expectNoBlockingViolations(page);
 }
 

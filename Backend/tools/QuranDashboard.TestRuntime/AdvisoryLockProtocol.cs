@@ -62,6 +62,7 @@ internal sealed class AdvisoryLockLease(
 internal static partial class AdvisoryLockProtocol
 {
     internal static readonly TimeSpan DefaultAcquisitionTimeout = TimeSpan.FromMinutes(15);
+    internal const string LockDatabase = "postgres";
 
     private const string ApplicationNamePrefix = "qdtr:";
     private const int PollIntervalMilliseconds = 50;
@@ -104,6 +105,7 @@ internal static partial class AdvisoryLockProtocol
         var builder = new NpgsqlConnectionStringBuilder(connectionString)
         {
             ApplicationName = applicationName,
+            Database = LockDatabase,
             Pooling = false,
         };
         var connection = new NpgsqlConnection(builder.ConnectionString);
@@ -184,6 +186,8 @@ internal static partial class AdvisoryLockProtocol
                 FROM pg_catalog.pg_locks AS advisory_lock
                 INNER JOIN pg_catalog.pg_stat_activity AS activity ON activity.pid = advisory_lock.pid
                 WHERE advisory_lock.locktype = 'advisory'
+                  AND advisory_lock.database = (
+                      SELECT oid FROM pg_catalog.pg_database WHERE datname = 'postgres')
                   AND advisory_lock.granted
                   AND advisory_lock.objsubid = 1
                   AND ((advisory_lock.classid::bigint << 32) | advisory_lock.objid::bigint) = @key
@@ -226,6 +230,8 @@ internal static partial class AdvisoryLockProtocol
             FROM pg_catalog.pg_locks AS advisory_lock
             LEFT JOIN pg_catalog.pg_stat_activity AS activity ON activity.pid = advisory_lock.pid
             WHERE advisory_lock.locktype = 'advisory'
+              AND advisory_lock.database = (
+                  SELECT oid FROM pg_catalog.pg_database WHERE datname = 'postgres')
               AND advisory_lock.granted
               AND advisory_lock.objsubid = 1
               AND ((advisory_lock.classid::bigint << 32) | advisory_lock.objid::bigint) = @key

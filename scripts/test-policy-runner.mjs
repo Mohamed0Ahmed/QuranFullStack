@@ -324,10 +324,11 @@ export function planPrePrSelection({
   const requiredCandidates = backendCatalog.filter((entry) =>
     entry.kind !== 'Release'
     && entry.gate !== 'Pipeline'
+    && !isEmptyScratchEntry(entry, backendResources)
     && !isFullDataEntry(entry, backendResources),
   );
   const affectedCandidates = backendCatalog.filter((entry) =>
-    entry.gate === 'Pipeline'
+    (entry.gate === 'Pipeline' || isEmptyScratchEntry(entry, backendResources))
     && (featureSet.has(entry.feature) || entry.concerns.some((concern) => concernSet.has(concern))),
   );
   const explicitCandidates = explicitPolicy === null
@@ -361,6 +362,13 @@ export function planPrePrSelection({
     ...executablePartitions.flatMap(({ selections }) => selections.map(selectionCommand)),
     command('frontend-pre-pr', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'test:pre-pr']),
     command('playwright-typecheck', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:typecheck']),
+    command(
+      'playwright-canonical-critical',
+      'Frontend/quran-dashboard-ui',
+      'npm',
+      ['run', 'e2e:canonical:critical'],
+      'CanonicalReader',
+    ),
     command('playwright-critical', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:critical']),
   ];
 
@@ -382,6 +390,11 @@ function isFullDataEntry(entry, resourceCatalog) {
     return entry.kind === 'Canonical' || entry.kind === 'Release';
   }
   return effectiveBackendPolicy(entry, resourceCatalog).target === 'FullRehearsal';
+}
+
+function isEmptyScratchEntry(entry, resourceCatalog) {
+  return entry.migrationState === 'Migrated'
+    && effectiveBackendPolicy(entry, resourceCatalog).target === 'EmptyScratch';
 }
 
 function deduplicateEntries(entries) {
@@ -419,6 +432,7 @@ function backendSelection(entry, resourceCatalog, selectorType, selector) {
     selector,
     className: entry.className,
     group: backendExecutionGroup(entry, resourceCatalog),
+    destructiveSubtype: entry.policy?.destructiveSubtype ?? null,
     legacyLane: entry.migrationState === 'Unmigrated'
       ? legacyReleaseLane(entry.className)
       : null,
@@ -502,11 +516,14 @@ function minimumResourcePolicy(policy) {
 
 function selectionCommand(selection) {
   if (selection.kind === 'playwright') {
+    const script = selection.group === 'CanonicalReader'
+      ? 'e2e:canonical:focused'
+      : 'e2e:focused';
     return command(
       `playwright-${selection.selector}`,
       'Frontend/quran-dashboard-ui',
       'npm',
-      ['run', 'e2e:focused', '--', selection.selector],
+      ['run', script, '--', selection.selector],
       selection.group,
     );
   }
@@ -533,6 +550,18 @@ function selectionCommand(selection) {
     'Backend/scripts/test-backend',
     ['feature', option, selection.selector, '--no-build'],
     selection.group,
+    selection.group === 'EmptyScratchDestructiveRehearsal'
+      ? { scratchSubtype: toScratchSubtype(selection.destructiveSubtype) }
+      : selection.group === 'FullDataDestructiveRehearsal'
+          && ['PhraseSearchIndexBuild', 'Recovery'].includes(selection.destructiveSubtype)
+        ? { rehearsalSubtype: toScratchSubtype(selection.destructiveSubtype) }
+        : {},
+  );
+}
+
+function toScratchSubtype(subtype) {
+  return subtype.replace(/[A-Z]/g, (letter, offset) =>
+    `${offset === 0 ? '' : '-'}${letter.toLowerCase()}`,
   );
 }
 
@@ -566,8 +595,8 @@ function backendBuildCommand() {
   ]);
 }
 
-function command(id, cwd, executable, arguments_, group = null) {
-  return { id, cwd, executable, arguments: arguments_, group };
+function command(id, cwd, executable, arguments_, group = null, metadata = {}) {
+  return { id, cwd, executable, arguments: arguments_, group, ...metadata };
 }
 
 function requireBackendClass(catalog, className) {

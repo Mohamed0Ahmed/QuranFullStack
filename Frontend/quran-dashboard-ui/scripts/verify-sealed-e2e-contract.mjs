@@ -130,7 +130,7 @@ assert.equal(
 );
 assert.equal(
   packageManifest.scripts['e2e:focused'],
-  'node scripts/run-sealed-playwright.mjs --focused',
+  'node scripts/run-focused-playwright.mjs',
 );
 assert.equal(
   packageManifest.scripts['e2e:provision'],

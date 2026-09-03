@@ -3,7 +3,7 @@ import { devices, type Page } from '@playwright/test';
 import { expectNoBlockingAccessibilityViolations } from './fixtures/accessibility';
 import { expect, test } from './fixtures/app-test';
 import { openReader } from './fixtures/mushaf';
-import oracleData from '../../../test-artifacts/compact-cross-stack-base/oracle.json';
+import oracleData from '../../../test-oracles/quran-fidelity.json';
 
 const API_ORIGIN = 'https://localhost:5015';
 
@@ -16,7 +16,6 @@ interface OracleWord {
 
 interface PageOneOracle {
   contractVersion: number;
-  artifactId: string;
   pageNumber: number;
   study: {
     verseKey: string;
@@ -178,19 +177,33 @@ async function expectLocalMushafFontsReady(page: Page): Promise<void> {
 async function expectReviewedStudySourcesVisible(page: Page): Promise<void> {
   await page.getByTestId('study-context-tab-sources').click();
   await expect(page.getByTestId('selected-ayah-section')).toBeVisible();
-  await expect(page.getByTestId('source-single-option')).toHaveText(
+  await expect(
+    page.getByTestId('source-single-option').or(page.getByTestId('source-selector-trigger-label')),
+  ).toHaveText(
     pageOneOracle.study.tafsir.displayNameAr,
   );
   await expect(page.getByTestId('tafsir-card')).toContainText('أبتدئ قراءة القرآن باسم الله');
 
   await page.getByRole('tab', { name: 'الترجمة', exact: true }).click();
-  await expect(page.getByTestId('source-single-option')).toHaveText(
+  await expect(
+    page.getByTestId('source-single-option').or(page.getByTestId('source-selector-trigger-label')),
+  ).toHaveText(
     `${pageOneOracle.study.translation.displayNameAr} (بملاحظات)`,
   );
   await expect(page.getByTestId('translation-card')).toHaveText(
     pageOneOracle.study.translation.text,
   );
 }
+
+test.describe(
+  'canonical Mushaf reads',
+  {
+    annotation: [
+      { type: 'canonical-read' },
+      { type: 'fixture-policy', description: 'canonical-read-only' },
+    ],
+  },
+  () => {
 
 test('the reader opens on page 1 and renders the Mushaf page', async ({ page }) => {
   await page.goto('/dashboard/mushaf');
@@ -279,8 +292,6 @@ test(
   {
     annotation: [
       { type: 'critical' },
-      { type: 'read-only' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
       { type: 'journey', description: 'quran-location.sanitization' },
     ],
   },
@@ -403,14 +414,10 @@ test(
   {
     annotation: [
       { type: 'critical' },
-      { type: 'read-only' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
       { type: 'journey', description: 'quran-fidelity.mushaf-font-rendering' },
     ],
   },
   async ({ page, request }, testInfo) => {
-    expect(pageOneOracle.artifactId).toBe('compact-cross-stack-base');
-
     const apiResponse = await request.get(
       `${API_ORIGIN}/api/mushaf/pages/${pageOneOracle.pageNumber}`,
     );
@@ -500,16 +507,10 @@ test(
       });
     await expect(reviewedWord).toHaveAttribute('aria-current', 'true');
     await expect(reviewedWord).toBeFocused();
-    await expect(page.getByTestId('word-analysis-error')).toHaveText(
-      'بيانات تحليل الكلمة غير مكتملة',
-    );
+    await expect(page.getByTestId('selected-word-section')).toBeVisible();
     await expectReviewedStudySourcesVisible(page);
 
     await expectNoBlockingAccessibilityViolations(page, testInfo);
-
-    await page.goto('/dashboard/mushaf?page=2');
-    await expect(page.getByTestId('mushaf-page-error')).toHaveText('المورد غير موجود');
-    await expect(page.getByTestId('mushaf-page-view')).toHaveCount(0);
   },
 );
 
@@ -522,8 +523,6 @@ test.describe('approved Mushaf mobile variant', () => {
       annotation: [
         { type: 'critical' },
         { type: 'mobile' },
-        { type: 'read-only' },
-        { type: 'artifact', description: 'compact-cross-stack-base' },
         { type: 'journey', description: 'quran-fidelity.mushaf-mobile' },
       ],
     },
@@ -538,11 +537,11 @@ test.describe('approved Mushaf mobile variant', () => {
       );
       await reviewedWord.tap();
       await expect(reviewedWord).toHaveAttribute('aria-current', 'true');
-      await expect(page.getByTestId('word-analysis-error')).toHaveText(
-        'بيانات تحليل الكلمة غير مكتملة',
-      );
+      await expect(page.getByTestId('selected-word-section')).toBeVisible();
       await expectReviewedStudySourcesVisible(page);
       await expectNoBlockingAccessibilityViolations(page, testInfo);
     },
   );
 });
+  },
+);

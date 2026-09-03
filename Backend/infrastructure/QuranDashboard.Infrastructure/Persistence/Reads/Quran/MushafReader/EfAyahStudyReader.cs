@@ -8,11 +8,6 @@ namespace QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyahStudyReader> logger) : IAyahStudyReader
 {
-    private static readonly JsonSerializerOptions CoveredKeysJsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
     public async Task<AyahStudyResponse?> GetAyahStudyAsync(
         string verseKey,
         string? tafsirSourceKey,
@@ -171,7 +166,11 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
             projection.SourceLeaderVerseKey!,
             projection.IsGroupLeader!.Value,
             projection.CoveredAyahCount!.Value,
-            ParseCoveredAyahKeys(projection.CoveredAyahKeys!, verseKey, sourceKey),
+            MushafReaderValueMapper.ParseCoveredAyahKeys(
+                projection.CoveredAyahKeys!,
+                verseKey,
+                sourceKey,
+                logger),
             projection.TafsirText);
 
         return new ResolvedSource<TafsirEntryDto>(projection.SourceKey, dto);
@@ -268,7 +267,11 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
             projection.SourceLeaderVerseKey!,
             projection.IsGroupLeader!.Value,
             projection.CoveredAyahCount!.Value,
-            ParseCoveredAyahKeys(projection.CoveredAyahKeys!, verseKey, sourceKey),
+            MushafReaderValueMapper.ParseCoveredAyahKeys(
+                projection.CoveredAyahKeys!,
+                verseKey,
+                sourceKey,
+                logger),
             projection.I3rabHtml);
 
         return new ResolvedSource<FullI3rabEntryDto>(projection.SourceKey, dto);
@@ -314,31 +317,6 @@ public sealed class EfAyahStudyReader(QuranDashboardDbContext db, ILogger<EfAyah
         short? CoveredAyahCount,
         string? CoveredAyahKeys,
         string? I3rabHtml);
-
-    // quran-safety rule 3: corrupt covered_ayah_keys JSON must not be swallowed silently. The return
-    // contract is unchanged (still empty on failure), but a corrupt row logs a Warning naming the ayah
-    // and source so the underlying data issue stays visible.
-    private IReadOnlyList<string> ParseCoveredAyahKeys(string json, string verseKey, string sourceKey)
-    {
-        if (string.IsNullOrWhiteSpace(json))
-        {
-            return [];
-        }
-
-        try
-        {
-            return JsonSerializer.Deserialize<string[]>(json, CoveredKeysJsonOptions) ?? [];
-        }
-        catch (JsonException ex)
-        {
-            logger.LogWarning(
-                ex,
-                "Corrupt covered_ayah_keys JSON for ayah {verseKey} source {sourceKey}; treating as empty",
-                verseKey,
-                sourceKey);
-            return [];
-        }
-    }
 
     private static string MapSajdahType(SajdahType sajdahType) => sajdahType switch
     {

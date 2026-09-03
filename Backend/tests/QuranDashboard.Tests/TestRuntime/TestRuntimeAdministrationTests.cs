@@ -12,7 +12,7 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
     {
         const string login = "ticket_151_unprivileged_login";
         var password = $"unprivileged-{Guid.NewGuid():N}";
-        await using (var administrator = new NpgsqlConnection(fixture.ConnectionString))
+        await using (var administrator = new NpgsqlConnection(fixture.ServerAdministratorConnectionString))
         {
             await administrator.OpenAsync();
             await ExecuteAsync(
@@ -46,8 +46,30 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
     }
 
     [Fact]
-    public async Task AdministrationModes_ReconcileIdempotentlyAndEnforcePrivilegeBoundaries()
+    public async Task Apply_WithoutExactMarkerParameterPrivileges_ReportsEveryMissingGrantBeforeMutation()
     {
+        await fixture.SetMarkerParameterPrivilegesAsync(granted: false);
+        var roleCountBefore = await CountCapabilityRolesAsync();
+
+        var apply = await RunAsync("apply");
+
+        apply.ExitCode.Should().Be(3, apply.Output);
+        var missingParameters = apply.Report.RootElement.GetProperty("violations")
+            .EnumerateArray()
+            .Where(violation => violation.GetProperty("code").GetString()
+                == "administration.authority.parameter-set-missing")
+            .Select(violation => violation.GetProperty("subject").GetString())
+            .ToArray();
+        missingParameters.Should().BeEquivalentTo(
+            QuranDashboard.TestRuntime.DatabaseContractReader.Read(ContractPath).Markers.AsDictionary().Values);
+        (await CountCapabilityRolesAsync()).Should().Be(roleCountBefore);
+    }
+
+    [Fact]
+    public async Task AdministrationModes_AsNonSuperuserWithExplicitAuthority_ReconcileIdempotentlyAndEnforcePrivilegeBoundaries()
+    {
+        await fixture.SetMarkerParameterPrivilegesAsync(granted: true);
+
         var inspect = await RunAsync("inspect");
         inspect.ExitCode.Should().Be(3);
         inspect.Report.RootElement.GetProperty("administration").GetProperty("compliant").GetBoolean()
@@ -96,8 +118,51 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
     }
 
     [Fact]
+    public async Task Apply_AsSuperuser_SupportsDisposableContainerCapabilityProvisioning()
+    {
+        await fixture.ResetCapabilityAsync();
+        var serverConnection = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString);
+        var targetConnection = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString)
+        {
+            Database = "quran_dashboard_test",
+        };
+        try
+        {
+            using var output = new StringWriter();
+            using var error = new StringWriter();
+            var exitCode = await QuranDashboard.TestRuntime.TestRuntimeCommand.ExecuteAsync(
+                [
+                    "admin",
+                    "apply",
+                    "--login",
+                    serverConnection.Username!,
+                    "--run-id",
+                    "superuser-container-provisioning",
+                ],
+                output,
+                error,
+                name => name == QuranDashboard.TestRuntime.TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
+                    ? targetConnection.ConnectionString
+                    : null);
+
+            exitCode.Should().Be(0, output.ToString());
+            error.ToString().Should().BeEmpty();
+            using var report = JsonDocument.Parse(output.ToString());
+            report.RootElement.GetProperty("administration").GetProperty("compliant").GetBoolean()
+                .Should().BeTrue();
+            report.RootElement.GetProperty("violations").GetArrayLength().Should().Be(0);
+        }
+        finally
+        {
+            await fixture.ResetCapabilityAsync();
+        }
+    }
+
+    [Fact]
     public async Task DirectCapabilityMutation_WithoutExpectedExclusiveOwner_IsRefusedWithRunnerGuidance()
     {
+        await fixture.SetMarkerParameterPrivilegesAsync(granted: true);
+
         var contract = QuranDashboard.TestRuntime.DatabaseContractReader.Read(ContractPath);
         var validation = QuranDashboard.TestRuntime.DatabaseContractValidator.Validate(contract);
         var target = QuranDashboard.TestRuntime.InspectionTargetValidator.Validate(
@@ -207,7 +272,7 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
 
     private async Task AssertDevelopmentDatabaseGrantDriftIsRejectedAsync()
     {
-        var developmentConnectionString = new NpgsqlConnectionStringBuilder(fixture.ConnectionString)
+        var developmentConnectionString = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString)
         {
             Database = "quran_dashboard",
         }.ConnectionString;

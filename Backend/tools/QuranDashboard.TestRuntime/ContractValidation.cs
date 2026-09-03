@@ -150,7 +150,15 @@ internal static partial class DatabaseContractValidator
                 .SequenceEqual(ExpectedTargetKinds, StringComparer.Ordinal),
             "contract.target-kinds.invalid",
             violations);
-        AddValueViolation(contract.AdvisoryLock.Key != 0, "contract.advisory-lock.invalid", violations);
+        AddValueViolation(
+            contract.AdvisoryLock.Key != 0
+            && contract.AdvisoryLock.Database == AdvisoryLockProtocol.LockDatabase,
+            "contract.advisory-lock.invalid",
+            violations);
+        AddValueViolation(
+            contract.FullRehearsal.MaximumAgeHours is >= 1 and <= 24 * 31,
+            "contract.full-rehearsal.maximum-age.invalid",
+            violations);
         AddValueViolation(
             contract.RehearsalSubtypes.Order(StringComparer.Ordinal)
                 .SequenceEqual(ExpectedRehearsalSubtypes, StringComparer.Ordinal),

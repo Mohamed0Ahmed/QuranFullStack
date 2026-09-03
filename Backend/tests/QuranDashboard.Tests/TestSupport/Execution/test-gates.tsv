@@ -12,9 +12,9 @@ QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database
 QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution	MutableWriter	SystemCatalogue,MutableApplicationState,SchemaState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.AccessProtectedStateRehearsalTests	Access	Database	TierB	Schema							Unmigrated
-QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB	Schema							Unmigrated
+QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB	Schema	DestructiveRehearsal	SchemaState	SystemCatalogue,MutableApplicationState,SchemaState	EmptyScratch	Migration	AccessScratchRehearsalCollection	Migrated
 QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
-QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema							Unmigrated
+QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue,SchemaState	SystemCatalogue,SchemaState	EmptyScratch	SchemaDrift	AccessScratchRehearsalCollection	Migrated
 QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.AuthorizationBoundaryTests	Access	Fast	TierB								Unmigrated
@@ -28,8 +28,8 @@ QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	Tier
 QuranDashboard.Tests.Api.Access.EmailIdentityPreflightRehearsalTests	Access	Database	TierB	Schema,Startup							Unmigrated
 QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests	Access	Database	TierB	Schema							Unmigrated
-QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue,MutableApplicationState	SystemCatalogue,MutableApplicationState	EmptyScratch	SystemCatalogueReconciliation	PermissionCatalogueStartupScratchCollection	Migrated
+QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue	SystemCatalogue	EmptyScratch	SystemCatalogueReconciliation	AccessScratchRehearsalCollection	Migrated
 QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.OwnerReconciliationProtectedStateRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast	TierB								Unmigrated
@@ -58,10 +58,11 @@ QuranDashboard.Tests.Quran.Import.ManifestChecksumTests	FoundationImport	Fast	Pi
 QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Database	TierB								Unmigrated
+QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleContractTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB		CanonicalReader	CanonicalQuranData	None	TestDatabase	None	MushafReaderCollection	Migrated
+QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB								Unmigrated
@@ -125,8 +126,8 @@ QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabRefusalTests	WordsSimpleI3rab	D
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSchemaShapeTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema							Unmigrated
-QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke								Unmigrated
+QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke		GuardedReader	CanonicalQuranData,MutableApplicationState	None	TestDatabase	None	SmokeDataCollection	Migrated
 QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke								Unmigrated
@@ -135,11 +136,13 @@ QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke								
 QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeCommandTests	ApiBehavior	Fast	TierB	Cli,Schema							Unmigrated
+QuranDashboard.Tests.TestRuntime.TestRuntimeFullRehearsalTests	ApiBehavior	Fast	TierB	Cli,Execution,Schema	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
+QuranDashboard.Tests.TestRuntime.TestRuntimeScratchTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB								Unmigrated
 QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema							Unmigrated
 QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated

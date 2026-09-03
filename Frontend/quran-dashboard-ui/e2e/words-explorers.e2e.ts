@@ -33,10 +33,17 @@ const SEARCHABLE_EXPLORERS = [
   },
 ] as const;
 
+const CANONICAL_READ = {
+  annotation: [
+    { type: 'canonical-read' },
+    { type: 'fixture-policy', description: 'canonical-read-only' },
+  ],
+};
+
 for (const explorer of SEARCHABLE_EXPLORERS) {
-  test(`${explorer.name} explorer: search then open a row shows the details panel`, async ({
-    page,
-  }) => {
+  test(`${explorer.name} explorer: search then open a row shows the details panel`, CANONICAL_READ, async ({
+      page,
+    }) => {
     await page.goto(explorer.path);
     await expect(page.getByTestId(explorer.title)).toBeVisible();
 
@@ -440,26 +447,36 @@ authenticatedTest(
   },
 );
 
-test('unique-words explorer: search then open a word shows the drilldown', async ({ page }) => {
-  await page.goto('/dashboard/words/unique/tashkeel');
+test(
+  'unique-words explorer: search then open a word shows the drilldown',
+  {
+    annotation: [
+      ...CANONICAL_READ.annotation,
+      { type: 'critical' },
+      { type: 'journey', description: 'word-explorer.canonical-read' },
+    ],
+  },
+  async ({ page }) => {
+    await page.goto('/dashboard/words/unique/tashkeel');
 
-  await expect(page.getByTestId('unique-words-page-title')).toBeVisible();
+    await expect(page.getByTestId('unique-words-page-title')).toBeVisible();
 
-  await page.getByTestId('unique-words-search-input').fill('الله');
-  // The 300 ms debounce is the only barrier between the unfiltered list already on screen and the
-  // filtered one; without waiting for the param the row assertion resolves against stale rows.
-  await expect(page).toHaveURL(/[?&]search=[^&]/);
-  const words = page.getByTestId('unique-words-table-word-button');
-  await expect(words.first()).toBeVisible();
+    await page.getByTestId('unique-words-search-input').fill('الله');
+    // The 300 ms debounce is the only barrier between the unfiltered list already on screen and the
+    // filtered one; without waiting for the param the row assertion resolves against stale rows.
+    await expect(page).toHaveURL(/[?&]search=[^&]/);
+    const words = page.getByTestId('unique-words-table-word-button');
+    await expect(words.first()).toBeVisible();
 
-  await words.first().click();
+    await words.first().click();
 
-  const entity = page.getByTestId('word-drilldown-entity');
-  await expect(entity).toBeVisible();
-  await expect(entity).not.toBeEmpty();
-});
+    const entity = page.getByTestId('word-drilldown-entity');
+    await expect(entity).toBeVisible();
+    await expect(entity).not.toBeEmpty();
+  },
+);
 
-test('the unique-words route redirects to the tashkeel mode', async ({ page }) => {
+test('the unique-words route redirects to the tashkeel mode', CANONICAL_READ, async ({ page }) => {
   await page.goto('/dashboard/words/unique');
 
   await expect(page).toHaveURL(/\/dashboard\/words\/unique\/tashkeel/);

@@ -1,6 +1,6 @@
 import type { Page, Route } from '@playwright/test';
 
-import oracleData from '../../../test-artifacts/compact-phrase-search-ready/oracle.json';
+import oracleData from '../../../test-oracles/phrase-search.json';
 import {
   WORDS_PHRASES_REPETITIONS_SEGMENT,
   WORDS_PHRASES_SIMILARITY_SEGMENT,
@@ -15,10 +15,8 @@ const INDEX_UNAVAILABLE_MESSAGE = 'فهرس البحث في العبارات غ�
 const INDEX_CHANGED_MESSAGE = 'تغير فهرس البحث، أعد اختيار النتيجة';
 
 interface PhraseReadyOracle {
-  phraseSearch: {
-    query: {
-      raw: string;
-    };
+  query: {
+    raw: string;
   };
 }
 
@@ -29,8 +27,8 @@ test(
   {
     annotation: [
       { type: 'critical' },
-      { type: 'read-only' },
-      { type: 'artifact', description: 'compact-phrase-search-ready' },
+      { type: 'canonical-read' },
+      { type: 'fixture-policy', description: 'canonical-read-only' },
       { type: 'journey', description: 'phrase-search.unavailable-stale' },
     ],
   },
@@ -91,7 +89,7 @@ async function exerciseStaleIndex(page: Page): Promise<void> {
   await page.route(`${similaritySearchUrl}*`, staleOnce);
   try {
     await page.goto(phraseSearchRoutePath(WORDS_PHRASES_SIMILARITY_SEGMENT));
-    await page.getByRole('textbox', { name: 'العبارة المرجعية' }).fill(oracle.phraseSearch.query.raw);
+    await page.getByRole('textbox', { name: 'العبارة المرجعية' }).fill(oracle.query.raw);
     await page.getByRole('button', { name: 'بحث', exact: true }).click();
 
     await expect

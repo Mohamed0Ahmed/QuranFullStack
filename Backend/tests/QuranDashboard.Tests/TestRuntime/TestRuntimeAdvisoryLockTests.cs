@@ -188,14 +188,22 @@ public sealed class TestRuntimeAdvisoryLockTests(TestRuntimeAdministrationFixtur
         await using var observer = new NpgsqlConnection(fixture.ConnectionString);
         await observer.OpenAsync();
         await using var command = new NpgsqlCommand(
-            "SELECT application_name FROM pg_catalog.pg_stat_activity WHERE pid = @pid",
+            """
+            SELECT application_name, datname
+            FROM pg_catalog.pg_stat_activity
+            WHERE pid = @pid
+            """,
             observer);
         command.Parameters.AddWithValue("pid", lease.Ownership.KeeperProcessId);
 
-        var applicationName = (string?)await command.ExecuteScalarAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+        await reader.ReadAsync();
+        var applicationName = reader.GetString(0);
+        var lockDatabase = reader.GetString(1);
 
         acquisition.Report.TimeoutMilliseconds.Should().Be(900_000);
         applicationName.Should().Contain("metadata-run").And.Contain("reader-command");
+        lockDatabase.Should().Be(contract.AdvisoryLock.Database);
     }
 
     [Fact]
@@ -278,6 +286,43 @@ public sealed class TestRuntimeAdvisoryLockTests(TestRuntimeAdministrationFixtur
                 await process.WaitForExitAsync();
             }
         }
+    }
+
+    [Fact]
+    public async Task ClosingTheRunnerLifetimePipe_ReleasesTheKeeperCleanly()
+    {
+        var startInfo = new ProcessStartInfo(
+            "dotnet",
+            $"\"{TestRuntimeAssemblyPath}\" lock hold --mode exclusive --run-id pipe-owner --command scratch-rehearsal --timeout-seconds 5 --release-on-stdin-close")
+        {
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        startInfo.Environment[TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable] = fixture.ConnectionString;
+        using var process = Process.Start(startInfo);
+        process.Should().NotBeNull();
+
+        var acquiredLine = await process!.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(20));
+        if (acquiredLine is null)
+        {
+            acquiredLine.Should().NotBeNull(await process.StandardError.ReadToEndAsync());
+        }
+        using (var acquired = JsonDocument.Parse(acquiredLine!))
+        {
+            acquired.RootElement.GetProperty("advisoryLock").GetProperty("status").GetString()
+                .Should().Be("acquired");
+        }
+
+        process.StandardInput.Close();
+        var releasedLine = await process.StandardOutput.ReadLineAsync().WaitAsync(TimeSpan.FromSeconds(10));
+        await process.WaitForExitAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
+        process.ExitCode.Should().Be(0);
+        using var released = JsonDocument.Parse(releasedLine!);
+        released.RootElement.GetProperty("advisoryLock").GetProperty("status").GetString()
+            .Should().Be("released");
     }
 
     private static string ContractPath => TestRuntimeTestPaths.ContractPath;

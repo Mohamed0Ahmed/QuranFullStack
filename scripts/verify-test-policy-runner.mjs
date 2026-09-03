@@ -29,9 +29,11 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
   row('Tests.Guarded', 'PhraseSearch', 'Database', 'TierB', '', 'GuardedReader', 'CanonicalQuranData', 'None', 'TestDatabase', 'None', 'None', 'Migrated'),
   row('Tests.Writer', 'Access', 'Database', 'TierB', '', 'MutableWriter', 'SystemCatalogue', 'MutableApplicationState', 'TestDatabase', 'None', 'None', 'Migrated'),
   row('Tests.FixtureUpgraded', 'Access', 'Database', 'TierB', '', 'CanonicalReader', 'SystemCatalogue', 'None', 'TestDatabase', 'None', 'WriterCollection', 'Migrated'),
-  row('Tests.EmptyMigration', 'Access', 'Migration', 'Pipeline', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'None', 'Migrated'),
+  row('Tests.EmptyMigration', 'Access', 'Migration', 'TierB', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'ScratchCollection', 'Migrated'),
   row('Tests.FullImport', 'FoundationImport', 'Canonical', 'Pipeline', 'Cli,Source,Safety', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.OtherFullImport', 'Tafsirs', 'Canonical', 'Pipeline', 'Cli,Source', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
+  row('Tests.FullIndex', 'PhraseSearch', 'Release', 'Release', 'Cli,Execution', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'PhraseSearchIndexBuild', 'None', 'Migrated'),
+  row('Tests.FullRecovery', 'ApiBehavior', 'Release', 'Release', 'Cli,Execution,Schema', 'DestructiveRehearsal', 'CanonicalQuranData,SchemaState', 'CanonicalQuranData,SchemaState', 'FullRehearsal', 'Recovery', 'None', 'Migrated'),
   row('Tests.LegacyFull', 'Smoke', 'Canonical', 'Smoke', '', '', '', '', '', '', '', 'Unmigrated'),
   row('QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests', 'ApiBehavior', 'Release', 'Release', 'Safety', '', '', '', '', '', '', 'Unmigrated'),
   row('Tests.Legacy', 'Linking', 'Database', 'TierB', '', '', '', '', '', '', '', 'Unmigrated'),
@@ -39,6 +41,7 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
 const resourceCatalog = parseBackendResourceCatalog(`${[
   'CollectionName\tResourceClassName\tParallelPolicy\tStatePolicy\tSetupWrites\tResetBehavior\tDatabaseTarget\tStartupEffects\tMigrationState',
   'WriterCollection\tTests.WriterFixture\tNonParallel\tResetPerTest\tMutableApplicationState\tMutableApplicationState\tTestDatabase\tMutableApi\tMigrated',
+  'ScratchCollection\tTests.ScratchFixture\tNonParallel\tFreshLeasePerCase\tSchemaState\tNone\tEmptyScratch\tNone\tMigrated',
 ].join('\n')}\n`);
 
 assert.deepEqual(EXECUTION_GROUPS, [
@@ -57,6 +60,7 @@ const focused = planFocusedSelection({
   backendMethods: ['Tests.Fast.Contract_case'],
   buildMode: 'build',
   playwrightSelections: [
+    { file: 'e2e/mushaf-reader.e2e.ts', line: 42, effectiveGroup: 'CanonicalReader' },
     { file: 'e2e/guarded.e2e.ts', line: 41, effectiveGroup: 'GuardedReader' },
   ],
   authorizeFullData: false,
@@ -71,6 +75,7 @@ assert.deepEqual(
   [
     'Tests.Fast.Contract_case',
     'Tests.Reader',
+    'e2e/mushaf-reader.e2e.ts:42',
     'e2e/guarded.e2e.ts:41',
     'Tests.FixtureUpgraded',
     'Tests.Legacy',
@@ -80,6 +85,10 @@ assert.equal(focused.commands[0].id, 'backend-build');
 assert.deepEqual(
   focused.commands.find(({ id }) => id === 'backend-method-Tests.Fast.Contract_case').arguments,
   ['feature', '--test', 'Tests.Fast.Contract_case', '--no-build'],
+);
+assert.deepEqual(
+  focused.commands.find(({ id }) => id === 'playwright-e2e/mushaf-reader.e2e.ts:42').arguments,
+  ['run', 'e2e:canonical:focused', '--', 'e2e/mushaf-reader.e2e.ts:42'],
 );
 assert.deepEqual(
   focused.commands.find(({ id }) => id === 'playwright-e2e/guarded.e2e.ts:41').arguments,
@@ -123,6 +132,21 @@ const authorizedFocusedFullData = planFocusedSelection({
 });
 assert.deepEqual(authorizedFocusedFullData.authorizationRequired, []);
 assert.equal(authorizedFocusedFullData.commands.length, 1);
+assert.equal(authorizedFocusedFullData.commands[0].rehearsalSubtype, undefined);
+
+const authorizedIndexAndRecovery = planFocusedSelection({
+  backendCatalog: catalog,
+  backendResources: resourceCatalog,
+  backendClasses: ['Tests.FullIndex', 'Tests.FullRecovery'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+  authorizeFullData: true,
+});
+assert.deepEqual(
+  authorizedIndexAndRecovery.commands.map(({ rehearsalSubtype }) => rehearsalSubtype),
+  ['phrase-search-index-build', 'recovery'],
+);
 
 const blockedLegacyFullData = planFocusedSelection({
   backendCatalog: catalog,
@@ -165,9 +189,11 @@ assert.deepEqual(ordinaryPrePr.requiredGates, ['backend-risk', 'frontend-policy-
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Fast'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Legacy'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
+assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-canonical-critical'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-critical'));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
+assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));
 assert.deepEqual(
   ordinaryPrePr.partitions.map(({ group }) => group),
   ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],
@@ -203,6 +229,10 @@ const authorizedPipeline = planPrePrSelection({
 assert.deepEqual(authorizedPipeline.authorizationRequired, []);
 assert.ok(authorizedPipeline.commands.some(({ id }) => id.includes('Tests.FullImport')));
 assert.ok(!authorizedPipeline.commands.some(({ id }) => id.includes('Tests.OtherFullImport')));
+assert.equal(
+  authorizedPipeline.commands.find(({ id }) => id.includes('Tests.FullImport')).rehearsalSubtype,
+  undefined,
+);
 
 const cheapScratch = planPrePrSelection({
   backendCatalog: catalog,
@@ -213,6 +243,10 @@ const cheapScratch = planPrePrSelection({
 });
 assert.ok(cheapScratch.commands.some(({ id }) => id.includes('Tests.EmptyMigration')));
 assert.deepEqual(cheapScratch.authorizationRequired, []);
+assert.equal(
+  cheapScratch.commands.find(({ id }) => id.includes('Tests.EmptyMigration')).scratchSubtype,
+  'migration',
+);
 
 assert.deepEqual(
   planPrePrSelection({
@@ -235,6 +269,8 @@ const scheduledWithoutAuthorization = planPrePrSelection({
 });
 assert.deepEqual(scheduledWithoutAuthorization.authorizationRequired, [
   'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests',
+  'Tests.FullIndex',
+  'Tests.FullRecovery',
 ]);
 
 const authorizedRelease = planPrePrSelection({

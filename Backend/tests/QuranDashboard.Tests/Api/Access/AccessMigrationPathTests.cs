@@ -1,6 +1,6 @@
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessProcessGlobalCollection))]
+[Collection(nameof(AccessScratchRehearsalCollection))]
 public sealed class AccessMigrationPathTests(AccessMigrationTestFixture fixture)
 {
     [Fact]

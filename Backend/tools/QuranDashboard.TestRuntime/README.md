@@ -1,7 +1,8 @@
 # QuranDashboard.TestRuntime
 
 `QuranDashboard.TestRuntime` is the Backend-owned control-plane seam for the persistent Test Database
-Capability. Existing test runners continue to use their current lifecycle until the later atomic cutover.
+Capability. Policy-migrated Backend readers invoke it through the repository runner; explicitly
+unmigrated test entries continue to use their current lifecycle until the later atomic cutover.
 
 ## Validate the contract
 
@@ -45,9 +46,40 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- admin apply --login <lo
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin verify --login <local-login>
 ```
 
-`inspect`, `dry-run`, and `verify` do not retain database changes. `apply` is the only mutating mode and
-requires the selected login to be the connected session login with explicit role/database administration
-authority. It accepts only local PostgreSQL 18, the exact `quran_dashboard_test` database, and a server
+Before the first capability operation for a non-superuser operator login, a PostgreSQL superuser must
+perform this one-time, cluster-scoped bootstrap. Replace `<local-login>` with the intended operator role.
+These are the only parameter privileges the operator receives; do not grant `ALTER SYSTEM` or broader
+parameter authority:
+
+```sql
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.reset_enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.contract_version" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.capability_metadata_version" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_pipeline" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_input_provenance" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_quran_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.system_catalogue_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.mutable_state_dirty" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.protected_state_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.migration_head" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.refreshed_at_utc" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.rehearsal_enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.rehearsal_subtype" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.scratch_run_id" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.scratch_receipt" TO <local-login>;
+```
+
+Repeat the bootstrap only when adding another operator login or when the committed marker contract
+changes. `admin apply` and `refresh apply` validate all 16 grants before mutation and report each missing
+name as `administration.authority.parameter-set-missing` or `refresh.authority.parameter-set-missing`.
+
+`inspect`, `dry-run`, and `verify` do not retain database changes. `apply` is the only mutating mode. The
+runtime operator must be the connected session login. A non-superuser operator must own the exact
+`quran_dashboard_test` database and the application-schema objects it reconciles, have `CREATEROLE` and
+`CREATEDB`, and have `SET` on exactly the 16 committed marker parameters above. A superuser session is
+also supported, including for disposable-container capability provisioning. Every path still validates
+the marker parameter authority before mutation. The command accepts only local PostgreSQL 18 and a server
 that is not in recovery. Repeating `apply` against compliant state is a no-op.
 
 The workflow creates four stable `NOLOGIN` roles, removes unexpected direct or inherited membership,
@@ -62,6 +94,13 @@ scratch administrator receives `CREATEDB` but no ownership or mutation grants on
 or persistent Test Database. `verify` performs safe denial probes under each restricted role and rolls back
 its transaction. When `quran_dashboard` exists, administration opens a read-only transaction that inspects
 only its PostgreSQL catalog privileges; it never reads application tables or repairs unsafe grants there.
+
+When a PostgreSQL 18 non-superuser with `CREATEROLE` creates a capability role, PostgreSQL retains its
+bootstrap-superuser grant back to that creator with `ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`; the
+creator cannot remove or change that row. TestRuntime adds the separate operational membership with
+`ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`. Verification permits only those two exact rows for the
+selected login, rejects every other member or option combination, and preserves all ordinary-role denial
+probes.
 
 ## Refresh the Test Database Capability
 
@@ -115,8 +154,10 @@ for diagnosis and are never silently removed.
 
 ## Hold the global database lock
 
-The committed contract owns the one cluster-wide lock key. A runner starts a dedicated keeper process for
-its complete database-aware invocation:
+The committed contract owns the one cluster-wide lock key and the `postgres` lock-anchor database. Every
+keeper connects to that same anchor, regardless of which Test, scratch, refresh, or Rehearsal Database the
+guarded work targets; PostgreSQL advisory locks are database-scoped, so this common namespace is required.
+A runner starts a dedicated keeper process for its complete database-aware invocation:
 
 ```bash
 dotnet run --project tools/QuranDashboard.TestRuntime -- \
@@ -146,6 +187,89 @@ contract key or lock SQL.
 System Catalogue reconciliation has a strict nested order: acquire and verify the global exclusive keeper
 first, then begin the reconciliation transaction and acquire its narrower transaction-level catalogue lock.
 Never acquire the catalogue lock while waiting for the global lock.
+
+## Run empty-scratch Destructive Rehearsals
+
+Use repository-root `scripts/test` for every migrated empty-scratch test. The runner holds the global
+exclusive lock, reaps only receipt-verified leftovers, creates exactly
+`quran_test_scratch_<32-lowercase-hex-run-id>` from `template0` on the configured local PostgreSQL 18
+server, runs one exact class or method selection, and removes the database before releasing the lock.
+
+The lifecycle commands are lower-level runner operations:
+
+```bash
+dotnet QuranDashboard.TestRuntime.dll lock hold --mode exclusive \
+  --run-id <run-id> --command scratch-rehearsal --release-on-stdin-close
+dotnet QuranDashboard.TestRuntime.dll scratch reap \
+  --run-id <run-id> --command scratch-rehearsal
+dotnet QuranDashboard.TestRuntime.dll scratch create \
+  --run-id <run-id> --command scratch-rehearsal --subtype migration
+dotnet QuranDashboard.TestRuntime.dll scratch resolve \
+  --run-id <run-id> --command scratch-rehearsal --subtype migration
+dotnet QuranDashboard.TestRuntime.dll scratch cleanup \
+  --run-id <run-id> --command scratch-rehearsal
+```
+
+`ConnectionStrings__QuranDashboardTest` remains the local server/base-capability connection and must name
+exactly `quran_dashboard_test`; it is never rewritten to the Development Database. Creation requires the
+provisioned `quran_dashboard_test_scratch_admin` role, its expected `CREATEDB`/`NOLOGIN` attributes, current
+login membership, PostgreSQL 18, non-recovery state, and the matching exclusive keeper identity. The
+scratch owner is always that role. Empty-scratch subtypes are canonical import, rebuild, and generation,
+migration, System Catalogue reconciliation, and schema drift; full-data recovery and PhraseSearch index
+rehearsals are refused.
+
+A private temporary receipt is recorded before database creation. The database records the same run ID,
+subtype, and receipt token in database-scoped settings. Normal and crash cleanup check the strict name,
+owner, run ID, subtype, receipt, and current exclusive lock before `DROP DATABASE`; any mismatch remains
+for inspection. Reports contain identities and booleans only, retain zero dump files, and never emit a
+connection string or credential. Closing the runner's lifetime pipe releases the keeper connection, so a
+killed runner cannot orphan the global advisory lock; its database is handled by the next verified reap.
+
+## Use a manually provisioned full Rehearsal Database
+
+PhraseSearch index-build and recovery rehearsals use a separate, manually provisioned local database.
+Set `ConnectionStrings__QuranDashboardRehearsal` only for an explicitly selected full-data lane. The
+target must not be `quran_dashboard`, `quran_dashboard_test`, a TestRuntime scratch/refresh database, or
+a remote endpoint. TestRuntime never creates, clones, restores, refreshes, or implicitly drops it.
+
+The operator must build the target independently through the canonical pipeline and install these
+database-scoped markers: rehearsal enabled, intended subtype, canonical pipeline identity and input
+provenance SHA-256, Protected State fingerprint, current migration head, and UTC provisioning timestamp.
+The authoritative marker names are in `testing/test-database-contract.json`; the canonical pipeline
+identity is emitted by the refresh workflow. The provisioning timestamp is accepted for at most the
+contracted 168 hours. Capability/reset enablement must be absent or false so the target cannot masquerade
+as the persistent Test Database.
+
+Inspect without mutation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal inspect --subtype phrase-search-index-build
+```
+
+Repository-root `scripts/test` uses `rehearsal hold` for migrated, explicitly authorized full-data
+index/recovery selections. The command recomputes Protected State, verifies every marker and the current
+migration, acquires the global exclusive lock on the local cluster, and emits credential-free evidence
+before starting the selected test. A missing capability is reported as `rehearsal.capability-missing`.
+Mismatches report `refresh-required` with a manual refresh instruction. Focused, pre-PR, cutover, and
+artifact-retirement paths do not read this environment variable unless they explicitly select such a lane.
+
+Success and failure both preserve the Rehearsal Database for inspection. Removal is a separate operation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal cleanup inspect --subtype phrase-search-index-build
+
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal cleanup apply --subtype phrase-search-index-build \
+  --run-id <run-id> --command rehearsal-cleanup \
+  --confirm-database <exact-name-displayed-by-inspect> --yes
+```
+
+Cleanup reacquires the exclusive cluster lock, recomputes and revalidates the capability, requires the
+exact displayed target name, refuses a target with live sessions, and uses no forced termination. Recovery
+code records the temporary backup SHA-256 and source Protected State fingerprint; it removes the payload
+only after successful completion and retains no payload in successful evidence.
 
 ## Fingerprint Protected State
 

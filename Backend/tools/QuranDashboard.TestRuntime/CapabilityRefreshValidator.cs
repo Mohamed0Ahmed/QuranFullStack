@@ -629,10 +629,6 @@ internal sealed class CapabilityRefreshValidator : ICapabilityRefreshValidator
             await using var roleCommand = new NpgsqlCommand(
                 "SELECT role.rolcanlogin = false AND role.rolsuper = false AND role.rolcreaterole = false "
                 + "AND role.rolcreatedb = @createdb AND role.rolreplication = false AND role.rolbypassrls = false "
-                + "AND (SELECT count(*) FROM pg_catalog.pg_auth_members AS membership "
-                + "INNER JOIN pg_catalog.pg_roles AS member ON member.oid = membership.member "
-                + "WHERE membership.roleid = role.oid AND member.rolname = @login) = 1 "
-                + "AND (SELECT count(*) FROM pg_catalog.pg_auth_members AS membership WHERE membership.roleid = role.oid) = 1 "
                 + "AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members AS membership WHERE membership.member = role.oid) "
                 + "AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_database AS database "
                 + "WHERE database.datdba = role.oid "
@@ -645,7 +641,15 @@ internal sealed class CapabilityRefreshValidator : ICapabilityRefreshValidator
             roleCommand.Parameters.AddWithValue("createdb", role.Key == "scratchAdministrator");
             roleCommand.Parameters.AddWithValue("developmentDatabase", contract.Targets.DevelopmentDatabase);
             roleCommand.Parameters.AddWithValue("testDatabase", contract.Targets.TestDatabase);
-            if (await roleCommand.ExecuteScalarAsync(cancellationToken) is not true)
+            var attributesMatch = await roleCommand.ExecuteScalarAsync(cancellationToken) is true;
+            var membershipMatches = attributesMatch
+                && await CapabilityAdministrator.SelectedLoginIsOnlyMemberAsync(
+                    connection,
+                    transaction,
+                    role.Value,
+                    selectedLogin,
+                    cancellationToken);
+            if (!membershipMatches)
             {
                 violations.Add(new ContractViolation("refresh.validation.role-attributes", role.Key));
             }

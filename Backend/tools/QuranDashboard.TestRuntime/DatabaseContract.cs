@@ -15,6 +15,7 @@ internal sealed class DatabaseContract
     public required TestDatabaseMarkers Markers { get; init; }
     public required TestDatabaseTargets Targets { get; init; }
     public required AdvisoryLockContract AdvisoryLock { get; init; }
+    public required FullRehearsalContract FullRehearsal { get; init; }
     public required string[] RehearsalSubtypes { get; init; }
 
     public IEnumerable<(string DataClass, string Table)> ApplicationTables()
@@ -91,6 +92,8 @@ internal sealed class TestDatabaseMarkers
     public required string RefreshedAtUtc { get; init; }
     public required string RehearsalEnabled { get; init; }
     public required string RehearsalSubtype { get; init; }
+    public required string ScratchRunId { get; init; }
+    public required string ScratchReceipt { get; init; }
 
     public IReadOnlyDictionary<string, string> AsDictionary() => new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -108,6 +111,8 @@ internal sealed class TestDatabaseMarkers
         ["refreshedAtUtc"] = RefreshedAtUtc,
         ["rehearsalEnabled"] = RehearsalEnabled,
         ["rehearsalSubtype"] = RehearsalSubtype,
+        ["scratchRunId"] = ScratchRunId,
+        ["scratchReceipt"] = ScratchReceipt,
     };
 }
 
@@ -123,6 +128,12 @@ internal sealed class TestDatabaseTargets
 internal sealed class AdvisoryLockContract
 {
     public required long Key { get; init; }
+    public required string Database { get; init; }
+}
+
+internal sealed class FullRehearsalContract
+{
+    public required int MaximumAgeHours { get; init; }
 }
 
 internal static class DatabaseContractReader
@@ -149,6 +160,7 @@ internal static class DatabaseContractReader
             || contract.Targets is null
             || contract.Targets.AllowedDatabaseTargets is null
             || contract.AdvisoryLock is null
+            || contract.FullRehearsal is null
             || contract.RehearsalSubtypes is null)
         {
             throw new JsonException("The database contract contains a null required value.");
