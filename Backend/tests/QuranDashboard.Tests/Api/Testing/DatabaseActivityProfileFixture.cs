@@ -101,7 +101,14 @@ public sealed class DatabaseActivityProfileFixture : IAsyncLifetime
         using var output = new StringWriter();
         using var error = new StringWriter();
         var exitCode = await QuranDashboard.TestRuntime.TestRuntimeCommand.ExecuteAsync(
-            ["admin", "apply", "--login", login, "--contract", ContractPath],
+            [
+                "admin",
+                "apply",
+                "--login",
+                login,
+                "--run-id",
+                PostgreSqlResourceLabels.RunId,
+            ],
             output,
             error,
             name => name == QuranDashboard.TestRuntime.TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
@@ -295,23 +302,6 @@ public sealed class DatabaseActivityProfileFixture : IAsyncLifetime
         await ExecuteAsync(
             connection,
             $"ALTER DATABASE {database} SET quran_dashboard.test_runtime.refreshed_at_utc TO '2026-09-03T00:00:00Z'");
-    }
-
-    private static string ContractPath
-    {
-        get
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "QuranDashboard.sln")))
-            {
-                directory = directory.Parent;
-            }
-
-            return Path.Combine(
-                directory?.FullName ?? throw new InvalidOperationException("Backend solution root was not found."),
-                "testing",
-                "test-database-contract.json");
-        }
     }
 }
 
