@@ -14,6 +14,8 @@ internal enum CapabilityAdministrationMode
 
 internal static class CapabilityAdministrator
 {
+    // PostgreSQL reserves role OID 10 for its bootstrap superuser in every cluster.
+    private const int PostgreSqlBootstrapSuperuserRoleId = 10;
     private const string InsufficientPrivilegeSqlState = "42501";
 
     private static readonly string[] PlannedOperations =
@@ -284,14 +286,58 @@ internal static class CapabilityAdministrator
             violations.Add(new ContractViolation("administration.login.not-session-user"));
         }
 
+        if (isSuperuser)
+        {
+            violations.Add(new ContractViolation("administration.login.superuser"));
+        }
+
         if (mode == CapabilityAdministrationMode.Apply
-            && !isSuperuser
             && !(canCreateRoles && canCreateDatabases && ownsTarget))
         {
             violations.Add(new ContractViolation("administration.authority.insufficient"));
         }
 
+        if (mode == CapabilityAdministrationMode.Apply)
+        {
+            var missingParameters = await ReadMissingMarkerParameterPrivilegesAsync(
+                connection,
+                contract,
+                selectedLogin,
+                cancellationToken);
+            violations.AddRange(missingParameters.Select(parameter => new ContractViolation(
+                "administration.authority.parameter-set-missing",
+                parameter)));
+        }
+
         return OrderViolations(violations);
+    }
+
+    internal static async Task<IReadOnlyList<string>> ReadMissingMarkerParameterPrivilegesAsync(
+        NpgsqlConnection connection,
+        DatabaseContract contract,
+        string selectedLogin,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT parameter_name
+            FROM unnest(@parameters) AS markers(parameter_name)
+            WHERE NOT pg_catalog.has_parameter_privilege(@login, parameter_name, 'SET')
+            ORDER BY parameter_name
+            """;
+        await using var command = new NpgsqlCommand(sql, connection);
+        command.Parameters.AddWithValue("login", selectedLogin);
+        command.Parameters.AddWithValue(
+            "parameters",
+            NpgsqlDbType.Array | NpgsqlDbType.Text,
+            contract.Markers.AsDictionary().Values.Distinct(StringComparer.Ordinal).ToArray());
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        var missing = new List<string>();
+        while (await reader.ReadAsync(cancellationToken))
+        {
+            missing.Add(reader.GetString(0));
+        }
+
+        return missing;
     }
 
     internal static async Task ApplyDatabaseStateAsync(
@@ -306,21 +352,11 @@ internal static class CapabilityAdministrator
         var roles = contract.Roles.AsDictionary();
         foreach (var role in roles)
         {
-            if (!await RoleExistsAsync(connection, transaction, role.Value, cancellationToken))
-            {
-                var createDatabaseAttribute = role.Key == "scratchAdministrator" ? "CREATEDB" : "NOCREATEDB";
-                await ExecuteAsync(
-                    connection,
-                    transaction,
-                    $"CREATE ROLE {QuoteIdentifier(role.Value)} NOLOGIN NOSUPERUSER NOCREATEROLE {createDatabaseAttribute} NOREPLICATION NOBYPASSRLS",
-                    cancellationToken);
-            }
-
-            var databaseAttribute = role.Key == "scratchAdministrator" ? "CREATEDB" : "NOCREATEDB";
-            await ExecuteAsync(
+            await ReconcileRoleAttributesAsync(
                 connection,
                 transaction,
-                $"ALTER ROLE {QuoteIdentifier(role.Value)} NOLOGIN NOSUPERUSER NOCREATEROLE {databaseAttribute} NOREPLICATION NOBYPASSRLS",
+                role.Value,
+                role.Key == "scratchAdministrator",
                 cancellationToken);
             await ReconcileMembershipAsync(
                 connection,
@@ -426,6 +462,99 @@ internal static class CapabilityAdministrator
         await transaction.CommitAsync(cancellationToken);
     }
 
+    private static async Task ReconcileRoleAttributesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string role,
+        bool canCreateDatabases,
+        CancellationToken cancellationToken)
+    {
+        var current = await ReadRoleAttributesAsync(connection, transaction, role, cancellationToken);
+        var databaseAttribute = canCreateDatabases ? "CREATEDB" : "NOCREATEDB";
+        if (current is null)
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"CREATE ROLE {QuoteIdentifier(role)} NOLOGIN NOCREATEROLE {databaseAttribute} NOREPLICATION",
+                cancellationToken);
+            return;
+        }
+
+        var changedAttributes = new List<string>();
+        if (current.CanLogin)
+        {
+            changedAttributes.Add("NOLOGIN");
+        }
+
+        if (current.IsSuperuser)
+        {
+            changedAttributes.Add("NOSUPERUSER");
+        }
+
+        if (current.CanCreateRoles)
+        {
+            changedAttributes.Add("NOCREATEROLE");
+        }
+
+        if (current.CanCreateDatabases != canCreateDatabases)
+        {
+            changedAttributes.Add(databaseAttribute);
+        }
+
+        if (current.CanReplicate)
+        {
+            changedAttributes.Add("NOREPLICATION");
+        }
+
+        if (current.CanBypassRowLevelSecurity)
+        {
+            changedAttributes.Add("NOBYPASSRLS");
+        }
+
+        if (changedAttributes.Count != 0)
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"ALTER ROLE {QuoteIdentifier(role)} {string.Join(' ', changedAttributes)}",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<RoleAttributes?> ReadRoleAttributesAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string role,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT rolcanlogin,
+                   rolsuper,
+                   rolcreaterole,
+                   rolcreatedb,
+                   rolreplication,
+                   rolbypassrls
+            FROM pg_catalog.pg_roles
+            WHERE rolname = @role
+            """;
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("role", role);
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        if (!await reader.ReadAsync(cancellationToken))
+        {
+            return null;
+        }
+
+        return new RoleAttributes(
+            reader.GetBoolean(0),
+            reader.GetBoolean(1),
+            reader.GetBoolean(2),
+            reader.GetBoolean(3),
+            reader.GetBoolean(4),
+            reader.GetBoolean(5));
+    }
+
     private static async Task ReconcileMembershipAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
@@ -448,6 +577,11 @@ internal static class CapabilityAdministrator
             cancellationToken);
         foreach (var member in members)
         {
+            if (string.Equals(member, selectedLogin, StringComparison.Ordinal))
+            {
+                continue;
+            }
+
             await ExecuteAsync(
                 connection,
                 transaction,
@@ -477,11 +611,44 @@ internal static class CapabilityAdministrator
                 cancellationToken);
         }
 
-        await ExecuteAsync(
+        if (!await HasOperationalMembershipAsync(
             connection,
             transaction,
-            $"GRANT {QuoteIdentifier(capabilityRole)} TO {QuoteIdentifier(selectedLogin)} WITH ADMIN FALSE, INHERIT TRUE, SET TRUE",
-            cancellationToken);
+            capabilityRole,
+            selectedLogin,
+            cancellationToken))
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"GRANT {QuoteIdentifier(capabilityRole)} TO {QuoteIdentifier(selectedLogin)} WITH INHERIT TRUE",
+                cancellationToken);
+        }
+    }
+
+    private static async Task<bool> HasOperationalMembershipAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        string grantedRole,
+        string member,
+        CancellationToken cancellationToken)
+    {
+        const string sql = """
+            SELECT EXISTS (
+                SELECT 1
+                FROM pg_catalog.pg_auth_members AS membership
+                INNER JOIN pg_catalog.pg_roles AS granted ON granted.oid = membership.roleid
+                INNER JOIN pg_catalog.pg_roles AS member ON member.oid = membership.member
+                WHERE granted.rolname = @grantedRole
+                  AND member.rolname = @member
+                  AND NOT membership.admin_option
+                  AND membership.inherit_option
+                  AND membership.set_option)
+            """;
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
+        command.Parameters.AddWithValue("grantedRole", grantedRole);
+        command.Parameters.AddWithValue("member", member);
+        return (bool)(await command.ExecuteScalarAsync(cancellationToken))!;
     }
 
     private static async Task RevokePrivilegesAsync(
@@ -664,6 +831,7 @@ internal static class CapabilityAdministrator
 
         var membershipMatches = await SelectedLoginIsOnlyMemberAsync(
             connection,
+            null,
             roleName,
             selectedLogin,
             cancellationToken);
@@ -1251,26 +1419,37 @@ internal static class CapabilityAdministrator
         return result;
     }
 
-    private static async Task<bool> SelectedLoginIsOnlyMemberAsync(
+    internal static async Task<bool> SelectedLoginIsOnlyMemberAsync(
         NpgsqlConnection connection,
+        NpgsqlTransaction? transaction,
         string role,
         string selectedLogin,
         CancellationToken cancellationToken)
     {
         const string sql = """
-            SELECT count(*) = 1
+            SELECT count(DISTINCT member.oid) = 1
                AND bool_and(member.rolname = @login)
-               AND bool_and(NOT membership.admin_option)
-               AND bool_and(membership.inherit_option)
-               AND bool_and(membership.set_option)
+               AND bool_or(
+                   NOT membership.admin_option
+                   AND membership.inherit_option
+                   AND membership.set_option)
+               AND bool_and(
+                   (NOT membership.admin_option
+                    AND membership.inherit_option
+                    AND membership.set_option)
+                   OR (membership.grantor = @bootstrapSuperuserRoleId
+                       AND membership.admin_option
+                       AND NOT membership.inherit_option
+                       AND NOT membership.set_option))
             FROM pg_catalog.pg_auth_members AS membership
             INNER JOIN pg_catalog.pg_roles AS granted ON granted.oid = membership.roleid
             INNER JOIN pg_catalog.pg_roles AS member ON member.oid = membership.member
             WHERE granted.rolname = @role
             """;
-        await using var command = new NpgsqlCommand(sql, connection);
+        await using var command = new NpgsqlCommand(sql, connection, transaction);
         command.Parameters.AddWithValue("role", role);
         command.Parameters.AddWithValue("login", selectedLogin);
+        command.Parameters.AddWithValue("bootstrapSuperuserRoleId", PostgreSqlBootstrapSuperuserRoleId);
         return (bool)(await command.ExecuteScalarAsync(cancellationToken))!;
     }
 
@@ -1291,20 +1470,6 @@ internal static class CapabilityAdministrator
         }
 
         return names;
-    }
-
-    private static async Task<bool> RoleExistsAsync(
-        NpgsqlConnection connection,
-        NpgsqlTransaction transaction,
-        string role,
-        CancellationToken cancellationToken)
-    {
-        await using var command = new NpgsqlCommand(
-            "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = @role)",
-            connection,
-            transaction);
-        command.Parameters.AddWithValue("role", role);
-        return (bool)(await command.ExecuteScalarAsync(cancellationToken))!;
     }
 
     private static async Task<bool> DatabaseExistsAsync(
@@ -1422,4 +1587,12 @@ internal static class CapabilityAdministrator
         IReadOnlyDictionary<string, CapabilityRoleReport> Roles,
         IReadOnlyDictionary<string, MarkerState> Markers,
         IReadOnlyList<ContractViolation> Violations);
+
+    private sealed record RoleAttributes(
+        bool CanLogin,
+        bool IsSuperuser,
+        bool CanCreateRoles,
+        bool CanCreateDatabases,
+        bool CanReplicate,
+        bool CanBypassRowLevelSecurity);
 }

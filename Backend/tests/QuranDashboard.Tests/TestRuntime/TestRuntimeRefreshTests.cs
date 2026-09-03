@@ -119,7 +119,7 @@ public sealed class TestRuntimeRefreshTests(TestRuntimeRefreshFixture fixture)
     }
 
     [Fact]
-    public async Task Apply_BuildsAndInstallsTheStagedCapabilityWithoutReadingTheDevelopmentDatabase()
+    public async Task Apply_AsBootstrappedNonSuperuser_BuildsAndInstallsTheStagedCapabilityWithoutReadingTheDevelopmentDatabase()
     {
         var pipeline = new FakePipeline();
         var result = await RunAsync(
@@ -203,7 +203,10 @@ public sealed class TestRuntimeRefreshTests(TestRuntimeRefreshFixture fixture)
 
     private async Task<int> DevelopmentProbeAsync()
     {
-        var development = new NpgsqlConnectionStringBuilder(fixture.ConnectionString) { Database = "quran_dashboard" };
+        var development = new NpgsqlConnectionStringBuilder(fixture.ServerAdministratorConnectionString)
+        {
+            Database = "quran_dashboard",
+        };
         await using var connection = new NpgsqlConnection(development.ConnectionString);
         await connection.OpenAsync();
         return Convert.ToInt32(await TestRuntimeRefreshFixture.ScalarAsync(

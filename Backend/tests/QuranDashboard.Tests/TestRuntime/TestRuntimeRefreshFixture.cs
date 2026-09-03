@@ -1,13 +1,17 @@
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.TestRuntime;
 
 public sealed class TestRuntimeRefreshFixture : IAsyncLifetime
 {
+    private const string CapabilityAdministratorLogin = "ticket_171_refresh_administrator";
     private ExclusivePostgreSqlLease? server;
+
+    public string ServerAdministratorConnectionString { get; private set; } = string.Empty;
 
     public string ConnectionString { get; private set; } = string.Empty;
 
@@ -15,20 +19,38 @@ public sealed class TestRuntimeRefreshFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        var serverAdministratorPassword = $"server-administrator-{Guid.NewGuid():N}";
+        var capabilityAdministratorPassword = $"refresh-administrator-{Guid.NewGuid():N}";
         server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
             nameof(TestRuntimeRefreshFixture),
-            "postgres:18-alpine");
+            "postgres:18-alpine",
+            builder => builder.WithPassword(serverAdministratorPassword));
         var serverConnection = new NpgsqlConnectionStringBuilder(server.ConnectionString)
         {
             Pooling = false,
             Database = "postgres",
         };
-        Login = serverConnection.Username!;
+        ServerAdministratorConnectionString = serverConnection.ConnectionString;
+        Login = CapabilityAdministratorLogin;
         await using (var connection = new NpgsqlConnection(serverConnection.ConnectionString))
         {
             await connection.OpenAsync();
+            await ExecuteAsync(
+                connection,
+                $"CREATE ROLE {CapabilityAdministratorLogin} LOGIN PASSWORD '{capabilityAdministratorPassword}' "
+                + "NOSUPERUSER CREATEROLE CREATEDB NOREPLICATION NOBYPASSRLS");
+            var contract = DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
+            foreach (var marker in contract.Markers.AsDictionary().Values)
+            {
+                await ExecuteAsync(
+                    connection,
+                    $"GRANT SET ON PARAMETER \"{marker}\" TO {CapabilityAdministratorLogin}");
+            }
+
             await ExecuteAsync(connection, "CREATE DATABASE quran_dashboard TEMPLATE template0");
-            await ExecuteAsync(connection, "CREATE DATABASE quran_dashboard_test TEMPLATE template0");
+            await ExecuteAsync(
+                connection,
+                $"CREATE DATABASE quran_dashboard_test OWNER {CapabilityAdministratorLogin} TEMPLATE template0");
         }
 
         var developmentConnection = new NpgsqlConnectionStringBuilder(serverConnection.ConnectionString)
@@ -45,6 +67,8 @@ public sealed class TestRuntimeRefreshFixture : IAsyncLifetime
         var targetConnection = new NpgsqlConnectionStringBuilder(serverConnection.ConnectionString)
         {
             Database = "quran_dashboard_test",
+            Username = CapabilityAdministratorLogin,
+            Password = capabilityAdministratorPassword,
         };
         ConnectionString = targetConnection.ConnectionString;
         var options = new DbContextOptionsBuilder<QuranDashboardDbContext>()
