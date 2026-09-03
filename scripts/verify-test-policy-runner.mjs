@@ -169,6 +169,7 @@ assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-critical'));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
+assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));
 assert.deepEqual(
   ordinaryPrePr.partitions.map(({ group }) => group),
   ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],

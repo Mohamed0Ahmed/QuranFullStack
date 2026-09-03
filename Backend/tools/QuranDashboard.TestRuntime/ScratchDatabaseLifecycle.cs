@@ -832,7 +832,7 @@ internal static class ScratchDatabaseLifecycle
     private static string ServerScope(InspectionTargetValidation target)
     {
         var connection = target.Connection!;
-        var value = $"{connection.Host}\0{connection.Port}\0{connection.Username}";
+        var value = $"{connection.Host}\0{connection.Port}";
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
     }
 
