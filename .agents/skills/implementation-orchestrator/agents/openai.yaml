@@ -1,0 +1,4 @@
+interface:
+  display_name: "Implementation Orchestrator"
+  short_description: "Orchestrate dependency-aware ticket delivery"
+  default_prompt: "Use $implementation-orchestrator for issue #149 in this session using subagents."
