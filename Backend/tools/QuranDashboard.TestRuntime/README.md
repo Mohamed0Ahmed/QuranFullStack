@@ -131,8 +131,9 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- \
   --phase initial
 ```
 
-Use `--phase final` for final cleanup. Supply the prior API process ID when one exists, or the explicit
-value `none` before the first host starts. Reset refuses before mutation unless capability inspection, the exact local target,
+The explicit value `none` is accepted only for an initial reset before the first host starts. Every
+`--phase final` cleanup must supply the prior API process ID and prove it has exited. Reset refuses before
+mutation unless capability inspection, the exact local target,
 markers, migration and catalogue state, resetter-role membership, exclusive lock ownership, process/port
 absence, and database-session drain all pass.
 

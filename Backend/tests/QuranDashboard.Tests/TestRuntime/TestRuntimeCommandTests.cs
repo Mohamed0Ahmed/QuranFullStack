@@ -142,6 +142,30 @@ public sealed class TestRuntimeCommandTests
     }
 
     [Fact]
+    public async Task Reset_FinalPhaseRequiresThePriorApiProcessIdentity()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [
+                "reset",
+                "--run-id", "run-id",
+                "--command", "mutable-reset",
+                "--expected-fingerprint", new string('0', 64),
+                "--api-port", "5014",
+                "--api-process-id", "none",
+                "--phase", "final",
+            ],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("--api-process-id <pid|none>");
+    }
+
+    [Fact]
     public async Task LockHold_WhenLocalDatabaseIsUnavailable_ReturnsLockSpecificSanitizedFailure()
     {
         const string credential = "do-not-report";

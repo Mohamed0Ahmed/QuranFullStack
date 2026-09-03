@@ -438,6 +438,7 @@ internal static class TestRuntimeCommand
                                || expectedFingerprint is null
                                || apiPort is null
                                || !apiProcessProofProvided
+                               || (resetPhase == "final" && apiProcessId is null)
                                || resetPhase is null);
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration

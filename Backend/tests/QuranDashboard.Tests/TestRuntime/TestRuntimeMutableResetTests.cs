@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Sockets;
+using System.Diagnostics;
 using System.Text.Json;
 using FluentAssertions;
 using Npgsql;
@@ -29,6 +30,7 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         await SeedMutableFamiliesAsync(contract);
         var sequencesBefore = await ReadMutableSequenceValuesAsync(contract);
         var apiPort = ReserveUnusedPort();
+        var apiProcessId = await StartAndObserveExitedProcessAsync();
         using var output = new StringWriter();
         using var error = new StringWriter();
 
@@ -39,7 +41,7 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
                 "--command", "mutable-reset",
                 "--expected-fingerprint", expectedFingerprint,
                 "--api-port", apiPort.ToString(),
-                "--api-process-id", "none",
+                "--api-process-id", apiProcessId.ToString(),
                 "--phase", "final",
             ],
             output,
@@ -408,6 +410,11 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         int? apiPort = null,
         int? apiProcessId = null)
     {
+        if (phase == "final" && apiProcessId is null)
+        {
+            apiProcessId = await StartAndObserveExitedProcessAsync();
+        }
+
         using var output = new StringWriter();
         using var error = new StringWriter();
         var arguments = new List<string>
@@ -437,6 +444,17 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
             .Select(violation => violation.GetProperty("code").GetString()!)
             .ToArray();
         return new ResetCommandResult(exitCode, reset, violations, text);
+    }
+
+    private static async Task<int> StartAndObserveExitedProcessAsync()
+    {
+        using var process = Process.Start(new ProcessStartInfo("/bin/true")
+        {
+            UseShellExecute = false,
+        });
+        process.Should().NotBeNull();
+        await process!.WaitForExitAsync();
+        return process.Id;
     }
 
     private async Task<long> CountAsync(string table)
