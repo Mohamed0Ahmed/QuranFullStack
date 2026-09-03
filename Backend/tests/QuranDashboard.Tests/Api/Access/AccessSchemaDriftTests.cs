@@ -1,10 +1,8 @@
 using QuranDashboard.Application.Abstractions.Security.Permissions;
-using QuranDashboard.Tests.TestSupport.PostgreSql;
-
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessProcessGlobalCollection))]
-public sealed class AccessSchemaDriftTests
+[Collection(nameof(AccessScratchRehearsalCollection))]
+public sealed class AccessSchemaDriftTests(AccessMigrationTestFixture fixture)
 {
     public static IEnumerable<object[]> SchemaMutations =>
     [
@@ -167,9 +165,9 @@ public sealed class AccessSchemaDriftTests
         (await ReadRetiredCodesAsync(db)).Should().Equal(retiredCode);
     }
 
-    private static Task<PostgreSqlDatabaseLease> LeaseMigratedHeadDatabaseAsync()
+    private Task<AccessMigrationDatabase> LeaseMigratedHeadDatabaseAsync()
     {
-        return PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(AccessSchemaDriftTests));
+        return fixture.CreateMigratedDatabaseAsync();
     }
 
     private static QuranDashboardDbContext CreateDbContext(string connectionString)

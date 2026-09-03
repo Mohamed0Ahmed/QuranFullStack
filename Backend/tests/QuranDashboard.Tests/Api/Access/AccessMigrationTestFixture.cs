@@ -1,3 +1,4 @@
+using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 using QuranDashboard.Tests.TestSupport.Process;
 using AccessAdminProgram = QuranDashboard.AccessAdmin.Program;
@@ -6,35 +7,45 @@ namespace QuranDashboard.Tests.Api.Access;
 
 public sealed class AccessMigrationTestFixture : IAsyncLifetime
 {
-    private PostgreSqlDatabaseLease? _databaseLease;
-
     public string ConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
-        _databaseLease = await PostgreSqlTestProcess.LeaseEmptyDatabaseAsync(nameof(AccessMigrationTestFixture));
-        ConnectionString = _databaseLease.ConnectionString;
+        var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
+            QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath);
+        ConnectionString = scratch.ConnectionString;
     }
 
-    public async Task DisposeAsync()
-    {
-        if (_databaseLease is not null)
-        {
-            await _databaseLease.DisposeAsync();
-            _databaseLease = null;
-        }
-    }
+    public Task DisposeAsync() => Task.CompletedTask;
 
     public async Task<AccessMigrationDatabase> CreateDatabaseAsync()
     {
-        var database = _databaseLease ?? throw new InvalidOperationException(
-            $"{nameof(AccessMigrationTestFixture)} hands out migration schemas only after the collection has "
-            + "initialized its empty database lease.");
+        if (string.IsNullOrWhiteSpace(ConnectionString))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(AccessMigrationTestFixture)} hands out schemas only after the repository runner "
+                + "has resolved its receipt-bound empty-scratch database.");
+        }
 
         return new AccessMigrationDatabase(
-            await PostgreSqlSchemaLease.CreateAsync(database, nameof(AccessMigrationTestFixture)));
+            await PostgreSqlSchemaLease.CreateAsync(ConnectionString, nameof(AccessMigrationTestFixture)));
     }
 
+    public async Task<AccessMigrationDatabase> CreateMigratedDatabaseAsync()
+    {
+        var database = await CreateDatabaseAsync();
+        try
+        {
+            await using var db = database.CreateDbContext();
+            await db.Database.MigrateAsync();
+            return database;
+        }
+        catch
+        {
+            await database.DisposeAsync();
+            throw;
+        }
+    }
 }
 
 public sealed class AccessMigrationDatabase : IAsyncDisposable
@@ -118,4 +129,10 @@ internal static class AccessAdminConnectionString
 public sealed record AccessAdminRun(int ExitCode, string Output);
 
 [CollectionDefinition(nameof(AccessProcessGlobalCollection), DisableParallelization = true)]
-public sealed class AccessProcessGlobalCollection : ICollectionFixture<AccessMigrationTestFixture>;
+public sealed class AccessProcessGlobalCollection;
+
+[CollectionDefinition(nameof(AccessScratchRehearsalCollection), DisableParallelization = true)]
+public sealed class AccessScratchRehearsalCollection : ICollectionFixture<AccessMigrationTestFixture>;
+
+[CollectionDefinition(nameof(PermissionCatalogueStartupScratchCollection), DisableParallelization = true)]
+public sealed class PermissionCatalogueStartupScratchCollection : ICollectionFixture<AccessMigrationTestFixture>;

@@ -91,6 +91,8 @@ internal sealed class TestDatabaseMarkers
     public required string RefreshedAtUtc { get; init; }
     public required string RehearsalEnabled { get; init; }
     public required string RehearsalSubtype { get; init; }
+    public required string ScratchRunId { get; init; }
+    public required string ScratchReceipt { get; init; }
 
     public IReadOnlyDictionary<string, string> AsDictionary() => new Dictionary<string, string>(StringComparer.Ordinal)
     {
@@ -108,6 +110,8 @@ internal sealed class TestDatabaseMarkers
         ["refreshedAtUtc"] = RefreshedAtUtc,
         ["rehearsalEnabled"] = RehearsalEnabled,
         ["rehearsalSubtype"] = RehearsalSubtype,
+        ["scratchRunId"] = ScratchRunId,
+        ["scratchReceipt"] = ScratchReceipt,
     };
 }
 
