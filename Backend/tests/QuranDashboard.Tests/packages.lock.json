@@ -905,6 +905,13 @@
       },
       "qurandashboard.testartifacts": {
         "type": "Project"
+      },
+      "qurandashboard.testruntime": {
+        "type": "Project",
+        "dependencies": {
+          "QuranDashboard.Application.Abstractions": "[1.0.0, )",
+          "QuranDashboard.Infrastructure": "[1.0.0, )"
+        }
       }
     }
   }

@@ -31,6 +31,7 @@
     <ProjectReference Include="..\..\tools\QuranDashboard.DataImporter\QuranDashboard.DataImporter.csproj" />
     <ProjectReference Include="..\..\tools\QuranDashboard.AccessAdmin\QuranDashboard.AccessAdmin.csproj" />
     <ProjectReference Include="..\..\tools\QuranDashboard.TestArtifacts\QuranDashboard.TestArtifacts.csproj" />
+    <ProjectReference Include="..\..\tools\QuranDashboard.TestRuntime\QuranDashboard.TestRuntime.csproj" />
   </ItemGroup>
 
   <ItemGroup>
