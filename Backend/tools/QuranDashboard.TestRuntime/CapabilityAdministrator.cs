@@ -40,6 +40,8 @@ internal static class CapabilityAdministrator
         InspectionTargetValidation targetValidation,
         CapabilityAdministrationMode mode,
         string selectedLogin,
+        string? expectedRunId,
+        string? expectedLockCommand,
         CancellationToken cancellationToken)
     {
         await using var connection = new NpgsqlConnection(targetValidation.Connection!.ConnectionString);
@@ -65,6 +67,31 @@ internal static class CapabilityAdministrator
                 roles: EmptyRoles(contract),
                 markers: EmptyMarkers(),
                 preflightViolations);
+        }
+
+        if (mode == CapabilityAdministrationMode.Apply
+            && (string.IsNullOrWhiteSpace(expectedRunId)
+                || string.IsNullOrWhiteSpace(expectedLockCommand)
+                || !await AdvisoryLockProtocol.VerifyOwnershipAsync(
+                    connection,
+                    contract.AdvisoryLock.Key,
+                    expectedRunId,
+                    expectedLockCommand,
+                    AdvisoryLockMode.Exclusive,
+                    cancellationToken)))
+        {
+            return CreateReport(
+                contract,
+                contractValidation,
+                mode,
+                selectedLogin,
+                target,
+                applied: false,
+                roles: EmptyRoles(contract),
+                markers: EmptyMarkers(),
+                [new ContractViolation(
+                    "lock.exclusive-ownership.required",
+                    "Use QuranDashboard.TestRuntime admin apply --run-id <run-id>.")]);
         }
 
         var expectedMarkers = ExpectedMarkers(contract, contractValidation);

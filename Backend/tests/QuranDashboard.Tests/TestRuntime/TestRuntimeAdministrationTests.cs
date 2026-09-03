@@ -29,7 +29,7 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
         using var error = new StringWriter();
 
         var exitCode = await QuranDashboard.TestRuntime.TestRuntimeCommand.ExecuteAsync(
-            ["admin", "apply", "--login", login, "--contract", ContractPath],
+            ["admin", "apply", "--login", login, "--run-id", "unprivileged-apply"],
             output,
             error,
             name => name == QuranDashboard.TestRuntime.TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
@@ -68,6 +68,10 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
             .Should().BeTrue();
         apply.Report.RootElement.GetProperty("administration").GetProperty("compliant").GetBoolean()
             .Should().BeTrue();
+        apply.Report.RootElement.GetProperty("advisoryLock").GetProperty("mode").GetString()
+            .Should().Be("exclusive");
+        apply.Report.RootElement.GetProperty("advisoryLock").GetProperty("status").GetString()
+            .Should().Be("acquired");
 
         var repeatedApply = await RunAsync("apply");
         repeatedApply.ExitCode.Should().Be(0, repeatedApply.Output);
@@ -89,6 +93,31 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
         {
             run.Output.Should().NotContain(fixture.CredentialSentinel);
         }
+    }
+
+    [Fact]
+    public async Task DirectCapabilityMutation_WithoutExpectedExclusiveOwner_IsRefusedWithRunnerGuidance()
+    {
+        var contract = QuranDashboard.TestRuntime.DatabaseContractReader.Read(ContractPath);
+        var validation = QuranDashboard.TestRuntime.DatabaseContractValidator.Validate(contract);
+        var target = QuranDashboard.TestRuntime.InspectionTargetValidator.Validate(
+            fixture.ConnectionString,
+            contract);
+
+        var report = await QuranDashboard.TestRuntime.CapabilityAdministrator.ExecuteAsync(
+            contract,
+            validation,
+            target,
+            QuranDashboard.TestRuntime.CapabilityAdministrationMode.Apply,
+            fixture.Login,
+            null,
+            null,
+            CancellationToken.None);
+
+        report.Succeeded.Should().BeFalse();
+        report.Violations.Should().ContainSingle(violation =>
+            violation.Code == "lock.exclusive-ownership.required"
+            && violation.Subject == "Use QuranDashboard.TestRuntime admin apply --run-id <run-id>.");
     }
 
     private async Task AssertReaderBoundaryAsync()
@@ -203,7 +232,9 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
         using var output = new StringWriter();
         using var error = new StringWriter();
         var exitCode = await QuranDashboard.TestRuntime.TestRuntimeCommand.ExecuteAsync(
-            ["admin", mode, "--login", fixture.Login, "--contract", ContractPath],
+            mode == "apply"
+                ? ["admin", mode, "--login", fixture.Login, "--run-id", Guid.NewGuid().ToString("N")]
+                : ["admin", mode, "--login", fixture.Login, "--contract", ContractPath],
             output,
             error,
             name => name == QuranDashboard.TestRuntime.TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
@@ -254,18 +285,5 @@ public sealed class TestRuntimeAdministrationTests(TestRuntimeAdministrationFixt
         return await command.ExecuteScalarAsync();
     }
 
-    private static string ContractPath
-    {
-        get
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "QuranDashboard.sln")))
-            {
-                directory = directory.Parent;
-            }
-
-            directory.Should().NotBeNull("the tests must run beneath the Backend solution");
-            return Path.Combine(directory!.FullName, "testing", "test-database-contract.json");
-        }
-    }
+    private static string ContractPath => TestRuntimeTestPaths.ContractPath;
 }

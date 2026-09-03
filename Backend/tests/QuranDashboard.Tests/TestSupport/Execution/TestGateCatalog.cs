@@ -56,6 +56,7 @@ internal static class TestGateCatalog
         [
             "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests",
             "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests",
+            "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests",
         ],
         StringComparer.Ordinal);
 
