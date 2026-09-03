@@ -70,4 +70,37 @@ internal sealed record TestRuntimeReport(
     IReadOnlyList<ContractViolation> Violations,
     string? FailureType = null,
     CapabilityAdministrationReport? Administration = null,
-    AdvisoryLockReport? AdvisoryLock = null);
+    AdvisoryLockReport? AdvisoryLock = null,
+    CapabilityRefreshReport? Refresh = null);
+
+internal sealed record CapabilityRefreshReport(
+    string Mode,
+    bool Applied,
+    bool Confirmed,
+    string TargetDatabase,
+    string? StagedDatabase,
+    string? ReplacedDatabase,
+    string Pipeline,
+    IReadOnlyList<string> PlannedStages,
+    IReadOnlyList<CapabilityRefreshStageReport> Stages,
+    IReadOnlyList<CapabilityRefreshSessionReport> TargetSessions,
+    string? CanonicalInputProvenance,
+    string? CanonicalQuranFingerprint,
+    string? SystemCatalogueFingerprint,
+    string? SchemaStateFingerprint,
+    string? ProtectedStateFingerprint,
+    bool SwapRolledBack,
+    bool ReplacedDatabaseRemoved,
+    string? RefreshedAtUtc,
+    string? Reason);
+
+internal sealed record CapabilityRefreshStageReport(
+    string Stage,
+    string Status,
+    long DurationMilliseconds = 0,
+    string? FailureType = null);
+
+internal sealed record CapabilityRefreshSessionReport(
+    int ProcessId,
+    string ApplicationName,
+    string State);

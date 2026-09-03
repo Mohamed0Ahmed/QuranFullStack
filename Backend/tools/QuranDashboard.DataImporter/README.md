@@ -119,6 +119,12 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
 
 ## Safety
 
+- TestRuntime capability refresh launches each mutating verb with a private maintenance guard context.
+  Before constructing its host, the importer independently verifies the expected run ID, command, fixed
+  advisory-lock key, and live exclusive keeper in PostgreSQL. A missing or mismatched keeper refuses the
+  child before any pipeline write. Direct standalone importer execution against `quran_dashboard_test`
+  or a `quran_dashboard_test_refresh_*` target is refused without that TestRuntime-owned context;
+  ordinary imports against explicitly selected non-capability targets remain unchanged.
 - Re-imports refuse to overwrite committed data unless `--force`; prefer a dry-validate
   (`validate-enriched-morphology`) first.
 - `export-abwab-snapshot` uses one PostgreSQL repeatable-read, read-only transaction and a

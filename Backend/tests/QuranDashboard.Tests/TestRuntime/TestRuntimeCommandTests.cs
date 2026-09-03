@@ -11,6 +11,81 @@ public sealed class TestRuntimeCommandTests
     [InlineData("dry-run")]
     [InlineData("apply")]
     [InlineData("verify")]
+    public async Task Refresh_WithoutExplicitLogin_IsRejectedAsUsage(string mode)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["refresh", mode],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("refresh inspect|dry-run|verify --login <local-login>");
+    }
+
+    [Theory]
+    [InlineData("--run-id", "refresh-152", "--reason", "scheduled-maintenance")]
+    [InlineData("--reason", "scheduled-maintenance", "--yes", "unexpected")]
+    [InlineData("--run-id", "refresh-152", "--yes", "unexpected")]
+    public async Task RefreshApply_WithoutEveryExplicitConfirmation_IsRejectedAsUsage(
+        string firstOption,
+        string firstValue,
+        string secondOption,
+        string secondValue)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var args = new List<string>
+        {
+            "refresh", "apply", "--login", "local-login",
+            firstOption, firstValue, secondOption,
+        };
+        if (secondOption != "--yes")
+        {
+            args.Add(secondValue);
+        }
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(args, output, error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain(
+            "refresh apply --login <local-login> --run-id <run-id> --reason <reason> --yes");
+    }
+
+    [Theory]
+    [InlineData("inspect")]
+    [InlineData("dry-run")]
+    [InlineData("apply")]
+    [InlineData("verify")]
+    public async Task RefreshCommands_CannotOverrideTheCommittedContract(string mode)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        var args = mode == "apply"
+            ? new[]
+            {
+                "refresh", mode, "--login", "local-login", "--run-id", "run-id",
+                "--reason", "maintenance", "--yes", "--contract", ContractPath,
+            }
+            : ["refresh", mode, "--login", "local-login", "--contract", ContractPath];
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(args, output, error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("Usage:");
+    }
+
+    [Theory]
+    [InlineData("inspect")]
+    [InlineData("dry-run")]
+    [InlineData("apply")]
+    [InlineData("verify")]
     public async Task Administration_WithoutExplicitLogin_IsRejectedAsUsage(string mode)
     {
         using var output = new StringWriter();

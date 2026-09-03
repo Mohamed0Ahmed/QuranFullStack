@@ -21,6 +21,7 @@ EXCLUSIVE_POSTGRES_CLASSES=(
   "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests"
+  "QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests"
 )
 FULL_CANONICAL_ARTIFACT_SHA256="3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
 POSTGRES_CONTAINER_FILTERS=(

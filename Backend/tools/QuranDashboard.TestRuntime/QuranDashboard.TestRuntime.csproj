@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="QuranDashboard.Tests" />
+    <InternalsVisibleTo Include="QuranDashboard.DataImporter" />
   </ItemGroup>
 
   <ItemGroup>

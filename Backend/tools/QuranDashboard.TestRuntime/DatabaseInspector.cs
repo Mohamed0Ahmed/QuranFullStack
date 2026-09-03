@@ -375,6 +375,7 @@ internal static class DatabaseInspector
                       && HasValue(values, "canonicalInputProvenance")
                       && HasValue(values, "canonicalQuranFingerprint")
                       && HasValue(values, "systemCatalogueFingerprint")
+                      && HasValue(values, "protectedStateFingerprint")
                       && DateTimeOffset.TryParse(values["refreshedAtUtc"], out _);
         var states = values.ToDictionary(
             marker => marker.Key,

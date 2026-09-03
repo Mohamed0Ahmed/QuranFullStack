@@ -152,11 +152,12 @@ internal static class CapabilityAdministrator
 
         if (mode == CapabilityAdministrationMode.Apply && initialState.Violations.Count != 0)
         {
-            await ApplyAsync(
+            await ApplyDatabaseStateAsync(
                 connection,
                 contract,
                 selectedLogin,
                 expectedMarkers,
+                contract.Targets.TestDatabase,
                 cancellationToken);
             applied = true;
         }
@@ -293,11 +294,12 @@ internal static class CapabilityAdministrator
         return OrderViolations(violations);
     }
 
-    private static async Task ApplyAsync(
+    internal static async Task ApplyDatabaseStateAsync(
         NpgsqlConnection connection,
         DatabaseContract contract,
         string selectedLogin,
         IReadOnlyDictionary<string, string> expectedMarkers,
+        string databaseName,
         CancellationToken cancellationToken)
     {
         await using var transaction = await connection.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
@@ -326,7 +328,13 @@ internal static class CapabilityAdministrator
                 role.Value,
                 selectedLogin,
                 cancellationToken);
-            await RevokePrivilegesAsync(connection, transaction, contract, role.Value, cancellationToken);
+            await RevokePrivilegesAsync(
+                connection,
+                transaction,
+                contract,
+                databaseName,
+                role.Value,
+                cancellationToken);
         }
 
         var readableRoles = new[] { contract.Roles.Reader, contract.Roles.Application };
@@ -335,7 +343,7 @@ internal static class CapabilityAdministrator
             await ExecuteAsync(
                 connection,
                 transaction,
-                $"GRANT CONNECT ON DATABASE {QuoteIdentifier(contract.Targets.TestDatabase)} TO {QuoteIdentifier(role)}",
+                $"GRANT CONNECT ON DATABASE {QuoteIdentifier(databaseName)} TO {QuoteIdentifier(role)}",
                 cancellationToken);
             await ExecuteAsync(
                 connection,
@@ -354,7 +362,7 @@ internal static class CapabilityAdministrator
         await ExecuteAsync(
             connection,
             transaction,
-            $"GRANT CONNECT ON DATABASE {QuoteIdentifier(contract.Targets.TestDatabase)} TO {QuoteIdentifier(contract.Roles.Resetter)}",
+            $"GRANT CONNECT ON DATABASE {QuoteIdentifier(databaseName)} TO {QuoteIdentifier(contract.Roles.Resetter)}",
             cancellationToken);
         await ExecuteAsync(
             connection,
@@ -411,7 +419,7 @@ internal static class CapabilityAdministrator
             await ExecuteAsync(
                 connection,
                 transaction,
-                $"ALTER DATABASE {QuoteIdentifier(contract.Targets.TestDatabase)} SET {markerName} TO {QuoteLiteral(marker.Value)}",
+                $"ALTER DATABASE {QuoteIdentifier(databaseName)} SET {markerName} TO {QuoteLiteral(marker.Value)}",
                 cancellationToken);
         }
 
@@ -480,6 +488,7 @@ internal static class CapabilityAdministrator
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         DatabaseContract contract,
+        string databaseName,
         string role,
         CancellationToken cancellationToken)
     {
@@ -487,7 +496,7 @@ internal static class CapabilityAdministrator
         await ExecuteAsync(
             connection,
             transaction,
-            $"REVOKE ALL PRIVILEGES ON DATABASE {QuoteIdentifier(contract.Targets.TestDatabase)} FROM {quotedRole}",
+            $"REVOKE ALL PRIVILEGES ON DATABASE {QuoteIdentifier(databaseName)} FROM {quotedRole}",
             cancellationToken);
         await ExecuteAsync(connection, transaction, $"REVOKE ALL PRIVILEGES ON SCHEMA public FROM {quotedRole}", cancellationToken);
         await ExecuteAsync(connection, transaction, $"REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM {quotedRole}", cancellationToken);
@@ -1322,7 +1331,7 @@ internal static class CapabilityAdministrator
         await command.ExecuteNonQueryAsync(cancellationToken);
     }
 
-    private static IReadOnlyDictionary<string, string> ExpectedMarkers(
+    internal static IReadOnlyDictionary<string, string> ExpectedMarkers(
         DatabaseContract contract,
         ContractValidationResult validation) => new Dictionary<string, string>(StringComparer.Ordinal)
         {

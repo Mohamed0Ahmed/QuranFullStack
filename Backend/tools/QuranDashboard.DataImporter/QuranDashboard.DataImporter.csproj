@@ -28,6 +28,13 @@
     <ProjectReference Include="..\..\application\QuranDashboard.Application.Abstractions\QuranDashboard.Application.Abstractions.csproj" />
     <ProjectReference Include="..\..\infrastructure\QuranDashboard.Infrastructure\QuranDashboard.Infrastructure.csproj" />
     <ProjectReference Include="..\..\shared\QuranDashboard.Shared\QuranDashboard.Shared.csproj" />
+    <ProjectReference Include="..\QuranDashboard.TestRuntime\QuranDashboard.TestRuntime.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\testing\test-database-contract.json"
+          Link="test-database-contract.json"
+          CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

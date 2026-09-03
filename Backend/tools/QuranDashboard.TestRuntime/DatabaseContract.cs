@@ -85,6 +85,7 @@ internal sealed class TestDatabaseMarkers
     public required string CanonicalInputProvenance { get; init; }
     public required string CanonicalQuranFingerprint { get; init; }
     public required string SystemCatalogueFingerprint { get; init; }
+    public required string ProtectedStateFingerprint { get; init; }
     public required string MigrationHead { get; init; }
     public required string RefreshedAtUtc { get; init; }
     public required string RehearsalEnabled { get; init; }
@@ -100,6 +101,7 @@ internal sealed class TestDatabaseMarkers
         ["canonicalInputProvenance"] = CanonicalInputProvenance,
         ["canonicalQuranFingerprint"] = CanonicalQuranFingerprint,
         ["systemCatalogueFingerprint"] = SystemCatalogueFingerprint,
+        ["protectedStateFingerprint"] = ProtectedStateFingerprint,
         ["migrationHead"] = MigrationHead,
         ["refreshedAtUtc"] = RefreshedAtUtc,
         ["rehearsalEnabled"] = RehearsalEnabled,

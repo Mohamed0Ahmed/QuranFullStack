@@ -118,6 +118,7 @@
     "canonicalInputProvenance": "quran_dashboard.test_runtime.canonical_input_provenance",
     "canonicalQuranFingerprint": "quran_dashboard.test_runtime.canonical_quran_fingerprint",
     "systemCatalogueFingerprint": "quran_dashboard.test_runtime.system_catalogue_fingerprint",
+    "protectedStateFingerprint": "quran_dashboard.test_runtime.protected_state_fingerprint",
     "migrationHead": "quran_dashboard.test_runtime.migration_head",
     "refreshedAtUtc": "quran_dashboard.test_runtime.refreshed_at_utc",
     "rehearsalEnabled": "quran_dashboard.test_runtime.rehearsal_enabled",

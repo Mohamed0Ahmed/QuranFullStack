@@ -880,7 +880,8 @@
           "QuranDashboard.Application": "[1.0.0, )",
           "QuranDashboard.Application.Abstractions": "[1.0.0, )",
           "QuranDashboard.Infrastructure": "[1.0.0, )",
-          "QuranDashboard.Shared": "[1.0.0, )"
+          "QuranDashboard.Shared": "[1.0.0, )",
+          "QuranDashboard.TestRuntime": "[1.0.0, )"
         }
       },
       "qurandashboard.domain": {

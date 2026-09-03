@@ -1,0 +1,27 @@
+{
+  "format": "quran-dashboard-test-database-refresh-oracles",
+  "version": 1,
+  "quran": {
+    "id": "quran-surah-1-critical-read",
+    "surahNumber": 1,
+    "rowCount": 7,
+    "sha256": "3bd86e744827b2f7b7121d89c6f3dd6fe943b4e5b30e4118f7e8a0e9cdd2ece8",
+    "serialization": "id|verse_key|text_uthmani ordered by id with one trailing LF",
+    "provenance": "Reviewed canonical quran_ayahs critical-read expectation retained from the locked full-canonical source verification performed for issue #92."
+  },
+  "phraseSearch": {
+    "id": "phrase-search-basmala-similarity",
+    "mode": "simple",
+    "wordCount": 4,
+    "firstQuranWordId": 1,
+    "exactVerseKeys": ["1:1", "27:30"],
+    "similarVerseKey": "11:41",
+    "matchedWords": 2,
+    "differencePositions": [3, 4],
+    "evidenceSha256": [
+      "380c2080cb5c4639257ac4bbedb395c24fb85f04b8190532705714c830382239",
+      "2010f1cd2c0fe7a23a55eea196902d6b0fa165abe2acf9db5a5ed6f7ff7f17e0"
+    ],
+    "provenance": "Source-reviewed Uthmani word identities and PhraseSearch expectations documented in docs/testing/compact-phrase-search-ready-candidate.md from the canonical foundation source and the completed full PhraseSearch build report."
+  }
+}
