@@ -62,13 +62,16 @@ public sealed class TestRuntimeResetFixture : IAsyncLifetime
 
         await using var markerConnection = new NpgsqlConnection(ConnectionString);
         await markerConnection.OpenAsync();
+        var contract = DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
+        var protectedState = await ProtectedStateFingerprint.ComputeAsync(markerConnection, contract);
         await ExecuteAsync(
             markerConnection,
-            """
+            $"""
             ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.canonical_pipeline TO 'test-fixture';
             ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.canonical_input_provenance TO 'test-fixture';
             ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.canonical_quran_fingerprint TO 'test-fixture';
             ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.system_catalogue_fingerprint TO 'test-fixture';
+            ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.protected_state_fingerprint TO '{protectedState.Fingerprint}';
             ALTER DATABASE quran_dashboard_test SET quran_dashboard.test_runtime.refreshed_at_utc TO '2026-09-03T00:00:00Z';
             """);
     }
