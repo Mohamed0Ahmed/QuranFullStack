@@ -146,3 +146,51 @@ contract key or lock SQL.
 System Catalogue reconciliation has a strict nested order: acquire and verify the global exclusive keeper
 first, then begin the reconciliation transaction and acquire its narrower transaction-level catalogue lock.
 Never acquire the catalogue lock while waiting for the global lock.
+
+## Fingerprint Protected State
+
+The control plane computes one deterministic SHA-256 fingerprint without writing a database dump or an
+intermediate payload:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- fingerprint
+```
+
+The structured report contains separate hashes for Canonical Quran Data, the ordered System Catalogue,
+and Schema State, plus their aggregate Protected State hash. Schema coverage includes relation and column
+definitions (including views, functions, types, and row-security policies), constraints, indexes,
+extensions, triggers, migration history, every sequence definition,
+and current values only for protected or unowned sequences. Mutable Application State rows and counters
+owned by mutable tables are deliberately excluded. Row and catalogue data are read in deterministic order
+and appended directly to incremental hashes; `dumpFilesRetained` is always zero.
+
+## Reset Mutable Application State
+
+Reset is a lower-level operation for the supported runner. The runner must already hold the committed
+global advisory lock through a dedicated exclusive keeper for the same run and command, and it must supply
+the Protected State fingerprint captured before the mutating invocation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  reset \
+  --run-id <run-id> \
+  --command mutable-reset \
+  --expected-fingerprint <sha256> \
+  --api-port <port> \
+  --api-process-id <pid|none> \
+  --phase initial
+```
+
+The explicit value `none` is accepted only for an initial reset before the first host starts. Every
+`--phase final` cleanup must supply the prior API process ID and prove it has exited. Reset refuses before
+mutation unless capability inspection, the exact local target,
+markers, migration and catalogue state, resetter-role membership, exclusive lock ownership, process/port
+absence, and database-session drain all pass.
+
+The single transaction truncates exactly the 35 mutable contract tables other than
+`linking_data_state`, using `CONTINUE IDENTITY RESTRICT`, then restores the existing singleton to id 1,
+generation 1, and the Unix epoch. It verifies every allowlisted table is empty and the singleton is exact,
+then proves mutable sequence values and Protected State are unchanged. A Protected State mismatch is
+reported as `protected-corrupt` and is never repaired. A cleanup failure records the database-scoped
+dirty-capability marker and is reported as `dirty`; later final resets are refused until a successful
+`--phase initial` reset matches Protected State, completes cleanup, and clears that marker.

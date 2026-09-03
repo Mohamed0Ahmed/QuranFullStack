@@ -1,5 +1,6 @@
 using System.Net.Sockets;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using Npgsql;
 
 namespace QuranDashboard.TestRuntime;
@@ -138,6 +139,61 @@ internal static class TestRuntimeCommand
 
         try
         {
+            if (request.Command == "fingerprint")
+            {
+                await using var connection = new NpgsqlConnection(targetValidation.Connection!.ConnectionString);
+                await connection.OpenAsync(cancellationToken);
+                var fingerprint = await ProtectedStateFingerprint.ComputeAsync(
+                    connection,
+                    contract,
+                    cancellationToken);
+                var fingerprintReportEnvelope = new TestRuntimeReport(
+                    request.Command,
+                    true,
+                    DatabaseInspector.ToContractReport(contract, validation),
+                    new TargetReport(
+                        targetValidation.Database,
+                        targetValidation.EndpointKind,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null),
+                    null,
+                    null,
+                    null,
+                    null,
+                    [],
+                    ProtectedStateFingerprint: fingerprint);
+                WriteReport(output, fingerprintReportEnvelope);
+                return SuccessExitCode;
+            }
+
+            if (request.Command == "reset")
+            {
+                var inspection = await DatabaseInspector.InspectAsync(
+                    contract,
+                    validation,
+                    targetValidation,
+                    cancellationToken);
+                var resetReport = await MutableStateResetter.ExecuteAsync(
+                    contract,
+                    validation,
+                    targetValidation,
+                    inspection,
+                    request.RunId!,
+                    request.LockCommand!,
+                    request.ExpectedFingerprint!,
+                    request.ApiPort!.Value,
+                    request.ApiProcessId,
+                    request.ResetPhase!,
+                    cancellationToken);
+                WriteReport(output, resetReport);
+                return resetReport.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
+            }
+
             if (request.RefreshMode is not null)
             {
                 var refreshReport = await CapabilityRefresher.ExecuteAsync(
@@ -254,11 +310,15 @@ internal static class TestRuntimeCommand
                 null,
                 [new ContractViolation(request.LockMode is not null
                     ? "lock.database-unavailable"
-                    : request.RefreshMode is not null
-                        ? "refresh.database-operation-failed"
-                    : request.AdministrationMode is null
-                        ? "inspection.database-unavailable"
-                        : "administration.database-operation-failed",
+                    : request.Command == "reset"
+                        ? "mutable-reset.database-operation-failed"
+                        : request.Command == "fingerprint"
+                            ? "fingerprint.database-operation-failed"
+                            : request.RefreshMode is not null
+                                ? "refresh.database-operation-failed"
+                                : request.AdministrationMode is null
+                                    ? "inspection.database-unavailable"
+                                    : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
@@ -270,6 +330,8 @@ internal static class TestRuntimeCommand
         var command = args switch
         {
             ["contract", "validate", ..] => "contract-validate",
+            ["fingerprint", ..] => "fingerprint",
+            ["reset", ..] => "reset",
             ["inspect", ..] => "inspect",
             ["admin", "inspect", ..] => "admin-inspect",
             ["admin", "dry-run", ..] => "admin-dry-run",
@@ -300,6 +362,11 @@ internal static class TestRuntimeCommand
         var refreshConfirmed = false;
         AdvisoryLockMode? lockMode = null;
         TimeSpan? lockTimeout = null;
+        string? expectedFingerprint = null;
+        int? apiPort = null;
+        int? apiProcessId = null;
+        var apiProcessProofProvided = false;
+        string? resetPhase = null;
         for (var index = optionStart; index < args.Count;)
         {
             if (args[index] == "--yes" && command == "refresh-apply" && !refreshConfirmed)
@@ -315,7 +382,7 @@ internal static class TestRuntimeCommand
             }
 
             if (args[index] == "--contract"
-                && command is not "admin-apply" and not "lock-hold"
+                && command is not "admin-apply" and not "lock-hold" and not "reset"
                 && !command.StartsWith("refresh-", StringComparison.Ordinal))
             {
                 contractPath = args[index + 1];
@@ -328,7 +395,7 @@ internal static class TestRuntimeCommand
             {
                 selectedLogin = args[index + 1];
             }
-            else if (args[index] == "--run-id" && command is "admin-apply" or "lock-hold" or "refresh-apply")
+            else if (args[index] == "--run-id" && command is "admin-apply" or "lock-hold" or "reset" or "refresh-apply")
             {
                 runId = args[index + 1];
             }
@@ -336,7 +403,7 @@ internal static class TestRuntimeCommand
             {
                 refreshReason = args[index + 1];
             }
-            else if (args[index] == "--command" && command == "lock-hold")
+            else if (args[index] == "--command" && command is "lock-hold" or "reset")
             {
                 lockCommand = args[index + 1];
             }
@@ -355,6 +422,41 @@ internal static class TestRuntimeCommand
                      && timeoutSeconds >= 0)
             {
                 lockTimeout = TimeSpan.FromSeconds(timeoutSeconds);
+            }
+            else if (args[index] == "--expected-fingerprint"
+                     && command == "reset"
+                     && Regex.IsMatch(args[index + 1], "^[A-Fa-f0-9]{64}$", RegexOptions.CultureInvariant))
+            {
+                expectedFingerprint = args[index + 1];
+            }
+            else if (args[index] == "--api-port"
+                     && command == "reset"
+                     && int.TryParse(args[index + 1], out var parsedPort)
+                     && parsedPort is >= 1 and <= 65535)
+            {
+                apiPort = parsedPort;
+            }
+            else if (args[index] == "--api-process-id" && command == "reset")
+            {
+                apiProcessProofProvided = true;
+                if (args[index + 1] == "none")
+                {
+                    apiProcessId = null;
+                }
+                else if (int.TryParse(args[index + 1], out var parsedProcessId) && parsedProcessId > 0)
+                {
+                    apiProcessId = parsedProcessId;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            else if (args[index] == "--phase"
+                     && command == "reset"
+                     && args[index + 1] is "initial" or "final")
+            {
+                resetPhase = args[index + 1];
             }
             else
             {
@@ -393,11 +495,20 @@ internal static class TestRuntimeCommand
                           && (lockMode is null
                               || !AdvisoryLockProtocol.IsValidRunId(runId)
                               || !AdvisoryLockProtocol.IsValidCommand(lockCommand));
+        var invalidReset = command == "reset"
+                           && (!AdvisoryLockProtocol.IsValidRunId(runId)
+                               || !AdvisoryLockProtocol.IsValidCommand(lockCommand)
+                               || expectedFingerprint is null
+                               || apiPort is null
+                               || !apiProcessProofProvided
+                               || (resetPhase == "final" && apiProcessId is null)
+                               || resetPhase is null);
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration
                || invalidApply
                || invalidRefresh
                || invalidLock
+               || invalidReset
             ? null
             : new CommandRequest(
                 command,
@@ -408,6 +519,10 @@ internal static class TestRuntimeCommand
                 lockMode,
                 lockCommand,
                 lockTimeout,
+                expectedFingerprint,
+                apiPort,
+                apiProcessId,
+                resetPhase,
                 refreshReason,
                 refreshConfirmed,
                 refreshMode);
@@ -523,6 +638,8 @@ internal static class TestRuntimeCommand
     {
         error.WriteLine("Usage:");
         error.WriteLine("  QuranDashboard.TestRuntime contract validate [--contract <path>]");
+        error.WriteLine($"  QuranDashboard.TestRuntime fingerprint [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime reset --run-id <run-id> --command <command> --expected-fingerprint <sha256> --api-port <port> --api-process-id <pid|none> --phase initial|final  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime inspect [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin apply --login <local-login> --run-id <run-id> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
@@ -540,6 +657,10 @@ internal static class TestRuntimeCommand
         AdvisoryLockMode? LockMode = null,
         string? LockCommand = null,
         TimeSpan? LockTimeout = null,
+        string? ExpectedFingerprint = null,
+        int? ApiPort = null,
+        int? ApiProcessId = null,
+        string? ResetPhase = null,
         string? RefreshReason = null,
         bool RefreshConfirmed = false,
         CapabilityRefreshMode? RefreshMode = null);
