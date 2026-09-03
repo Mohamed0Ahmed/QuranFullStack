@@ -1,13 +1,22 @@
 using Microsoft.Extensions.Configuration;
 using QuranDashboard.Infrastructure.ServiceRegistration;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 
 namespace QuranDashboard.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration) =>
+        services.AddInfrastructure(configuration, DatabaseActivityPolicy.Production);
+
+    public static IServiceCollection AddInfrastructure(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        DatabaseActivityPolicy databaseActivityPolicy)
     {
-        services.AddPersistence(configuration);
+        ArgumentNullException.ThrowIfNull(databaseActivityPolicy);
+        services.AddSingleton(databaseActivityPolicy);
+        services.AddPersistence(configuration, databaseActivityPolicy);
         services.AddAccess(configuration);
         services.AddMushafReader(configuration);
         services.AddUniqueWords();
@@ -25,7 +34,7 @@ public static class DependencyInjection
         services.AddSimpleI3rabGeneration();
         services.AddPhraseSearch(configuration);
         services.AddAbwab();
-        services.AddLinking(configuration);
+        services.AddLinking(configuration, databaseActivityPolicy);
 
         return services;
     }

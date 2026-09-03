@@ -10,12 +10,16 @@ using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Abstractions.Linking.DoorLinks;
 using QuranDashboard.Infrastructure.Background;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 
 namespace QuranDashboard.Infrastructure.ServiceRegistration;
 
 internal static class LinkingDependencyInjection
 {
-    public static IServiceCollection AddLinking(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddLinking(
+        this IServiceCollection services,
+        IConfiguration configuration,
+        DatabaseActivityPolicy databaseActivityPolicy)
     {
         services.Configure<LinkingScalabilityOptions>(
             configuration.GetSection(LinkingScalabilityOptions.SectionName));
@@ -39,11 +43,23 @@ internal static class LinkingDependencyInjection
         services.AddScoped<ILinkingSourcePreparationReader, CachedLinkingSourcePreparationReader>();
         services.AddSingleton<LinkingJobQueueSignal>();
         services.AddScoped<ILinkingPreparedPreflightStore, EfLinkingPreparedPreflightStore>();
-        services.AddHostedService<LinkingPreparedPreflightProcessorService>();
-        services.AddHostedService<LinkingPreparedPreflightCleanupService>();
+        if (databaseActivityPolicy.Enables(DatabaseBackgroundActivity.LinkingPreparedPreflightProcessor))
+        {
+            services.AddHostedService<LinkingPreparedPreflightProcessorService>();
+        }
+        if (databaseActivityPolicy.Enables(DatabaseBackgroundActivity.LinkingPreparedPreflightCleanup))
+        {
+            services.AddHostedService<LinkingPreparedPreflightCleanupService>();
+        }
         services.AddScoped<ILinkingConfirmationJobStore, EfLinkingConfirmationJobStore>();
-        services.AddHostedService<LinkingConfirmationJobProcessorService>();
-        services.AddHostedService<LinkingConfirmationJobCleanupService>();
+        if (databaseActivityPolicy.Enables(DatabaseBackgroundActivity.LinkingConfirmationJobProcessor))
+        {
+            services.AddHostedService<LinkingConfirmationJobProcessorService>();
+        }
+        if (databaseActivityPolicy.Enables(DatabaseBackgroundActivity.LinkingConfirmationJobCleanup))
+        {
+            services.AddHostedService<LinkingConfirmationJobCleanupService>();
+        }
 
         services.AddScoped<ILinkingWorkspaceReader, EfLinkingWorkspaceReader>();
         services.AddScoped<IDoorLinkRecordsReader, EfDoorLinkRecordsReader>();

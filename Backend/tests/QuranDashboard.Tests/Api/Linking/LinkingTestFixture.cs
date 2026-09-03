@@ -6,6 +6,7 @@ using QuranDashboard.Application.Abstractions.Linking.ConfirmationJobs;
 using QuranDashboard.Application.Abstractions.Linking.PreparedPreflights;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Background;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.Http;
@@ -16,6 +17,12 @@ namespace QuranDashboard.Tests.Api.Linking;
 public sealed class LinkingTestFixture : IAsyncLifetime
 {
     private const string SeedResourceSuffix = "mushaf-reader-seed.sql";
+    private static readonly DatabaseBackgroundActivity[] LinkingProcessors =
+    [
+        DatabaseBackgroundActivity.LinkingPreparedPreflightProcessor,
+        DatabaseBackgroundActivity.LinkingConfirmationJobProcessor,
+    ];
+
     private readonly FakeExternalUserProfileSource profileSource = new();
     private readonly SmokeSqlCommandCapture commandCapture = new();
     private PostgreSqlDatabaseLease? databaseLease;
@@ -56,7 +63,8 @@ public sealed class LinkingTestFixture : IAsyncLifetime
         standardFactory ??= SmokeApiHost.Build(
             ConnectionString,
             profileSource,
-            commandCapture);
+            commandCapture,
+            backgroundActivities: LinkingProcessors);
         return SmokeApiHost.CreateClient(standardFactory);
     }
 
@@ -85,7 +93,8 @@ public sealed class LinkingTestFixture : IAsyncLifetime
         pausedConfirmationFactory ??= SmokeApiHost.Build(
                 ConnectionString,
                 profileSource,
-                commandCapture)
+                commandCapture,
+                backgroundActivities: LinkingProcessors)
             .WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             {
                 var processor = services.Single(descriptor =>
@@ -286,7 +295,11 @@ public sealed class LinkingTestFixture : IAsyncLifetime
     }
 
     private WebApplicationFactory<HealthController> BuildPausedWorkersFactory() =>
-        SmokeApiHost.Build(ConnectionString, profileSource, commandCapture)
+        SmokeApiHost.Build(
+                ConnectionString,
+                profileSource,
+                commandCapture,
+                backgroundActivities: LinkingProcessors)
             .WithWebHostBuilder(builder => builder.ConfigureTestServices(services =>
             {
                 RemoveHostedService<LinkingPreparedPreflightProcessorService>(services);
