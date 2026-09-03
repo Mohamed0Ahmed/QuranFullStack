@@ -407,10 +407,25 @@ After one build, mixed selections are partitioned and executed deterministically
 Safe framework-level parallelism remains inside FastNoDb and reader partitions. Cross-partition
 concurrency is not initially permitted; a later change requires measured evidence and explicit review.
 
-The pre-PR lane initially keeps currently required empty-scratch importer, migration, System Catalogue,
-and schema-drift rehearsals. A subtype may move to scheduled execution only after timing evidence and a
-risk review identify its replacement protection. Full-data index and recovery rehearsals are never
-implicitly selected.
+### Pre-PR selection policy
+
+During feature implementation, run focused tests for the affected scope only. Before opening a pull
+request, run the required risk-based gates. The existence of a canonical importer, rebuild, generator,
+similarity builder, PhraseSearch build, or other full-data pipeline does not by itself select that
+pipeline for every pre-PR run.
+
+A full canonical import, rebuild, or generation Destructive Rehearsal runs before a pull request only
+when the changed scope affects that pipeline, its authorized source data, Schema State, consumed or
+produced contracts, or safety-critical behavior. It may also run when explicitly selected by a scheduled
+or release policy. Otherwise it remains outside the ordinary pre-PR selection.
+
+Cheap, risk-relevant empty-scratch tests may remain eligible for pre-PR, including focused importer,
+migration, System Catalogue reconciliation, and schema-drift coverage. This eligibility must not expand
+into rebuilding every complete canonical dataset on every pull request. A subtype may move to scheduled
+execution only after timing evidence and a risk review identify its replacement protection.
+
+Full-data destructive rehearsals remain explicit and manual. They are never part of ordinary pre-PR
+execution unless separately authorized.
 
 Every database-backed focused class, method, or Playwright `file:line` invocation uses `scripts/test` or
 a thin delegate. FastNoDb tests may run directly. Explicit headed/UI wrappers provide read-only and
