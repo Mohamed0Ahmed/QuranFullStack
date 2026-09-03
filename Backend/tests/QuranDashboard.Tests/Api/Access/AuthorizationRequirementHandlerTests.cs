@@ -15,13 +15,12 @@ using ApiAuthorizationFailureReason = QuranDashboard.Api.Authorization.Authoriza
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     [Fact]
     public async Task PermissionRequirement_ActiveOwnerWithoutDirectGrants_Succeeds()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-owner";
         await AddUserAsync(sub, UserStatus.Active, RoleNames.Owner);
 
@@ -35,9 +34,8 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task PermissionRequirement_ActiveNonOwnerWithExactGrant_Succeeds()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-exact-grant";
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var userId = await AddUserAsync(sub, UserStatus.Active, roleName: null);
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
 
@@ -51,7 +49,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task OwnerOnlyRequirement_ActiveOwner_Succeeds()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-owner-only";
         await AddUserAsync(sub, UserStatus.Active, RoleNames.Owner);
 
@@ -76,13 +73,12 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
         string? grantedPermission,
         ApiAuthorizationFailureReason expectedFailure)
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-permission-denial";
         if (status is { } resolvedStatus)
         {
             if (grantedPermission is not null)
             {
-                await SynchronizePermissionsAsync();
+                await Fixture.VerifyPermissionCatalogueAsync();
             }
 
             var userId = await AddUserAsync(sub, resolvedStatus, roleName: null);
@@ -103,7 +99,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task PermissionRequirement_TokenRoleAndPermissionClaims_DoNotGrantAccess()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-claim-smuggling";
         await AddUserAsync(sub, UserStatus.Active, roleName: null);
 
@@ -121,7 +116,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task PermissionRequirement_AuthenticatedPrincipalWithoutSub_FailsClosed()
     {
-        await fixture.ResetAsync();
 
         var attempt = await AuthorizeAsync(
             new ClaimsPrincipal(new ClaimsIdentity(authenticationType: "test")),
@@ -134,7 +128,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task PermissionRequirement_AuthenticatedPrincipalWithWhitespaceSub_FailsClosed()
     {
-        await fixture.ResetAsync();
 
         var attempt = await AuthorizeAsync(
             AuthenticatedPrincipal(" "),
@@ -147,9 +140,8 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task OwnerOnlyRequirement_ActiveNonOwnerWithDirectGrant_Fails()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-owner-only-grant";
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var userId = await AddUserAsync(sub, UserStatus.Active, roleName: null);
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
 
@@ -162,7 +154,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [Fact]
     public async Task OwnerOnlyRequirement_DisabledOwner_FailsAsInactive()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-disabled-owner";
         await AddUserAsync(sub, UserStatus.Disabled, RoleNames.Owner);
 
@@ -177,7 +168,6 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     [InlineData(false)]
     public async Task Requirement_ConflictingEndpointMetadata_FailsClosedEvenForAnActiveOwner(bool permissionRequirement)
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-invalid-endpoint-metadata";
         await AddUserAsync(sub, UserStatus.Active, RoleNames.Owner);
         var requirement = permissionRequirement
@@ -280,7 +270,7 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
         IAuthorizationRequirement requirement,
         Endpoint? endpoint = null)
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
         var httpContext = new DefaultHttpContext { RequestServices = scope.ServiceProvider, User = principal };
         if (endpoint is not null)
@@ -306,8 +296,8 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
     {
         var roleId = roleName is null
             ? (int?)null
-            : (await fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
-        return await fixture.InsertUserAsync(new User
+            : (await Fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
+        return await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = $"{sub}@example.test",
@@ -318,16 +308,9 @@ public sealed class AuthorizationRequirementHandlerTests(AccessTestFixture fixtu
         });
     }
 
-    private async Task SynchronizePermissionsAsync()
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
-            .SynchronizeAsync(CancellationToken.None);
-    }
-
     private async Task GrantAsync(int userId, string permissionCode)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var permissionId = await db.AccessPermissions
             .Where(permission => permission.Code == permissionCode)

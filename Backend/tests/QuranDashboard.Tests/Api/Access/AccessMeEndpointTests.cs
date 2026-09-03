@@ -4,18 +4,17 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AccessMeEndpointTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     private const string MePath = "/api/access/me";
 
     [Fact]
     public async Task ValidToken_FirstCall_ProvisionsPendingUserAndReturnsTargetContractEnvelope()
     {
-        await fixture.ResetAsync();
         const string sub = "logto-user-first-login";
         var token = TestJwtTokens.Mint(sub);
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var response = await GetMeAsync(client, token);
 
@@ -40,7 +39,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
         data.GetProperty("isOwner").GetBoolean().Should().BeFalse();
         data.GetProperty("permissions").GetArrayLength().Should().Be(0);
 
-        var users = await fixture.GetUsersAsync();
+        var users = await Fixture.GetUsersAsync();
         users.Should().ContainSingle();
         var persisted = users[0];
         persisted.LogtoSub.Should().Be(sub);
@@ -52,10 +51,9 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task ValidToken_RepeatCall_IsIdempotent()
     {
-        await fixture.ResetAsync();
         const string sub = "logto-user-repeat-login";
         var token = TestJwtTokens.Mint(sub);
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var first = await GetMeAsync(client, token);
         using var second = await GetMeAsync(client, token);
@@ -65,9 +63,9 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
 
         // Get-or-create must short-circuit on the second call: still one row, and the external provider
         // was consulted exactly once (only during the first-login create).
-        (await fixture.GetUsersAsync()).Should().ContainSingle();
-        fixture.ProfileSource.CallsFor(sub).Should().Be(1);
-        fixture.ProfileSource.TotalCalls.Should().Be(1);
+        (await Fixture.GetUsersAsync()).Should().ContainSingle();
+        Fixture.ProfileSource.CallsFor(sub).Should().Be(1);
+        Fixture.ProfileSource.TotalCalls.Should().Be(1);
     }
 
     public static TheoryData<string> UnauthorizedCases =>
@@ -83,7 +81,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
     [MemberData(nameof(UnauthorizedCases))]
     public async Task InvalidCredential_Returns401FailureEnvelope(string caseName)
     {
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, MePath);
         if (TokenForCase(caseName) is { } bearer)
         {
@@ -100,11 +98,10 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task BlankEmailFromProvider_Returns500Envelope()
     {
-        await fixture.ResetAsync();
         const string sub = "logto-user-blank-email";
-        fixture.ProfileSource.ReturnBlankEmailFor(sub);
+        Fixture.ProfileSource.ReturnBlankEmailFor(sub);
         var token = TestJwtTokens.Mint(sub);
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var response = await GetMeAsync(client, token);
 
@@ -112,20 +109,19 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
             response, HttpStatusCode.InternalServerError, ApiMessages.UnexpectedError);
 
         // Provisioning aborted before any insert, so no partial row leaks.
-        (await fixture.GetUsersAsync()).Should().BeEmpty();
+        (await Fixture.GetUsersAsync()).Should().BeEmpty();
     }
 
     [Fact]
     public async Task EmailCollidesWithDifferentSub_Returns409ConflictEnvelope()
     {
-        await fixture.ResetAsync();
         const string existingSub = "logto-user-me-email-conflict-existing";
         const string newSub = "logto-user-me-email-conflict-new";
         var conflictingEmail = FakeExternalUserProfileSource.EmailFor(existingSub);
 
         // Seed a pre-existing user under a DIFFERENT sub with the email the new caller's token will
         // present — simulating a subject deleted+recreated in Logto (new sub, same verified email).
-        await fixture.InsertUserAsync(new User
+        await Fixture.InsertUserAsync(new User
         {
             LogtoSub = existingSub,
             Email = conflictingEmail,
@@ -133,9 +129,9 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
             CreatedAtUtc = DateTimeOffset.UtcNow,
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         });
-        fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
+        Fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
         var token = TestJwtTokens.Mint(newSub);
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var response = await GetMeAsync(client, token);
 
@@ -143,7 +139,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
             response, HttpStatusCode.Conflict, ApiMessages.EmailAlreadyRegistered);
 
         // The failed insert under the new sub leaves no partial row; only the pre-existing user remains.
-        (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
+        (await Fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
     }
 
     public static TheoryData<string> PublicRoutes =>
@@ -156,7 +152,7 @@ public sealed class AccessMeEndpointTests(AccessTestFixture fixture)
     [MemberData(nameof(PublicRoutes))]
     public async Task PublicEndpoint_WithoutToken_StillOk(string route)
     {
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var response = await client.GetAsync(route);
 

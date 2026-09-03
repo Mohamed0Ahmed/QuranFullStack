@@ -17,7 +17,7 @@ internal sealed record MutableResetReport(
     string? BeforeFingerprint,
     string? AfterFingerprint,
     string ExpectedFingerprint,
-    int ApiPort,
+    int? ApiPort,
     int? ApiProcessId,
     bool ApiProcessAlive,
     bool ApiPortOpen,
@@ -26,7 +26,7 @@ internal sealed record MutableResetReport(
 
 internal static class MutableStateResetter
 {
-    internal static async Task<TestRuntimeReport> ExecuteAsync(
+    internal static Task<TestRuntimeReport> ExecuteAsync(
         DatabaseContract contract,
         ContractValidationResult validation,
         InspectionTargetValidation targetValidation,
@@ -37,7 +37,60 @@ internal static class MutableStateResetter
         int apiPort,
         int? apiProcessId,
         string phase,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default) =>
+        ExecuteCoreAsync(
+            contract,
+            validation,
+            targetValidation,
+            inspection,
+            runId,
+            lockCommand,
+            expectedFingerprint,
+            apiPort,
+            apiProcessId,
+            phase,
+            inProcessApiHostWasDisposed: false,
+            cancellationToken);
+
+    internal static Task<TestRuntimeReport> ExecuteAfterInProcessApiStoppedAsync(
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation targetValidation,
+        TestRuntimeReport inspection,
+        string runId,
+        string lockCommand,
+        string expectedFingerprint,
+        string phase,
+        CancellationToken cancellationToken = default) =>
+        // In-process TestServer hosts have no dedicated PID or listening port. Their lifecycle owner
+        // must await host disposal first; the reset still rejects every remaining database writer.
+        ExecuteCoreAsync(
+            contract,
+            validation,
+            targetValidation,
+            inspection,
+            runId,
+            lockCommand,
+            expectedFingerprint,
+            apiPort: null,
+            apiProcessId: null,
+            phase,
+            inProcessApiHostWasDisposed: true,
+            cancellationToken);
+
+    private static async Task<TestRuntimeReport> ExecuteCoreAsync(
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation targetValidation,
+        TestRuntimeReport inspection,
+        string runId,
+        string lockCommand,
+        string expectedFingerprint,
+        int? apiPort,
+        int? apiProcessId,
+        string phase,
+        bool inProcessApiHostWasDisposed,
+        CancellationToken cancellationToken)
     {
         var resetTables = contract.DataClasses.MutableApplicationState
             .Where(table => table != contract.LinkingDataBaseline.Table)
@@ -120,17 +173,26 @@ internal static class MutableStateResetter
                 violations: [new ContractViolation("mutable-reset.resetter-role.invalid")]);
         }
 
+        var missingFinalApiStopProof = phase == "final"
+                                       && apiProcessId is null
+                                       && !inProcessApiHostWasDisposed;
         var processAlive = apiProcessId is not null && IsProcessAlive(apiProcessId.Value);
-        var portOpen = await IsPortOpenAsync(apiPort, cancellationToken);
+        var portOpen = apiPort is not null
+                       && await IsPortOpenAsync(apiPort.Value, cancellationToken);
         var activeConnections = await CountUnexpectedConnectionsAsync(
             connection,
             contract.AdvisoryLock.Key,
             runId,
             lockCommand,
             cancellationToken);
-        if (processAlive || portOpen || activeConnections != 0)
+        if (missingFinalApiStopProof || processAlive || portOpen || activeConnections != 0)
         {
             var violations = new List<ContractViolation>();
+            if (missingFinalApiStopProof)
+            {
+                violations.Add(new ContractViolation("mutable-reset.api-stop-proof.required"));
+            }
+
             if (processAlive)
             {
                 violations.Add(new ContractViolation("mutable-reset.api-process-live"));
@@ -138,7 +200,7 @@ internal static class MutableStateResetter
 
             if (portOpen)
             {
-                violations.Add(new ContractViolation("mutable-reset.api-port-live", apiPort.ToString()));
+                violations.Add(new ContractViolation("mutable-reset.api-port-live", apiPort!.Value.ToString()));
             }
 
             if (activeConnections != 0)
@@ -413,7 +475,7 @@ internal static class MutableStateResetter
         ContractValidationResult validation,
         TestRuntimeReport inspection,
         string expectedFingerprint,
-        int apiPort,
+        int? apiPort,
         int? apiProcessId,
         string phase,
         string status,

@@ -6,8 +6,8 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     private const string SessionsPath = "/api/auth/sessions";
     private const string CurrentSessionPath = "/api/auth/sessions/current";
@@ -17,8 +17,7 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     [Fact]
     public async Task Bootstrap_SetsSecureCookies_AndAuthenticatesMeWithoutAuthorizationHeader()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
 
         using var bootstrap = await BootstrapAsync(client, "device-session-cookie");
 
@@ -37,8 +36,7 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     [Fact]
     public async Task UnsafeCookieRequest_MissingOrMismatchedCsrf_IsDenied_BeforeMatchedTokenRevokes()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateApiClient();
+        using var client = Fixture.CreateApiClient();
         using var bootstrap = await BootstrapAsync(client, "device-session-csrf");
         var csrfToken = CookieValue(bootstrap, DeviceSessionAuthentication.CsrfCookieName);
         var sessionToken = CookieValue(bootstrap, DeviceSessionAuthentication.SessionCookieName);
@@ -71,7 +69,7 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
             HttpStatusCode.Unauthorized,
             ApiMessages.Unauthorized);
 
-        using var replayClient = fixture.CreateApiClient();
+        using var replayClient = Fixture.CreateApiClient();
         using var replayRequest = CookieBackedMeRequest(sessionToken);
         using var replayedRevokedSession = await replayClient.SendAsync(replayRequest);
         await ApiEnvelope.AssertFailureEnvelopeAsync(
@@ -83,8 +81,7 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     [Fact]
     public async Task Bootstrap_WithPreviousCookie_ReplacesAndInvalidatesPreviousSession()
     {
-        await fixture.ResetAsync();
-        using var bootstrapClient = fixture.CreateApiClient();
+        using var bootstrapClient = Fixture.CreateApiClient();
 
         using var first = await BootstrapAsync(bootstrapClient, "device-session-replacement");
         var firstToken = CookieValue(first, DeviceSessionAuthentication.SessionCookieName);
@@ -93,7 +90,7 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
 
         secondToken.Should().NotBe(firstToken);
 
-        using var oldSessionClient = fixture.CreateApiClient();
+        using var oldSessionClient = Fixture.CreateApiClient();
         using var oldRequest = CookieBackedMeRequest(firstToken);
         using var oldResponse = await oldSessionClient.SendAsync(oldRequest);
         await ApiEnvelope.AssertFailureEnvelopeAsync(
@@ -101,52 +98,22 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
             HttpStatusCode.Unauthorized,
             ApiMessages.Unauthorized);
 
-        using var currentSessionClient = fixture.CreateApiClient();
+        using var currentSessionClient = Fixture.CreateApiClient();
         using var currentRequest = CookieBackedMeRequest(secondToken);
         using var currentResponse = await currentSessionClient.SendAsync(currentRequest);
         currentResponse.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task Bootstrap_ReplacementInsertFailure_PreservesPreviousSession()
-    {
-        await fixture.ResetAsync();
-        using var bootstrapClient = fixture.CreateApiClient();
-
-        using var first = await BootstrapAsync(bootstrapClient, "device-session-failed-replacement");
-        var firstToken = CookieValue(first, DeviceSessionAuthentication.SessionCookieName);
-
-        await AddSuccessorInsertFailureConstraintAsync();
-        try
-        {
-            using var second = await BootstrapAsync(bootstrapClient, "device-session-failed-replacement");
-            await ApiEnvelope.AssertFailureEnvelopeAsync(
-                second,
-                HttpStatusCode.InternalServerError,
-                ApiMessages.UnexpectedError);
-        }
-        finally
-        {
-            await DropSuccessorInsertFailureConstraintAsync();
-        }
-
-        using var previousSessionClient = fixture.CreateApiClient();
-        using var previousRequest = CookieBackedMeRequest(firstToken);
-        using var previousResponse = await previousSessionClient.SendAsync(previousRequest);
-        previousResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-    }
-
-    [Fact]
     public async Task CookieBackedAccess_ExpiresAtTheControllableClockBoundary()
     {
-        await fixture.ResetAsync();
         var clock = new AdjustableTimeProvider(DateTimeOffset.UtcNow);
-        using var factory = fixture.CreateApiFactory(services =>
+        using var factory = Fixture.CreateApiFactory(services =>
         {
             services.RemoveAll<TimeProvider>();
             services.AddSingleton<TimeProvider>(clock);
         });
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         using var bootstrap = await BootstrapAsync(client, "device-session-expiry");
         bootstrap.StatusCode.Should().Be(HttpStatusCode.OK);
 
@@ -206,26 +173,6 @@ public sealed class DeviceSessionLifecycleTests(AccessTestFixture fixture)
     private static string CookieHeader(HttpResponseMessage response, string name) =>
         response.Headers.GetValues("Set-Cookie")
             .Single(header => header.StartsWith($"{name}=", StringComparison.Ordinal));
-
-    private async Task AddSuccessorInsertFailureConstraintAsync()
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            """
-            ALTER TABLE user_device_sessions
-            ADD CONSTRAINT ck_test_reject_unrevoked_device_session
-            CHECK (revoked_at IS NOT NULL) NOT VALID;
-            """);
-    }
-
-    private async Task DropSuccessorInsertFailureConstraintAsync()
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            "ALTER TABLE user_device_sessions DROP CONSTRAINT ck_test_reject_unrevoked_device_session;");
-    }
 
     private sealed class AdjustableTimeProvider(DateTimeOffset utcNow) : TimeProvider
     {

@@ -95,4 +95,62 @@ public sealed class TestPolicyContractTests
         entry.Policy.Target.Should().Be(TestDatabaseTarget.None);
         entry.ResourceCollection.Should().BeNull();
     }
+
+    [Fact]
+    public void AccessMutableWriters_UseTheSinglePersistentMutableDatabaseResource()
+    {
+        string[] expectedClasses =
+        [
+            "QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests",
+            "QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests",
+            "QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests",
+            "QuranDashboard.Tests.Api.Access.AccessMeEndpointTests",
+            "QuranDashboard.Tests.Api.Access.AccessRolesTests",
+            "QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests",
+            "QuranDashboard.Tests.Api.Access.AuthorizationRejectionResponseTests",
+            "QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests",
+            "QuranDashboard.Tests.Api.Access.AuthorizationStateResolverTests",
+            "QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleTests",
+            "QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests",
+            "QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests",
+            "QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests",
+            "QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests",
+        ];
+
+        var entries = TestGateCatalog.GateEntries
+            .Where(entry => expectedClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+        var expectedReads = new HashSet<TestDataClass>
+        {
+            TestDataClass.SystemCatalogue,
+            TestDataClass.MutableApplicationState,
+        };
+        var expectedWrites = new HashSet<TestDataClass> { TestDataClass.MutableApplicationState };
+
+        entries.Select(entry => entry.ClassName).Should().BeEquivalentTo(expectedClasses);
+        entries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.MutableWriter
+            && entry.Policy.Reads.IsSupersetOf(expectedReads)
+            && entry.Policy.Writes.SetEquals(expectedWrites)
+            && entry.Policy.Target == TestDatabaseTarget.TestDatabase
+            && entry.Policy.DestructiveSubtype == DestructiveRehearsalSubtype.None
+            && entry.ResourceCollection == "MutableDatabaseCollection");
+        entries.Single(entry => entry.ClassName.EndsWith(
+                ".AccessCollectionResetContractTests",
+                StringComparison.Ordinal))
+            .Policy!.Reads.Should().Contain(TestDataClass.SchemaState);
+
+        var resource = TestGateCatalog.ResourceEntries.Single(entry =>
+            entry.CollectionName == "MutableDatabaseCollection");
+        resource.ParallelPolicy.Should().Be("NonParallel");
+        resource.StatePolicy.Should().Be("ResetPerTest");
+        resource.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
+        resource.Policy.Should().NotBeNull();
+        resource.Policy!.SetupWrites.Should().BeEmpty();
+        resource.Policy.ResetBehavior.Should().Be(TestResetBehavior.MutableApplicationState);
+        resource.Policy.Target.Should().Be(TestDatabaseTarget.TestDatabase);
+        resource.Policy.StartupEffects.Should().BeEquivalentTo([TestApiStartupEffect.MutableApi]);
+    }
 }

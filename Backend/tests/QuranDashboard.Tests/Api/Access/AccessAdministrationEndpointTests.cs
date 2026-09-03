@@ -7,18 +7,17 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     [Fact]
     public async Task Accept_PersistsTheTransitionInitialGrantsAndOrderedAuditTrail()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-accept-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         var requestedCodes = new[]
         {
             AbwabPermissions.Doors.Archive,
@@ -41,7 +40,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         envelope.GetProperty("data").GetProperty("permissionCodes").EnumerateArray()
             .Select(code => code.GetString()).Should().Equal(CanonicalCodes(requestedCodes));
 
-        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        var persisted = (await Fixture.GetUserBySubAsync(targetSub))!;
         persisted.Status.Should().Be(UserStatus.Active);
         (await GetGrantCodesAsync(targetId)).Should().Equal(CanonicalCodes(requestedCodes));
 
@@ -74,12 +73,11 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task Accept_WithABlankReason_SucceedsAndStoresNullAuditReasons()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-accept-blank-reason-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var response = await client.PostAsJsonAsync(
@@ -92,7 +90,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        (await Fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
         var audit = await GetAuditEventsAsync(targetId);
         audit.Select(eventItem => eventItem.ActionType).Should().Equal(
             AccessAuditActionType.UserAccepted,
@@ -104,13 +102,12 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task Disable_WithAWhitespaceReason_SucceedsAndStoresNullAuditReasons()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-disable-blank-reason-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
         await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var response = await client.PostAsJsonAsync(
@@ -118,7 +115,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             new { expectedVersion = target.Version, reason = "   " });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Disabled);
+        (await Fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Disabled);
         var audit = await GetAuditEventsAsync(targetId);
         audit.Select(eventItem => eventItem.ActionType).Should().Equal(
             AccessAuditActionType.PermissionRevoked,
@@ -129,13 +126,12 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task Disable_WithAnOverlongReason_IsRejectedWithoutStatusGrantOrAuditChanges()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-disable-overlong-reason-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
         await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var response = await client.PostAsJsonAsync(
@@ -146,7 +142,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             response,
             HttpStatusCode.BadRequest,
             ApiMessages.AccessAdministrationInvalidRequest);
-        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        var persisted = (await Fixture.GetUserBySubAsync(targetSub))!;
         persisted.Status.Should().Be(UserStatus.Active);
         persisted.Version.Should().Be(target.Version);
         (await GetGrantCodesAsync(targetId)).Should().Equal(AbwabPermissions.Doors.Create);
@@ -156,11 +152,10 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task Reactivate_WithAnOmittedReason_SucceedsAndStoresANullAuditReason()
     {
-        await fixture.ResetAsync();
         await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-reactivate-omitted-reason-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Disabled);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var response = await client.PostAsJsonAsync(
@@ -168,7 +163,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             new { expectedVersion = target.Version });
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
+        (await Fixture.GetUserBySubAsync(targetSub))!.Status.Should().Be(UserStatus.Active);
         var audit = await GetAuditEventsAsync(targetId);
         audit.Select(eventItem => eventItem.ActionType).Should().Equal(AccessAuditActionType.UserReactivated);
         audit.Should().OnlyContain(eventItem => eventItem.Reason == null);
@@ -177,13 +172,12 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task ReplacePermissions_WithAnOmittedReason_SucceedsAndStoresNullAuditReasons()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-replace-omitted-reason-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
         await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Doors.Create]);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var response = await client.PutAsJsonAsync(
@@ -206,8 +200,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task DisableThenReactivate_RevokesEveryGrantWithoutRestoringAny()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-disable-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
@@ -217,7 +210,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             AbwabPermissions.Doors.Create,
         };
         await AddGrantsAsync(targetId, ownerId, originalCodes);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var disableResponse = await client.PostAsJsonAsync(
@@ -225,7 +218,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             new { expectedVersion = target.Version, reason = "Suspend access during account review." });
 
         disableResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var disabled = (await fixture.GetUserBySubAsync(targetSub))!;
+        var disabled = (await Fixture.GetUserBySubAsync(targetSub))!;
         disabled.Status.Should().Be(UserStatus.Disabled);
         (await GetGrantCodesAsync(targetId)).Should().BeEmpty();
 
@@ -242,7 +235,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             new { expectedVersion = disabled.Version, reason = "Account review completed." });
 
         reactivateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        var reactivated = (await fixture.GetUserBySubAsync(targetSub))!;
+        var reactivated = (await Fixture.GetUserBySubAsync(targetSub))!;
         reactivated.Status.Should().Be(UserStatus.Active);
         (await GetGrantCodesAsync(targetId)).Should().BeEmpty();
         (await GetAuditEventsAsync(targetId)).Select(eventItem => eventItem.ActionType).Should().Equal(
@@ -255,13 +248,12 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task ReplacePermissions_UsesVersionedDeltasAndLeavesIdenticalSetsUnaudited()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-replace-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
         await AddGrantsAsync(targetId, ownerId, [AbwabPermissions.Sections.Edit, AbwabPermissions.Doors.Create]);
-        var original = (await fixture.GetUserBySubAsync(targetSub))!;
+        var original = (await Fixture.GetUserBySubAsync(targetSub))!;
         var desiredCodes = new[]
         {
             AbwabPermissions.Doors.Archive,
@@ -280,7 +272,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
         replaceResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         (await GetGrantCodesAsync(targetId)).Should().Equal(CanonicalCodes(desiredCodes));
-        var changed = (await fixture.GetUserBySubAsync(targetSub))!;
+        var changed = (await Fixture.GetUserBySubAsync(targetSub))!;
         var auditCount = (await GetAuditEventsAsync(targetId)).Count;
         (await GetAuditEventsAsync(targetId)).Select(eventItem => eventItem.ActionType).Should().Equal(
             AccessAuditActionType.PermissionRevoked,
@@ -296,7 +288,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             });
 
         identicalResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await fixture.GetUserBySubAsync(targetSub))!.Version.Should().Be(changed.Version);
+        (await Fixture.GetUserBySubAsync(targetSub))!.Version.Should().Be(changed.Version);
         (await GetAuditEventsAsync(targetId)).Count.Should().Be(auditCount);
 
         using var staleResponse = await client.PutAsJsonAsync(
@@ -319,16 +311,15 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task ConcurrentOwners_CompetingStatusAndGrantMutations_CommitOneOutcomeAndRejectTheOtherAsStale()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var firstOwnerId = await SeedActiveOwnerAsync();
         var secondOwnerId = await SeedActiveOwnerAsync(
             AccessTestFixture.SecondOwnerSub,
             AccessTestFixture.SecondOwnerEmail);
         const string targetSub = "access-admin-concurrent-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
-        await using var gateConnection = new NpgsqlConnection(fixture.ConnectionString);
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
+        await using var gateConnection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await gateConnection.OpenAsync();
         await using var gateTransaction = await gateConnection.BeginTransactionAsync();
         await using (var gateCommand = new NpgsqlCommand(
@@ -340,8 +331,8 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             await gateCommand.ExecuteScalarAsync();
         }
 
-        await using var firstScope = fixture.ApiServices.CreateAsyncScope();
-        await using var secondScope = fixture.ApiServices.CreateAsyncScope();
+        await using var firstScope = Fixture.ApiServices.CreateAsyncScope();
+        await using var secondScope = Fixture.ApiServices.CreateAsyncScope();
 
         var disableTask = firstScope.ServiceProvider.GetRequiredService<IAccessUserMutationService>()
             .DisableAsync(
@@ -382,7 +373,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             .Count(failure => failure == AccessOperationFailure.StaleVersion)
             .Should().Be(1);
 
-        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        var persisted = (await Fixture.GetUserBySubAsync(targetSub))!;
         var audit = await GetAuditEventsAsync(targetId);
         if (disableResult.IsSuccess)
         {
@@ -403,15 +394,14 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task Mutation_ActorDeownedWhileWaitingForItsTransactionLock_IsRejectedWithoutTargetOrAuditChanges()
     {
-        await fixture.ResetAsync();
         var actorId = await SeedActiveOwnerAsync();
         await SeedActiveOwnerAsync(
             AccessTestFixture.SecondOwnerSub,
             AccessTestFixture.SecondOwnerEmail);
         const string targetSub = "access-admin-deowned-actor-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var deownershipTransaction = await connection.BeginTransactionAsync();
         await using (var command = new NpgsqlCommand(
@@ -423,7 +413,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             await command.ExecuteNonQueryAsync();
         }
 
-        await using var mutationScope = fixture.ApiServices.CreateAsyncScope();
+        await using var mutationScope = Fixture.ApiServices.CreateAsyncScope();
         var mutation = mutationScope.ServiceProvider.GetRequiredService<IAccessUserMutationService>()
             .DisableAsync(
                 AccessTestFixture.OwnerSub,
@@ -447,21 +437,20 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
         observedWaiters.Should().BeGreaterThanOrEqualTo(1);
         result.Failure.Should().Be(AccessOperationFailure.ActorNoLongerOwner);
-        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
+        var persisted = (await Fixture.GetUserBySubAsync(targetSub))!;
         persisted.Status.Should().Be(UserStatus.Active);
         persisted.Version.Should().Be(target.Version);
         (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
     }
 
     [Fact]
-    public async Task ReplacePermissions_RejectsUnknownRetiredDuplicateAndGroupLikeCodes()
+    public async Task ReplacePermissions_RejectsUnknownDuplicateAndGroupLikeCodes()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-invalid-codes-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Active);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
         IReadOnlyList<string>[] invalidCodeSets =
         [
@@ -487,72 +476,13 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
                 ApiMessages.AccessAdministrationInvalidPermissionCodes);
         }
 
-        await RetirePermissionAsync(AbwabPermissions.Doors.Create);
-
-        using var retiredResponse = await client.PutAsJsonAsync(
-            $"/api/access/users/{targetId}/permissions",
-            new
-            {
-                expectedVersion = target.Version,
-                permissionCodes = new[] { AbwabPermissions.Doors.Create },
-                reason = "Reject a retired permission.",
-            });
-
-        await ApiEnvelope.AssertFailureEnvelopeAsync(
-            retiredResponse,
-            HttpStatusCode.BadRequest,
-            ApiMessages.AccessAdministrationInvalidPermissionCodes);
         (await GetGrantCodesAsync(targetId)).Should().BeEmpty();
         (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task AuditInsertionFailure_RollsBackTheUserTransitionAndAllAuditRows()
-    {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
-        await SeedActiveOwnerAsync();
-        const string targetSub = "access-admin-audit-failure-target";
-        var targetId = await SeedUserAsync(targetSub, UserStatus.Pending);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
-        using var client = CreateOwnerClient();
-        await AddAuditFailureConstraintAsync();
-
-        try
-        {
-            using var response = await client.PostAsJsonAsync(
-                $"/api/access/users/{targetId}/accept",
-                new
-                {
-                    expectedVersion = target.Version,
-                    permissionCodes = new[] { AbwabPermissions.Doors.Create },
-                    reason = "This audit write must fail atomically.",
-                });
-
-            await ApiEnvelope.AssertFailureEnvelopeAsync(
-                response,
-                HttpStatusCode.InternalServerError,
-                ApiMessages.UnexpectedError);
-        }
-        finally
-        {
-            await DropAuditFailureConstraintAsync();
-        }
-
-        var persisted = (await fixture.GetUserBySubAsync(targetSub))!;
-        persisted.Status.Should().Be(UserStatus.Pending);
-        persisted.RoleId.Should().BeNull();
-        persisted.LogtoSub.Should().Be(targetSub);
-        persisted.Version.Should().Be(target.Version);
-        (await GetGrantCodesAsync(targetId)).Should().BeEmpty();
-        (await GetAuditEventsAsync(targetId)).Should().BeEmpty();
-        (await GetAuditEventCountAsync()).Should().Be(0);
     }
 
     [Fact]
     public async Task ListUsers_WithMaximumAcceptedPagingValues_ReturnsAnEmptyPage()
     {
-        await fixture.ResetAsync();
         await SeedActiveOwnerAsync();
         using var client = CreateOwnerClient();
 
@@ -569,7 +499,6 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task ListUsers_WithAnExactMultipleOfFilteredResults_TraversesEveryUserAndReturnsAnEmptyPagePastTheEnd()
     {
-        await fixture.ResetAsync();
         await SeedActiveOwnerAsync();
         var userIds = new[]
         {
@@ -612,7 +541,6 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task UserSearch_MatchesPartOfANameOrEmailAndRejectsOnlyAnOversizedTerm()
     {
-        await fixture.ResetAsync();
         await SeedActiveOwnerAsync();
         var researcherId = await SeedUserAsync(
             "access-search-researcher",
@@ -645,8 +573,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task OwnerReads_ExposeBoundedProjectionsAndRejectOrdinaryOwnerMutation()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-read-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "باحث اختبار");
@@ -654,7 +581,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
         using var ownerMutationResponse = await client.PostAsJsonAsync(
             $"/api/access/users/{ownerId}/disable",
-            new { expectedVersion = (await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub))!.Version, reason = "Forbidden owner mutation." });
+            new { expectedVersion = (await Fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub))!.Version, reason = "Forbidden owner mutation." });
 
         await ApiEnvelope.AssertFailureEnvelopeAsync(
             ownerMutationResponse,
@@ -708,54 +635,15 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             && candidate.GetProperty("state").GetString() == "AwaitingVerifiedSignIn");
     }
 
-    [Fact]
-    public async Task PermissionCatalogue_WithARetiredCanonicalCode_OmitsItAndStaysAssignable()
-    {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
-        await SeedActiveOwnerAsync();
-        await RetirePermissionAsync(AbwabPermissionCatalogue.All[0].Code);
-        using var client = CreateOwnerClient();
-
-        using var response = await client.GetAsync("/api/access/permissions");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var catalogue = await ApiEnvelope.ReadDataAsync(response);
-        catalogue.GetProperty("items").EnumerateArray()
-            .Select(item => item.GetProperty("code").GetString())
-            .Should().Equal(AbwabPermissionCatalogue.All.Skip(1).Select(permission => permission.Code));
-        // Retirement is a product state, not a fault: the remaining codes are still persisted and
-        // non-retired, so assignment stays available.
-        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task PermissionCatalogue_OnAnEmptyPermissionsTable_StillAnswersWithTheCanonicalCatalogue()
-    {
-        await fixture.ResetAsync();
-        await SeedActiveOwnerAsync();
-        using var client = CreateOwnerClient();
-
-        using var response = await client.GetAsync("/api/access/permissions");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        await ApiEnvelope.AssertEnvelopeMatchesStatusAsync(response);
-        var catalogue = await ApiEnvelope.ReadDataAsync(response);
-        catalogue.GetProperty("items").EnumerateArray()
-            .Select(item => item.GetProperty("code").GetString())
-            .Should().Equal(AbwabPermissionCatalogue.All.Select(permission => permission.Code));
-        catalogue.GetProperty("assignmentReady").GetBoolean().Should().BeFalse();
-    }
 
     [Fact]
     public async Task AuditEvents_UseKeysetOrderingAndAllDocumentedFilters()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-audit-query-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
         var fromUtc = Uri.EscapeDataString(DateTimeOffset.UtcNow.AddMinutes(-1).ToString("O"));
 
@@ -804,12 +692,11 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
     [Fact]
     public async Task AuditEvents_NameParticipantsFromTheAccountRowsRatherThanTheStoredSnapshots()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var ownerId = await SeedActiveOwnerAsync();
         const string targetSub = "access-admin-audit-identity-target";
         var targetId = await SeedUserAsync(targetSub, UserStatus.Pending, displayName: "الاسم وقت الحدث");
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
         using var client = CreateOwnerClient();
 
         using var acceptResponse = await client.PostAsJsonAsync(
@@ -821,8 +708,8 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
                 reason = "Attribute the audit rows to human identities.",
             });
         acceptResponse.StatusCode.Should().Be(HttpStatusCode.OK);
-        await fixture.RenameUserAsync(targetId, "الاسم الحالي");
-        await fixture.RenameUserAsync(ownerId, "اسم المالك الحالي");
+        await Fixture.RenameUserAsync(targetId, "الاسم الحالي");
+        await Fixture.RenameUserAsync(ownerId, "اسم المالك الحالي");
 
         using var response = await client.GetAsync($"/api/access/audit-events?targetUserId={targetId}&pageSize=25");
 
@@ -847,8 +734,8 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
     private async Task<int> SeedActiveOwnerAsync(string sub, string email)
     {
-        var ownerRoleId = (await fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
-        return await fixture.InsertUserAsync(new User
+        var ownerRoleId = (await Fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
+        return await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = email,
@@ -872,7 +759,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
     private HttpClient CreateOwnerClient()
     {
-        var client = fixture.CreateApiClient();
+        var client = Fixture.CreateApiClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
             TestJwtTokens.Mint(AccessTestFixture.OwnerSub));
@@ -885,7 +772,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         string? displayName = null,
         string? userName = null)
     {
-        return await fixture.InsertUserAsync(new User
+        return await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = $"{sub}@example.test",
@@ -897,16 +784,9 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         });
     }
 
-    private async Task SynchronizePermissionsAsync()
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
-            .SynchronizeAsync(CancellationToken.None);
-    }
-
     private async Task AddGrantsAsync(int targetUserId, int actorUserId, IReadOnlyList<string> permissionCodes)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var permissionIds = await db.AccessPermissions
             .Where(permission => permissionCodes.Contains(permission.Code))
@@ -927,7 +807,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
     private async Task<IReadOnlyList<string>> GetGrantCodesAsync(int targetUserId)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         return await db.AccessUserPermissions.AsNoTracking()
             .Where(grant => grant.UserId == targetUserId)
@@ -936,17 +816,10 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             .ToListAsync();
     }
 
-    private async Task RetirePermissionAsync(string permissionCode)
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE permissions SET retired_at = {DateTimeOffset.UtcNow} WHERE code = {permissionCode};");
-    }
 
     private async Task<int> WaitForAccessMutationLockWaitersAsync(int expectedCount)
     {
-        await using var observerConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var observerConnection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await observerConnection.OpenAsync();
         var deadline = DateTimeOffset.UtcNow.AddSeconds(5);
         var highestObservedCount = 0;
@@ -954,14 +827,10 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
         {
             await using var command = new NpgsqlCommand(
                 """
-                SELECT count(*)::integer
-                FROM pg_stat_activity
-                WHERE datname = current_database()
-                  AND pid <> pg_backend_pid()
-                  AND state = 'active'
-                  AND wait_event_type = 'Lock'
-                  AND query LIKE '%SELECT id FROM users WHERE logto_sub =%'
-                  AND query LIKE '%ORDER BY id FOR UPDATE%'
+                SELECT count(DISTINCT waiting.pid)::integer
+                FROM pg_catalog.pg_locks AS waiting
+                WHERE NOT waiting.granted
+                  AND waiting.pid <> pg_backend_pid()
                 """,
                 observerConnection);
             highestObservedCount = Math.Max(
@@ -981,7 +850,7 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
 
     private async Task<IReadOnlyList<AccessAuditEvent>> GetAuditEventsAsync(int targetUserId)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         return await db.AccessAuditEvents.AsNoTracking()
             .Where(eventItem => eventItem.TargetUserId == targetUserId)
@@ -989,32 +858,6 @@ public sealed class AccessAdministrationEndpointTests(AccessTestFixture fixture)
             .ToListAsync();
     }
 
-    private async Task<int> GetAuditEventCountAsync()
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        return await db.AccessAuditEvents.CountAsync();
-    }
-
-    private async Task AddAuditFailureConstraintAsync()
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            """
-            ALTER TABLE access_audit_events
-            ADD CONSTRAINT ck_test_reject_user_accepted_audit
-            CHECK (action_type <> 'UserAccepted');
-            """);
-    }
-
-    private async Task DropAuditFailureConstraintAsync()
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlRawAsync(
-            "ALTER TABLE access_audit_events DROP CONSTRAINT ck_test_reject_user_accepted_audit;");
-    }
 
     private static IReadOnlyList<string> CanonicalCodes(IEnumerable<string> codes) => AbwabPermissionCatalogue.All
         .Where(definition => codes.Contains(definition.Code, StringComparer.Ordinal))

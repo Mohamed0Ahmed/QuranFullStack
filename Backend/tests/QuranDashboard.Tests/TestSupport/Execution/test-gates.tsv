@@ -7,28 +7,33 @@ QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB	
 QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests	Abwab	Database	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution							Unmigrated
-QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AccessAuditEventPersistenceTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AccessCollectionResetContractTests	Access	Database	TierB	Execution	MutableWriter	SystemCatalogue,MutableApplicationState,SchemaState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AccessMeEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AccessProtectedStateRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.AccessMigrationPathTests	Access	Migration	TierB	Schema	DestructiveRehearsal	SchemaState	SystemCatalogue,MutableApplicationState,SchemaState	EmptyScratch	Migration	AccessScratchRehearsalCollection	Migrated
-QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.AccessRolesTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.AccessSchemaDriftTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue,SchemaState	SystemCatalogue,SchemaState	EmptyScratch	SchemaDrift	AccessScratchRehearsalCollection	Migrated
-QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.DeviceSessionLifecycleRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.AuthorizationBoundaryTests	Access	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests	Access	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests	Access	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AuthorizationRejectionResponseTests	Access	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.AuthorizationStateResolverTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.AuthorizationPipelineTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AuthorizationRequirementHandlerTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AuthorizationRejectionResponseTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AuthorizationStateResolverTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.AuthorizationStateResolverRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.EmailIdentityNormalizerTests	Access	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB	Startup							Unmigrated
-QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.EmailIdentityPreflightTests	Access	Database	TierB	Startup	MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.EmailIdentityPreflightRehearsalTests	Access	Database	TierB	Schema,Startup							Unmigrated
+QuranDashboard.Tests.Api.Access.LogtoSubjectRelinkEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.OwnerBootstrapOptionsTests	Access	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.PermissionCatalogueStartupSyncTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue,MutableApplicationState	SystemCatalogue,MutableApplicationState	EmptyScratch	SystemCatalogueReconciliation	PermissionCatalogueStartupScratchCollection	Migrated
 QuranDashboard.Tests.Api.Access.PermissionCatalogueSynchronizerTests	Access	Database	TierB	Schema	DestructiveRehearsal	SystemCatalogue	SystemCatalogue	EmptyScratch	SystemCatalogueReconciliation	AccessScratchRehearsalCollection	Migrated
-QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.OwnerReconciliationServiceTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Access.OwnerReconciliationProtectedStateRehearsalTests	Access	Database	TierB	Schema							Unmigrated
 QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Middleware.GlobalExceptionHandlerTests	Middleware	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests	Linking	Database	TierB								Unmigrated
 QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests	Linking	Database	TierB								Unmigrated

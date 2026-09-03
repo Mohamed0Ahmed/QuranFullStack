@@ -10,7 +10,7 @@ using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-public sealed class AccessTestFixture : IAsyncLifetime
+public sealed class LegacyAccessTestFixture : IAsyncLifetime
 {
     private readonly object _apiFactoryLock = new();
     private PostgreSqlDatabaseLease? _databaseLease;
@@ -33,7 +33,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(AccessTestFixture));
+        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(LegacyAccessTestFixture));
         ConnectionString = _databaseLease.ConnectionString;
 
         _queryProvider = BuildQueryProvider();
@@ -177,7 +177,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     private ServiceProvider QueryProvider => _queryProvider
         ?? throw new InvalidOperationException(
-            $"{nameof(AccessTestFixture)} has not been initialized. Ensure it is used as an ICollectionFixture.");
+            $"{nameof(LegacyAccessTestFixture)} has not been initialized. Ensure it is used as an ICollectionFixture.");
 
     private WebApplicationFactory<AccessController> BuildApiFactory()
     {
@@ -230,5 +230,5 @@ public sealed class AccessTestFixture : IAsyncLifetime
     }
 }
 
-[CollectionDefinition(nameof(AccessCollection))]
-public sealed class AccessCollection : ICollectionFixture<AccessTestFixture>;
+[CollectionDefinition(nameof(AccessProtectedStateRehearsalCollection), DisableParallelization = true)]
+public sealed class AccessProtectedStateRehearsalCollection : ICollectionFixture<LegacyAccessTestFixture>;

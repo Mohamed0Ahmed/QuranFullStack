@@ -7,8 +7,8 @@ using ApiAuthorizationFailureReason = QuranDashboard.Api.Authorization.Authoriza
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     public static TheoryData<ApiAuthorizationFailureReason, int, string> ForbiddenResponses => new()
     {
@@ -22,7 +22,7 @@ public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixtur
     [Fact]
     public async Task InfrastructureFailure_Writes503WithoutInvokingTheEndpoint()
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContext = new DefaultHttpContext
         {
             RequestServices = scope.ServiceProvider,
@@ -54,7 +54,7 @@ public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixtur
         int expectedStatus,
         string expectedMessage)
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContext = CreateHttpContext(scope.ServiceProvider);
         scope.ServiceProvider.GetRequiredService<AuthorizationFailureState>().Record(failureReason);
 
@@ -77,7 +77,7 @@ public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixtur
     [Fact]
     public async Task Challenge_WritesTheExistingUnauthorizedEnvelope()
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContext = CreateHttpContext(scope.ServiceProvider);
         scope.ServiceProvider.GetRequiredService<AuthorizationFailureState>()
             .Record(ApiAuthorizationFailureReason.InfrastructureUnavailable);
@@ -97,7 +97,7 @@ public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixtur
     [Fact]
     public async Task SuccessfulAuthorization_InvokesTheExistingPipeline()
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContext = CreateHttpContext(scope.ServiceProvider);
         var nextWasCalled = false;
 
@@ -120,7 +120,7 @@ public sealed class AuthorizationRejectionResponseTests(AccessTestFixture fixtur
     [Fact]
     public async Task RejectionWriter_ShortCircuitsWhenTheResponseHasStarted()
     {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var httpContext = new DefaultHttpContext
         {
             RequestServices = scope.ServiceProvider,

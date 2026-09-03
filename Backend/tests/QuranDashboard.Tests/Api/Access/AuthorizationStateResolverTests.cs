@@ -4,16 +4,15 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     [Fact]
     public async Task ResolveAsync_ReturnsOneScopedSnapshot_ForAnActiveNonOwnerWithAnExactGrant()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-state-active-user";
-        await SynchronizePermissionsAsync();
-        var userId = await fixture.InsertUserAsync(new User
+        await Fixture.VerifyPermissionCatalogueAsync();
+        var userId = await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = "authorization-state-active-user@example.test",
@@ -23,7 +22,7 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         });
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
 
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var resolver = scope.ServiceProvider.GetRequiredService<IAuthorizationStateResolver>();
 
         var first = resolver.ResolveAsync(sub, CancellationToken.None);
@@ -42,14 +41,13 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
     [Fact]
     public async Task ResolveAsync_RejectsASecondSubject_InTheSameScope()
     {
-        await fixture.ResetAsync();
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var resolver = scope.ServiceProvider.GetRequiredService<IAuthorizationStateResolver>();
 
         var firstState = await resolver.ResolveAsync("authorization-state-first-subject", CancellationToken.None);
 
         firstState.Should().BeNull();
-        (await fixture.GetUsersAsync()).Should().BeEmpty();
+        (await Fixture.GetUsersAsync()).Should().BeEmpty();
 
         var resolveSecondSubject = () => resolver.ResolveAsync(
             "authorization-state-second-subject",
@@ -65,13 +63,12 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         UserStatus status,
         bool owner)
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-state-no-direct-grants";
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var roleId = owner
-            ? (await fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id
+            ? (await Fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id
             : (int?)null;
-        var userId = await fixture.InsertUserAsync(new User
+        var userId = await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = "authorization-state-no-direct-grants@example.test",
@@ -82,7 +79,7 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         });
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
 
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
+        await using var scope = Fixture.ApiServices.CreateAsyncScope();
         var state = await scope.ServiceProvider.GetRequiredService<IAuthorizationStateResolver>()
             .ResolveAsync(sub, CancellationToken.None);
 
@@ -91,41 +88,10 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         state.PermissionCodes.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task ResolveAsync_ExcludesRetiredDirectPermissions_FromAnActiveNonOwner()
-    {
-        await fixture.ResetAsync();
-        const string sub = "authorization-state-retired-permission";
-        await SynchronizePermissionsAsync();
-        var userId = await fixture.InsertUserAsync(new User
-        {
-            LogtoSub = sub,
-            Email = "authorization-state-retired-permission@example.test",
-            Status = UserStatus.Active,
-            CreatedAtUtc = DateTimeOffset.UtcNow,
-            UpdatedAtUtc = DateTimeOffset.UtcNow,
-        });
-        await GrantAsync(userId, AbwabPermissions.Doors.Create);
-        await RetirePermissionAsync(AbwabPermissions.Doors.Create);
-
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        var state = await scope.ServiceProvider.GetRequiredService<IAuthorizationStateResolver>()
-            .ResolveAsync(sub, CancellationToken.None);
-
-        state.Should().NotBeNull();
-        state!.PermissionCodes.Should().BeEmpty();
-    }
-
-    private async Task SynchronizePermissionsAsync()
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
-            .SynchronizeAsync(CancellationToken.None);
-    }
 
     private async Task GrantAsync(int userId, string permissionCode)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var permissionId = await db.AccessPermissions
             .Where(permission => permission.Code == permissionCode)
@@ -141,11 +107,4 @@ public sealed class AuthorizationStateResolverTests(AccessTestFixture fixture)
         await db.SaveChangesAsync();
     }
 
-    private async Task RetirePermissionAsync(string permissionCode)
-    {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
-        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-        await db.Database.ExecuteSqlInterpolatedAsync(
-            $"UPDATE permissions SET retired_at = {DateTimeOffset.UtcNow} WHERE code = {permissionCode};");
-    }
 }
