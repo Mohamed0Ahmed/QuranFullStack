@@ -1,6 +1,6 @@
 ---
 name: implementation-orchestrator
-description: Orchestrate dependency-aware GitHub ticket implementation through isolated delegate workers or same-session subagents. Use when asked to run a ticket program while the main session only coordinates dispatch, landing, integration verification, and ticket progression.
+description: Orchestrate a GitHub root or program issue through isolated workers for ready implementation tickets. Use when the main session should coordinate dependency-aware dispatch, landing, integration verification, and ticket progression.
 ---
 
 # Implementation Orchestrator
@@ -34,9 +34,46 @@ ask for that one choice before dispatch. If the selected transport cannot invoke
 installed `implement` skill or cannot bind the worker to isolated working state without
 changing its prompt, report the incompatibility as a blocker.
 
+## Root issue vs implementation tickets
+
+The issue named in the invocation is the program/root scope, not automatically an
+implementation ticket. Complete this classification before dispatching any worker:
+
+1. Read the requested root issue.
+2. Discover its in-scope child/sub-issues and dependencies through both native GitHub
+   relationships and repository-supported parent/blocking markers in issue bodies. An
+   empty native sub-issue response alone does not establish that the root has no
+   implementation children.
+3. If the root has any in-scope implementation child tickets, keep the root
+   orchestration-only. **Never dispatch the root issue number to a worker.**
+4. Build the ready frontier only from open implementation tickets with no open
+   blockers.
+5. Select each worker ticket from that ready frontier and substitute that ticket's
+   number in the exact worker prompt.
+
+The root issue itself is eligible for dispatch only when it has no in-scope
+implementation child tickets and it is explicitly confirmed to be the actual
+implementation ticket.
+
+For example, given this invocation:
+
+```text
+Use implementation-orchestrator for issue #149 using opencode-delegate.
+```
+
+If #149 owns implementation tickets #150 through #170 and only #150 is ready, dispatch
+#150 with this prompt:
+
+```text
+Invoke implement skill for ticket #150 only.
+```
+
+Do not substitute #149: it remains the orchestration scope.
+
 ## Exact worker contract
 
-Every worker receives exactly this instruction, with the ticket number substituted:
+Every worker receives exactly this instruction, with the selected ready implementation
+ticket number substituted:
 
 ```text
 Invoke implement skill for ticket #<NUMBER> only.
@@ -55,18 +92,16 @@ testing, code review, and worker completion behavior. A worker handles one ticke
 1. Read the repository instructions and `docs/agents/issue-tracker.md`. Use `gh` for
    GitHub issue operations and the repository's installed `commit-workflow` skill for
    Git operations involved in landing.
-2. Read the requested root ticket and its in-scope child/sub-issues, native blocking
-   relationships, and repository-supported fallback dependency markers. Build the open
-   dependency graph and identify the ready frontier: open, in-scope tickets with no open
-   blockers. Never infer readiness from issue order alone.
+2. Apply the root-versus-implementation classification above, build the open dependency
+   graph, and identify the ready frontier. Never infer readiness from issue order alone.
 3. Keep a ledger for each ticket containing blockers, worker mode, isolated worktree and
    branch, run status, candidate commit or working state, landed ref, integration-check
    result, and GitHub state.
 4. Maintain at most three running ticket workers across all modes. Choose independent
-   ready tickets, create one branch and worktree per ticket from the current integration
-   tip, and bind one worker to each worktree. Shared HEAD, index, or working-directory
-   mutations are not an acceptable fallback. Dispatch ready tickets in parallel when
-   their graph and integration surfaces make that safe.
+   ready implementation tickets, create one branch and worktree per ticket from the
+   current integration tip, and bind one worker to each worktree. Shared HEAD, index, or
+   working-directory mutations are not an acceptable fallback. Dispatch ready tickets
+   in parallel when their graph and integration surfaces make that safe.
 5. On a worker success, confirm its result artifacts/status and identify the candidate
    commit or working state. Do not re-read the diff for implementation correctness, rerun
    a code-review skill, or ask another agent to review it.
@@ -79,9 +114,11 @@ testing, code review, and worker completion behavior. A worker handles one ticke
    landed integration branch remains valid. This is integration verification, not a
    second assessment of the ticket implementation or acceptance criteria.
 8. Only after the result is landed and required integration verification passes, comment
-   on/update and close the GitHub ticket according to the repository issue workflow.
-9. Refresh the GitHub dependency graph after the ticket state changes. Immediately fill
-   each available slot from the newly ready frontier, without exceeding three workers.
+   on/update and close the implementation ticket according to the repository issue
+   workflow.
+9. After each landed child ticket is closed, re-fetch the in-scope child and dependency
+   state from GitHub and rebuild the ready frontier. Immediately fill each available
+   slot from newly unblocked implementation tickets, without exceeding three workers.
 10. Remove completed worktrees and temporary branches when their work is landed and the
     repository workflow says cleanup is safe. Continue until the requested ticket
     program has no running or ready tickets and every in-scope ticket is complete.

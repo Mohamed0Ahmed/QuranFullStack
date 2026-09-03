@@ -1,6 +1,6 @@
 ---
 name: implementation-orchestrator
-description: Orchestrate dependency-aware GitHub ticket implementation through isolated delegate workers or same-session subagents. Use when asked to run a ticket program while the main session only coordinates dispatch, landing, integration verification, and ticket progression.
+description: Orchestrate a GitHub root or program issue through isolated workers for ready implementation tickets. Use when the main session should coordinate dependency-aware dispatch, landing, integration verification, and ticket progression.
 ---
 
 # Implementation Orchestrator (Adapter)
