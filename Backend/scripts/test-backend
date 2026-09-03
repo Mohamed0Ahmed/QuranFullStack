@@ -17,6 +17,7 @@ CALLER_DIR="$(pwd -P)"
 # the shared postgres:16-alpine runtime. A lane that selects one together with shared-runtime classes runs
 # as two sequential invocations so the servers never exist at once.
 EXCLUSIVE_POSTGRES_CLASSES=(
+  "QuranDashboard.Tests.Api.Testing.DatabaseActivityProfileIntegrationTests"
   "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests"

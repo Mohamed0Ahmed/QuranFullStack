@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using QuranDashboard.Api.Controllers.System;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Smoke;
@@ -26,8 +27,10 @@ internal static class SmokeApiHost
         string connectionString,
         FakeExternalUserProfileSource profileSource,
         SmokeSqlCommandCapture commandCapture,
-        bool readOnlySharedState = false)
+        bool readOnlySharedState = false,
+        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null)
     {
+        backgroundActivities ??= [];
         return new WebApplicationFactory<HealthController>()
             .WithWebHostBuilder(builder =>
             {
@@ -36,6 +39,17 @@ internal static class SmokeApiHost
                 // registers it under IsDevelopment()), so the composed route table is exactly the
                 // controller endpoints.
                 builder.UseEnvironment("Testing");
+                builder.UseSetting("ConnectionStrings:QuranDashboardDb", connectionString);
+                builder.UseSetting(
+                    "Testing:DatabaseActivity:Profile",
+                    readOnlySharedState ? "ReadOnly" : "Mutable");
+                var activityIndex = 0;
+                foreach (var activity in backgroundActivities)
+                {
+                    builder.UseSetting(
+                        $"Testing:DatabaseActivity:EnabledBackgroundActivities:{activityIndex++}",
+                        activity.ToString());
+                }
 
                 builder.ConfigureAppConfiguration((_, configuration) =>
                 {
@@ -65,10 +79,8 @@ internal static class SmokeApiHost
 
                 builder.ConfigureTestServices(services =>
                 {
-                    services.RemoveAll<QuranDashboardDbContext>();
-                    services.RemoveAll<DbContextOptions<QuranDashboardDbContext>>();
                     services.AddDbContext<QuranDashboardDbContext>(options =>
-                        options.UseNpgsql(connectionString).AddInterceptors(commandCapture));
+                        options.AddInterceptors(commandCapture));
 
                     // Replace the real Logto Management API boundary with the in-memory fake so no test
                     // ever calls out.

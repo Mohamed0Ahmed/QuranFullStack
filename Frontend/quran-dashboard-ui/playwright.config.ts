@@ -80,6 +80,11 @@ export default defineConfig({
       env: {
         ASPNETCORE_ENVIRONMENT: 'Testing',
         ASPNETCORE_URLS: 'https://localhost:5015',
+        Testing__DatabaseActivity__Profile: 'Mutable',
+        Testing__DatabaseActivity__EnabledBackgroundActivities__0:
+          'LinkingPreparedPreflightProcessor',
+        Testing__DatabaseActivity__EnabledBackgroundActivities__1:
+          'LinkingConfirmationJobProcessor',
         Auth__Authority: `${new URL(environment.logto.endpoint).origin}/oidc`,
         Auth__Audience: environment.logto.resource,
         Auth__InteractiveClientId: environment.logto.appId,

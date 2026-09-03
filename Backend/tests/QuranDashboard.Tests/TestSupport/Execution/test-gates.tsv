@@ -38,6 +38,8 @@ QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateTests	PhraseSearch	Databa
 QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexBuildActivationTests	PhraseSearch	Database	TierB	Cli,Execution
 QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests	PhraseSearch	Release	Release	Cli,Execution
 QuranDashboard.Tests.Api.RateLimiting.RateLimitingIntegrationTests	RateLimiting	Fast	TierB
+QuranDashboard.Tests.Api.Testing.DatabaseActivityPolicyTests	ApiBehavior	Fast	TierB	Startup
+QuranDashboard.Tests.Api.Testing.DatabaseActivityProfileIntegrationTests	ApiBehavior	Database	TierB	Execution,Startup
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	TierB
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests	FullI3rab	Fast	Pipeline

@@ -6,6 +6,7 @@ using QuranDashboard.Api.Authentication;
 using QuranDashboard.Api.Authorization.Validation;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Infrastructure.Persistence;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 
 namespace QuranDashboard.Api.Extensions;
 
@@ -15,7 +16,8 @@ public static class WebApplicationExtensions
 
     public static async Task SynchronizePermissionCatalogueAsync(this WebApplication app)
     {
-        if (!app.Services.GetRequiredService<IOptions<PermissionCatalogueStartupOptions>>().Value.Enabled)
+        if (!app.Services.GetRequiredService<DatabaseActivityPolicy>().AllowPermissionCatalogueSynchronization
+            || !app.Services.GetRequiredService<IOptions<PermissionCatalogueStartupOptions>>().Value.Enabled)
         {
             return;
         }
