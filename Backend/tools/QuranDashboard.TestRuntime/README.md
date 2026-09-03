@@ -41,7 +41,7 @@ capability-role memberships:
 ```bash
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin inspect --login <local-login>
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin dry-run --login <local-login>
-dotnet run --project tools/QuranDashboard.TestRuntime -- admin apply --login <local-login>
+dotnet run --project tools/QuranDashboard.TestRuntime -- admin apply --login <local-login> --run-id <run-id>
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin verify --login <local-login>
 ```
 
@@ -62,3 +62,37 @@ scratch administrator receives `CREATEDB` but no ownership or mutation grants on
 or persistent Test Database. `verify` performs safe denial probes under each restricted role and rolls back
 its transaction. When `quran_dashboard` exists, administration opens a read-only transaction that inspects
 only its PostgreSQL catalog privileges; it never reads application tables or repairs unsafe grants there.
+
+## Hold the global database lock
+
+The committed contract owns the one cluster-wide lock key. A runner starts a dedicated keeper process for
+its complete database-aware invocation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  lock hold --mode shared --run-id <run-id> --command <command>
+
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  lock hold --mode exclusive --run-id <run-id> --command <command>
+```
+
+The keeper uses a non-pooled connection and emits one compact JSON line after acquisition. The line reports
+the fixed key, mode, run ID, command, keeper PostgreSQL process ID, configured timeout, and lock wait. Keep
+the process alive for the whole guarded invocation. `Ctrl+C`, normal disposal, or process termination closes
+the connection, and PostgreSQL session semantics release the lock. A graceful cancellation emits a second
+line with `status=released`.
+
+Acquisition defaults to 15 minutes; `--timeout-seconds <seconds>` overrides it. A timeout report contains
+only credential-free holder process, run, command, mode, activity state, and wait-event diagnostics. Run IDs
+are 1-32 ASCII letters, digits, dots, underscores, or hyphens; command IDs use the same vocabulary and are
+1-24 characters. Both appear in the keeper connection's `application_name`.
+
+Shared keepers coexist. An exclusive keeper excludes both shared and exclusive contenders. Every mutation
+must verify that the expected run ID still owns the exclusive keeper before writing. `admin apply` performs
+that acquisition and verification itself; bypassing its command interface is refused with supported-runner
+guidance. Future reset and mutation runners must use the same ownership verifier rather than duplicating the
+contract key or lock SQL.
+
+System Catalogue reconciliation has a strict nested order: acquire and verify the global exclusive keeper
+first, then begin the reconciliation transaction and acquire its narrower transaction-level catalogue lock.
+Never acquire the catalogue lock while waiting for the global lock.

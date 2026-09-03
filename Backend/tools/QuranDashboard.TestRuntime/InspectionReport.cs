@@ -69,4 +69,5 @@ internal sealed record TestRuntimeReport(
     PrivilegeReport? Privileges,
     IReadOnlyList<ContractViolation> Violations,
     string? FailureType = null,
-    CapabilityAdministrationReport? Administration = null);
+    CapabilityAdministrationReport? Administration = null,
+    AdvisoryLockReport? AdvisoryLock = null);

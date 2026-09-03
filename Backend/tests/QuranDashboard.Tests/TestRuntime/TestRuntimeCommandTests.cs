@@ -16,14 +16,92 @@ public sealed class TestRuntimeCommandTests
         using var output = new StringWriter();
         using var error = new StringWriter();
 
+        var args = mode == "apply"
+            ? new[] { "admin", mode, "--run-id", "missing-login" }
+            : ["admin", mode, "--contract", ContractPath];
         var exitCode = await TestRuntimeCommand.ExecuteAsync(
-            ["admin", mode, "--contract", ContractPath],
+            args,
             output,
             error);
 
         exitCode.Should().Be(2);
         output.ToString().Should().BeEmpty();
         error.ToString().Should().Contain("--login <local-login>");
+    }
+
+    [Fact]
+    public async Task AdministrationApply_WithoutRunId_IsRejectedWithSupportedRunnerGuidance()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["admin", "apply", "--login", "local-login"],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("admin apply --login <local-login> --run-id <run-id>");
+    }
+
+    [Theory]
+    [InlineData("shared")]
+    [InlineData("exclusive")]
+    public async Task LockHold_WithoutRunIdentity_IsRejectedAsUsage(string mode)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["lock", "hold", "--mode", mode, "--command", "missing-run"],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("lock hold --mode shared|exclusive --run-id <run-id> --command <command>");
+    }
+
+    [Theory]
+    [InlineData("admin")]
+    [InlineData("lock")]
+    public async Task LockingCommands_CannotOverrideTheCommittedContract(string commandKind)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+        string[] command = commandKind == "admin"
+            ? ["admin", "apply", "--login", "local-login", "--run-id", "run-id"]
+            : ["lock", "hold", "--mode", "shared", "--run-id", "run-id", "--command", "reader"];
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [.. command, "--contract", ContractPath],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("Usage:");
+    }
+
+    [Fact]
+    public async Task LockHold_WhenLocalDatabaseIsUnavailable_ReturnsLockSpecificSanitizedFailure()
+    {
+        const string credential = "do-not-report";
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["lock", "hold", "--mode", "shared", "--run-id", "unavailable", "--command", "reader"],
+            output,
+            error,
+            name => name == TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
+                ? $"Host=127.0.0.1;Port=1;Database=quran_dashboard_test;Username=test;Password={credential};Timeout=1"
+                : null);
+
+        exitCode.Should().Be(4);
+        output.ToString().Should().Contain("lock.database-unavailable").And.NotContain(credential);
+        error.ToString().Should().BeEmpty();
     }
 
     [Fact]
@@ -151,20 +229,7 @@ public sealed class TestRuntimeCommandTests
         DatabaseInspector.ClassifyMigrationState(Split(expected), Split(applied)).Should().Be(state);
     }
 
-    private static string ContractPath
-    {
-        get
-        {
-            var directory = new DirectoryInfo(AppContext.BaseDirectory);
-            while (directory is not null && !File.Exists(Path.Combine(directory.FullName, "QuranDashboard.sln")))
-            {
-                directory = directory.Parent;
-            }
-
-            directory.Should().NotBeNull("the tests must run beneath the Backend solution");
-            return Path.Combine(directory!.FullName, "testing", "test-database-contract.json");
-        }
-    }
+    private static string ContractPath => TestRuntimeTestPaths.ContractPath;
 
     private static string[] Split(string migrations) =>
         string.IsNullOrEmpty(migrations) ? [] : migrations.Split(',');

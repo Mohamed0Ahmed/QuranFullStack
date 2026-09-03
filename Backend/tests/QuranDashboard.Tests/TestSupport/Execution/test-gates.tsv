@@ -129,6 +129,7 @@ QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke
 QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke
 QuranDashboard.Tests.TestRuntime.TestRuntimeCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
+QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB
 QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
 QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests	ApiBehavior	Database	TierB	Cli,Execution,Schema

@@ -18,6 +18,8 @@ internal static class TestRuntimeCommand
         WriteIndented = true,
     };
 
+    private static readonly JsonSerializerOptions StreamJsonOptions = new(JsonSerializerDefaults.Web);
+
     internal static async Task<int> ExecuteAsync(
         IReadOnlyList<string> args,
         TextWriter output,
@@ -135,19 +137,75 @@ internal static class TestRuntimeCommand
 
         try
         {
-            var report = request.AdministrationMode is null
-                ? await DatabaseInspector.InspectAsync(
+            if (request.LockMode is not null)
+            {
+                return await HoldLockAsync(
+                    request,
                     contract,
                     validation,
                     targetValidation,
-                    cancellationToken)
-                : await CapabilityAdministrator.ExecuteAsync(
-                    contract,
-                    validation,
-                    targetValidation,
-                    request.AdministrationMode.Value,
-                    request.SelectedLogin!,
+                    output,
                     cancellationToken);
+            }
+
+            TestRuntimeReport report;
+            if (request.AdministrationMode == CapabilityAdministrationMode.Apply)
+            {
+                var acquisition = await AdvisoryLockProtocol.AcquireAsync(
+                    targetValidation.Connection!.ConnectionString,
+                    contract.AdvisoryLock.Key,
+                    AdvisoryLockMode.Exclusive,
+                    request.RunId!,
+                    "capability-admin",
+                    request.LockTimeout,
+                    cancellationToken);
+                if (acquisition.Lease is null)
+                {
+                    report = CreateLockReport(
+                        request.Command,
+                        contract,
+                        validation,
+                        targetValidation,
+                        acquisition.Report,
+                        succeeded: false,
+                        [new ContractViolation("lock.acquisition.timeout")]);
+                }
+                else
+                {
+                    await using (acquisition.Lease)
+                    {
+                        report = await CapabilityAdministrator.ExecuteAsync(
+                            contract,
+                            validation,
+                            targetValidation,
+                            request.AdministrationMode.Value,
+                            request.SelectedLogin!,
+                            request.RunId,
+                            "capability-admin",
+                            cancellationToken);
+                        report = report with { AdvisoryLock = acquisition.Report };
+                    }
+                }
+            }
+            else
+            {
+                report = request.AdministrationMode is null
+                    ? await DatabaseInspector.InspectAsync(
+                        contract,
+                        validation,
+                        targetValidation,
+                        cancellationToken)
+                    : await CapabilityAdministrator.ExecuteAsync(
+                        contract,
+                        validation,
+                        targetValidation,
+                        request.AdministrationMode.Value,
+                        request.SelectedLogin!,
+                        null,
+                        null,
+                        cancellationToken);
+            }
+
             WriteReport(output, report);
             return report.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
         }
@@ -174,9 +232,11 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 null,
-                [new ContractViolation(request.AdministrationMode is null
-                    ? "inspection.database-unavailable"
-                    : "administration.database-operation-failed",
+                [new ContractViolation(request.LockMode is not null
+                    ? "lock.database-unavailable"
+                    : request.AdministrationMode is null
+                        ? "inspection.database-unavailable"
+                        : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
@@ -193,6 +253,7 @@ internal static class TestRuntimeCommand
             ["admin", "dry-run", ..] => "admin-dry-run",
             ["admin", "apply", ..] => "admin-apply",
             ["admin", "verify", ..] => "admin-verify",
+            ["lock", "hold", ..] => "lock-hold",
             _ => null,
         };
         if (command is null)
@@ -200,9 +261,16 @@ internal static class TestRuntimeCommand
             return null;
         }
 
-        var optionStart = command == "contract-validate" || command.StartsWith("admin-", StringComparison.Ordinal) ? 2 : 1;
+        var optionStart = command is "contract-validate" or "lock-hold"
+                          || command.StartsWith("admin-", StringComparison.Ordinal)
+            ? 2
+            : 1;
         var contractPath = Path.Combine(AppContext.BaseDirectory, "test-database-contract.json");
         string? selectedLogin = null;
+        string? runId = null;
+        string? lockCommand = null;
+        AdvisoryLockMode? lockMode = null;
+        TimeSpan? lockTimeout = null;
         for (var index = optionStart; index < args.Count; index += 2)
         {
             if (index + 1 >= args.Count)
@@ -210,13 +278,37 @@ internal static class TestRuntimeCommand
                 return null;
             }
 
-            if (args[index] == "--contract")
+            if (args[index] == "--contract" && command is not "admin-apply" and not "lock-hold")
             {
                 contractPath = args[index + 1];
             }
             else if (args[index] == "--login" && command.StartsWith("admin-", StringComparison.Ordinal))
             {
                 selectedLogin = args[index + 1];
+            }
+            else if (args[index] == "--run-id" && (command == "admin-apply" || command == "lock-hold"))
+            {
+                runId = args[index + 1];
+            }
+            else if (args[index] == "--command" && command == "lock-hold")
+            {
+                lockCommand = args[index + 1];
+            }
+            else if (args[index] == "--mode" && command == "lock-hold")
+            {
+                lockMode = args[index + 1] switch
+                {
+                    "shared" => AdvisoryLockMode.Shared,
+                    "exclusive" => AdvisoryLockMode.Exclusive,
+                    _ => null,
+                };
+            }
+            else if (args[index] == "--timeout-seconds"
+                     && (command == "admin-apply" || command == "lock-hold")
+                     && int.TryParse(args[index + 1], out var timeoutSeconds)
+                     && timeoutSeconds >= 0)
+            {
+                lockTimeout = TimeSpan.FromSeconds(timeoutSeconds);
             }
             else
             {
@@ -232,15 +324,132 @@ internal static class TestRuntimeCommand
             "admin-verify" => CapabilityAdministrationMode.Verify,
             _ => (CapabilityAdministrationMode?)null,
         };
+        var invalidAdministration = administrationMode is not null && string.IsNullOrWhiteSpace(selectedLogin);
+        var invalidApply = command == "admin-apply" && !AdvisoryLockProtocol.IsValidRunId(runId);
+        var invalidLock = command == "lock-hold"
+                          && (lockMode is null
+                              || !AdvisoryLockProtocol.IsValidRunId(runId)
+                              || !AdvisoryLockProtocol.IsValidCommand(lockCommand));
         return string.IsNullOrWhiteSpace(contractPath)
-               || (administrationMode is not null && string.IsNullOrWhiteSpace(selectedLogin))
+               || invalidAdministration
+               || invalidApply
+               || invalidLock
             ? null
-            : new CommandRequest(command, Path.GetFullPath(contractPath), administrationMode, selectedLogin);
+            : new CommandRequest(
+                command,
+                Path.GetFullPath(contractPath),
+                administrationMode,
+                selectedLogin,
+                runId,
+                lockMode,
+                lockCommand,
+                lockTimeout);
     }
 
-    private static void WriteReport(TextWriter output, TestRuntimeReport report)
+    private static async Task<int> HoldLockAsync(
+        CommandRequest request,
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation targetValidation,
+        TextWriter output,
+        CancellationToken cancellationToken)
     {
-        output.WriteLine(JsonSerializer.Serialize(report, ReportJsonOptions));
+        var acquisition = await AdvisoryLockProtocol.AcquireAsync(
+            targetValidation.Connection!.ConnectionString,
+            contract.AdvisoryLock.Key,
+            request.LockMode!.Value,
+            request.RunId!,
+            request.LockCommand!,
+            request.LockTimeout,
+            cancellationToken);
+        if (acquisition.Lease is null)
+        {
+            WriteReport(
+                output,
+                CreateLockReport(
+                    request.Command,
+                    contract,
+                    validation,
+                    targetValidation,
+                    acquisition.Report,
+                    succeeded: false,
+                    [new ContractViolation("lock.acquisition.timeout")]),
+                stream: true);
+            await output.FlushAsync();
+            return ValidationFailureExitCode;
+        }
+
+        await using (acquisition.Lease)
+        {
+            WriteReport(
+                output,
+                CreateLockReport(
+                    request.Command,
+                    contract,
+                    validation,
+                    targetValidation,
+                    acquisition.Report,
+                    succeeded: true,
+                    []),
+                stream: true);
+            await output.FlushAsync();
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                // Closing the keeper connection below releases the session-level lock.
+            }
+        }
+
+        var released = acquisition.Report with { Status = "released" };
+        WriteReport(
+            output,
+            CreateLockReport(
+                request.Command,
+                contract,
+                validation,
+                targetValidation,
+                released,
+                succeeded: true,
+                []),
+            stream: true);
+        await output.FlushAsync();
+        return SuccessExitCode;
+    }
+
+    private static TestRuntimeReport CreateLockReport(
+        string command,
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation targetValidation,
+        AdvisoryLockReport advisoryLock,
+        bool succeeded,
+        IReadOnlyList<ContractViolation> violations) => new(
+        command,
+        succeeded,
+        DatabaseInspector.ToContractReport(contract, validation),
+        new TargetReport(
+            targetValidation.Database,
+            targetValidation.EndpointKind,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null),
+        null,
+        null,
+        null,
+        null,
+        violations,
+        AdvisoryLock: advisoryLock);
+
+    private static void WriteReport(TextWriter output, TestRuntimeReport report, bool stream = false)
+    {
+        output.WriteLine(JsonSerializer.Serialize(report, stream ? StreamJsonOptions : ReportJsonOptions));
     }
 
     private static void WriteUsage(TextWriter error)
@@ -248,12 +457,18 @@ internal static class TestRuntimeCommand
         error.WriteLine("Usage:");
         error.WriteLine("  QuranDashboard.TestRuntime contract validate [--contract <path>]");
         error.WriteLine($"  QuranDashboard.TestRuntime inspect [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
-        error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|apply|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime admin apply --login <local-login> --run-id <run-id> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime lock hold --mode shared|exclusive --run-id <run-id> --command <command> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
     }
 
     private sealed record CommandRequest(
         string Command,
         string ContractPath,
         CapabilityAdministrationMode? AdministrationMode = null,
-        string? SelectedLogin = null);
+        string? SelectedLogin = null,
+        string? RunId = null,
+        AdvisoryLockMode? LockMode = null,
+        string? LockCommand = null,
+        TimeSpan? LockTimeout = null);
 }
