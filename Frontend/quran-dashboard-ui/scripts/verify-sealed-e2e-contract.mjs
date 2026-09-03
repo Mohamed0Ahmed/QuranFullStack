@@ -129,6 +129,10 @@ assert.equal(
   'node scripts/run-sealed-playwright.mjs --critical',
 );
 assert.equal(
+  packageManifest.scripts['e2e:focused'],
+  'node scripts/run-sealed-playwright.mjs --focused',
+);
+assert.equal(
   packageManifest.scripts['e2e:provision'],
   'node scripts/provision-sealed-playwright.mjs',
 );

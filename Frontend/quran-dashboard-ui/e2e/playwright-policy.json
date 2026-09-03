@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "fixtureProfiles": {
+    "canonical-read-only": {
+      "setupWrites": [],
+      "resetBehavior": "none",
+      "databaseTarget": "test-database",
+      "startupEffects": ["read-only-api"]
+    },
+    "guarded-read-only": {
+      "setupWrites": [],
+      "resetBehavior": "none",
+      "databaseTarget": "test-database",
+      "startupEffects": ["read-only-api"]
+    },
+    "mutable-authenticated": {
+      "setupWrites": ["mutable-application-state"],
+      "resetBehavior": "mutable-application-state",
+      "databaseTarget": "test-database",
+      "startupEffects": ["mutable-api"]
+    }
+  },
+  "migrationInventory": [
+    {
+      "file": "abwab-inclusion-projection.e2e.ts",
+      "sha256": "de41b40abab7eb425bce3bff878936bc44bd4e9e23ca271676c8d6273b06f820"
+    },
+    {
+      "file": "abwab-permissions.e2e.ts",
+      "sha256": "9cccbabd53a168e3053ade2beb972e14b1c12f0571868bcc0760769658a116af"
+    },
+    {
+      "file": "access-permissions.e2e.ts",
+      "sha256": "745ff076e16e09579392712c28e26e3a7fce9f7522252ee75e16369219812216"
+    },
+    {
+      "file": "authenticated-smoke.e2e.ts",
+      "sha256": "431e153721108639e2fe26228433b0b507160d749d79fd6487efba94f83918ca"
+    },
+    {
+      "file": "device-session.e2e.ts",
+      "sha256": "459a5f16b98c4c8d9bc5010dd0b1dc116be116483f165261abd04fb2dbcb8dbc"
+    },
+    {
+      "file": "linking-success.e2e.ts",
+      "sha256": "b6a94f93f9ff3dd0a4742f1e1979b2c89cbc66d510935d3ee8e4a10c46c3cd0a"
+    },
+    {
+      "file": "mushaf-ayah-study.e2e.ts",
+      "sha256": "2e9f92cce6448e37e1621fae32a9841171e7fa6345467902df43e18b5bdb766e"
+    },
+    {
+      "file": "mushaf-reader.e2e.ts",
+      "sha256": "f2ef308d29657c50ab3fe9191be75b5482ecb42dfa184bd3bd6314682074451e"
+    },
+    {
+      "file": "phrase-search-available.e2e.ts",
+      "sha256": "3c2e881a48b9c0721d7113906df65e5e2e207858b095cceeaad4681b3c719421"
+    },
+    {
+      "file": "phrase-search-unavailable-stale.e2e.ts",
+      "sha256": "8cb35507fed342a728138ea37fb6c2ca2fbe293fdc8b8b848bea02b7a743b59e"
+    },
+    {
+      "file": "shell-nav.e2e.ts",
+      "sha256": "6ed689ca564a8a17b4c476c346ee024c2c1f226d58393c41877f5b83ab5ec3b2"
+    },
+    {
+      "file": "words-explorers.e2e.ts",
+      "sha256": "a100e0fe48ac736b77aae0bb740b68f86beda1bcb6afdd156a756508f8c819d0"
+    }
+  ]
+}

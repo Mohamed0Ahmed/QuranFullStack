@@ -37,7 +37,7 @@ usage() {
   cat <<'EOF'
 Usage:
   Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal
-    --build|--no-build [--list-tests] [--results-dir PATH]
+    --build|--no-build [--test FULL_METHOD_NAME] [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
     [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature --class FULL_CLASS_NAME --build|--no-build
@@ -142,7 +142,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     --test)
       require_value "$1" "${2:-}"
-      [[ "${lane}" == "feature" ]] || fail_usage "--test is valid only for the feature lane."
+      if [[ "${lane}" != "feature" \
+        && "${lane}" != "full-canonical-recovery" \
+        && "${lane}" != "previous-release-upgrade" \
+        && "${lane}" != "phrase-index-rehearsal" ]]; then
+        fail_usage "--test is valid only for feature or an explicit release rehearsal lane."
+      fi
       [[ -z "${test_selector}" ]] || fail_usage "Only one test selector is allowed."
       test_selector="$2"
       shift 2
@@ -177,8 +182,13 @@ if [[ "${lane}" == "feature" ]]; then
   [[ -n "${test_selector}" ]] && selector_count=$((selector_count + 1))
   [[ "${selector_count}" -eq 1 ]] \
     || fail_usage "feature requires exactly one FEATURE_KEY, --class, or --test selector."
-elif [[ -n "${class_selector}" || -n "${test_selector}" ]]; then
-  fail_usage "Class and test selectors are valid only for the feature lane."
+elif [[ -n "${class_selector}" ]]; then
+  fail_usage "Class selectors are valid only for the feature lane."
+elif [[ -n "${test_selector}" \
+  && "${lane}" != "full-canonical-recovery" \
+  && "${lane}" != "previous-release-upgrade" \
+  && "${lane}" != "phrase-index-rehearsal" ]]; then
+  fail_usage "Method selectors are valid only for feature or an explicit release rehearsal lane."
 fi
 
 if [[ ! -f "${CATALOG}" ]]; then
@@ -187,7 +197,7 @@ if [[ ! -f "${CATALOG}" ]]; then
 fi
 
 catalog_header="$(head -n 1 "${CATALOG}")"
-expected_header=$'FullyQualifiedClassName\tFeature\tKind\tGate\tConcerns'
+expected_header=$'FullyQualifiedClassName\tFeature\tKind\tGate\tConcerns\tBackendPolicy\tDataReads\tDataWrites\tDatabaseTarget\tDestructiveSubtype\tResourceCollection\tMigrationState'
 if [[ "${catalog_header}" != "${expected_header}" ]]; then
   echo "ERROR: Backend test catalog header is invalid: ${catalog_header}" >&2
   exit 1
@@ -306,7 +316,7 @@ while IFS=$'\t' read -r class_name feature kind gate concerns; do
   if [[ "${selected}" == true ]]; then
     add_selected_row "${class_name}" "${feature}" "${kind}" "${gate}" "${concerns}"
   fi
-done < <(tail -n +2 "${CATALOG}")
+done < <(tail -n +2 "${CATALOG}" | cut -f1-5)
 
 if [[ -n "${feature_selector}" && "${feature_exists}" != true ]]; then
   fail_usage "Unknown feature key: ${feature_selector}"
@@ -319,6 +329,14 @@ if [[ -n "${class_selector}" && "${class_exists}" != true ]]; then
 fi
 if [[ -n "${test_selector}" && "${test_class_exists}" != true ]]; then
   fail_usage "The method does not belong to a cataloged test class: ${test_selector}"
+fi
+if [[ -n "${test_selector}" && "${lane}" != "feature" ]]; then
+  release_test_belongs=false
+  for class_name in "${selected_classes[@]}"; do
+    [[ "${test_selector}" == "${class_name}".* ]] && release_test_belongs=true
+  done
+  [[ "${release_test_belongs}" == true ]] \
+    || fail_usage "The method does not belong to the selected release rehearsal lane: ${test_selector}"
 fi
 if [[ "${#selected_classes[@]}" -eq 0 ]]; then
   fail_usage "The selector resolved to no catalog rows."

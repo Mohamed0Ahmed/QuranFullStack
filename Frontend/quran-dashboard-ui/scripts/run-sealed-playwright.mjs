@@ -51,9 +51,14 @@ const API_PROJECT = resolve(
   REPOSITORY_ROOT,
   'Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj',
 );
-const mode = process.argv[2] ?? '--critical';
-if (!['--critical', '--full'].includes(mode)) {
-  throw new Error('Use --critical or --full for sealed Playwright execution.');
+const [mode = '--critical', focusedSelector, ...unexpectedArguments] = process.argv.slice(2);
+if (!['--critical', '--focused', '--full'].includes(mode)) {
+  throw new Error('Use --critical, --focused, or --full for sealed Playwright execution.');
+}
+if (mode === '--focused') {
+  validateFocusedSelector(focusedSelector, unexpectedArguments);
+} else if (focusedSelector !== undefined || unexpectedArguments.length > 0) {
+  throw new Error(`${mode} does not accept a Playwright selector.`);
 }
 
 if (process.env.E2E_ORCHESTRATOR_GUARDED !== '1') {
@@ -81,11 +86,15 @@ if (process.env.E2E_ORCHESTRATOR_GUARDED !== '1') {
   });
   let guarded;
   try {
-    guarded = spawnSync(process.execPath, [SCRIPT_PATH, mode], {
+    guarded = spawnSync(
+      process.execPath,
+      [SCRIPT_PATH, mode, ...(focusedSelector ? [focusedSelector] : [])],
+      {
       cwd: FRONTEND_ROOT,
       env: guardedEnvironment,
       stdio: 'inherit',
-    });
+      },
+    );
   } finally {
     rmSync(sealedHome, { recursive: true, force: true });
   }
@@ -162,9 +171,12 @@ try {
   );
 
   const childStartedAt = new Date();
+  const playwright = resolve(FRONTEND_ROOT, 'node_modules/.bin/playwright');
   const command = mode === '--critical'
     ? [process.execPath, [resolve(FRONTEND_ROOT, 'scripts/run-critical-playwright-journeys.mjs')]]
-    : [resolve(FRONTEND_ROOT, 'node_modules/.bin/playwright'), ['test', '--workers=1']];
+    : mode === '--focused'
+      ? [playwright, ['test', focusedSelector, '--workers=1']]
+      : [playwright, ['test', '--workers=1']];
   const child = await runWithSanitizedOutput(command[0], command[1], environment, executionLog);
   exitCode = child.exitCode;
 
@@ -237,6 +249,16 @@ console.log(
   `[e2e] sealed execution status=${results.status} durationMs=${results.durationMs} evidence=${evidenceDirectory}`,
 );
 process.exit(results.status === 'passed' ? 0 : exitCode || 1);
+
+function validateFocusedSelector(selector, extraArguments) {
+  if (!selector || extraArguments.length > 0) {
+    throw new Error('--focused requires exactly one Playwright file:line selector.');
+  }
+  const match = /^(e2e\/[^:]+\.e2e\.ts):([1-9][0-9]*)$/.exec(selector);
+  if (!match || match[1].includes('\\') || match[1].split('/').includes('..')) {
+    throw new Error(`Invalid focused Playwright selector: ${selector}`);
+  }
+}
 
 function readProvisioningReceipt() {
   let receipt;

@@ -1,14 +1,32 @@
-import { relative } from 'node:path';
+import { join, relative } from 'node:path';
+
+import {
+  classifyPlaywrightPolicy,
+  isNewPolicyAnnotation,
+  loadPlaywrightPolicyContract,
+  requireLegacyMigrationEntry,
+  validatePlaywrightPolicyContract,
+} from './playwright-policy-contract.mjs';
 
 const JOURNEY_ANNOTATIONS = new Set([
   'artifact',
+  'canonical-read',
   'critical',
+  'fixture-policy',
+  'guarded-read',
   'journey',
   'mobile',
   'mutating',
   'read-only',
 ]);
 const PLAYWRIGHT_ANNOTATIONS = new Set(['fail', 'fixme', 'skip', 'slow']);
+const JOURNEY_SELECTION_ANNOTATIONS = new Set([
+  'artifact',
+  'critical',
+  'journey',
+  'mobile',
+  'read-only',
+]);
 const IDENTIFIER_PATTERN = /^[a-z0-9]+(?:[._-][a-z0-9]+)*$/;
 
 function fail(message) {
@@ -58,7 +76,7 @@ function requireIdentifier(annotations, type, location) {
   return identifier;
 }
 
-function validateMetadata(test, rootDir) {
+function validateMetadata(test, rootDir, policyContract) {
   const annotations = test.annotations ?? [];
   const file = relative(rootDir, test.location.file);
   const location = describeTest(test, file);
@@ -69,8 +87,12 @@ function validateMetadata(test, rootDir) {
     }
   }
 
+  const usesNewPolicy = annotations.some(isNewPolicyAnnotation);
+  const policy = usesNewPolicy
+    ? classifyPlaywrightPolicy(annotations, policyContract, location)
+    : requireLegacyMigrationEntry(test.location.file, rootDir, policyContract, location);
   const journeyMetadata = annotations.filter((annotation) =>
-    JOURNEY_ANNOTATIONS.has(annotation.type),
+    JOURNEY_SELECTION_ANNOTATIONS.has(annotation.type),
   );
   if (journeyMetadata.length === 0) {
     return null;
@@ -78,6 +100,25 @@ function validateMetadata(test, rootDir) {
 
   requireFlag(annotations, 'critical', location);
   const mobile = optionalFlag(annotations, 'mobile', location);
+
+  if (usesNewPolicy) {
+    if (annotationValues(annotations, 'artifact').length > 0
+        || annotationValues(annotations, 'read-only').length > 0) {
+      fail(`${location} mixes migrated policy metadata with legacy artifact/read-only annotations`);
+    }
+
+    return {
+      file,
+      fixtureProfile: policy.fixtureProfile,
+      journey: requireIdentifier(annotations, 'journey', location),
+      line: test.location.line,
+      mobile,
+      project: test.parent.project()?.name ?? 'unknown',
+      state: policy.declaredPolicy,
+      title: test.title,
+    };
+  }
+
   const mutating = annotationValues(annotations, 'mutating');
   const readOnly = annotationValues(annotations, 'read-only');
 
@@ -103,12 +144,12 @@ function validateMetadata(test, rootDir) {
   };
 }
 
-function selectCriticalJourneys(suite, rootDir) {
+function selectCriticalJourneys(suite, rootDir, policyContract) {
   const journeys = [];
   const journeyLocations = new Map();
 
   for (const test of suite.allTests()) {
-    const journey = validateMetadata(test, rootDir);
+    const journey = validateMetadata(test, rootDir, policyContract);
     if (!journey) {
       continue;
     }
@@ -140,11 +181,17 @@ export default class CriticalJourneyDiscoveryReporter {
   constructor(options = {}) {
     this.stdout = options.stdout ?? process.stdout;
     this.stderr = options.stderr ?? process.stderr;
+    this.policyContract = options.policyContract ?? null;
   }
 
   onBegin(config, suite) {
     try {
-      const journeys = selectCriticalJourneys(suite, config.rootDir);
+      const policyContract = this.policyContract
+        ?? loadPlaywrightPolicyContract(join(config.rootDir, 'playwright-policy.json'), config.rootDir);
+      if (this.policyContract) {
+        validatePlaywrightPolicyContract(policyContract, config.rootDir);
+      }
+      const journeys = selectCriticalJourneys(suite, config.rootDir, policyContract);
       this.stdout.write(`${JSON.stringify(journeys, null, 2)}\n`);
     } catch (error) {
       this.validationFailed = true;
