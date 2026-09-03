@@ -63,14 +63,14 @@ public sealed class PhraseIndexFullCanonicalRehearsalTests
         try
         {
             // Hash, manifest scope, and migration head are verified before a database or container exists.
-            var manifest = SmokeDumpGate.VerifyAndRead(18);
+            var manifest = PhraseSearchRehearsalDumpGate.VerifyAndRead(18);
             evidence.RecordArtifact(manifest.Tables.Count);
             Directory.CreateDirectory(stagingRoot);
 
             var server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
                 nameof(PhraseIndexFullCanonicalRehearsalTests),
                 PostgreSqlImage,
-                builder => builder.WithBindMount(SmokeDumpGate.DumpDirectory!, DumpMountPath, AccessMode.ReadOnly));
+                builder => builder.WithBindMount(PhraseSearchRehearsalDumpGate.DumpDirectory!, DumpMountPath, AccessMode.ReadOnly));
             Exception? serverFailure = null;
             try
             {
@@ -396,7 +396,7 @@ public sealed class PhraseIndexFullCanonicalRehearsalTests
         var connectionBuilder = new NpgsqlConnectionStringBuilder(server.ConnectionString);
         var restore = await server.ExecAsync([
             "pg_restore", "--exit-on-error", "--username", connectionBuilder.Username!, "--dbname", connectionBuilder.Database!,
-            "--data-only", "--disable-triggers", "--jobs", "4", $"{DumpMountPath}/{SmokeDumpGate.DumpFileName}",
+            "--data-only", "--disable-triggers", "--jobs", "4", $"{DumpMountPath}/{PhraseSearchRehearsalDumpGate.DumpFileName}",
         ]);
         restore.ExitCode.Should().Be(0, restore.Stderr);
         evidence.RecordRestore(Stopwatch.GetElapsedTime(started));

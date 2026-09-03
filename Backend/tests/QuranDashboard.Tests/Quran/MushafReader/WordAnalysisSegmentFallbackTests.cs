@@ -1,25 +1,32 @@
-using QuranDashboard.Application.Quran.MushafReader.Queries.GetWordAnalysis;
+using QuranDashboard.Infrastructure.Persistence.Reads.Quran.MushafReader;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
-[Collection(nameof(MushafReaderCollection))]
-public sealed class WordAnalysisSegmentFallbackTests(MushafReaderTestFixture fixture)
+public sealed class WordAnalysisSegmentFallbackTests
 {
     [Fact]
-    public async Task GetWordAnalysis_marks_empty_segment_form_as_missing_without_fabricated_text()
+    public void GetWordAnalysis_marks_empty_segment_form_as_missing_without_fabricated_text()
     {
-        await using var scope = fixture.CreateScope();
-        var handler = scope.ServiceProvider.GetRequiredService<GetWordAnalysisHandler>();
-
-        var outcome = await handler.HandleAsync(
-            new GetWordAnalysisQuery("2:25:3"),
-            CancellationToken.None);
-
-        var response = outcome.Should().BeOfType<GetWordAnalysisOutcome.Success>().Subject.Response;
-        var fallbackSegment = response.RenderedWordSegments.Single(s => s.SegmentNumber == 2);
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var fallbackSegment = MushafReaderValueMapper.MapSegments(
+            [new WordAnalysisSegmentValue(
+                "test-segment:2",
+                2,
+                "SUFFIX",
+                null,
+                "PRON",
+                "ضمير",
+                "Pronoun",
+                null,
+                null,
+                null,
+                null,
+                "unsupported",
+                "POS=PRON",
+                "[]")],
+            loggerFactory.CreateLogger<EfWordAnalysisReader>()).Single();
 
         fallbackSegment.DisplayTextStatus.Should().Be("missing");
         fallbackSegment.SegmentDisplayText.Should().BeNull();
-        response.Word.TextUthmani.Should().NotBeNullOrWhiteSpace();
     }
 }

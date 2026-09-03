@@ -28,6 +28,14 @@ scripts/test focused --backend-test QuranDashboard.Tests.Api.Access.AccessRolesT
 scripts/test focused --playwright e2e/mushaf-reader.e2e.ts:277 --no-build
 ```
 
+Migrated Backend readers require `ConnectionStrings__QuranDashboardTest` to name the verified local
+`quran_dashboard_test` capability. The Backend delegate runs `QuranDashboard.TestRuntime inspect`
+before test execution and supplies a short-lived runner context to the fixture. Reader services use the
+restricted reader role with read-only transactions; API-backed fixtures use the Testing `ReadOnly`
+activity profile. `GuardedReader` fixtures additionally retain the shared TestRuntime advisory lock for
+their lifetime. Missing capability state fails before VSTest starts, and no reader command provisions,
+migrates, restores, seeds, or starts a database writer.
+
 Focused Playwright selection remains inside the existing sealed provisioning, credential-stripping,
 loopback-egress, and sanitized-evidence runner while the database lifecycle is still legacy.
 

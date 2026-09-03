@@ -1,7 +1,8 @@
 # QuranDashboard.TestRuntime
 
 `QuranDashboard.TestRuntime` is the Backend-owned control-plane seam for the persistent Test Database
-Capability. Existing test runners continue to use their current lifecycle until the later atomic cutover.
+Capability. Policy-migrated Backend readers invoke it through the repository runner; explicitly
+unmigrated test entries continue to use their current lifecycle until the later atomic cutover.
 
 ## Validate the contract
 
