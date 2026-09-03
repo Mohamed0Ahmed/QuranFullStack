@@ -72,8 +72,16 @@ Do not substitute #149: it remains the orchestration scope.
 
 ## Exact worker contract
 
-Every worker receives exactly this instruction, with the selected ready implementation
-ticket number substituted:
+A worker for a ticket receives exactly one of two message shapes, and never any other:
+
+1. **Initial dispatch** — the first message sent to that worker for that ticket.
+2. **Post-landing integration remediation** — a follow-up to the same worker after its
+   work was landed and integration verification then failed.
+
+### Initial dispatch
+
+The first message to a worker is exactly this instruction, with the selected ready
+implementation ticket number substituted:
 
 ```text
 Invoke implement skill for ticket #<NUMBER> only.
@@ -84,8 +92,93 @@ review request, or report contract around it. Bind repository and worktree paths
 the dispatch tool or process configuration. In same-session mode, start the subagent
 without inherited conversation turns when the host supports that control.
 
+This exact one-line prompt is **only** for the first dispatch of a ticket. Never resend
+it to retry, re-open, or remediate a ticket whose work has already been landed: a
+re-sent dispatch prompt tells the worker to start the ticket over without the
+integration evidence it needs.
+
 The `implement` skill is the single owner of ticket understanding, implementation,
 testing, code review, and worker completion behavior. A worker handles one ticket only.
+
+### Post-landing integration remediation
+
+Use this shape when landing/merging succeeded but the build, test, smoke, or integration
+verification of the combined integration branch then failed — typically because the
+ticket interacts with previously landed tickets. In that situation:
+
+- Do not close the ticket.
+- Do not start the ticket again from scratch, and do not resend the initial dispatch
+  prompt.
+- Do not open a new worker unless the original worker/session is genuinely unavailable.
+- Return to the **same** delegate session or the **same** subagent that implemented that
+  ticket; it owns the ticket context, so it owns the remediation.
+- Keep that worker's worktree and branch alive until integration verification passes.
+- Synchronize that worktree with the current integration tip **before** messaging the
+  worker, as described under "Sync before post-landing remediation".
+- Send it the actual integration failure evidence.
+
+The follow-up message must identify the ticket number; that the ticket implementation
+itself completed but integration verification failed after landing against the current
+integration branch; the failing command/test/check; the relevant error output; and the
+relevant file/test names when available. Use a concise follow-up of this form:
+
+```text
+Ticket #<NUMBER> was landed, but integration verification failed against the current integration branch.
+
+Fix these integration failures in your existing ticket work:
+
+- <failing command/test>
+- <error/evidence>
+- <relevant file/test if known>
+
+Do not restart the ticket from scratch.
+Keep the fix scoped to the integration failures caused or exposed by ticket #<NUMBER>.
+Run the necessary focused verification and report when ready to re-land.
+```
+
+#### Sync before post-landing remediation
+
+A worker may have finished on an isolated branch/worktree created from an older
+integration tip, so after other tickets land it no longer contains the current combined
+integration state. Remediation must happen against the current state, not the stale
+pre-landing base. Before sending the remediation message:
+
+1. Keep the original ticket worktree/branch alive.
+2. Update that ticket branch/worktree to include the current integration tip using the
+   repository's approved landing/Git workflow.
+3. Do not edit product code during this synchronization.
+4. If synchronization produces a merge conflict, invoke the installed
+   `resolving-merge-conflicts` skill; do not improvise the resolution.
+5. Only once the ticket worktree represents the current combined integration state, send
+   the actual integration failure evidence to the **same** worker/session, using the
+   message format above.
+6. The worker then fixes the issue against that synchronized state.
+7. Re-land the resulting fix and rerun integration verification.
+
+Worked example — ticket A lands successfully; ticket B was implemented from an older
+integration tip; ticket B lands, but combined integration verification fails because of
+its interaction with ticket A:
+
+```text
+ticket B worker branch/worktree
+-> synchronize with current integration tip containing ticket A
+-> resolve any true merge conflict through `resolving-merge-conflicts`
+-> send the SAME ticket B worker the integration failure evidence
+-> worker fixes against the synchronized combined state
+-> re-land
+-> integration verification
+-> close ticket B only after GREEN
+```
+
+Distinguish the two failure kinds:
+
+- A true merge conflict during landing is handled by the installed
+  `resolving-merge-conflicts` skill, as in the landing step below.
+- A merge that succeeds while integration verification then fails is handled by
+  same-worker remediation, not by the conflict skill.
+
+Remediation does not change the main session's boundary: it still does not implement
+product code and still does not perform or delegate a second code review of the ticket.
 
 ## Orchestration loop
 
@@ -113,15 +206,27 @@ testing, code review, and worker completion behavior. A worker handles one ticke
 7. Run only the build, test, or smoke checks needed to establish that the combined,
    landed integration branch remains valid. This is integration verification, not a
    second assessment of the ticket implementation or acceptance criteria.
-8. Only after the result is landed and required integration verification passes, comment
+8. If that integration verification fails after a successful land, keep the ticket open
+   and keep that worker's worktree and branch alive. First synchronize the ticket
+   worktree with the current integration tip through the repository's Git workflow,
+   using `resolving-merge-conflicts` for any conflict and editing no product code. Then
+   send the same worker a post-landing integration remediation follow-up carrying the
+   failing check and its error output, as specified in the worker contract. When the worker reports its fix, re-land and
+   re-run integration verification. Repeat until verification passes, or record the path
+   as blocked. Never resend the initial dispatch prompt, and never count a remediation
+   round against a ticket as a new ticket.
+9. Only after the result is landed and required integration verification passes, comment
    on/update and close the implementation ticket according to the repository issue
    workflow.
-9. After each landed child ticket is closed, re-fetch the in-scope child and dependency
-   state from GitHub and rebuild the ready frontier. Immediately fill each available
-   slot from newly unblocked implementation tickets, without exceeding three workers.
-10. Remove completed worktrees and temporary branches when their work is landed and the
-    repository workflow says cleanup is safe. Continue until the requested ticket
-    program has no running or ready tickets and every in-scope ticket is complete.
+10. After each landed child ticket is closed, re-fetch the in-scope child and dependency
+    state from GitHub and rebuild the ready frontier. Immediately fill each available
+    slot from newly unblocked implementation tickets, without exceeding three workers.
+    Refresh the frontier only after a successful closure, never after a bare land whose
+    integration verification is still failing or pending.
+11. Remove completed worktrees and temporary branches when their work is landed, its
+    integration verification has passed, and the repository workflow says cleanup is
+    safe. Continue until the requested ticket program has no running or ready tickets
+    and every in-scope ticket is complete.
 
 The completion sequence is invariant:
 
@@ -134,14 +239,29 @@ worker completed
 -> dependency frontier refreshed
 ```
 
+When integration verification fails after landing, the sequence loops back into the same
+worker rather than forward:
+
+```text
+result landed/merged
+-> integration verification failed
+-> ticket worktree synchronized with the current integration tip (ticket stays open)
+-> same worker gets the integration failure evidence
+-> worker reports fix
+-> re-land and re-run integration verification
+-> ... until it passes, then ticket updated/closed and frontier refreshed
+```
+
 A worker's “done” report alone never advances the GitHub ticket state.
 
 ## Failure handling
 
 - A blocked or failed worker leaves its ticket open. Record and surface the blocker, and
   keep every dependent ticket out of the frontier.
-- A failed landing or integration check leaves the ticket open and stops that dependency
-  path. Preserve successful independent paths when safe.
+- A failed landing or integration check leaves the ticket open. A post-landing
+  integration failure goes back to the same worker with its evidence; only give up on
+  the dependency path when that remediation loop cannot resolve it. Preserve successful
+  independent paths when safe.
 - When a production defect or newly discovered dependency requires another ticket,
   record and link it through the repository issue workflow so the graph reflects the
   real blocker. Do not bypass the relationship.
