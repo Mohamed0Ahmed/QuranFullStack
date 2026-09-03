@@ -61,3 +61,11 @@ the selected test process, and performs verified cleanup before releasing the lo
 Permission catalogue reconciliation, and schema-drift classes are the initial migrated empty-scratch
 coverage. They remain cheap pre-PR candidates when Access or Schema scope selects them; the partition does
 not authorize or select any unrelated full canonical pipeline.
+
+Migrated full-data PhraseSearch index and recovery selections use the manual full Rehearsal Database
+capability only after `--authorize-full-data`. The root runner asks TestRuntime to validate the dedicated
+rehearsal connection, recompute its Protected State fingerprint, verify its subtype, provenance, migration,
+and freshness markers, and retain the cluster-wide exclusive lock around the exact selected test. Missing
+or stale capability state fails only that selected command with manual provisioning or refresh guidance.
+The runner never provisions or removes the target, and a failed target stays available for explicit
+inspection; database removal requires the separately confirmed TestRuntime cleanup command.

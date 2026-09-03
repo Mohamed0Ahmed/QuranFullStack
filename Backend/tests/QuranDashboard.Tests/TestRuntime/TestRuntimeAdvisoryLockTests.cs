@@ -188,14 +188,22 @@ public sealed class TestRuntimeAdvisoryLockTests(TestRuntimeAdministrationFixtur
         await using var observer = new NpgsqlConnection(fixture.ConnectionString);
         await observer.OpenAsync();
         await using var command = new NpgsqlCommand(
-            "SELECT application_name FROM pg_catalog.pg_stat_activity WHERE pid = @pid",
+            """
+            SELECT application_name, datname
+            FROM pg_catalog.pg_stat_activity
+            WHERE pid = @pid
+            """,
             observer);
         command.Parameters.AddWithValue("pid", lease.Ownership.KeeperProcessId);
 
-        var applicationName = (string?)await command.ExecuteScalarAsync();
+        await using var reader = await command.ExecuteReaderAsync();
+        await reader.ReadAsync();
+        var applicationName = reader.GetString(0);
+        var lockDatabase = reader.GetString(1);
 
         acquisition.Report.TimeoutMilliseconds.Should().Be(900_000);
         applicationName.Should().Contain("metadata-run").And.Contain("reader-command");
+        lockDatabase.Should().Be(contract.AdvisoryLock.Database);
     }
 
     [Fact]

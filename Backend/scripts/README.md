@@ -25,6 +25,7 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
 | `access-admin` | Runs normalized-identity scan/backfill, permission-catalogue sync, Owner reconciliation, legacy-role inventory/conversion, and authorization preflight |
 | `QuranDashboard.TestRuntime refresh inspect\|dry-run\|apply\|verify` | Explicitly plans, builds, validates, and guardedly installs `quran_dashboard_test` from committed migrations and canonical pipelines; see the TestRuntime README |
+| `QuranDashboard.TestRuntime rehearsal inspect\|hold\|cleanup` | Validates and locks an explicitly supplied manual full-data index/recovery Rehearsal Database; cleanup is separately confirmed and never automatic; see the TestRuntime README |
 | `export-abwab-snapshot` | DataImporter verb that captures the current Abwab relational snapshot across the eight-table schema without Linking or Linking-dependent inclusion-sync rows; see the export-only workflow below |
 | `import-abwab-snapshot` | DataImporter verb that restores one verified v4 Abwab snapshot into empty current-schema targets; see the standalone import workflow below |
 | `clean-local-build` | Clears the NuGet caches, deletes every `bin`/`obj`, and restores the solution. Non-destructive to data |

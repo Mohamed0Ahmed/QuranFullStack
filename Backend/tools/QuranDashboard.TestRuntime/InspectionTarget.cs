@@ -48,7 +48,7 @@ internal static class InspectionTargetValidator
             violations);
     }
 
-    private static string? LocalEndpointKind(string? host)
+    internal static string? LocalEndpointKind(string? host)
     {
         if (host is "localhost" or "127.0.0.1" or "::1")
         {

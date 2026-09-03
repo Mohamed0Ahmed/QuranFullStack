@@ -8,6 +8,7 @@ namespace QuranDashboard.TestRuntime;
 internal static class TestRuntimeCommand
 {
     internal const string DefaultConnectionStringEnvironmentVariable = "ConnectionStrings__QuranDashboardTest";
+    internal const string FullRehearsalConnectionStringEnvironmentVariable = "ConnectionStrings__QuranDashboardRehearsal";
 
     private const int SuccessExitCode = 0;
     private const int UsageExitCode = 2;
@@ -81,6 +82,18 @@ internal static class TestRuntimeCommand
                 validation.Violations),
                 stream: request.LockMode is not null);
             return ValidationFailureExitCode;
+        }
+
+        if (request.FullRehearsalAction is not null)
+        {
+            return await ExecuteFullRehearsalAsync(
+                request,
+                contract,
+                validation,
+                output,
+                input,
+                readEnvironment ?? Environment.GetEnvironmentVariable,
+                cancellationToken);
         }
 
         if (request.Command == "contract-validate")
@@ -413,6 +426,10 @@ internal static class TestRuntimeCommand
             ["scratch", "resolve", ..] => "scratch-resolve",
             ["scratch", "cleanup", ..] => "scratch-cleanup",
             ["scratch", "reap", ..] => "scratch-reap",
+            ["rehearsal", "inspect", ..] => "rehearsal-inspect",
+            ["rehearsal", "hold", ..] => "rehearsal-hold",
+            ["rehearsal", "cleanup", "inspect", ..] => "rehearsal-cleanup-inspect",
+            ["rehearsal", "cleanup", "apply", ..] => "rehearsal-cleanup-apply",
             _ => null,
         };
         if (command is null)
@@ -424,8 +441,13 @@ internal static class TestRuntimeCommand
                           || command.StartsWith("admin-", StringComparison.Ordinal)
                           || command.StartsWith("refresh-", StringComparison.Ordinal)
                           || command.StartsWith("scratch-", StringComparison.Ordinal)
+                          || command.StartsWith("rehearsal-", StringComparison.Ordinal)
             ? 2
             : 1;
+        if (command.StartsWith("rehearsal-cleanup-", StringComparison.Ordinal))
+        {
+            optionStart = 3;
+        }
         var contractPath = Path.Combine(AppContext.BaseDirectory, "test-database-contract.json");
         string? selectedLogin = null;
         string? runId = null;
@@ -440,6 +462,9 @@ internal static class TestRuntimeCommand
         var apiProcessProofProvided = false;
         string? resetPhase = null;
         string? scratchSubtype = null;
+        string? fullRehearsalSubtype = null;
+        string? confirmedDatabase = null;
+        var cleanupConfirmed = false;
         var releaseOnStdinClose = false;
         for (var index = optionStart; index < args.Count;)
         {
@@ -450,8 +475,15 @@ internal static class TestRuntimeCommand
                 continue;
             }
 
+            if (args[index] == "--yes" && command == "rehearsal-cleanup-apply" && !cleanupConfirmed)
+            {
+                cleanupConfirmed = true;
+                index++;
+                continue;
+            }
+
             if (args[index] == "--release-on-stdin-close"
-                && command == "lock-hold"
+                && command is "lock-hold" or "rehearsal-hold"
                 && !releaseOnStdinClose)
             {
                 releaseOnStdinClose = true;
@@ -467,7 +499,8 @@ internal static class TestRuntimeCommand
             if (args[index] == "--contract"
                 && command is not "admin-apply" and not "lock-hold" and not "reset"
                 && !command.StartsWith("refresh-", StringComparison.Ordinal)
-                && !command.StartsWith("scratch-", StringComparison.Ordinal))
+                && !command.StartsWith("scratch-", StringComparison.Ordinal)
+                && !command.StartsWith("rehearsal-", StringComparison.Ordinal))
             {
                 contractPath = args[index + 1];
             }
@@ -481,7 +514,8 @@ internal static class TestRuntimeCommand
             }
             else if (args[index] == "--run-id"
                      && (command is "admin-apply" or "lock-hold" or "reset" or "refresh-apply"
-                         || command.StartsWith("scratch-", StringComparison.Ordinal)))
+                         || command.StartsWith("scratch-", StringComparison.Ordinal)
+                         || command is "rehearsal-hold" or "rehearsal-cleanup-apply"))
             {
                 runId = args[index + 1];
             }
@@ -491,7 +525,8 @@ internal static class TestRuntimeCommand
             }
             else if (args[index] == "--command"
                      && (command is "lock-hold" or "reset"
-                         || command.StartsWith("scratch-", StringComparison.Ordinal)))
+                         || command.StartsWith("scratch-", StringComparison.Ordinal)
+                         || command is "rehearsal-hold" or "rehearsal-cleanup-apply"))
             {
                 lockCommand = args[index + 1];
             }
@@ -551,6 +586,15 @@ internal static class TestRuntimeCommand
             {
                 scratchSubtype = args[index + 1];
             }
+            else if (args[index] == "--subtype"
+                     && command.StartsWith("rehearsal-", StringComparison.Ordinal))
+            {
+                fullRehearsalSubtype = args[index + 1];
+            }
+            else if (args[index] == "--confirm-database" && command == "rehearsal-cleanup-apply")
+            {
+                confirmedDatabase = args[index + 1];
+            }
             else
             {
                 return null;
@@ -606,6 +650,25 @@ internal static class TestRuntimeCommand
                                      && string.IsNullOrWhiteSpace(scratchSubtype))
                                  || (scratchAction is "cleanup" or "reap"
                                      && scratchSubtype is not null));
+        var fullRehearsalAction = command.StartsWith("rehearsal-", StringComparison.Ordinal)
+            ? command["rehearsal-".Length..]
+            : null;
+        var invalidFullRehearsal = fullRehearsalAction is not null
+                                   && (string.IsNullOrWhiteSpace(fullRehearsalSubtype)
+                                       || !FullRehearsalCapability.IsApprovedSubtype(fullRehearsalSubtype)
+                                       || (fullRehearsalAction == "hold"
+                                           && (!AdvisoryLockProtocol.IsValidRunId(runId)
+                                               || !AdvisoryLockProtocol.IsValidCommand(lockCommand)))
+                                       || (fullRehearsalAction == "cleanup-apply"
+                                           && (!AdvisoryLockProtocol.IsValidRunId(runId)
+                                               || !AdvisoryLockProtocol.IsValidCommand(lockCommand)
+                                               || string.IsNullOrWhiteSpace(confirmedDatabase)
+                                               || !cleanupConfirmed))
+                                       || (fullRehearsalAction is "inspect" or "cleanup-inspect"
+                                           && (runId is not null
+                                               || lockCommand is not null
+                                               || confirmedDatabase is not null
+                                               || cleanupConfirmed)));
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration
                || invalidApply
@@ -613,6 +676,7 @@ internal static class TestRuntimeCommand
                || invalidLock
                || invalidReset
                || invalidScratch
+               || invalidFullRehearsal
             ? null
             : new CommandRequest(
                 command,
@@ -632,8 +696,230 @@ internal static class TestRuntimeCommand
                 refreshMode,
                 scratchAction,
                 scratchSubtype,
-                releaseOnStdinClose);
+                releaseOnStdinClose,
+                fullRehearsalAction,
+                fullRehearsalSubtype,
+                confirmedDatabase,
+                cleanupConfirmed);
     }
+
+    private static async Task<int> ExecuteFullRehearsalAsync(
+        CommandRequest request,
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        TextWriter output,
+        TextReader? input,
+        Func<string, string?> environment,
+        CancellationToken cancellationToken)
+    {
+        var connectionString = environment(FullRehearsalConnectionStringEnvironmentVariable);
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            var missing = EmptyFullRehearsalReport(
+                request.FullRehearsalAction!,
+                request.FullRehearsalSubtype!,
+                "capability-missing",
+                [FullRehearsalCapability.ManualProvisionGuidance]);
+            WriteReport(output, new TestRuntimeReport(
+                request.Command,
+                false,
+                DatabaseInspector.ToContractReport(contract, validation),
+                null, null, null, null, null,
+                [new ContractViolation("rehearsal.capability-missing")],
+                FullRehearsal: missing),
+                stream: request.FullRehearsalAction == "hold");
+            return ValidationFailureExitCode;
+        }
+
+        var target = FullRehearsalTargetValidator.Validate(connectionString, contract);
+        if (!target.IsValid)
+        {
+            WriteReport(output, new TestRuntimeReport(
+                request.Command,
+                false,
+                DatabaseInspector.ToContractReport(contract, validation),
+                new TargetReport(target.Database, target.EndpointKind, null, null, null, null, null, null, null),
+                null, null, null, null,
+                target.Violations,
+                FullRehearsal: EmptyFullRehearsalReport(
+                    request.FullRehearsalAction!,
+                    request.FullRehearsalSubtype!,
+                    "refused",
+                    [FullRehearsalCapability.ManualProvisionGuidance])),
+                stream: request.FullRehearsalAction == "hold");
+            return ValidationFailureExitCode;
+        }
+
+        try
+        {
+            var database = new FullRehearsalDatabase();
+            AdvisoryLockAcquisition? acquisition = null;
+            if (request.FullRehearsalAction is "hold" or "cleanup-apply")
+            {
+                acquisition = await AdvisoryLockProtocol.AcquireAsync(
+                    target.Connection!.ConnectionString,
+                    contract.AdvisoryLock.Key,
+                    AdvisoryLockMode.Exclusive,
+                    request.RunId!,
+                    request.LockCommand!,
+                    request.LockTimeout,
+                    cancellationToken);
+                if (acquisition.Lease is null)
+                {
+                    WriteReport(output, new TestRuntimeReport(
+                        request.Command,
+                        false,
+                        DatabaseInspector.ToContractReport(contract, validation),
+                        new TargetReport(target.Database, target.EndpointKind, null, null, null, null, null, null, null),
+                        null, null, null, null,
+                        [new ContractViolation("rehearsal.lock.timeout")],
+                        AdvisoryLock: acquisition.Report,
+                        FullRehearsal: EmptyFullRehearsalReport(
+                            request.FullRehearsalAction!,
+                            request.FullRehearsalSubtype!,
+                            "lock-unavailable",
+                            [FullRehearsalCapability.ManualRefreshGuidance])),
+                        stream: request.FullRehearsalAction == "hold");
+                    return ValidationFailureExitCode;
+                }
+            }
+
+            await using var lease = acquisition?.Lease;
+            var requireLock = acquisition is not null;
+            var snapshot = await database.InspectAsync(
+                contract,
+                target,
+                requireLock ? request.RunId : null,
+                requireLock ? request.LockCommand : null,
+                cancellationToken);
+            var result = FullRehearsalCapability.Validate(
+                contract,
+                validation.ExpectedMigrations.Last(),
+                request.FullRehearsalSubtype!,
+                snapshot,
+                DateTimeOffset.UtcNow,
+                requireLock,
+                request.FullRehearsalAction!);
+            if (!result.Succeeded)
+            {
+                WriteFullRehearsalReport(output, request, contract, validation, target, result, acquisition?.Report);
+                return ValidationFailureExitCode;
+            }
+
+            if (request.FullRehearsalAction == "cleanup-apply")
+            {
+                var authorization = FullRehearsalCleanup.Authorize(
+                    result,
+                    target.Database!,
+                    request.ConfirmedDatabase,
+                    request.CleanupConfirmed);
+                if (!authorization.Authorized)
+                {
+                    result = result with
+                    {
+                        Succeeded = false,
+                        Violations = authorization.Violations,
+                        Report = result.Report with
+                        {
+                            CapabilityState = "cleanup-refused",
+                            Guidance = ["Re-run cleanup with --confirm-database set to the exact displayed Rehearsal Database name."],
+                        },
+                    };
+                    WriteFullRehearsalReport(output, request, contract, validation, target, result, acquisition?.Report);
+                    return ValidationFailureExitCode;
+                }
+
+                var cleanupViolations = await database.RemoveAsync(
+                    target,
+                    snapshot.DatabaseOid,
+                    cancellationToken);
+                result = result with
+                {
+                    Succeeded = cleanupViolations.Count == 0,
+                    Violations = cleanupViolations,
+                    Report = result.Report with
+                    {
+                        CapabilityState = cleanupViolations.Count == 0 ? "removed" : "cleanup-refused",
+                        Removed = cleanupViolations.Count == 0,
+                    },
+                };
+                WriteFullRehearsalReport(output, request, contract, validation, target, result, acquisition?.Report);
+                return result.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
+            }
+
+            WriteFullRehearsalReport(output, request, contract, validation, target, result, acquisition?.Report);
+            if (request.FullRehearsalAction != "hold")
+            {
+                return SuccessExitCode;
+            }
+
+            await output.FlushAsync();
+            try
+            {
+                if (request.ReleaseOnStdinClose)
+                {
+                    await (input ?? TextReader.Null).ReadLineAsync(cancellationToken);
+                }
+                else
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+            }
+            return SuccessExitCode;
+        }
+        catch (Exception exception) when (exception is NpgsqlException or SocketException or IOException or InvalidOperationException)
+        {
+            WriteReport(output, new TestRuntimeReport(
+                request.Command,
+                false,
+                DatabaseInspector.ToContractReport(contract, validation),
+                new TargetReport(target.Database, target.EndpointKind, null, null, null, null, null, null, null),
+                null, null, null, null,
+                [new ContractViolation("rehearsal.database-operation-failed",
+                    exception is PostgresException postgresException ? postgresException.SqlState : null)],
+                exception.GetType().Name,
+                FullRehearsal: EmptyFullRehearsalReport(
+                    request.FullRehearsalAction!,
+                    request.FullRehearsalSubtype!,
+                    "failed",
+                    [FullRehearsalCapability.ManualRefreshGuidance])),
+                stream: request.FullRehearsalAction == "hold");
+            return OperationalFailureExitCode;
+        }
+    }
+
+    private static void WriteFullRehearsalReport(
+        TextWriter output,
+        CommandRequest request,
+        DatabaseContract contract,
+        ContractValidationResult validation,
+        InspectionTargetValidation target,
+        FullRehearsalValidationResult result,
+        AdvisoryLockReport? advisoryLock) => WriteReport(output, new TestRuntimeReport(
+        request.Command,
+        result.Succeeded,
+        DatabaseInspector.ToContractReport(contract, validation),
+        new TargetReport(target.Database, target.EndpointKind, null, null, null, null, null, null, null),
+        null, null, null, null,
+        result.Violations,
+        AdvisoryLock: advisoryLock,
+        FullRehearsal: result.Report),
+        stream: request.FullRehearsalAction == "hold");
+
+    private static FullRehearsalReport EmptyFullRehearsalReport(
+        string mode,
+        string subtype,
+        string state,
+        IReadOnlyList<string> guidance) => new(
+        mode, null, subtype, state, null, null, null, null, null, null, null,
+        Fresh: false,
+        ExclusiveLockOwned: false,
+        Removed: false,
+        guidance,
+        DumpFilesRetained: 0);
 
     private static async Task<int> HoldLockAsync(
         CommandRequest request,
@@ -763,6 +1049,10 @@ internal static class TestRuntimeCommand
         error.WriteLine($"  QuranDashboard.TestRuntime lock hold --mode shared|exclusive --run-id <run-id> --command <command> [--timeout-seconds <seconds>] [--release-on-stdin-close]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime scratch create|resolve --run-id <run-id> --command <command> --subtype <subtype>  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime scratch cleanup|reap --run-id <run-id> --command <command>  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime rehearsal inspect --subtype phrase-search-index-build|recovery  # reads {FullRehearsalConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime rehearsal hold --subtype phrase-search-index-build|recovery --run-id <run-id> --command <command> [--release-on-stdin-close]  # reads {FullRehearsalConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime rehearsal cleanup inspect --subtype phrase-search-index-build|recovery  # displays and revalidates the exact target");
+        error.WriteLine($"  QuranDashboard.TestRuntime rehearsal cleanup apply --subtype phrase-search-index-build|recovery --run-id <run-id> --command <command> --confirm-database <displayed-name> --yes  # reads {FullRehearsalConnectionStringEnvironmentVariable}");
     }
 
     private sealed record CommandRequest(
@@ -783,5 +1073,9 @@ internal static class TestRuntimeCommand
         CapabilityRefreshMode? RefreshMode = null,
         string? ScratchAction = null,
         string? ScratchSubtype = null,
-        bool ReleaseOnStdinClose = false);
+        bool ReleaseOnStdinClose = false,
+        string? FullRehearsalAction = null,
+        string? FullRehearsalSubtype = null,
+        string? ConfirmedDatabase = null,
+        bool CleanupConfirmed = false);
 }

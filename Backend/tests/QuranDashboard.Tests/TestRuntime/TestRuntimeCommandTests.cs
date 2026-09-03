@@ -6,6 +6,83 @@ namespace QuranDashboard.Tests.TestRuntime;
 
 public sealed class TestRuntimeCommandTests
 {
+    [Fact]
+    public async Task FullRehearsalInspect_WithoutManualCapability_IsClassifiedAsCapabilityMissing()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["rehearsal", "inspect", "--subtype", "recovery"],
+            output,
+            error,
+            _ => null);
+
+        exitCode.Should().Be(3);
+        error.ToString().Should().BeEmpty();
+        using var report = JsonDocument.Parse(output.ToString());
+        report.RootElement.GetProperty("violations")[0].GetProperty("code").GetString()
+            .Should().Be("rehearsal.capability-missing");
+        report.RootElement.GetProperty("fullRehearsal").GetProperty("guidance")[0].GetString()
+            .Should().Contain("manually provision");
+    }
+
+    [Fact]
+    public async Task FullRehearsalCommands_RejectNonIndexRecoverySubtypesAsUsage()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["rehearsal", "inspect", "--subtype", "canonical-import"],
+            output,
+            error,
+            _ => null);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("phrase-search-index-build|recovery");
+    }
+
+    [Fact]
+    public async Task FullRehearsalCleanupApply_RequiresExactTargetConfirmationAndYes()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [
+                "rehearsal", "cleanup", "apply",
+                "--subtype", "recovery",
+                "--run-id", "cleanup-168",
+                "--command", "rehearsal-cleanup",
+            ],
+            output,
+            error,
+            _ => null);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("--confirm-database <displayed-name> --yes");
+    }
+
+    [Fact]
+    public async Task FullRehearsalCommands_CannotOverrideTheCommittedContract()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["rehearsal", "inspect", "--subtype", "recovery", "--contract", ContractPath],
+            output,
+            error,
+            _ => null);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("Usage:");
+    }
+
     [Theory]
     [InlineData("inspect")]
     [InlineData("dry-run")]
@@ -269,7 +346,8 @@ public sealed class TestRuntimeCommandTests
         var exitCode = await TestRuntimeCommand.ExecuteAsync(
             ["lock", "hold", "--mode", "exclusive", "--run-id", "missing-target", "--command", "scratch-rehearsal"],
             output,
-            error);
+            error,
+            _ => null);
 
         exitCode.Should().Be(3);
         var lines = output.ToString().Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);

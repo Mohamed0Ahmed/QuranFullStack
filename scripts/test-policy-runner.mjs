@@ -542,7 +542,10 @@ function selectionCommand(selection) {
     selection.group,
     selection.group === 'EmptyScratchDestructiveRehearsal'
       ? { scratchSubtype: toScratchSubtype(selection.destructiveSubtype) }
-      : {},
+      : selection.group === 'FullDataDestructiveRehearsal'
+          && ['PhraseSearchIndexBuild', 'Recovery'].includes(selection.destructiveSubtype)
+        ? { rehearsalSubtype: toScratchSubtype(selection.destructiveSubtype) }
+        : {},
   );
 }
 

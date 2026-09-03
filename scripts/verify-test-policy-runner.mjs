@@ -32,6 +32,8 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
   row('Tests.EmptyMigration', 'Access', 'Migration', 'TierB', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'ScratchCollection', 'Migrated'),
   row('Tests.FullImport', 'FoundationImport', 'Canonical', 'Pipeline', 'Cli,Source,Safety', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.OtherFullImport', 'Tafsirs', 'Canonical', 'Pipeline', 'Cli,Source', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
+  row('Tests.FullIndex', 'PhraseSearch', 'Release', 'Release', 'Cli,Execution', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'PhraseSearchIndexBuild', 'None', 'Migrated'),
+  row('Tests.FullRecovery', 'ApiBehavior', 'Release', 'Release', 'Cli,Execution,Schema', 'DestructiveRehearsal', 'CanonicalQuranData,SchemaState', 'CanonicalQuranData,SchemaState', 'FullRehearsal', 'Recovery', 'None', 'Migrated'),
   row('Tests.LegacyFull', 'Smoke', 'Canonical', 'Smoke', '', '', '', '', '', '', '', 'Unmigrated'),
   row('QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests', 'ApiBehavior', 'Release', 'Release', 'Safety', '', '', '', '', '', '', 'Unmigrated'),
   row('Tests.Legacy', 'Linking', 'Database', 'TierB', '', '', '', '', '', '', '', 'Unmigrated'),
@@ -124,6 +126,21 @@ const authorizedFocusedFullData = planFocusedSelection({
 });
 assert.deepEqual(authorizedFocusedFullData.authorizationRequired, []);
 assert.equal(authorizedFocusedFullData.commands.length, 1);
+assert.equal(authorizedFocusedFullData.commands[0].rehearsalSubtype, undefined);
+
+const authorizedIndexAndRecovery = planFocusedSelection({
+  backendCatalog: catalog,
+  backendResources: resourceCatalog,
+  backendClasses: ['Tests.FullIndex', 'Tests.FullRecovery'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+  authorizeFullData: true,
+});
+assert.deepEqual(
+  authorizedIndexAndRecovery.commands.map(({ rehearsalSubtype }) => rehearsalSubtype),
+  ['phrase-search-index-build', 'recovery'],
+);
 
 const blockedLegacyFullData = planFocusedSelection({
   backendCatalog: catalog,
@@ -205,6 +222,10 @@ const authorizedPipeline = planPrePrSelection({
 assert.deepEqual(authorizedPipeline.authorizationRequired, []);
 assert.ok(authorizedPipeline.commands.some(({ id }) => id.includes('Tests.FullImport')));
 assert.ok(!authorizedPipeline.commands.some(({ id }) => id.includes('Tests.OtherFullImport')));
+assert.equal(
+  authorizedPipeline.commands.find(({ id }) => id.includes('Tests.FullImport')).rehearsalSubtype,
+  undefined,
+);
 
 const cheapScratch = planPrePrSelection({
   backendCatalog: catalog,
@@ -241,6 +262,8 @@ const scheduledWithoutAuthorization = planPrePrSelection({
 });
 assert.deepEqual(scheduledWithoutAuthorization.authorizationRequired, [
   'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests',
+  'Tests.FullIndex',
+  'Tests.FullRecovery',
 ]);
 
 const authorizedRelease = planPrePrSelection({
