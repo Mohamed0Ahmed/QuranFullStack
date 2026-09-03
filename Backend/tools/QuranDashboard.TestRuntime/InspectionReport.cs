@@ -33,7 +33,7 @@ internal sealed record CatalogueReport(
     int PermissionCount,
     IReadOnlyList<ContractViolation> Violations);
 
-internal sealed record MarkerState(bool Present, bool? MatchesExpected);
+internal sealed record MarkerState(bool Present, bool? MatchesExpected, bool? IsDirty = null);
 
 internal sealed record MarkerReport(
     bool Healthy,
@@ -70,4 +70,6 @@ internal sealed record TestRuntimeReport(
     IReadOnlyList<ContractViolation> Violations,
     string? FailureType = null,
     CapabilityAdministrationReport? Administration = null,
-    AdvisoryLockReport? AdvisoryLock = null);
+    AdvisoryLockReport? AdvisoryLock = null,
+    ProtectedStateFingerprintReport? ProtectedStateFingerprint = null,
+    MutableResetReport? MutableReset = null);

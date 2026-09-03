@@ -368,6 +368,7 @@ internal static class DatabaseInspector
             ["resetEnabled"] = "true",
             ["contractVersion"] = contract.ContractVersion.ToString(),
             ["capabilityMetadataVersion"] = contract.CapabilityMetadataVersion.ToString(),
+            ["mutableStateDirty"] = "false",
             ["migrationHead"] = migration.ExpectedHead,
         };
         var healthy = expectations.All(expectation => values[expectation.Key] == expectation.Value)
@@ -382,6 +383,9 @@ internal static class DatabaseInspector
                 !string.IsNullOrWhiteSpace(marker.Value),
                 expectations.TryGetValue(marker.Key, out var expected)
                     ? marker.Value == expected
+                    : null,
+                marker.Key == "mutableStateDirty"
+                    ? marker.Value == "true"
                     : null),
             StringComparer.Ordinal);
         return new MarkerReport(healthy, states);

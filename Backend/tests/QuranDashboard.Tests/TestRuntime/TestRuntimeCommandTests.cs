@@ -85,6 +85,87 @@ public sealed class TestRuntimeCommandTests
     }
 
     [Fact]
+    public async Task Reset_CannotOverrideTheCommittedContract()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [
+                "reset",
+                "--run-id", "run-id",
+                "--command", "mutable-reset",
+                "--expected-fingerprint", new string('0', 64),
+                "--api-port", "5014",
+                "--api-process-id", "none",
+                "--phase", "initial",
+                "--contract", ContractPath,
+            ],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("reset --run-id <run-id>");
+    }
+
+    [Fact]
+    public async Task Reset_WithDevelopmentDatabaseTargetRefusesBeforeConnectingAndSanitizesTheReport()
+    {
+        const string credential = "do-not-report";
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [
+                "reset",
+                "--run-id", "run-id",
+                "--command", "mutable-reset",
+                "--expected-fingerprint", new string('0', 64),
+                "--api-port", "5014",
+                "--api-process-id", "none",
+                "--phase", "initial",
+            ],
+            output,
+            error,
+            name => name == TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable
+                ? $"Host=localhost;Database=quran_dashboard;Username=test;Password={credential}"
+                : null);
+
+        exitCode.Should().Be(3);
+        output.ToString().Should().NotContain(credential);
+        using var report = JsonDocument.Parse(output.ToString());
+        report.RootElement.GetProperty("violations")
+            .EnumerateArray()
+            .Select(violation => violation.GetProperty("code").GetString())
+            .Should().Contain("target.development-database");
+    }
+
+    [Fact]
+    public async Task Reset_FinalPhaseRequiresThePriorApiProcessIdentity()
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            [
+                "reset",
+                "--run-id", "run-id",
+                "--command", "mutable-reset",
+                "--expected-fingerprint", new string('0', 64),
+                "--api-port", "5014",
+                "--api-process-id", "none",
+                "--phase", "final",
+            ],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("--api-process-id <pid|none>");
+    }
+
+    [Fact]
     public async Task LockHold_WhenLocalDatabaseIsUnavailable_ReturnsLockSpecificSanitizedFailure()
     {
         const string credential = "do-not-report";

@@ -1330,6 +1330,7 @@ internal static class CapabilityAdministrator
             ["resetEnabled"] = "true",
             ["contractVersion"] = contract.ContractVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
             ["capabilityMetadataVersion"] = contract.CapabilityMetadataVersion.ToString(System.Globalization.CultureInfo.InvariantCulture),
+            ["mutableStateDirty"] = "false",
             ["migrationHead"] = validation.ExpectedMigrations.Last(),
         };
 
