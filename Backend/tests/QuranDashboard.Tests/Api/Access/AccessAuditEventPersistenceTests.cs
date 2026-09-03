@@ -4,17 +4,16 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     [Fact]
     public async Task AuditEvent_CanBeAppendedAndReadWithImmutableSnapshots()
     {
-        await fixture.ResetAsync();
-        var actorId = await fixture.InsertPersonaAsync("Owner");
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var actorId = await Fixture.InsertPersonaAsync("Owner");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             db.AccessAuditEvents.Add(new AccessAuditEvent(
@@ -33,7 +32,7 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
             await db.SaveChangesAsync();
         }
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var audit = await db.AccessAuditEvents.SingleAsync();
@@ -48,12 +47,11 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     [Fact]
     public async Task AuditEvent_RejectsUpdatesAndDeletes()
     {
-        await fixture.ResetAsync();
-        var actorId = await fixture.InsertPersonaAsync("Owner");
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var actorId = await Fixture.InsertPersonaAsync("Owner");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
         long auditId;
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var audit = new AccessAuditEvent(
@@ -74,7 +72,7 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
             auditId = audit.Id;
         }
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var audit = await db.AccessAuditEvents.SingleAsync(eventItem => eventItem.Id == auditId);
@@ -83,7 +81,7 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
             await act.Should().ThrowAsync<InvalidOperationException>();
         }
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var audit = await db.AccessAuditEvents.SingleAsync(eventItem => eventItem.Id == auditId);
@@ -106,21 +104,20 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     [Fact]
     public async Task AuditMetadata_RoundTripsItsVersionCorrelationAndProvenance()
     {
-        await fixture.ResetAsync();
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
         var metadata = new AccessAuditMetadata(
             1,
             "correlation-1",
             new Dictionary<string, string> { ["operation"] = "reconciliation" });
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             db.AccessAuditEvents.Add(CreateAuditEvent(targetId, metadata: metadata));
             await db.SaveChangesAsync();
         }
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var persisted = await db.AccessAuditEvents.AsNoTracking().SingleAsync();
@@ -134,12 +131,11 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetLatestOwnerReconciliationAsync_IgnoresNewerSystemEventsFromOtherOperations()
     {
-        await fixture.ResetAsync();
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
         var ownerReconciliationAt = DateTimeOffset.UtcNow.AddMinutes(-2);
         var legacyConversionAt = ownerReconciliationAt.AddMinutes(1);
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             db.AccessAuditEvents.AddRange(
@@ -168,7 +164,7 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
             await db.SaveChangesAsync();
         }
 
-        await using var readScope = fixture.ApiServices.CreateAsyncScope();
+        await using var readScope = Fixture.ApiServices.CreateAsyncScope();
         var summary = await readScope.ServiceProvider.GetRequiredService<IAccessAuditReader>()
             .GetLatestOwnerReconciliationAsync(CancellationToken.None);
 
@@ -190,10 +186,9 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     [InlineData("{\"schemaVersion\":-2}")]
     public async Task AuditMetadata_RejectsRawWritesWithoutAPositiveIntegerSchemaVersion(string metadataJson)
     {
-        await fixture.ResetAsync();
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
 
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         const string emptyDocument = "{}";
@@ -214,10 +209,9 @@ public sealed class AccessAuditEventPersistenceTests(AccessTestFixture fixture)
     [InlineData("{")]
     public async Task AuditEvent_RejectsMalformedOrNonObjectSnapshotsAtTheDatabase(string actorSnapshotJson)
     {
-        await fixture.ResetAsync();
-        var targetId = await fixture.InsertPersonaAsync("ReadOnly");
+        var targetId = await Fixture.InsertPersonaAsync("ReadOnly");
 
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         db.AccessAuditEvents.Add(CreateAuditEvent(targetId, actorSnapshotJson: actorSnapshotJson));
 

@@ -5,18 +5,17 @@ using QuranDashboard.Application.Abstractions.Security.Permissions;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class UserProvisioningServiceTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     [Fact]
     public async Task GetOrCreateAsync_EmailCollidesWithDifferentSub_ThrowsEmailConflictException()
     {
-        await fixture.ResetAsync();
         const string existingSub = "logto-user-email-conflict-existing";
         const string newSub = "logto-user-email-conflict-new";
         var conflictingEmail = FakeExternalUserProfileSource.EmailFor(existingSub);
 
-        await fixture.InsertUserAsync(new User
+        await Fixture.InsertUserAsync(new User
         {
             LogtoSub = existingSub,
             Email = conflictingEmail,
@@ -27,9 +26,9 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
 
         // The new subject's server-verified email collides with the pre-existing user's email above,
         // simulating a subject deleted+recreated in Logto (new sub, same verified email).
-        fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
+        Fixture.ProfileSource.ReturnEmailFor(newSub, conflictingEmail);
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var act = () => provisioningService.GetOrCreateAsync(newSub, CancellationToken.None);
@@ -38,23 +37,22 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
         thrown.Which.Email.Should().Be(conflictingEmail);
 
         // No partial row leaks from the failed insert.
-        (await fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
+        (await Fixture.GetUsersAsync()).Should().ContainSingle(u => u.LogtoSub == existingSub);
     }
 
     [Fact]
     public async Task GetOrCreateAsync_PersistsTheSharedNormalizedIdentityWhilePreservingDisplayEmail()
     {
-        await fixture.ResetAsync();
         const string sub = "logto-normalized-display";
         const string displayEmail = " Teacher@Example.Test ";
-        fixture.ProfileSource.ReturnEmailFor(sub, displayEmail);
+        Fixture.ProfileSource.ReturnEmailFor(sub, displayEmail);
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         await provisioningService.GetOrCreateAsync(sub, CancellationToken.None);
 
-        var persisted = await fixture.GetUserBySubAsync(sub);
+        var persisted = await Fixture.GetUserBySubAsync(sub);
         persisted!.Email.Should().Be(displayEmail);
         persisted.NormalizedEmail.Should().Be("TEACHER@EXAMPLE.TEST");
     }
@@ -62,10 +60,9 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_NormalizedEmailCollidesAcrossDisplayFormatting_ThrowsWithoutMerge()
     {
-        await fixture.ResetAsync();
         const string existingSub = "logto-normalized-existing";
         const string newSub = "logto-normalized-new";
-        await fixture.InsertUserAsync(new User
+        await Fixture.InsertUserAsync(new User
         {
             LogtoSub = existingSub,
             Email = "owner@example.test",
@@ -73,23 +70,22 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CreatedAtUtc = DateTimeOffset.UtcNow,
             UpdatedAtUtc = DateTimeOffset.UtcNow,
         });
-        fixture.ProfileSource.ReturnEmailFor(newSub, " Owner@Example.Test ");
+        Fixture.ProfileSource.ReturnEmailFor(newSub, " Owner@Example.Test ");
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var act = () => provisioningService.GetOrCreateAsync(newSub, CancellationToken.None);
 
         var thrown = await act.Should().ThrowAsync<UserProvisioningEmailConflictException>();
         thrown.Which.Email.Should().Be(" Owner@Example.Test ");
-        (await fixture.GetUsersAsync()).Should().ContainSingle(user => user.LogtoSub == existingSub);
+        (await Fixture.GetUsersAsync()).Should().ContainSingle(user => user.LogtoSub == existingSub);
     }
 
     [Fact]
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_EmailUnverified_IsNotPromoted()
     {
-        await fixture.ResetAsync();
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(
@@ -98,7 +94,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
 
         result.Status.Should().Be(UserStatus.Pending);
 
-        var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        var persisted = await Fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Pending);
         persisted.RoleId.Should().BeNull();
     }
@@ -106,8 +102,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_EmailVerified_IsProvisionedOwnerActive()
     {
-        await fixture.ResetAsync();
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(
@@ -116,11 +111,11 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
 
         result.Status.Should().Be(UserStatus.Active);
 
-        var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        var persisted = await Fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Active);
         persisted.RoleId.Should().NotBeNull();
 
-        await using var queryScope = fixture.QueryServices.CreateAsyncScope();
+        await using var queryScope = Fixture.QueryServices.CreateAsyncScope();
         var db = queryScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var audit = await db.AccessAuditEvents.SingleAsync(eventItem => eventItem.TargetUserId == persisted.Id);
         audit.ActionType.Should().Be(AccessAuditActionType.OwnerGrantedByReconciliation);
@@ -133,9 +128,8 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_SecondConfiguredVerifiedOwner_IsProvisionedOwnerActive()
     {
-        await fixture.ResetAsync();
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(
@@ -148,9 +142,8 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_FirstVerifiedConfiguredOwner_BootstrapsWhileAnotherAwaitsItsOwnLogin()
     {
-        await fixture.ResetAsync();
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
         var reconciliation = scope.ServiceProvider.GetRequiredService<IOwnerReconciliationService>();
 
@@ -171,10 +164,9 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     public async Task GetOrCreateAsync_ConfiguredUserWithOneOrManyDirectGrants_PromotesAtomicallyAndAuditsEveryRevocation(
         int directGrantCount)
     {
-        await fixture.ResetAsync();
         var now = DateTimeOffset.UtcNow;
-        var ownerRoleId = (await fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
-        await fixture.InsertUserAsync(new User
+        var ownerRoleId = (await Fixture.GetRolesAsync()).Single(role => role.Name == RoleNames.Owner).Id;
+        await Fixture.InsertUserAsync(new User
         {
             LogtoSub = AccessTestFixture.OwnerSub,
             Email = AccessTestFixture.OwnerEmail,
@@ -183,7 +175,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         });
-        var grantorId = await fixture.InsertUserAsync(new User
+        var grantorId = await Fixture.InsertUserAsync(new User
         {
             LogtoSub = "logto-owner-reconciliation-grantor",
             Email = "grantor@example.test",
@@ -191,7 +183,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             CreatedAtUtc = now,
             UpdatedAtUtc = now,
         });
-        var targetId = await fixture.InsertUserAsync(new User
+        var targetId = await Fixture.InsertUserAsync(new User
         {
             LogtoSub = AccessTestFixture.SecondOwnerSub,
             Email = AccessTestFixture.SecondOwnerEmail,
@@ -203,13 +195,9 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             .Take(directGrantCount)
             .ToArray();
 
-        await using (var scope = fixture.ApiServices.CreateAsyncScope())
-        {
-            await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
-                .SynchronizeAsync(CancellationToken.None);
-        }
+        await Fixture.VerifyPermissionCatalogueAsync();
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var permissionIds = await db.AccessPermissions
@@ -226,7 +214,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             await db.SaveChangesAsync();
         }
 
-        using (var scope = fixture.ApiServices.CreateScope())
+        using (var scope = Fixture.ApiServices.CreateScope())
         {
             var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
@@ -235,7 +223,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
                 CancellationToken.None);
         }
 
-        await using (var scope = fixture.QueryServices.CreateAsyncScope())
+        await using (var scope = Fixture.QueryServices.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
             var target = await db.AccessUsers.Include(user => user.Role).SingleAsync(user => user.Id == targetId);
@@ -268,9 +256,8 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_DisabledOwnerEmailUser_IsNeverRevivedOrPromoted()
     {
-        await fixture.ResetAsync();
         var now = DateTimeOffset.UtcNow;
-        await fixture.InsertUserAsync(new User
+        await Fixture.InsertUserAsync(new User
         {
             LogtoSub = AccessTestFixture.OwnerSub,
             Email = AccessTestFixture.OwnerEmail,
@@ -280,7 +267,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
             UpdatedAtUtc = now,
         });
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(
@@ -289,7 +276,7 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
 
         result.Status.Should().Be(UserStatus.Disabled);
 
-        var persisted = await fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
+        var persisted = await Fixture.GetUserBySubAsync(AccessTestFixture.OwnerSub);
         persisted!.Status.Should().Be(UserStatus.Disabled);
         persisted.RoleId.Should().BeNull();
     }
@@ -297,9 +284,8 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_WithoutAnEmailClaim_IsNotPromoted()
     {
-        await fixture.ResetAsync();
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(
@@ -312,9 +298,8 @@ public sealed class UserProvisioningServiceTests(AccessTestFixture fixture)
     [Fact]
     public async Task GetOrCreateAsync_OwnerEmailFirstLogin_WithAMismatchedVerifiedEmailClaim_IsNotPromoted()
     {
-        await fixture.ResetAsync();
 
-        using var scope = fixture.ApiServices.CreateScope();
+        using var scope = Fixture.ApiServices.CreateScope();
         var provisioningService = scope.ServiceProvider.GetRequiredService<IUserProvisioningService>();
 
         var result = await provisioningService.GetOrCreateAsync(

@@ -8,8 +8,8 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AuthorizationPipelineTests(AccessTestFixture fixture) : AccessMutableWriterTest(fixture)
 {
     private const string PermissionPath = "/api/test/authorization/permission";
     private const string OwnerPath = "/api/test/authorization/owner";
@@ -17,10 +17,9 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task PermissionEndpoint_AnonymousRequest_Returns401EnvelopeWithoutInvokingAction()
     {
-        await fixture.ResetAsync();
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
 
         using var response = await client.PostAsync(PermissionPath, content: null);
 
@@ -32,12 +31,11 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task PermissionEndpoint_ActiveUserWithoutExactGrant_Returns403EnvelopeWithoutInvokingAction()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-pipeline-without-grant";
         await AddActiveUserAsync(sub);
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
 
         using var response = await client.PostAsync(PermissionPath, content: null);
@@ -50,14 +48,13 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task PermissionEndpoint_ActiveUserWithExactGrant_InvokesAction()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-pipeline-exact-grant";
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var userId = await AddActiveUserAsync(sub);
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
 
         using var response = await client.PostAsync(PermissionPath, content: null);
@@ -71,16 +68,15 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task PermissionEndpoint_OwnerGrantRevokeAndDisable_TracksNonOwnerAuthorityImmediately()
     {
-        await fixture.ResetAsync();
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         await AddActiveUserAsync(AccessTestFixture.OwnerSub, RoleNames.Owner);
         const string targetSub = "authorization-pipeline-permission-lifecycle";
         var targetId = await AddActiveUserAsync(targetSub);
-        var target = (await fixture.GetUserBySubAsync(targetSub))!;
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        var target = (await Fixture.GetUserBySubAsync(targetSub))!;
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var ownerClient = fixture.CreateApiClient(factory);
-        using var targetClient = fixture.CreateApiClient(factory);
+        using var ownerClient = Fixture.CreateApiClient(factory);
+        using var targetClient = Fixture.CreateApiClient(factory);
         ownerClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
             TestJwtTokens.Mint(AccessTestFixture.OwnerSub));
@@ -175,14 +171,13 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task OwnerEndpoint_ActiveNonOwnerWithDirectGrant_Returns403EnvelopeWithoutInvokingAction()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-pipeline-owner-grant";
-        await SynchronizePermissionsAsync();
+        await Fixture.VerifyPermissionCatalogueAsync();
         var userId = await AddActiveUserAsync(sub);
         await GrantAsync(userId, AbwabPermissions.Doors.Create);
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
 
         using var response = await client.PostAsync(OwnerPath, content: null);
@@ -195,12 +190,11 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task OwnerEndpoint_ActiveOwner_InvokesAction()
     {
-        await fixture.ResetAsync();
         const string sub = "authorization-pipeline-owner";
         await AddActiveUserAsync(sub, RoleNames.Owner);
-        await using var factory = fixture.CreateAuthorizationPipelineFactory();
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory();
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
 
         using var response = await client.PostAsync(OwnerPath, content: null);
@@ -214,14 +208,13 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     [Fact]
     public async Task PermissionEndpoint_AuthorizationStateFailure_Returns503EnvelopeWithoutInvokingAction()
     {
-        await fixture.ResetAsync();
-        await using var factory = fixture.CreateAuthorizationPipelineFactory(services =>
+        await using var factory = Fixture.CreateAuthorizationPipelineFactory(services =>
         {
             services.RemoveAll<IAuthorizationStateResolver>();
             services.AddScoped<IAuthorizationStateResolver>(_ => new ThrowingAuthorizationStateResolver());
         });
         var probe = factory.Services.GetRequiredService<AuthorizationPipelineProbe>();
-        using var client = fixture.CreateApiClient(factory);
+        using var client = Fixture.CreateApiClient(factory);
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
             TestJwtTokens.Mint("authorization-pipeline-unavailable"));
@@ -237,8 +230,8 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
     {
         var roleId = roleName is null
             ? (int?)null
-            : (await fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
-        return await fixture.InsertUserAsync(new User
+            : (await Fixture.GetRolesAsync()).Single(role => role.Name == roleName).Id;
+        return await Fixture.InsertUserAsync(new User
         {
             LogtoSub = sub,
             Email = $"{sub}@example.test",
@@ -249,16 +242,9 @@ public sealed class AuthorizationPipelineTests(AccessTestFixture fixture)
         });
     }
 
-    private async Task SynchronizePermissionsAsync()
-    {
-        await using var scope = fixture.ApiServices.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<IPermissionCatalogueSynchronizer>()
-            .SynchronizeAsync(CancellationToken.None);
-    }
-
     private async Task GrantAsync(int userId, string permissionCode)
     {
-        await using var scope = fixture.QueryServices.CreateAsyncScope();
+        await using var scope = Fixture.QueryServices.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var permissionId = await db.AccessPermissions
             .Where(permission => permission.Code == permissionCode)

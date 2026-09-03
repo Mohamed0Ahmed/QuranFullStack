@@ -3,8 +3,8 @@ using QuranDashboard.Domain.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessCollection))]
-public sealed class PermissionCatalogueSynchronizerTests(AccessTestFixture fixture)
+[Collection(nameof(AccessProtectedStateRehearsalCollection))]
+public sealed class PermissionCatalogueSynchronizerTests(LegacyAccessTestFixture fixture)
 {
     [Fact]
     public async Task SynchronizeAsync_InsertsAllKnownCodesAndIsIdempotent()
