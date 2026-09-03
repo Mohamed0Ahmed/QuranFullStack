@@ -128,8 +128,15 @@ internal static class AccessAdminConnectionString
 
 public sealed record AccessAdminRun(int ExitCode, string Output);
 
+public sealed class AccessProcessGlobalFixture : IAsyncLifetime
+{
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => Task.CompletedTask;
+}
+
 [CollectionDefinition(nameof(AccessProcessGlobalCollection), DisableParallelization = true)]
-public sealed class AccessProcessGlobalCollection;
+public sealed class AccessProcessGlobalCollection : ICollectionFixture<AccessProcessGlobalFixture>;
 
 [CollectionDefinition(nameof(AccessScratchRehearsalCollection), DisableParallelization = true)]
 public sealed class AccessScratchRehearsalCollection : ICollectionFixture<AccessMigrationTestFixture>;

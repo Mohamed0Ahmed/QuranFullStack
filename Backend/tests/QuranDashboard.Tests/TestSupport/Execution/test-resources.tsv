@@ -2,6 +2,7 @@ CollectionName	ResourceClassName	ParallelPolicy	StatePolicy	SetupWrites	ResetBeh
 AbwabSchemaTestCollection	QuranDashboard.Tests.Abwab.AbwabSchemaFixture	Parallel	UniqueKeyIsolation					Unmigrated
 AbwabSnapshotTestCollection	QuranDashboard.Tests.Abwab.AbwabSnapshotTestFixture	Parallel	ResetPerTest					Unmigrated
 AccessCollection	QuranDashboard.Tests.Api.Access.AccessTestFixture	Parallel	ResetPerTest					Unmigrated
+AccessProcessGlobalCollection	QuranDashboard.Tests.Api.Access.AccessProcessGlobalFixture	NonParallel	FreshLeasePerCase					Unmigrated
 AccessScratchRehearsalCollection	QuranDashboard.Tests.Api.Access.AccessMigrationTestFixture	NonParallel	FreshLeasePerCase	SystemCatalogue,MutableApplicationState,SchemaState	None	EmptyScratch	None	Migrated
 PermissionCatalogueStartupScratchCollection	QuranDashboard.Tests.Api.Access.AccessMigrationTestFixture	NonParallel	FreshLeasePerCase	SystemCatalogue,MutableApplicationState,SchemaState	None	EmptyScratch	DestructiveApi	Migrated
 DisplayWordsRealImportCollection	QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportFixture	Parallel	ImmutableSeed					Unmigrated

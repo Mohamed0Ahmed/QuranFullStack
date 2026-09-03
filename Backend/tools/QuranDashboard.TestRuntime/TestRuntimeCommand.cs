@@ -62,7 +62,8 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 [new ContractViolation(code)],
-                exception.GetType().Name));
+                exception.GetType().Name),
+                stream: request.LockMode is not null);
             return ValidationFailureExitCode;
         }
 
@@ -77,7 +78,8 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 null,
-                validation.Violations));
+                validation.Violations),
+                stream: request.LockMode is not null);
             return ValidationFailureExitCode;
         }
 
@@ -109,7 +111,8 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 null,
-                [new ContractViolation("target.connection-string.missing")]));
+                [new ContractViolation("target.connection-string.missing")]),
+                stream: request.LockMode is not null);
             return ValidationFailureExitCode;
         }
 
@@ -134,7 +137,8 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 null,
-                targetValidation.Violations));
+                targetValidation.Violations),
+                stream: request.LockMode is not null);
             return ValidationFailureExitCode;
         }
 
@@ -382,7 +386,8 @@ internal static class TestRuntimeCommand
                                         ? "inspection.database-unavailable"
                                         : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
-                exception.GetType().Name));
+                exception.GetType().Name),
+                stream: request.LockMode is not null);
             return OperationalFailureExitCode;
         }
     }
