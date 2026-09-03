@@ -1,10 +1,12 @@
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application;
 using QuranDashboard.Application.Abstractions.Security;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.DataImporter.Import.VerbRunners;
 using QuranDashboard.Infrastructure;
+using QuranDashboard.TestRuntime;
 
 namespace QuranDashboard.DataImporter;
 
@@ -15,6 +17,17 @@ internal static class Program
         if (args.Length == 0 || args[0].StartsWith('-'))
         {
             PrintUsage();
+            return RebuildDisplayWordsResult.FailureExitCode;
+        }
+
+        using var configurationHost = CreateHost(args);
+        var effectiveConnectionString = configurationHost.Services
+            .GetRequiredService<IConfiguration>()
+            .GetConnectionString("QuranDashboardDb");
+        if (!await CanonicalMaintenanceGuard.VerifyIfRequiredAsync(
+                effectiveConnectionString,
+                Console.Error))
+        {
             return RebuildDisplayWordsResult.FailureExitCode;
         }
 

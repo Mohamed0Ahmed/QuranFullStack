@@ -134,6 +134,7 @@ QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests	ApiBehavior	Data
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
 QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
 QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
+QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests	ApiBehavior	Database	TierB	Cli,Execution,Schema
 QuranDashboard.Tests.TestSupport.Access.TestAccessPersonasContractTests	Access	Fast	TierB
 QuranDashboard.Tests.TestSupport.Artifacts.TestArtifactTrustCommandTests	ApiBehavior	Fast	TierB	Cli,Schema
 QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests	ApiBehavior	Database	TierB	Cli,Execution,Schema

@@ -35,4 +35,16 @@ internal static class TestRuntimeTestPaths
                 "QuranDashboard.TestRuntime.dll");
         }
     }
+
+    internal static string RefreshOraclePath
+    {
+        get
+        {
+            var backendDirectory = Directory.GetParent(Path.GetDirectoryName(ContractPath)!)!.FullName;
+            return Path.Combine(
+                Directory.GetParent(backendDirectory)!.FullName,
+                "test-oracles",
+                "test-database-refresh.json");
+        }
+    }
 }

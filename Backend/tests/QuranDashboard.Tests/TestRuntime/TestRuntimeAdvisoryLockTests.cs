@@ -15,6 +15,49 @@ public sealed class TestRuntimeAdvisoryLockTests(TestRuntimeAdministrationFixtur
     private const long CommittedLockKey = 1500000001L;
 
     [Fact]
+    public async Task CanonicalImporterChild_RequiresTheExpectedExclusiveKeeperIdentity()
+    {
+        var contract = DatabaseContractReader.Read(ContractPath);
+        var acquisition = await AdvisoryLockProtocol.AcquireAsync(
+            fixture.ConnectionString,
+            contract.AdvisoryLock.Key,
+            AdvisoryLockMode.Exclusive,
+            "refresh-child",
+            "capability-refresh",
+            TimeSpan.FromSeconds(2));
+        acquisition.Lease.Should().NotBeNull();
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["QURAN_DASHBOARD_TEST_RUNTIME_GUARD"] = "exclusive-v1",
+            ["QURAN_DASHBOARD_TEST_RUN_ID"] = "refresh-child",
+            ["QURAN_DASHBOARD_TEST_LOCK_COMMAND"] = "capability-refresh",
+            ["QURAN_DASHBOARD_TEST_LOCK_KEY"] = contract.AdvisoryLock.Key.ToString(),
+        };
+        using var error = new StringWriter();
+
+        await using (acquisition.Lease!)
+        {
+            (await CanonicalMaintenanceGuard.VerifyIfRequiredAsync(
+                fixture.ConnectionString,
+                error,
+                name => environment.GetValueOrDefault(name))).Should().BeTrue();
+
+            var withoutGuard = new Dictionary<string, string>(environment, StringComparer.Ordinal);
+            withoutGuard.Remove("QURAN_DASHBOARD_TEST_RUNTIME_GUARD");
+            (await CanonicalMaintenanceGuard.VerifyIfRequiredAsync(
+                fixture.ConnectionString,
+                error,
+                name => withoutGuard.GetValueOrDefault(name))).Should().BeFalse();
+        }
+
+        (await CanonicalMaintenanceGuard.VerifyIfRequiredAsync(
+            fixture.ConnectionString,
+            error,
+            name => environment.GetValueOrDefault(name))).Should().BeFalse();
+        error.ToString().Should().NotContain(fixture.CredentialSentinel);
+    }
+
+    [Fact]
     public async Task SharedKeepers_CoexistAndExcludeAnExclusiveContenderWithHolderDiagnostics()
     {
         var contract = DatabaseContractReader.Read(ContractPath);

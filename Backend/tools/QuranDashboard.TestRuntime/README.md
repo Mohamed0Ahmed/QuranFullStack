@@ -63,6 +63,56 @@ or persistent Test Database. `verify` performs safe denial probes under each res
 its transaction. When `quran_dashboard` exists, administration opens a read-only transaction that inspects
 only its PostgreSQL catalog privileges; it never reads application tables or repairs unsafe grants there.
 
+## Refresh the Test Database Capability
+
+Refresh is an explicit maintenance command and is never called by an ordinary test command. Supply an
+Npgsql connection in `ConnectionStrings__QuranDashboardTest` whose database is exactly
+`quran_dashboard_test`; the command derives its maintenance connection to the local `postgres` database
+and never connects to, reads, copies, migrates, or mutates `quran_dashboard`.
+
+Inspect the plan and local target first:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- refresh inspect --login <local-login>
+dotnet run --project tools/QuranDashboard.TestRuntime -- refresh dry-run --login <local-login>
+dotnet run --project tools/QuranDashboard.TestRuntime -- refresh verify --login <local-login>
+```
+
+The mutating form requires the administrative session login, a unique run ID, an operator reason, and
+the exact confirmation flag. PhraseSearch also retains its independent operator storage proof:
+
+```bash
+ConnectionStrings__QuranDashboardTest='Host=localhost;Port=5432;Database=quran_dashboard_test;Username=...;Password=...' \
+PhraseSearch__VerifiedDatabaseFreeBytes='<verified positive bytes>' \
+PhraseSearch__DatabaseStorageProofContract='operator-verified-database-filesystem-v1' \
+  dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  refresh apply --login <local-login> --run-id <run-id> --reason '<reason>' --yes
+```
+
+Apply holds the global exclusive TestRuntime lock, creates only
+`quran_dashboard_test_refresh_<run-id>` from `template0`, applies committed migrations, and runs the
+canonical curated pipeline in its authoritative order: foundation import, display-word rebuild,
+PhraseSearch generation (including similarity), enriched morphology, simple i'rab generation,
+Mutashabihat, navigation, full i'rab, curated tafsirs, and curated translations. It then reconciles the
+Permission catalogue, empties Mutable Application State, restores the deterministic
+`linking_data_state` singleton, and validates migrations, `pg_trgm`, table classification, catalogue
+health, canonical counts and invariants, Quran/PhraseSearch independent oracles, restricted grants, and
+streamed Canonical Quran Data, System Catalogue, Schema State, and combined Protected State
+fingerprints. The reviewed oracle values and provenance live in
+`test-oracles/test-database-refresh.json`, independently of the database being validated.
+
+Each mutating in-process stage re-verifies exclusive keeper ownership, and each DataImporter child
+independently verifies the same run identity before writing. Cancellation terminates and awaits the
+complete child process tree before the keeper can be released. The staged database receives its
+provenance, fingerprints, migration head, refresh time, contract
+versions, safety markers, and restricted grants before installation. Any session connected to the
+current target is reported by PID, application name, and state; it is never terminated automatically.
+Only an idle target is renamed aside. The staged database is then renamed to the canonical target and
+revalidated against the pre-swap fingerprints. A failed second rename or post-swap validation attempts
+to restore the old name. The replaced database is dropped only after successful revalidation and only
+inside the explicitly confirmed `refresh apply` invocation. Failed staged databases remain available
+for diagnosis and are never silently removed.
+
 ## Hold the global database lock
 
 The committed contract owns the one cluster-wide lock key. A runner starts a dedicated keeper process for

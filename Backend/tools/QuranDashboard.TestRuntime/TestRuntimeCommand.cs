@@ -26,7 +26,8 @@ internal static class TestRuntimeCommand
         TextWriter output,
         TextWriter error,
         Func<string, string?>? readEnvironment = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        CapabilityRefreshDependencies? refreshDependencies = null)
     {
         var request = Parse(args);
         if (request is null)
@@ -193,6 +194,25 @@ internal static class TestRuntimeCommand
                 return resetReport.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
             }
 
+            if (request.RefreshMode is not null)
+            {
+                var refreshReport = await CapabilityRefresher.ExecuteAsync(
+                    contract,
+                    validation,
+                    targetValidation,
+                    new CapabilityRefreshRequest(
+                        request.RefreshMode.Value,
+                        request.SelectedLogin!,
+                        request.RunId,
+                        request.RefreshReason,
+                        request.RefreshConfirmed,
+                        request.LockTimeout),
+                    refreshDependencies ?? CapabilityRefreshDependencies.CreateDefault(request.ContractPath),
+                    cancellationToken);
+                WriteReport(output, refreshReport);
+                return refreshReport.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
+            }
+
             if (request.LockMode is not null)
             {
                 return await HoldLockAsync(
@@ -294,9 +314,11 @@ internal static class TestRuntimeCommand
                         ? "mutable-reset.database-operation-failed"
                         : request.Command == "fingerprint"
                             ? "fingerprint.database-operation-failed"
-                            : request.AdministrationMode is null
-                                ? "inspection.database-unavailable"
-                                : "administration.database-operation-failed",
+                            : request.RefreshMode is not null
+                                ? "refresh.database-operation-failed"
+                                : request.AdministrationMode is null
+                                    ? "inspection.database-unavailable"
+                                    : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
@@ -315,6 +337,10 @@ internal static class TestRuntimeCommand
             ["admin", "dry-run", ..] => "admin-dry-run",
             ["admin", "apply", ..] => "admin-apply",
             ["admin", "verify", ..] => "admin-verify",
+            ["refresh", "inspect", ..] => "refresh-inspect",
+            ["refresh", "dry-run", ..] => "refresh-dry-run",
+            ["refresh", "apply", ..] => "refresh-apply",
+            ["refresh", "verify", ..] => "refresh-verify",
             ["lock", "hold", ..] => "lock-hold",
             _ => null,
         };
@@ -325,12 +351,15 @@ internal static class TestRuntimeCommand
 
         var optionStart = command is "contract-validate" or "lock-hold"
                           || command.StartsWith("admin-", StringComparison.Ordinal)
+                          || command.StartsWith("refresh-", StringComparison.Ordinal)
             ? 2
             : 1;
         var contractPath = Path.Combine(AppContext.BaseDirectory, "test-database-contract.json");
         string? selectedLogin = null;
         string? runId = null;
         string? lockCommand = null;
+        string? refreshReason = null;
+        var refreshConfirmed = false;
         AdvisoryLockMode? lockMode = null;
         TimeSpan? lockTimeout = null;
         string? expectedFingerprint = null;
@@ -338,14 +367,23 @@ internal static class TestRuntimeCommand
         int? apiProcessId = null;
         var apiProcessProofProvided = false;
         string? resetPhase = null;
-        for (var index = optionStart; index < args.Count; index += 2)
+        for (var index = optionStart; index < args.Count;)
         {
+            if (args[index] == "--yes" && command == "refresh-apply" && !refreshConfirmed)
+            {
+                refreshConfirmed = true;
+                index++;
+                continue;
+            }
+
             if (index + 1 >= args.Count)
             {
                 return null;
             }
 
-            if (args[index] == "--contract" && command is not "admin-apply" and not "lock-hold" and not "reset")
+            if (args[index] == "--contract"
+                && command is not "admin-apply" and not "lock-hold" and not "reset"
+                && !command.StartsWith("refresh-", StringComparison.Ordinal))
             {
                 contractPath = args[index + 1];
             }
@@ -353,9 +391,17 @@ internal static class TestRuntimeCommand
             {
                 selectedLogin = args[index + 1];
             }
-            else if (args[index] == "--run-id" && (command == "admin-apply" || command is "lock-hold" or "reset"))
+            else if (args[index] == "--login" && command.StartsWith("refresh-", StringComparison.Ordinal))
+            {
+                selectedLogin = args[index + 1];
+            }
+            else if (args[index] == "--run-id" && command is "admin-apply" or "lock-hold" or "reset" or "refresh-apply")
             {
                 runId = args[index + 1];
+            }
+            else if (args[index] == "--reason" && command == "refresh-apply")
+            {
+                refreshReason = args[index + 1];
             }
             else if (args[index] == "--command" && command is "lock-hold" or "reset")
             {
@@ -416,6 +462,8 @@ internal static class TestRuntimeCommand
             {
                 return null;
             }
+
+            index += 2;
         }
 
         var administrationMode = command switch
@@ -426,8 +474,23 @@ internal static class TestRuntimeCommand
             "admin-verify" => CapabilityAdministrationMode.Verify,
             _ => (CapabilityAdministrationMode?)null,
         };
+        var refreshMode = command switch
+        {
+            "refresh-inspect" => CapabilityRefreshMode.Inspect,
+            "refresh-dry-run" => CapabilityRefreshMode.DryRun,
+            "refresh-apply" => CapabilityRefreshMode.Apply,
+            "refresh-verify" => CapabilityRefreshMode.Verify,
+            _ => (CapabilityRefreshMode?)null,
+        };
         var invalidAdministration = administrationMode is not null && string.IsNullOrWhiteSpace(selectedLogin);
         var invalidApply = command == "admin-apply" && !AdvisoryLockProtocol.IsValidRunId(runId);
+        var invalidRefresh = command.StartsWith("refresh-", StringComparison.Ordinal)
+                             && (string.IsNullOrWhiteSpace(selectedLogin)
+                                 || (command == "refresh-apply"
+                                     && (!AdvisoryLockProtocol.IsValidRunId(runId)
+                                         || string.IsNullOrWhiteSpace(refreshReason)
+                                         || refreshReason.Length > 256
+                                         || !refreshConfirmed)));
         var invalidLock = command == "lock-hold"
                           && (lockMode is null
                               || !AdvisoryLockProtocol.IsValidRunId(runId)
@@ -443,6 +506,7 @@ internal static class TestRuntimeCommand
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration
                || invalidApply
+               || invalidRefresh
                || invalidLock
                || invalidReset
             ? null
@@ -458,7 +522,10 @@ internal static class TestRuntimeCommand
                 expectedFingerprint,
                 apiPort,
                 apiProcessId,
-                resetPhase);
+                resetPhase,
+                refreshReason,
+                refreshConfirmed,
+                refreshMode);
     }
 
     private static async Task<int> HoldLockAsync(
@@ -576,6 +643,8 @@ internal static class TestRuntimeCommand
         error.WriteLine($"  QuranDashboard.TestRuntime inspect [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin apply --login <local-login> --run-id <run-id> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime refresh inspect|dry-run|verify --login <local-login>  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime refresh apply --login <local-login> --run-id <run-id> --reason <reason> --yes  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime lock hold --mode shared|exclusive --run-id <run-id> --command <command> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
     }
 
@@ -591,5 +660,8 @@ internal static class TestRuntimeCommand
         string? ExpectedFingerprint = null,
         int? ApiPort = null,
         int? ApiProcessId = null,
-        string? ResetPhase = null);
+        string? ResetPhase = null,
+        string? RefreshReason = null,
+        bool RefreshConfirmed = false,
+        CapabilityRefreshMode? RefreshMode = null);
 }
