@@ -65,7 +65,7 @@ internal abstract record SmokeSeededPayload
 
 // A route's seeded answer is a second, independent expectation — not a payload bolted onto the first.
 // DerivedStatus is what the route answers against an EMPTY schema; Status here is what the same route
-// answers once the canonical dump is restored, and for the id-scoped reads the two genuinely differ
+// answers against the persistent capability, and for the id-scoped reads the two genuinely differ
 // (api/mushaf/pages/1 derives 404 empty and 200 seeded). Collapsing them into one status with an optional
 // body would make one of the two tiers unable to state its own expectation.
 internal sealed record SmokeSeededExpectation(HttpStatusCode Status, SmokeSeededPayload? Payload = null);
@@ -118,8 +118,8 @@ internal static class SmokeRouteCatalog
     // action sit at the same ordinal — which is why roots lists ayahs before words/{wordKind} while
     // lemmas and stems list them the other way round.
     //
-    // A Seeded expectation is given to the routes whose seeded answer follows from the artifact rather
-    // than from an ordinal. The data-bearing groups cover thirteen routes: the unfiltered reads whose
+    // A Seeded expectation is given to the routes whose answer follows from the independent reader oracle
+    // rather than from an ordinal. The data-bearing groups cover thirteen routes: the unfiltered reads whose
     // size is a whole table
     // (the four paged list reads, plus api/mushaf/surahs, which takes no key and whose collection length
     // is quran_surahs); the four Mushaf reads addressed by a Quran-stable natural key (page 1,
@@ -132,13 +132,13 @@ internal static class SmokeRouteCatalog
     //
     // The roots/lemmas/stems detail rows are deliberately left without one. Their ids come from a single
     // nextDimId counter shared across all three dimensions (MorphologyAssembler), in first-encounter order
-    // across the artifact: reproducible for a given artifact, but an ordinal that shifts when that
+    // across the canonical pipeline: reproducible for a given input set, but an ordinal that shifts when that
     // ordering does. Note that id 1 is absent from quran_lemmas and quran_stems entirely — the shared
     // counter gave it to a root, so those tables start at 2 and 3 — which means /api/words/lemmas/1 and
     // /api/words/stems/1 answer 404 fully seeded, and answer it correctly. That 404 is not recorded as a
     // seeded expectation either: pinning it would pin the very ordinal this paragraph declines to trust.
-    // The eleven seeded PhraseSearch GET routes carry a status-only expectation because the canonical dump
-    // excludes every derived quran_phrase_* row and the migrated empty state must answer 503 honestly.
+    // PhraseSearch canonical expectations remain outside this reader migration and keep only their
+    // empty-schema status here.
     public static IReadOnlyList<SmokeRoute> Routes { get; } =
     [
         // api/words/roots — RootsController + RootsController.Details
@@ -200,56 +200,32 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyPage()),
         },
 
-        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
-        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable),
+        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences",
             "/api/quran/phrase-search/repetitions/00000000-0000-0000-0000-000000000001/1/occurrences",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/query-resolutions",
             "/api/quran/phrase-search/query-resolutions?mode=simple&q64=eA",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/contexts/branches",
             "/api/quran/phrase-search/contexts/branches?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/contexts/groups",
             "/api/quran/phrase-search/contexts/groups?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/contexts/results",
             "/api/quran/phrase-search/contexts/results?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/contexts/occurrences",
             "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/contexts/linking-selection",
             "/api/quran/phrase-search/contexts/linking-selection",
@@ -265,24 +241,15 @@ internal static class SmokeRouteCatalog
         new(
             "api/quran/phrase-search/similarities/search",
             "/api/quran/phrase-search/similarities/search?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQACAAAAAQAAAALDBrQxDPHCLw&minimumMatchedWords=1",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/similarity-groups",
             "/api/quran/phrase-search/similarity-groups?mode=simple&length=4&threshold=50",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
         new(
             "api/quran/phrase-search/similarity-groups/{buildId}/{variantId}/matches",
             "/api/quran/phrase-search/similarity-groups/00000000-0000-0000-0000-000000000001/1/matches?threshold=50",
-            HttpStatusCode.ServiceUnavailable)
-        {
-            Seeded = new(HttpStatusCode.ServiceUnavailable),
-        },
+            HttpStatusCode.ServiceUnavailable),
 
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are

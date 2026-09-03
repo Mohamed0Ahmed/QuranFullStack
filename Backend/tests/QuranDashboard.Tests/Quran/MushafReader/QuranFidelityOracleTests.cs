@@ -6,48 +6,6 @@ namespace QuranDashboard.Tests.Quran.MushafReader;
 [Collection(nameof(MushafReaderCollection))]
 public sealed class QuranFidelityOracleTests(MushafReaderTestFixture fixture)
 {
-    private const string SentinelId = "quran-fidelity.page-1-words";
-
-    [Fact]
-    public void Oracle_hash_and_reviewed_source_identities_match_the_artifact_contract()
-    {
-        var oracleBytes = QuranFidelityOracleDocument.ReadOracleBytes();
-        var oracle = QuranFidelityOracleDocument.ReadOracle();
-        var manifest = QuranFidelityOracleDocument.ReadManifest();
-
-        oracle.ContractVersion.Should().Be(1);
-        oracle.ArtifactId.Should().Be("compact-cross-stack-base");
-        oracle.Review.Authority.Should().Be("source-review");
-        oracle.Review.Method.Should().Contain("not generated from the runtime database");
-
-        var oracleSha256 = Convert.ToHexStringLower(SHA256.HashData(oracleBytes));
-        var sentinel = manifest.Sentinels.Should()
-            .ContainSingle(entry => entry.Id == SentinelId)
-            .Subject;
-        sentinel.ExpectedCount.Should().Be(oracle.Words.Count);
-        sentinel.OracleSha256.Should().Be(oracleSha256);
-
-        var manifestSources = manifest.Sources
-            .Where(source => oracle.SourceIdentities.Any(reviewed => reviewed.Id == source.Id))
-            .Select(source => new
-            {
-                source.Id,
-                source.Version,
-                source.Sha256,
-                source.Provenance,
-            });
-        var reviewedSources = oracle.SourceIdentities.Select(source => new
-        {
-            source.Id,
-            source.Version,
-            source.Sha256,
-            source.Provenance,
-        });
-
-        reviewedSources.Should().BeEquivalentTo(manifestSources);
-        oracle.SourceIdentities.Should().OnlyContain(source => source.Sha256.Length == 64);
-    }
-
     [Fact]
     public async Task Database_ayah_word_and_layout_relationships_match_the_source_reviewed_oracle()
     {
@@ -160,7 +118,7 @@ public sealed class QuranFidelityOracleTests(MushafReaderTestFixture fixture)
     }
 
     [Fact]
-    public async Task Mushaf_page_API_maps_the_exact_oracle_and_missing_page_fails_closed()
+    public async Task Mushaf_page_API_maps_the_exact_oracle()
     {
         var oracle = QuranFidelityOracleDocument.ReadOracle();
         using var client = fixture.CreateClient();
@@ -207,11 +165,6 @@ public sealed class QuranFidelityOracleTests(MushafReaderTestFixture fixture)
         study.Tafsir.Should().BeEquivalentTo(oracle.Study.Tafsir, options => options.WithStrictOrdering());
         study.Translation.Should().BeEquivalentTo(oracle.Study.Translation);
 
-        using var missingResponse = await client.GetAsync("/api/mushaf/pages/2");
-        await ApiEnvelope.AssertFailureEnvelopeAsync(
-            missingResponse,
-            HttpStatusCode.NotFound,
-            ApiMessages.NotFound);
     }
 
     private static string ToApiLineType(string lineType) => lineType switch

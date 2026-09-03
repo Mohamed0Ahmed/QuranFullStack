@@ -2,10 +2,11 @@ namespace QuranDashboard.Tests.Quran.MushafReader;
 
 internal sealed record QuranFidelityOracle(
     int ContractVersion,
-    string ArtifactId,
     int PageNumber,
     QuranFidelityReview Review,
     IReadOnlyList<QuranFidelitySourceIdentity> SourceIdentities,
+    IReadOnlyDictionary<string, int> RowCounts,
+    QuranFidelityReview RowCountsReview,
     QuranFidelityStudy Study,
     IReadOnlyList<QuranFidelityAyah> Ayahs,
     IReadOnlyList<QuranFidelityLine> Lines,
@@ -70,24 +71,8 @@ internal sealed record QuranFidelityWord(
     string TextUthmani,
     bool IsAyahMarker);
 
-internal sealed record QuranFidelityManifest(
-    IReadOnlyList<QuranFidelityManifestSource> Sources,
-    IReadOnlyList<QuranFidelityManifestSentinel> Sentinels);
-
-internal sealed record QuranFidelityManifestSource(
-    string Id,
-    string Version,
-    string Sha256,
-    string Provenance);
-
-internal sealed record QuranFidelityManifestSentinel(
-    string Id,
-    int ExpectedCount,
-    string OracleSha256);
-
 internal static class QuranFidelityOracleDocument
 {
-    private const string ManifestResourceSuffix = "compact-cross-stack-base-manifest.json";
     private const string OracleResourceSuffix = "quran-fidelity-oracle.json";
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 
@@ -95,9 +80,6 @@ internal static class QuranFidelityOracleDocument
 
     internal static QuranFidelityOracle ReadOracle() =>
         Deserialize<QuranFidelityOracle>(ReadOracleBytes(), OracleResourceSuffix);
-
-    internal static QuranFidelityManifest ReadManifest() =>
-        Deserialize<QuranFidelityManifest>(ReadEmbeddedBytes(ManifestResourceSuffix), ManifestResourceSuffix);
 
     private static T Deserialize<T>(byte[] bytes, string resourceName)
     {

@@ -8,9 +8,9 @@ SOLUTION="${BACKEND_ROOT}/QuranDashboard.sln"
 TEST_PROJECT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj"
 CATALOG="${BACKEND_ROOT}/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv"
 TEST_OUTPUT="${BACKEND_ROOT}/tests/QuranDashboard.Tests/bin/Debug/net10.0/QuranDashboard.Tests.dll"
-ARTIFACT_TOOL_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.TestArtifacts/bin/Debug/net10.0/QuranDashboard.TestArtifacts.dll"
 ACCESS_ADMIN_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.AccessAdmin/bin/Debug/net10.0/QuranDashboard.AccessAdmin.dll"
 DATA_IMPORTER_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.DataImporter/bin/Debug/net10.0/QuranDashboard.DataImporter.dll"
+TEST_RUNTIME_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll"
 CALLER_DIR="$(pwd -P)"
 
 # Test classes whose fixtures own an exclusive postgres:18-alpine server instead of a database leased from
@@ -18,14 +18,12 @@ CALLER_DIR="$(pwd -P)"
 # as two sequential invocations so the servers never exist at once.
 EXCLUSIVE_POSTGRES_CLASSES=(
   "QuranDashboard.Tests.Api.Testing.DatabaseActivityProfileIntegrationTests"
-  "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests"
 )
-FULL_CANONICAL_ARTIFACT_SHA256="3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
 POSTGRES_CONTAINER_FILTERS=(
   --filter "label=com.qurandashboard.test.owner=backend-tests"
   --filter "label=com.qurandashboard.test.repository=quran-dashboard"
@@ -341,6 +339,15 @@ fi
 if [[ "${#selected_classes[@]}" -eq 0 ]]; then
   fail_usage "The selector resolved to no catalog rows."
 fi
+
+reader_selected=false
+for class_name in "${selected_classes[@]}"; do
+  backend_policy="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $6 }' "${CATALOG}")"
+  if [[ "${backend_policy}" == "CanonicalReader" || "${backend_policy}" == "GuardedReader" ]]; then
+    reader_selected=true
+  fi
+done
+
 for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
   if [[ "${exclusive_class_cataloged[${exclusive_class}]:-}" != true ]]; then
     echo "ERROR: an exclusive-PostgreSQL test class is missing from the catalog: ${exclusive_class}" >&2
@@ -385,7 +392,23 @@ if [[ "${build_mode}" == "no-build" ]]; then
     echo "ERROR: --no-build requires existing DataImporter output: ${DATA_IMPORTER_OUTPUT}" >&2
     missing_output=true
   fi
+  if [[ "${reader_selected}" == true && ! -f "${TEST_RUNTIME_OUTPUT}" ]]; then
+    echo "ERROR: --no-build requires existing TestRuntime output: ${TEST_RUNTIME_OUTPUT}" >&2
+    missing_output=true
+  fi
   [[ "${missing_output}" == false ]] || exit 1
+fi
+
+if [[ "${list_tests}" == false && "${reader_selected}" == true ]]; then
+  if [[ -z "${ConnectionStrings__QuranDashboardTest:-}" ]]; then
+    echo "ERROR: persistent readers require ConnectionStrings__QuranDashboardTest." >&2
+    exit 1
+  fi
+  if ! dotnet "${TEST_RUNTIME_OUTPUT}" inspect; then
+    echo "ERROR: persistent Test Database capability inspection failed." >&2
+    exit 1
+  fi
+  export QURAN_DASHBOARD_TEST_RUNTIME_READER_CONTEXT=verified-v1
 fi
 
 if [[ -n "${test_selector}" ]]; then
@@ -535,12 +558,6 @@ if [[ ! "${run_id}" =~ ^[0-9a-f]{32}$ ]]; then
 fi
 export QURAN_DASHBOARD_TEST_RUN_ID="${run_id}"
 export QURAN_DASHBOARD_TEST_DB_PARALLELISM=4
-unset MUSHAF_READER_REAL_DB_CONNECTION
-unset UNIQUE_WORDS_REAL_DB_CONNECTION
-unset ROOTS_EXPLORER_REAL_DB_CONNECTION
-unset MORPHOLOGY_EXPLORERS_REAL_DB_CONNECTION
-unset WORD_TYPES_REAL_DB_CONNECTION
-unset QURAN_DASHBOARD_TEST_EXTERNAL_DB_MODE
 echo "cleanup run ID: ${QURAN_DASHBOARD_TEST_RUN_ID}"
 
 clean_up_run() {
@@ -554,15 +571,10 @@ trap clean_up_run EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
 
-full_canonical_execution=false
-
 canonical_preflight() {
   local missing=false
   local require_foundation=false
   local require_enriched=false
-  local require_dump=false
-  local provisioned_full_canonical=false
-  local full_canonical_state_requested=false
 
   for class_name in "${selected_classes[@]}"; do
     [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* ]] && require_foundation=true
@@ -570,7 +582,6 @@ canonical_preflight() {
       && require_foundation=true
     [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests ]] \
       && require_enriched=true
-    [[ "${class_name}" == QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests ]] && require_dump=true
   done
 
   if [[ "${require_foundation}" == true \
@@ -588,78 +599,6 @@ canonical_preflight() {
     echo "ERROR: canonical enriched morphology artifact is missing." >&2
     missing=true
   fi
-  if [[ "${require_dump}" == true ]] \
-    && { [[ "${artifact_execution}" != "local" ]] \
-      || [[ -n "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT:-}" \
-      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE:-}" \
-      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT:-}" \
-      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER:-}" \
-      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" \
-      || -n "${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK:-}" ]]; }; then
-    full_canonical_state_requested=true
-    for variable in \
-      QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT \
-      QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE \
-      QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT \
-      QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER \
-      QURAN_DASHBOARD_FULL_CANONICAL_NETWORK \
-      QURAN_DASHBOARD_FULL_CANONICAL_RUN; do
-      if [[ -z "${!variable:-}" ]]; then
-        echo "ERROR: provisioned full-canonical execution is missing ${variable}." >&2
-        missing=true
-      fi
-    done
-
-    if [[ "${artifact_execution}" == "local" ]]; then
-      echo "ERROR: full-canonical execution requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
-      missing=true
-    elif [[ "${QURAN_DASHBOARD_FULL_CANONICAL_RUN:-}" != "${artifact_execution}" ]]; then
-      echo "ERROR: scheduled/release execution requires QURAN_DASHBOARD_FULL_CANONICAL_RUN=${artifact_execution}." >&2
-      missing=true
-    fi
-
-    if [[ "${missing}" == false ]]; then
-      if [[ ! -f "${ARTIFACT_TOOL_OUTPUT}" ]]; then
-        echo "ERROR: sealed full-canonical verification requires existing artifact verifier output: ${ARTIFACT_TOOL_OUTPUT}" >&2
-        missing=true
-      elif ! env -i \
-        PATH="${PATH}" \
-        HOME="/tmp" \
-        QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
-        dotnet "${ARTIFACT_TOOL_OUTPUT}" verify-full-canonical \
-        --run "${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
-        --database-connection-file "${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
-        --database-container "${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
-        --staging-root "${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
-        --receipt "${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
-        --root "${REPO_ROOT}"; then
-        missing=true
-      else
-        provisioned_full_canonical=true
-        full_canonical_execution=true
-      fi
-    fi
-  fi
-  if [[ "${require_dump}" == true && "${provisioned_full_canonical}" == false ]]; then
-    if [[ "${full_canonical_state_requested}" == true ]]; then
-      echo "ERROR: scheduled/release full-canonical execution cannot fall back to the local ignored dump." >&2
-      missing=true
-    fi
-    if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
-      echo "ERROR: canonical Smoke execution requires QURAN_TEST_ARTIFACT_ROOT." >&2
-      missing=true
-    else
-      for path in \
-        "${QURAN_TEST_ARTIFACT_ROOT}/sha256/${FULL_CANONICAL_ARTIFACT_SHA256}/quran-canonical.dump" \
-        "${QURAN_TEST_ARTIFACT_ROOT}/sha256/${FULL_CANONICAL_ARTIFACT_SHA256}/manifest.json"; do
-        if [[ ! -f "${path}" ]]; then
-          echo "ERROR: canonical Smoke artifact is missing: ${path}" >&2
-          missing=true
-        fi
-      done
-    fi
-  fi
-
   [[ "${missing}" == false ]]
 }
 
@@ -871,23 +810,7 @@ for index in "${!shard_filters[@]}"; do
 
   build_test_args "${shard_filters[$index]}"
   set +e
-   if [[ "${full_canonical_execution}" == true ]]; then
-     env -i \
-       PATH="${PATH}" \
-       HOME="/tmp" \
-       QURAN_DASHBOARD_TEST_RUN_ID="${QURAN_DASHBOARD_TEST_RUN_ID}" \
-       QURAN_DASHBOARD_TEST_DB_PARALLELISM="${QURAN_DASHBOARD_TEST_DB_PARALLELISM}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT="${QURAN_DASHBOARD_FULL_CANONICAL_RECEIPT}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE="${QURAN_DASHBOARD_FULL_CANONICAL_CONNECTION_FILE}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT="${QURAN_DASHBOARD_FULL_CANONICAL_STAGING_ROOT}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER="${QURAN_DASHBOARD_FULL_CANONICAL_DATABASE_CONTAINER}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_NETWORK="${QURAN_DASHBOARD_FULL_CANONICAL_NETWORK}" \
-       QURAN_DASHBOARD_FULL_CANONICAL_RUN="${QURAN_DASHBOARD_FULL_CANONICAL_RUN}" \
-       QURAN_DASHBOARD_ARTIFACT_EXECUTION="${artifact_execution}" \
-       dotnet "${test_args[@]}"
-   else
-     dotnet "${test_args[@]}"
-   fi
+  dotnet "${test_args[@]}"
   shard_status=$?
   set -e
 

@@ -4,43 +4,27 @@ using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 
 namespace QuranDashboard.Tests.Quran.MushafReader;
 
 public sealed class MushafReaderTestFixture : IAsyncLifetime
 {
-    private const string SeedResourceSuffix = "mushaf-reader-seed.sql";
-
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
+    private readonly PersistentTestDatabaseReader database = new();
 
     private WebApplicationFactory<HealthController>? apiFactory;
-    private PostgreSqlDatabaseLease? databaseLease;
     private ServiceProvider? rootProvider;
 
-    public string ConnectionString { get; private set; } = string.Empty;
+    public string ConnectionString => database.ReadOnlyConnectionString;
 
     public async Task InitializeAsync()
     {
-        var seedSql = await ReadEmbeddedSeedScriptAsync();
-
-        databaseLease =
-            ExternalReadOnlyDatabaseOptIn.TryLease(ExternalReadOnlyDatabaseOptIn.MushafReaderConnectionVariable)
-            ?? await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(MushafReaderTestFixture));
-
-        ConnectionString = databaseLease.ConnectionString;
+        await database.InitializeAsync();
 
         try
         {
             rootProvider = ownedProviders.Own(BuildServiceProvider());
-
-            if (databaseLease.IsExternal)
-            {
-                return;
-            }
-
-            await using var scope = rootProvider.CreateAsyncScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
-            await SeedSliceAsync(dbContext, seedSql);
         }
         catch
         {
@@ -60,11 +44,7 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        await database.DisposeAsync();
     }
 
     public AsyncServiceScope CreateScope()
@@ -81,9 +61,10 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
     public HttpClient CreateClient()
     {
         apiFactory ??= SmokeApiHost.Build(
-            ConnectionString,
+            database.BaseConnectionString,
             new FakeExternalUserProfileSource(),
-            new SmokeSqlCommandCapture());
+            new SmokeSqlCommandCapture(),
+            readOnlySharedState: true);
         return SmokeApiHost.CreateClient(apiFactory);
     }
 
@@ -92,7 +73,7 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = ConnectionString,
+                ["ConnectionStrings:QuranDashboardDb"] = database.BaseConnectionString,
                 ["MushafReader:DefaultTafsirSourceKey"] = "ar-muyassar",
                 ["MushafReader:DefaultTranslationSourceKey"] = "en-sahih-international",
                 ["MushafReader:DefaultFullI3rabSourceKey"] = "muyassar",
@@ -102,33 +83,9 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         return new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddApplication()
-            .AddInfrastructure(configuration)
+            .AddInfrastructure(
+                configuration,
+                DatabaseActivityPolicy.Testing(DatabaseActivityProfile.ReadOnly, []))
             .BuildServiceProvider();
-    }
-
-    private static async Task SeedSliceAsync(QuranDashboardDbContext dbContext, string sql)
-    {
-        var connection = dbContext.Database.GetDbConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
-        {
-            await connection.OpenAsync();
-        }
-
-        await using var command = connection.CreateCommand();
-        command.CommandText = sql;
-        await command.ExecuteNonQueryAsync();
-    }
-
-    private static async Task<string> ReadEmbeddedSeedScriptAsync()
-    {
-        var assembly = typeof(MushafReaderTestFixture).Assembly;
-        var name = assembly.GetManifestResourceNames()
-            .First(n => n.EndsWith(SeedResourceSuffix, StringComparison.Ordinal));
-
-        await using var stream = assembly.GetManifestResourceStream(name)
-            ?? throw new InvalidOperationException($"Embedded seed script '{name}' was not found.");
-
-        using var reader = new StreamReader(stream);
-        return await reader.ReadToEndAsync();
     }
 }

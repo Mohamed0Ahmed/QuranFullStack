@@ -3,17 +3,11 @@ using QuranDashboard.Tests.TestSupport.Http;
 namespace QuranDashboard.Tests.Smoke.Data;
 
 // The other half of the two-status model: SmokeRoutePipelineTests proves each route answers its
-// DerivedStatus against an empty schema, and these prove the same routes answer their Seeded expectation
-// once the canonical dump is restored. Eight routes answer 404 there and 200 here, while every phrase
-// route remains unavailable because the canonical artifact deliberately excludes its derived data.
-// Those independent outcomes are why a seeded expectation is a second status rather than a payload
-// flag on the first.
+// DerivedStatus against an empty schema, and these prove the retained canonical read routes against the
+// verified persistent Test Database Capability.
 [Collection(nameof(SmokeDataCollection))]
 public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
 {
-    private const string PhraseTablePrefix = "quran_phrase_";
-    private const string PhraseStateTable = "quran_phrase_index_state";
-
     public static TheoryData<string> SeededPaths()
     {
         var paths = new TheoryData<string>();
@@ -25,9 +19,9 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
         return paths;
     }
 
-    [SmokeDumpTheory]
+    [Theory]
     [MemberData(nameof(SeededPaths))]
-    public async Task SeededRoute_AnswersItsCanonicalExpectation_AfterRestore(string path)
+    public async Task CanonicalRoute_AnswersItsReviewedExpectation(string path)
     {
         var seeded = SmokeRouteCatalog.ByPath(path).Seeded!;
 
@@ -43,35 +37,20 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
         }
     }
 
-    // Residual guard on the restore, not the primary one: a non-zero pg_restore exit already throws inside
-    // SmokeDataFixture.InitializeAsync, so no test in this collection ever reaches a container whose
-    // restore reported failure. What is left for this test is the archive that exits zero and is still
-    // short. xUnit orders cases by a hash of their unique id, not by declaration, so this makes no claim
-    // about running first — it reports a short table alongside the read failures, naming the shortfall.
-    [SmokeDumpFact]
-    public async Task RestoredDatabase_MatchesManifestAndKeepsPhraseDataExcluded()
+    [Fact]
+    public async Task PersistentDatabase_MatchesTheIndependentReaderOracle()
     {
-        var restored = await fixture.CountRowsAsync(fixture.Manifest.Tables.Keys);
+        var actual = await fixture.CountRowsAsync(fixture.Oracle.RowCounts.Keys);
 
-        var shortfalls = fixture.Manifest.Tables
-            .Where(table => restored[table.Key] != table.Value)
-            .Select(table => $"{table.Key}: manifest {table.Value}, restored {restored[table.Key]}")
+        var mismatches = fixture.Oracle.RowCounts
+            .Where(table => actual[table.Key] != table.Value)
+            .Select(table => $"{table.Key}: oracle {table.Value}, actual {actual[table.Key]}")
             .ToArray();
 
-        shortfalls.Should().BeEmpty();
-
-        fixture.Manifest.Tables.Keys.Should().NotContain(
-            table => table.StartsWith(PhraseTablePrefix, StringComparison.Ordinal));
-
-        var phraseRows = await fixture.CountRowsWithPrefixAsync(PhraseTablePrefix);
-        phraseRows.Should().ContainKey(PhraseStateTable);
-        phraseRows[PhraseStateTable].Should().Be(1);
-        phraseRows
-            .Where(table => table.Key != PhraseStateTable)
-            .Should().OnlyContain(table => table.Value == 0);
+        mismatches.Should().BeEmpty();
     }
 
-    [SmokeDumpFact]
+    [Fact]
     public async Task ExtremePositivePages_PreserveSuccessfulEmptyLexicalReads()
     {
         const int pageSize = 100;
@@ -97,14 +76,14 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
             $"/api/words/unique/tashkeel?page={int.MaxValue}&pageSize={pageSize}");
 
         var rootsPage = await AssertSuccessfulEmptyPageAsync(rootsResponse, pageSize);
-        rootsPage.GetProperty("totalCount").GetInt32().Should().Be(fixture.Manifest.RowCount("quran_roots"));
+        rootsPage.GetProperty("totalCount").GetInt32().Should().Be(fixture.Oracle.RowCounts["quran_roots"]);
 
         var rootWordsPage = await AssertSuccessfulEmptyPageAsync(rootWordsResponse, pageSize);
         rootWordsPage.GetProperty("totalCount").GetInt32().Should().BePositive();
 
         var uniqueWordsPage = await AssertSuccessfulEmptyPageAsync(uniqueWordsResponse, pageSize);
         uniqueWordsPage.GetProperty("totalCount").GetInt32().Should()
-            .Be(fixture.Manifest.RowCount("quran_words_unique_tashkeel"));
+            .Be(fixture.Oracle.RowCounts["quran_words_unique_tashkeel"]);
     }
 
     private static async Task<JsonElement> AssertSuccessfulEmptyPageAsync(
@@ -127,7 +106,7 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
         switch (payload)
         {
             case SmokeSeededPayload.PagedTable(var manifestTable):
-                data.GetProperty("totalCount").GetInt32().Should().Be(fixture.Manifest.RowCount(manifestTable));
+                data.GetProperty("totalCount").GetInt32().Should().Be(fixture.Oracle.RowCounts[manifestTable]);
                 data.GetProperty("items").GetArrayLength().Should().BePositive();
                 break;
 
@@ -136,7 +115,7 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
                 break;
 
             case SmokeSeededPayload.CountedCollection(var property, var manifestTable):
-                data.GetProperty(property).GetArrayLength().Should().Be(fixture.Manifest.RowCount(manifestTable));
+                data.GetProperty(property).GetArrayLength().Should().Be(fixture.Oracle.RowCounts[manifestTable]);
                 break;
 
             case SmokeSeededPayload.NonEmptyCollection(var property):

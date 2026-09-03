@@ -47,14 +47,13 @@ internal static class TestGateCatalog
         StringComparer.Ordinal);
 
     internal static IReadOnlySet<string> AllowedStatePolicies { get; } = new HashSet<string>(
-        ["ImmutableSeed", "ResetPerTest", "UniqueKeyIsolation", "FreshLeasePerCase"],
+        ["ImmutableSeed", "PersistentCapability", "ResetPerTest", "UniqueKeyIsolation", "FreshLeasePerCase"],
         StringComparer.Ordinal);
 
     // These classes own an exclusive PostgreSQL 18 server instead of leasing a database from the shared
     // PostgreSQL 16 runtime. The repository runner keeps them in a separate process shard.
     internal static IReadOnlySet<string> ExclusivePostgreSqlClasses { get; } = new HashSet<string>(
         [
-            "QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests",
             "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests",
             "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests",
             "QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests",
