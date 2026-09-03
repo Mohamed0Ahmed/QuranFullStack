@@ -46,10 +46,40 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- admin apply --login <lo
 dotnet run --project tools/QuranDashboard.TestRuntime -- admin verify --login <local-login>
 ```
 
-`inspect`, `dry-run`, and `verify` do not retain database changes. `apply` is the only mutating mode and
-requires the selected login to be the connected session login with explicit role/database administration
-authority. It accepts only local PostgreSQL 18, the exact `quran_dashboard_test` database, and a server
-that is not in recovery. Repeating `apply` against compliant state is a no-op.
+Before the first capability operation for an operator login, a PostgreSQL superuser must perform this
+one-time, cluster-scoped bootstrap. Replace `<local-login>` with the intended operator role. These are
+the only parameter privileges the operator receives; do not grant `ALTER SYSTEM` or broader parameter
+authority:
+
+```sql
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.reset_enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.contract_version" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.capability_metadata_version" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_pipeline" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_input_provenance" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.canonical_quran_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.system_catalogue_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.mutable_state_dirty" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.protected_state_fingerprint" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.migration_head" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.refreshed_at_utc" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.rehearsal_enabled" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.rehearsal_subtype" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.scratch_run_id" TO <local-login>;
+GRANT SET ON PARAMETER "quran_dashboard.test_runtime.scratch_receipt" TO <local-login>;
+```
+
+Repeat the bootstrap only when adding another operator login or when the committed marker contract
+changes. `admin apply` and `refresh apply` validate all 16 grants before mutation and report each missing
+name as `administration.authority.parameter-set-missing` or `refresh.authority.parameter-set-missing`.
+
+`inspect`, `dry-run`, and `verify` do not retain database changes. `apply` is the only mutating mode. The
+runtime operator must be a non-superuser that is also the connected session login, owns the exact
+`quran_dashboard_test` database and the application-schema objects it reconciles, has `CREATEROLE` and
+`CREATEDB`, and has `SET` on exactly the 16 committed marker parameters above. Ordinary capability
+commands reject a superuser login. The command accepts only local PostgreSQL 18 and a server that is not
+in recovery. Repeating `apply` against compliant state is a no-op.
 
 The workflow creates four stable `NOLOGIN` roles, removes unexpected direct or inherited membership,
 grants all four roles only to the selected login, and installs the capability/reset, contract-version,
@@ -63,6 +93,13 @@ scratch administrator receives `CREATEDB` but no ownership or mutation grants on
 or persistent Test Database. `verify` performs safe denial probes under each restricted role and rolls back
 its transaction. When `quran_dashboard` exists, administration opens a read-only transaction that inspects
 only its PostgreSQL catalog privileges; it never reads application tables or repairs unsafe grants there.
+
+When a PostgreSQL 18 non-superuser with `CREATEROLE` creates a capability role, PostgreSQL retains its
+bootstrap-superuser grant back to that creator with `ADMIN TRUE`, `INHERIT FALSE`, and `SET FALSE`; the
+creator cannot remove or change that row. TestRuntime adds the separate operational membership with
+`ADMIN FALSE`, `INHERIT TRUE`, and `SET TRUE`. Verification permits only those two exact rows for the
+selected login, rejects every other member or option combination, and preserves all ordinary-role denial
+probes.
 
 ## Refresh the Test Database Capability
 
