@@ -154,8 +154,10 @@ for diagnosis and are never silently removed.
 
 ## Hold the global database lock
 
-The committed contract owns the one cluster-wide lock key. A runner starts a dedicated keeper process for
-its complete database-aware invocation:
+The committed contract owns the one cluster-wide lock key and the `postgres` lock-anchor database. Every
+keeper connects to that same anchor, regardless of which Test, scratch, refresh, or Rehearsal Database the
+guarded work targets; PostgreSQL advisory locks are database-scoped, so this common namespace is required.
+A runner starts a dedicated keeper process for its complete database-aware invocation:
 
 ```bash
 dotnet run --project tools/QuranDashboard.TestRuntime -- \
@@ -222,6 +224,52 @@ owner, run ID, subtype, receipt, and current exclusive lock before `DROP DATABAS
 for inspection. Reports contain identities and booleans only, retain zero dump files, and never emit a
 connection string or credential. Closing the runner's lifetime pipe releases the keeper connection, so a
 killed runner cannot orphan the global advisory lock; its database is handled by the next verified reap.
+
+## Use a manually provisioned full Rehearsal Database
+
+PhraseSearch index-build and recovery rehearsals use a separate, manually provisioned local database.
+Set `ConnectionStrings__QuranDashboardRehearsal` only for an explicitly selected full-data lane. The
+target must not be `quran_dashboard`, `quran_dashboard_test`, a TestRuntime scratch/refresh database, or
+a remote endpoint. TestRuntime never creates, clones, restores, refreshes, or implicitly drops it.
+
+The operator must build the target independently through the canonical pipeline and install these
+database-scoped markers: rehearsal enabled, intended subtype, canonical pipeline identity and input
+provenance SHA-256, Protected State fingerprint, current migration head, and UTC provisioning timestamp.
+The authoritative marker names are in `testing/test-database-contract.json`; the canonical pipeline
+identity is emitted by the refresh workflow. The provisioning timestamp is accepted for at most the
+contracted 168 hours. Capability/reset enablement must be absent or false so the target cannot masquerade
+as the persistent Test Database.
+
+Inspect without mutation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal inspect --subtype phrase-search-index-build
+```
+
+Repository-root `scripts/test` uses `rehearsal hold` for migrated, explicitly authorized full-data
+index/recovery selections. The command recomputes Protected State, verifies every marker and the current
+migration, acquires the global exclusive lock on the local cluster, and emits credential-free evidence
+before starting the selected test. A missing capability is reported as `rehearsal.capability-missing`.
+Mismatches report `refresh-required` with a manual refresh instruction. Focused, pre-PR, cutover, and
+artifact-retirement paths do not read this environment variable unless they explicitly select such a lane.
+
+Success and failure both preserve the Rehearsal Database for inspection. Removal is a separate operation:
+
+```bash
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal cleanup inspect --subtype phrase-search-index-build
+
+dotnet run --project tools/QuranDashboard.TestRuntime -- \
+  rehearsal cleanup apply --subtype phrase-search-index-build \
+  --run-id <run-id> --command rehearsal-cleanup \
+  --confirm-database <exact-name-displayed-by-inspect> --yes
+```
+
+Cleanup reacquires the exclusive cluster lock, recomputes and revalidates the capability, requires the
+exact displayed target name, refuses a target with live sessions, and uses no forced termination. Recovery
+code records the temporary backup SHA-256 and source Protected State fingerprint; it removes the payload
+only after successful completion and retains no payload in successful evidence.
 
 ## Fingerprint Protected State
 

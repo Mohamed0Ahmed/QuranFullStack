@@ -131,6 +131,7 @@ QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke								
 QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke								Unmigrated
 QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke								Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeCommandTests	ApiBehavior	Fast	TierB	Cli,Schema							Unmigrated
+QuranDashboard.Tests.TestRuntime.TestRuntimeFullRehearsalTests	ApiBehavior	Fast	TierB	Cli,Execution,Schema	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated

@@ -139,7 +139,11 @@
     ]
   },
   "advisoryLock": {
-    "key": 1500000001
+    "key": 1500000001,
+    "database": "postgres"
+  },
+  "fullRehearsal": {
+    "maximumAgeHours": 168
   },
   "rehearsalSubtypes": [
     "canonical-import",

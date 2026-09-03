@@ -28,6 +28,7 @@ const TEST_RUNTIME_ASSEMBLY = resolve(
   'Backend/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll',
 );
 const SCRATCH_LOCK_COMMAND = 'scratch-rehearsal';
+const FULL_REHEARSAL_LOCK_COMMAND = 'full-rehearsal';
 
 let options;
 try {
@@ -96,6 +97,8 @@ for (const command of materializedPlan.commands) {
   console.log(`[scripts/test] ${command.id}${group}`);
   const status = command.group === 'EmptyScratchDestructiveRehearsal'
     ? await executeEmptyScratch(command)
+    : command.group === 'FullDataDestructiveRehearsal' && command.rehearsalSubtype
+      ? await executeFullRehearsal(command)
     : executeCommand(command);
   if (status !== 0) {
     process.exit(status);
@@ -158,6 +161,38 @@ async function executeEmptyScratch(command) {
   }
 
   return cleanupStatus === 0 ? commandStatus : cleanupStatus;
+}
+
+async function executeFullRehearsal(command) {
+  if (!['phrase-search-index-build', 'recovery'].includes(command.rehearsalSubtype)) {
+    console.error(
+      `[scripts/test] ${command.id} is not an index/recovery full-data rehearsal supported by this explicit capability.`,
+    );
+    return 2;
+  }
+
+  const runId = createScratchRunId();
+  const keeper = await startFullRehearsalKeeper(runId, command.rehearsalSubtype);
+  if (!keeper) {
+    return 3;
+  }
+
+  let commandStatus = 1;
+  try {
+    const environment = {
+      ...process.env,
+      QURAN_DASHBOARD_TEST_RUN_ID: runId,
+      QURAN_DASHBOARD_TEST_LOCK_COMMAND: FULL_REHEARSAL_LOCK_COMMAND,
+      QURAN_DASHBOARD_TEST_FULL_REHEARSAL_SUBTYPE: command.rehearsalSubtype,
+    };
+    commandStatus = executeCommand(command, environment);
+  } finally {
+    // Full Rehearsal Databases are manually provisioned capabilities. Success and failure both
+    // preserve the database; only `TestRuntime rehearsal cleanup apply` may remove it.
+    keeper.stdin.end();
+    await waitForExit(keeper);
+  }
+  return commandStatus;
 }
 
 function runScratchLifecycle(action, runId, subtype = null) {
@@ -226,6 +261,52 @@ async function startScratchKeeper(runId) {
     return null;
   }
   if (!report.succeeded || report.advisoryLock?.status !== 'acquired') {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    return null;
+  }
+
+  keeper.stdout.pipe(process.stdout);
+  return keeper;
+}
+
+async function startFullRehearsalKeeper(runId, subtype) {
+  const keeper = spawn('dotnet', [
+    TEST_RUNTIME_ASSEMBLY,
+    'rehearsal',
+    'hold',
+    '--subtype',
+    subtype,
+    '--run-id',
+    runId,
+    '--command',
+    FULL_REHEARSAL_LOCK_COMMAND,
+    '--release-on-stdin-close',
+  ], {
+    cwd: REPOSITORY_ROOT,
+    env: process.env,
+    stdio: ['pipe', 'pipe', 'pipe'],
+  });
+  keeper.stderr.pipe(process.stderr);
+
+  const firstLine = await readFirstLine(keeper.stdout, keeper);
+  if (firstLine === null) {
+    await waitForExit(keeper);
+    return null;
+  }
+  process.stdout.write(`${firstLine}\n`);
+  let report;
+  try {
+    report = JSON.parse(firstLine);
+  } catch {
+    keeper.stdin.end();
+    await waitForExit(keeper);
+    console.error('[scripts/test] full Rehearsal Database validation returned invalid JSON.');
+    return null;
+  }
+  if (!report.succeeded
+      || report.fullRehearsal?.capabilityState !== 'ready'
+      || report.advisoryLock?.status !== 'acquired') {
     keeper.stdin.end();
     await waitForExit(keeper);
     return null;
