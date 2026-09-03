@@ -68,4 +68,5 @@ internal sealed record TestRuntimeReport(
     MarkerReport? Markers,
     PrivilegeReport? Privileges,
     IReadOnlyList<ContractViolation> Violations,
-    string? FailureType = null);
+    string? FailureType = null,
+    CapabilityAdministrationReport? Administration = null);

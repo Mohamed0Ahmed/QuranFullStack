@@ -6,6 +6,26 @@ namespace QuranDashboard.Tests.TestRuntime;
 
 public sealed class TestRuntimeCommandTests
 {
+    [Theory]
+    [InlineData("inspect")]
+    [InlineData("dry-run")]
+    [InlineData("apply")]
+    [InlineData("verify")]
+    public async Task Administration_WithoutExplicitLogin_IsRejectedAsUsage(string mode)
+    {
+        using var output = new StringWriter();
+        using var error = new StringWriter();
+
+        var exitCode = await TestRuntimeCommand.ExecuteAsync(
+            ["admin", mode, "--contract", ContractPath],
+            output,
+            error);
+
+        exitCode.Should().Be(2);
+        output.ToString().Should().BeEmpty();
+        error.ToString().Should().Contain("--login <local-login>");
+    }
+
     [Fact]
     public async Task ContractValidate_WithCommittedContract_ClassifiesTheCurrentEfModelExactlyOnce()
     {

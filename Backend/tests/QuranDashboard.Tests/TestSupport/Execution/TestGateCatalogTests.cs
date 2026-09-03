@@ -169,26 +169,27 @@ public sealed class TestGateCatalogTests
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
     }
 
-    // The shards below select by class name, but what starts the exclusive postgres:18-alpine server is
-    // membership of SmokeDataCollection. A second class joining that collection would construct the
-    // exclusive fixture inside the shared-runtime shard; this names that mistake here instead of leaving it
-    // to a confusing "two containers must never run at once" throw at runtime.
+    // The shards below select by class name. Keep every class whose fixture owns an exclusive PostgreSQL
+    // server out of the shared-runtime process.
     [Fact]
-    public void ExclusivePostgreSqlClass_IsTheOnlyCanonicalClassOwningItsServer()
+    public void ExclusivePostgreSqlClasses_AreDiscoveredAndUseNonParallelResources()
     {
         TestGateCatalog.DiscoverTestClasses()
             .Should()
-            .Contain(TestGateCatalog.ExclusivePostgreSqlClass);
+            .Contain(TestGateCatalog.ExclusivePostgreSqlClasses);
 
         TestGateCatalog.SelectKind("Canonical")
             .Should()
-            .Contain(TestGateCatalog.ExclusivePostgreSqlClass);
+            .Contain("QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests");
 
-        TestGateCatalog.DiscoverCollectedTestClasses()
-            .Where(testClass => testClass.CollectionName == nameof(Smoke.Data.SmokeDataCollection))
-            .Select(testClass => testClass.ClassName)
-            .Should()
-            .Equal(TestGateCatalog.ExclusivePostgreSqlClass);
+        var collected = TestGateCatalog.DiscoverCollectedTestClasses()
+            .ToDictionary(testClass => testClass.ClassName, StringComparer.Ordinal);
+        foreach (var className in TestGateCatalog.ExclusivePostgreSqlClasses)
+        {
+            var collectionName = collected[className].CollectionName;
+            TestGateCatalog.ResourceEntries.Single(resource => resource.CollectionName == collectionName)
+                .ParallelPolicy.Should().Be("NonParallel");
+        }
     }
 
     // The two invocations Backend/scripts/test-backend runs for a lane that would otherwise start
@@ -208,7 +209,8 @@ public sealed class TestGateCatalogTests
 
         shards.SharedRuntime.Should().NotIntersectWith(shards.ExclusiveServer);
         shards.SharedRuntime.Concat(shards.ExclusiveServer).Should().BeEquivalentTo(laneClasses);
-        shards.ExclusiveServer.Should().Equal(TestGateCatalog.ExclusivePostgreSqlClass);
+        shards.ExclusiveServer.Should().BeEquivalentTo(
+            laneClasses.Intersect(TestGateCatalog.ExclusivePostgreSqlClasses, StringComparer.Ordinal));
         shards.SharedRuntime.Should().NotBeEmpty();
     }
 }

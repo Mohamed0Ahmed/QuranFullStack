@@ -135,11 +135,19 @@ internal static class TestRuntimeCommand
 
         try
         {
-            var report = await DatabaseInspector.InspectAsync(
-                contract,
-                validation,
-                targetValidation,
-                cancellationToken);
+            var report = request.AdministrationMode is null
+                ? await DatabaseInspector.InspectAsync(
+                    contract,
+                    validation,
+                    targetValidation,
+                    cancellationToken)
+                : await CapabilityAdministrator.ExecuteAsync(
+                    contract,
+                    validation,
+                    targetValidation,
+                    request.AdministrationMode.Value,
+                    request.SelectedLogin!,
+                    cancellationToken);
             WriteReport(output, report);
             return report.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
         }
@@ -166,7 +174,10 @@ internal static class TestRuntimeCommand
                 null,
                 null,
                 null,
-                [new ContractViolation("inspection.database-unavailable")],
+                [new ContractViolation(request.AdministrationMode is null
+                    ? "inspection.database-unavailable"
+                    : "administration.database-operation-failed",
+                    exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
         }
@@ -178,6 +189,10 @@ internal static class TestRuntimeCommand
         {
             ["contract", "validate", ..] => "contract-validate",
             ["inspect", ..] => "inspect",
+            ["admin", "inspect", ..] => "admin-inspect",
+            ["admin", "dry-run", ..] => "admin-dry-run",
+            ["admin", "apply", ..] => "admin-apply",
+            ["admin", "verify", ..] => "admin-verify",
             _ => null,
         };
         if (command is null)
@@ -185,21 +200,42 @@ internal static class TestRuntimeCommand
             return null;
         }
 
-        var optionStart = command == "contract-validate" ? 2 : 1;
+        var optionStart = command == "contract-validate" || command.StartsWith("admin-", StringComparison.Ordinal) ? 2 : 1;
         var contractPath = Path.Combine(AppContext.BaseDirectory, "test-database-contract.json");
+        string? selectedLogin = null;
         for (var index = optionStart; index < args.Count; index += 2)
         {
-            if (index + 1 >= args.Count || args[index] != "--contract")
+            if (index + 1 >= args.Count)
             {
                 return null;
             }
 
-            contractPath = args[index + 1];
+            if (args[index] == "--contract")
+            {
+                contractPath = args[index + 1];
+            }
+            else if (args[index] == "--login" && command.StartsWith("admin-", StringComparison.Ordinal))
+            {
+                selectedLogin = args[index + 1];
+            }
+            else
+            {
+                return null;
+            }
         }
 
+        var administrationMode = command switch
+        {
+            "admin-inspect" => CapabilityAdministrationMode.Inspect,
+            "admin-dry-run" => CapabilityAdministrationMode.DryRun,
+            "admin-apply" => CapabilityAdministrationMode.Apply,
+            "admin-verify" => CapabilityAdministrationMode.Verify,
+            _ => (CapabilityAdministrationMode?)null,
+        };
         return string.IsNullOrWhiteSpace(contractPath)
+               || (administrationMode is not null && string.IsNullOrWhiteSpace(selectedLogin))
             ? null
-            : new CommandRequest(command, Path.GetFullPath(contractPath));
+            : new CommandRequest(command, Path.GetFullPath(contractPath), administrationMode, selectedLogin);
     }
 
     private static void WriteReport(TextWriter output, TestRuntimeReport report)
@@ -212,7 +248,12 @@ internal static class TestRuntimeCommand
         error.WriteLine("Usage:");
         error.WriteLine("  QuranDashboard.TestRuntime contract validate [--contract <path>]");
         error.WriteLine($"  QuranDashboard.TestRuntime inspect [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|apply|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
     }
 
-    private sealed record CommandRequest(string Command, string ContractPath);
+    private sealed record CommandRequest(
+        string Command,
+        string ContractPath,
+        CapabilityAdministrationMode? AdministrationMode = null,
+        string? SelectedLogin = null);
 }
