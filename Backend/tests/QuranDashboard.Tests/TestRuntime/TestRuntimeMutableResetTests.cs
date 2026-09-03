@@ -39,6 +39,7 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
                 "--command", "mutable-reset",
                 "--expected-fingerprint", expectedFingerprint,
                 "--api-port", apiPort.ToString(),
+                "--api-process-id", "none",
                 "--phase", "final",
             ],
             output,
@@ -94,7 +95,7 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         var recovered = await RunResetAsync(runId, expectedFingerprint, "initial");
         recovered.ExitCode.Should().Be(0, recovered.Output);
         recovered.Reset.GetProperty("status").GetString().Should().Be("clean");
-        recovered.Reset.GetProperty("recoveryAttempted").GetBoolean().Should().BeTrue();
+        recovered.Reset.GetProperty("recoveryAttempted").GetBoolean().Should().BeFalse();
         await AssertMutableBaselineAsync(contract);
     }
 
@@ -115,7 +116,7 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         await using var lease = acquisition.Lease!;
         await SeedMutableFamiliesAsync(contract);
 
-        var listener = new TcpListener(IPAddress.Loopback, 0);
+        var listener = new TcpListener(IPAddress.IPv6Loopback, 0);
         listener.Start();
         var apiPort = ((IPEndPoint)listener.LocalEndpoint).Port;
         var writerConnectionString = new NpgsqlConnectionStringBuilder(fixture.ConnectionString)
@@ -204,10 +205,46 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
     }
 
     [Fact]
-    public async Task Reset_CleanupFailureReportsDirtyAndOnlyVerifiedInitialResetRecovers()
+    public async Task Reset_WithInvalidResetterPrivilegesRefusesBeforeMutation()
     {
         var contract = DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
         var expectedFingerprint = await FingerprintAsync();
+        var runId = $"role-{Guid.NewGuid():N}"[..32];
+        var acquisition = await AdvisoryLockProtocol.AcquireAsync(
+            fixture.ConnectionString,
+            contract.AdvisoryLock.Key,
+            AdvisoryLockMode.Exclusive,
+            runId,
+            "mutable-reset",
+            TimeSpan.FromSeconds(2));
+        acquisition.Lease.Should().NotBeNull();
+        await using var lease = acquisition.Lease!;
+        await SeedMutableFamiliesAsync(contract);
+
+        await ExecuteAsync($"REVOKE TRUNCATE ON TABLE public.users FROM {contract.Roles.Resetter}");
+        try
+        {
+            var refused = await RunResetAsync(runId, expectedFingerprint, "final");
+
+            refused.ExitCode.Should().Be(3, refused.Output);
+            refused.Reset.GetProperty("status").GetString().Should().Be("refused");
+            refused.ViolationCodes.Should().Contain("mutable-reset.resetter-role.invalid");
+            (await CountAsync("users")).Should().NotBe(0);
+        }
+        finally
+        {
+            await ExecuteAsync($"GRANT TRUNCATE ON TABLE public.users TO {contract.Roles.Resetter}");
+        }
+
+        var recovered = await RunResetAsync(runId, expectedFingerprint, "initial");
+        recovered.ExitCode.Should().Be(0, recovered.Output);
+        await AssertMutableBaselineAsync(contract);
+    }
+
+    [Fact]
+    public async Task Reset_CleanupFailureReportsDirtyAndOnlyVerifiedInitialResetRecovers()
+    {
+        var contract = DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
         var runId = $"dirty-{Guid.NewGuid():N}"[..32];
         var acquisition = await AdvisoryLockProtocol.AcquireAsync(
             fixture.ConnectionString,
@@ -221,10 +258,23 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         await SeedMutableFamiliesAsync(contract);
 
         await ExecuteAsync(
-            $"REVOKE TRUNCATE ON TABLE public.users FROM {contract.Roles.Resetter}");
+            """
+            CREATE FUNCTION public.ticket_154_reject_truncate() RETURNS trigger
+            LANGUAGE plpgsql
+            AS $function$
+            BEGIN
+                RAISE EXCEPTION 'ticket 154 reset failure probe';
+            END
+            $function$;
+
+            CREATE TRIGGER ticket_154_reject_truncate
+            BEFORE TRUNCATE ON public.users
+            FOR EACH STATEMENT EXECUTE FUNCTION public.ticket_154_reject_truncate();
+            """);
+        var failureStateFingerprint = await FingerprintAsync();
         try
         {
-            var dirty = await RunResetAsync(runId, expectedFingerprint, "final");
+            var dirty = await RunResetAsync(runId, failureStateFingerprint, "final");
 
             dirty.ExitCode.Should().Be(3, dirty.Output);
             dirty.Reset.GetProperty("status").GetString().Should().Be("dirty");
@@ -234,8 +284,17 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
         finally
         {
             await ExecuteAsync(
-                $"GRANT TRUNCATE ON TABLE public.users TO {contract.Roles.Resetter}");
+                """
+                DROP TRIGGER IF EXISTS ticket_154_reject_truncate ON public.users;
+                DROP FUNCTION IF EXISTS public.ticket_154_reject_truncate();
+                """);
         }
+
+        var expectedFingerprint = await FingerprintAsync();
+        var finalRetry = await RunResetAsync(runId, expectedFingerprint, "final");
+        finalRetry.ExitCode.Should().Be(3, finalRetry.Output);
+        finalRetry.Reset.GetProperty("status").GetString().Should().Be("refused");
+        finalRetry.ViolationCodes.Should().Contain("mutable-reset.initial-recovery.required");
 
         var recovered = await RunResetAsync(runId, expectedFingerprint, "initial");
         recovered.ExitCode.Should().Be(0, recovered.Output);
@@ -358,13 +417,9 @@ public sealed class TestRuntimeMutableResetTests(TestRuntimeResetFixture fixture
             "--command", "mutable-reset",
             "--expected-fingerprint", expectedFingerprint,
             "--api-port", (apiPort ?? ReserveUnusedPort()).ToString(),
+            "--api-process-id", apiProcessId?.ToString() ?? "none",
             "--phase", phase,
         };
-        if (apiProcessId is not null)
-        {
-            arguments.Add("--api-process-id");
-            arguments.Add(apiProcessId.Value.ToString());
-        }
 
         var exitCode = await TestRuntimeCommand.ExecuteAsync(
             arguments,

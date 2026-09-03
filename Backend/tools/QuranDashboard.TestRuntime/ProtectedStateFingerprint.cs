@@ -40,7 +40,12 @@ internal static class ProtectedStateFingerprint
             "SET TRANSACTION READ ONLY; SET LOCAL timezone = 'UTC'; SET LOCAL datestyle = 'ISO, YMD'; SET LOCAL intervalstyle = 'iso_8601'; SET LOCAL bytea_output = 'hex'; SET LOCAL extra_float_digits = 3",
             cancellationToken);
 
-        var report = await ComputeAsync(connection, transaction, contract, cancellationToken);
+        var report = await ComputeAsync(
+            connection,
+            transaction,
+            contract,
+            useReaderRole: true,
+            cancellationToken);
         await transaction.RollbackAsync(cancellationToken);
         return report;
     }
@@ -51,6 +56,30 @@ internal static class ProtectedStateFingerprint
         DatabaseContract contract,
         CancellationToken cancellationToken = default)
     {
+        return await ComputeAsync(
+            connection,
+            transaction,
+            contract,
+            useReaderRole: false,
+            cancellationToken);
+    }
+
+    private static async Task<ProtectedStateFingerprintReport> ComputeAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        DatabaseContract contract,
+        bool useReaderRole,
+        CancellationToken cancellationToken)
+    {
+        if (useReaderRole)
+        {
+            await ExecuteAsync(
+                connection,
+                transaction,
+                $"SET LOCAL ROLE {PostgreSqlIdentifier.Quote(contract.Roles.Reader)}",
+                cancellationToken);
+        }
+
         var canonical = await HashTablesAsync(
             connection,
             transaction,
@@ -63,6 +92,11 @@ internal static class ProtectedStateFingerprint
             "system-catalogue",
             contract.DataClasses.SystemCatalogue,
             cancellationToken);
+        if (useReaderRole)
+        {
+            await ExecuteAsync(connection, transaction, "RESET ROLE", cancellationToken);
+        }
+
         var schema = await HashSchemaAsync(connection, transaction, contract, cancellationToken);
         var aggregate = HashValues(
             ("canonical-quran-data", canonical.Hash),
@@ -96,8 +130,7 @@ internal static class ProtectedStateFingerprint
                 hash,
                 connection,
                 transaction,
-                $"SELECT pg_catalog.row_to_json(row_value)::text FROM public.{QuoteIdentifier(table)} AS row_value ORDER BY pg_catalog.row_to_json(row_value)::text COLLATE \"C\"",
-                null,
+                $"SELECT pg_catalog.row_to_json(row_value)::text FROM public.{PostgreSqlIdentifier.Quote(table)} AS row_value ORDER BY pg_catalog.row_to_json(row_value)::text COLLATE \"C\"",
                 cancellationToken);
         }
 
@@ -125,6 +158,12 @@ internal static class ProtectedStateFingerprint
                        relation.relkind,
                        relation.relpersistence,
                        relation.relreplident,
+                       relation.relrowsecurity,
+                       relation.relforcerowsecurity,
+                       relation.reloptions,
+                       pg_catalog.pg_get_partkeydef(relation.oid),
+                       access_method.amname,
+                       tablespace.spcname,
                        attribute.attnum,
                        attribute.attname,
                        pg_catalog.format_type(attribute.atttypid, attribute.atttypmod),
@@ -143,9 +182,95 @@ internal static class ProtectedStateFingerprint
               ON default_value.adrelid = relation.oid
              AND default_value.adnum = attribute.attnum
             LEFT JOIN pg_catalog.pg_collation AS collation_value ON collation_value.oid = attribute.attcollation
+            LEFT JOIN pg_catalog.pg_am AS access_method ON access_method.oid = relation.relam
+            LEFT JOIN pg_catalog.pg_tablespace AS tablespace ON tablespace.oid = relation.reltablespace
             WHERE namespace.nspname = 'public'
               AND relation.relkind IN ('r', 'p', 'v', 'm', 'f')
             ORDER BY relation.relname COLLATE "C", attribute.attnum
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "views-and-rules",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       relation.relname,
+                       relation.relkind,
+                       pg_catalog.pg_get_viewdef(relation.oid, true),
+                       rules.rulename,
+                       rules.definition)::text
+            FROM pg_catalog.pg_class AS relation
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = relation.relnamespace
+            LEFT JOIN pg_catalog.pg_rules AS rules
+              ON rules.schemaname = namespace.nspname
+             AND rules.tablename = relation.relname
+            WHERE namespace.nspname = 'public'
+              AND relation.relkind IN ('v', 'm')
+            ORDER BY relation.relname COLLATE "C", rules.rulename COLLATE "C"
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "functions",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       procedure_value.proname,
+                       pg_catalog.pg_get_function_identity_arguments(procedure_value.oid),
+                       pg_catalog.pg_get_functiondef(procedure_value.oid))::text
+            FROM pg_catalog.pg_proc AS procedure_value
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = procedure_value.pronamespace
+            WHERE namespace.nspname = 'public'
+              AND procedure_value.prokind IN ('f', 'p')
+            ORDER BY procedure_value.proname COLLATE "C",
+                     pg_catalog.pg_get_function_identity_arguments(procedure_value.oid) COLLATE "C"
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "types",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       type_value.typname,
+                       type_value.typtype,
+                       type_value.typcategory,
+                       type_value.typnotnull,
+                       type_value.typdefault,
+                       pg_catalog.format_type(type_value.typbasetype, type_value.typtypmod),
+                       collation_value.collname,
+                       enum_value.enumsortorder,
+                       enum_value.enumlabel)::text
+            FROM pg_catalog.pg_type AS type_value
+            INNER JOIN pg_catalog.pg_namespace AS namespace ON namespace.oid = type_value.typnamespace
+            LEFT JOIN pg_catalog.pg_collation AS collation_value ON collation_value.oid = type_value.typcollation
+            LEFT JOIN pg_catalog.pg_enum AS enum_value ON enum_value.enumtypid = type_value.oid
+            WHERE namespace.nspname = 'public'
+              AND type_value.typtype IN ('c', 'd', 'e', 'r', 'm')
+            ORDER BY type_value.typname COLLATE "C", enum_value.enumsortorder
+            """,
+            cancellationToken);
+        await AppendNamedQueryAsync(
+            hash,
+            "row-security-policies",
+            connection,
+            transaction,
+            """
+            SELECT pg_catalog.jsonb_build_array(
+                       tablename,
+                       policyname,
+                       permissive,
+                       roles,
+                       cmd,
+                       qual,
+                       with_check)::text
+            FROM pg_catalog.pg_policies
+            WHERE schemaname = 'public'
+            ORDER BY tablename COLLATE "C", policyname COLLATE "C"
             """,
             cancellationToken);
         await AppendNamedQueryAsync(
@@ -223,6 +348,7 @@ internal static class ProtectedStateFingerprint
 
         Append(hash, "sequences");
         var protectedSequenceCount = 0;
+        var sequences = new List<SequenceFingerprintRow>();
         await using (var command = new NpgsqlCommand(
                          """
                          SELECT pg_catalog.jsonb_build_array(
@@ -236,11 +362,8 @@ internal static class ProtectedStateFingerprint
                                     sequences.cycle,
                                     sequences.cache_size,
                                     owned_relation.relname,
-                                    owned_attribute.attname,
-                                    CASE
-                                        WHEN owned_relation.relname = ANY(@mutable_tables) THEN NULL
-                                        ELSE sequences.last_value
-                                    END)::text,
+                                    owned_attribute.attname)::text,
+                                sequences.sequencename,
                                 owned_relation.relname IS NULL OR NOT (owned_relation.relname = ANY(@mutable_tables))
                          FROM pg_catalog.pg_sequences AS sequences
                          INNER JOIN pg_catalog.pg_class AS sequence_relation
@@ -272,11 +395,27 @@ internal static class ProtectedStateFingerprint
                 cancellationToken);
             while (await reader.ReadAsync(cancellationToken))
             {
-                Append(hash, reader.GetString(0));
-                if (reader.GetBoolean(1))
-                {
-                    protectedSequenceCount++;
-                }
+                sequences.Add(new SequenceFingerprintRow(
+                    reader.GetString(0),
+                    reader.GetString(1),
+                    reader.GetBoolean(2)));
+            }
+        }
+
+        foreach (var sequence in sequences)
+        {
+            Append(hash, sequence.Definition);
+            if (sequence.IsProtected)
+            {
+                await using var stateCommand = new NpgsqlCommand(
+                    $"SELECT last_value, is_called FROM public.{PostgreSqlIdentifier.Quote(sequence.Name)}",
+                    connection,
+                    transaction);
+                await using var stateReader = await stateCommand.ExecuteReaderAsync(cancellationToken);
+                await stateReader.ReadAsync(cancellationToken);
+                Append(hash, stateReader.GetInt64(0).ToString(System.Globalization.CultureInfo.InvariantCulture));
+                Append(hash, stateReader.GetBoolean(1) ? "true" : "false");
+                protectedSequenceCount++;
             }
         }
 
@@ -292,7 +431,7 @@ internal static class ProtectedStateFingerprint
         CancellationToken cancellationToken)
     {
         Append(hash, name);
-        await AppendQueryAsync(hash, connection, transaction, sql, null, cancellationToken);
+        await AppendQueryAsync(hash, connection, transaction, sql, cancellationToken);
     }
 
     private static async Task AppendQueryAsync(
@@ -300,11 +439,9 @@ internal static class ProtectedStateFingerprint
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         string sql,
-        Action<NpgsqlParameterCollection>? addParameters,
         CancellationToken cancellationToken)
     {
         await using var command = new NpgsqlCommand(sql, connection, transaction);
-        addParameters?.Invoke(command.Parameters);
         await using var reader = await command.ExecuteReaderAsync(
             System.Data.CommandBehavior.SequentialAccess,
             cancellationToken);
@@ -345,7 +482,7 @@ internal static class ProtectedStateFingerprint
         hash.AppendData(bytes);
     }
 
-    private static string QuoteIdentifier(string identifier) => $"\"{identifier.Replace("\"", "\"\"", StringComparison.Ordinal)}\"";
-
     private sealed record ComponentHash(string Hash, int ProtectedSequenceCount);
+
+    private sealed record SequenceFingerprintRow(string Definition, string Name, bool IsProtected);
 }

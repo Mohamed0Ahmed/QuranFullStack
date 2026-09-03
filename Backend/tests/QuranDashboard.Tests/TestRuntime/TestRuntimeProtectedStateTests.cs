@@ -5,8 +5,8 @@ using QuranDashboard.TestRuntime;
 
 namespace QuranDashboard.Tests.TestRuntime;
 
-[Collection(nameof(TestRuntimeAdministrationCollection))]
-public sealed class TestRuntimeProtectedStateTests(TestRuntimeAdministrationFixture fixture)
+[Collection(nameof(TestRuntimeResetCollection))]
+public sealed class TestRuntimeProtectedStateTests(TestRuntimeResetFixture fixture)
 {
     [Fact]
     public async Task Fingerprint_IgnoresMutableRowsAndMutableSequenceCountersWithoutRetainingADump()
@@ -62,6 +62,18 @@ public sealed class TestRuntimeProtectedStateTests(TestRuntimeAdministrationFixt
             component => component.SystemCatalogue);
         await AssertProtectedComponentChangesInRolledBackTransactionAsync(
             "CREATE INDEX ticket_154_schema_probe ON public.linking_data_state (generation)",
+            component => component.SchemaState);
+        await AssertProtectedComponentChangesInRolledBackTransactionAsync(
+            "ALTER TABLE public.linking_data_state ADD CONSTRAINT ticket_154_constraint_probe CHECK (generation > 0)",
+            component => component.SchemaState);
+        await AssertProtectedComponentChangesInRolledBackTransactionAsync(
+            "CREATE VIEW public.ticket_154_view_probe AS SELECT generation FROM public.linking_data_state",
+            component => component.SchemaState);
+        await AssertProtectedComponentChangesInRolledBackTransactionAsync(
+            "CREATE FUNCTION public.ticket_154_function_probe() RETURNS integer LANGUAGE sql IMMUTABLE AS 'SELECT 154'",
+            component => component.SchemaState);
+        await AssertProtectedComponentChangesInRolledBackTransactionAsync(
+            "CREATE TYPE public.ticket_154_type_probe AS ENUM ('protected')",
             component => component.SchemaState);
         await AssertProtectedComponentChangesInRolledBackTransactionAsync(
             "UPDATE public.\"__EFMigrationsHistory\" SET \"ProductVersion\" = \"ProductVersion\" || '-changed'",

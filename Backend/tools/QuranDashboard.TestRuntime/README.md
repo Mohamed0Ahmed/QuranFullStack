@@ -108,7 +108,8 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- fingerprint
 
 The structured report contains separate hashes for Canonical Quran Data, the ordered System Catalogue,
 and Schema State, plus their aggregate Protected State hash. Schema coverage includes relation and column
-definitions, constraints, indexes, extensions, triggers, migration history, every sequence definition,
+definitions (including views, functions, types, and row-security policies), constraints, indexes,
+extensions, triggers, migration history, every sequence definition,
 and current values only for protected or unowned sequences. Mutable Application State rows and counters
 owned by mutable tables are deliberately excluded. Row and catalogue data are read in deterministic order
 and appended directly to incremental hashes; `dumpFilesRetained` is always zero.
@@ -126,11 +127,12 @@ dotnet run --project tools/QuranDashboard.TestRuntime -- \
   --command mutable-reset \
   --expected-fingerprint <sha256> \
   --api-port <port> \
+  --api-process-id <pid|none> \
   --phase initial
 ```
 
-Use `--phase final` for final cleanup and `--api-process-id <pid>` when a prior API process must also be
-proven stopped. Reset refuses before mutation unless capability inspection, the exact local target,
+Use `--phase final` for final cleanup. Supply the prior API process ID when one exists, or the explicit
+value `none` before the first host starts. Reset refuses before mutation unless capability inspection, the exact local target,
 markers, migration and catalogue state, resetter-role membership, exclusive lock ownership, process/port
 absence, and database-session drain all pass.
 
@@ -138,5 +140,6 @@ The single transaction truncates exactly the 35 mutable contract tables other th
 `linking_data_state`, using `CONTINUE IDENTITY RESTRICT`, then restores the existing singleton to id 1,
 generation 1, and the Unix epoch. It verifies every allowlisted table is empty and the singleton is exact,
 then proves mutable sequence values and Protected State are unchanged. A Protected State mismatch is
-reported as `protected-corrupt` and is never repaired. A cleanup failure is reported as `dirty`; recovery
-requires a later successful `--phase initial` reset with a matching Protected State fingerprint.
+reported as `protected-corrupt` and is never repaired. A cleanup failure records the database-scoped
+dirty-capability marker and is reported as `dirty`; later final resets are refused until a successful
+`--phase initial` reset matches Protected State, completes cleanup, and clears that marker.

@@ -292,9 +292,11 @@ internal static class TestRuntimeCommand
                     ? "lock.database-unavailable"
                     : request.Command == "reset"
                         ? "mutable-reset.database-operation-failed"
-                    : request.AdministrationMode is null
-                        ? "inspection.database-unavailable"
-                        : "administration.database-operation-failed",
+                        : request.Command == "fingerprint"
+                            ? "fingerprint.database-operation-failed"
+                            : request.AdministrationMode is null
+                                ? "inspection.database-unavailable"
+                                : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
@@ -334,6 +336,7 @@ internal static class TestRuntimeCommand
         string? expectedFingerprint = null;
         int? apiPort = null;
         int? apiProcessId = null;
+        var apiProcessProofProvided = false;
         string? resetPhase = null;
         for (var index = optionStart; index < args.Count; index += 2)
         {
@@ -387,12 +390,21 @@ internal static class TestRuntimeCommand
             {
                 apiPort = parsedPort;
             }
-            else if (args[index] == "--api-process-id"
-                     && command == "reset"
-                     && int.TryParse(args[index + 1], out var parsedProcessId)
-                     && parsedProcessId > 0)
+            else if (args[index] == "--api-process-id" && command == "reset")
             {
-                apiProcessId = parsedProcessId;
+                apiProcessProofProvided = true;
+                if (args[index + 1] == "none")
+                {
+                    apiProcessId = null;
+                }
+                else if (int.TryParse(args[index + 1], out var parsedProcessId) && parsedProcessId > 0)
+                {
+                    apiProcessId = parsedProcessId;
+                }
+                else
+                {
+                    return null;
+                }
             }
             else if (args[index] == "--phase"
                      && command == "reset"
@@ -425,6 +437,7 @@ internal static class TestRuntimeCommand
                                || !AdvisoryLockProtocol.IsValidCommand(lockCommand)
                                || expectedFingerprint is null
                                || apiPort is null
+                               || !apiProcessProofProvided
                                || resetPhase is null);
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration
@@ -558,7 +571,7 @@ internal static class TestRuntimeCommand
         error.WriteLine("Usage:");
         error.WriteLine("  QuranDashboard.TestRuntime contract validate [--contract <path>]");
         error.WriteLine($"  QuranDashboard.TestRuntime fingerprint [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
-        error.WriteLine($"  QuranDashboard.TestRuntime reset --run-id <run-id> --command <command> --expected-fingerprint <sha256> --api-port <port> [--api-process-id <pid>] --phase initial|final  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime reset --run-id <run-id> --command <command> --expected-fingerprint <sha256> --api-port <port> --api-process-id <pid|none> --phase initial|final  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime inspect [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin inspect|dry-run|verify --login <local-login> [--contract <path>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime admin apply --login <local-login> --run-id <run-id> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");

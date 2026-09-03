@@ -33,7 +33,7 @@ internal sealed record CatalogueReport(
     int PermissionCount,
     IReadOnlyList<ContractViolation> Violations);
 
-internal sealed record MarkerState(bool Present, bool? MatchesExpected);
+internal sealed record MarkerState(bool Present, bool? MatchesExpected, bool? IsDirty = null);
 
 internal sealed record MarkerReport(
     bool Healthy,

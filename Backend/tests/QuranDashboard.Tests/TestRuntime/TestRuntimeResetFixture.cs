@@ -29,7 +29,6 @@ public sealed class TestRuntimeResetFixture : IAsyncLifetime
         await using (var connection = new NpgsqlConnection(maintenanceConnection.ConnectionString))
         {
             await connection.OpenAsync();
-            await ExecuteAsync(connection, "CREATE DATABASE quran_dashboard TEMPLATE template0");
             await ExecuteAsync(connection, "CREATE DATABASE quran_dashboard_test TEMPLATE template0");
         }
 
