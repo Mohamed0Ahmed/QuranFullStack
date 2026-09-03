@@ -26,6 +26,7 @@ internal static class TestRuntimeCommand
         TextWriter output,
         TextWriter error,
         Func<string, string?>? readEnvironment = null,
+        TextReader? input = null,
         CancellationToken cancellationToken = default,
         CapabilityRefreshDependencies? refreshDependencies = null)
     {
@@ -171,6 +172,61 @@ internal static class TestRuntimeCommand
                 return SuccessExitCode;
             }
 
+            if (request.ScratchAction is not null)
+            {
+                var scratch = request.ScratchAction switch
+                {
+                    "create" => await ScratchDatabaseLifecycle.CreateAsync(
+                        contract,
+                        targetValidation,
+                        request.RunId!,
+                        request.LockCommand!,
+                        request.ScratchSubtype!,
+                        cancellationToken),
+                    "resolve" => await ScratchDatabaseLifecycle.ResolveAsync(
+                        contract,
+                        targetValidation,
+                        request.RunId!,
+                        request.LockCommand!,
+                        request.ScratchSubtype!,
+                        cancellationToken),
+                    "cleanup" => await ScratchDatabaseLifecycle.CleanupAsync(
+                        contract,
+                        targetValidation,
+                        request.RunId!,
+                        request.LockCommand!,
+                        cancellationToken),
+                    "reap" => await ScratchDatabaseLifecycle.ReapAsync(
+                        contract,
+                        targetValidation,
+                        request.RunId!,
+                        request.LockCommand!,
+                        cancellationToken),
+                    _ => throw new InvalidOperationException("Unsupported scratch lifecycle action."),
+                };
+                WriteReport(output, new TestRuntimeReport(
+                    request.Command,
+                    scratch.Succeeded,
+                    DatabaseInspector.ToContractReport(contract, validation),
+                    new TargetReport(
+                        targetValidation.Database,
+                        targetValidation.EndpointKind,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null),
+                    null,
+                    null,
+                    null,
+                    null,
+                    scratch.Violations,
+                    Scratch: scratch.Report));
+                return scratch.Succeeded ? SuccessExitCode : ValidationFailureExitCode;
+            }
+
             if (request.Command == "reset")
             {
                 var inspection = await DatabaseInspector.InspectAsync(
@@ -221,6 +277,7 @@ internal static class TestRuntimeCommand
                     validation,
                     targetValidation,
                     output,
+                    input,
                     cancellationToken);
             }
 
@@ -288,6 +345,7 @@ internal static class TestRuntimeCommand
         catch (Exception exception) when (exception is NpgsqlException
                                           or SocketException
                                           or IOException
+                                          or JsonException
                                           or InvalidOperationException)
         {
             WriteReport(output, new TestRuntimeReport(
@@ -310,15 +368,19 @@ internal static class TestRuntimeCommand
                 null,
                 [new ContractViolation(request.LockMode is not null
                     ? "lock.database-unavailable"
-                    : request.Command == "reset"
-                        ? "mutable-reset.database-operation-failed"
-                        : request.Command == "fingerprint"
-                            ? "fingerprint.database-operation-failed"
-                            : request.RefreshMode is not null
-                                ? "refresh.database-operation-failed"
-                                : request.AdministrationMode is null
-                                    ? "inspection.database-unavailable"
-                                    : "administration.database-operation-failed",
+                    : request.ScratchAction is not null
+                        ? exception is JsonException
+                            ? "scratch.receipt.malformed"
+                            : "scratch.database-operation-failed"
+                        : request.Command == "reset"
+                            ? "mutable-reset.database-operation-failed"
+                            : request.Command == "fingerprint"
+                                ? "fingerprint.database-operation-failed"
+                                : request.RefreshMode is not null
+                                    ? "refresh.database-operation-failed"
+                                    : request.AdministrationMode is null
+                                        ? "inspection.database-unavailable"
+                                        : "administration.database-operation-failed",
                     exception is PostgresException postgresException ? postgresException.SqlState : null)],
                 exception.GetType().Name));
             return OperationalFailureExitCode;
@@ -342,6 +404,10 @@ internal static class TestRuntimeCommand
             ["refresh", "apply", ..] => "refresh-apply",
             ["refresh", "verify", ..] => "refresh-verify",
             ["lock", "hold", ..] => "lock-hold",
+            ["scratch", "create", ..] => "scratch-create",
+            ["scratch", "resolve", ..] => "scratch-resolve",
+            ["scratch", "cleanup", ..] => "scratch-cleanup",
+            ["scratch", "reap", ..] => "scratch-reap",
             _ => null,
         };
         if (command is null)
@@ -352,6 +418,7 @@ internal static class TestRuntimeCommand
         var optionStart = command is "contract-validate" or "lock-hold"
                           || command.StartsWith("admin-", StringComparison.Ordinal)
                           || command.StartsWith("refresh-", StringComparison.Ordinal)
+                          || command.StartsWith("scratch-", StringComparison.Ordinal)
             ? 2
             : 1;
         var contractPath = Path.Combine(AppContext.BaseDirectory, "test-database-contract.json");
@@ -367,11 +434,22 @@ internal static class TestRuntimeCommand
         int? apiProcessId = null;
         var apiProcessProofProvided = false;
         string? resetPhase = null;
+        string? scratchSubtype = null;
+        var releaseOnStdinClose = false;
         for (var index = optionStart; index < args.Count;)
         {
             if (args[index] == "--yes" && command == "refresh-apply" && !refreshConfirmed)
             {
                 refreshConfirmed = true;
+                index++;
+                continue;
+            }
+
+            if (args[index] == "--release-on-stdin-close"
+                && command == "lock-hold"
+                && !releaseOnStdinClose)
+            {
+                releaseOnStdinClose = true;
                 index++;
                 continue;
             }
@@ -383,7 +461,8 @@ internal static class TestRuntimeCommand
 
             if (args[index] == "--contract"
                 && command is not "admin-apply" and not "lock-hold" and not "reset"
-                && !command.StartsWith("refresh-", StringComparison.Ordinal))
+                && !command.StartsWith("refresh-", StringComparison.Ordinal)
+                && !command.StartsWith("scratch-", StringComparison.Ordinal))
             {
                 contractPath = args[index + 1];
             }
@@ -395,7 +474,9 @@ internal static class TestRuntimeCommand
             {
                 selectedLogin = args[index + 1];
             }
-            else if (args[index] == "--run-id" && command is "admin-apply" or "lock-hold" or "reset" or "refresh-apply")
+            else if (args[index] == "--run-id"
+                     && (command is "admin-apply" or "lock-hold" or "reset" or "refresh-apply"
+                         || command.StartsWith("scratch-", StringComparison.Ordinal)))
             {
                 runId = args[index + 1];
             }
@@ -403,7 +484,9 @@ internal static class TestRuntimeCommand
             {
                 refreshReason = args[index + 1];
             }
-            else if (args[index] == "--command" && command is "lock-hold" or "reset")
+            else if (args[index] == "--command"
+                     && (command is "lock-hold" or "reset"
+                         || command.StartsWith("scratch-", StringComparison.Ordinal)))
             {
                 lockCommand = args[index + 1];
             }
@@ -458,6 +541,11 @@ internal static class TestRuntimeCommand
             {
                 resetPhase = args[index + 1];
             }
+            else if (args[index] == "--subtype"
+                     && command is "scratch-create" or "scratch-resolve")
+            {
+                scratchSubtype = args[index + 1];
+            }
             else
             {
                 return null;
@@ -503,12 +591,23 @@ internal static class TestRuntimeCommand
                                || !apiProcessProofProvided
                                || (resetPhase == "final" && apiProcessId is null)
                                || resetPhase is null);
+        var scratchAction = command.StartsWith("scratch-", StringComparison.Ordinal)
+            ? command["scratch-".Length..]
+            : null;
+        var invalidScratch = scratchAction is not null
+                             && (!AdvisoryLockProtocol.IsValidRunId(runId)
+                                 || !AdvisoryLockProtocol.IsValidCommand(lockCommand)
+                                 || (scratchAction is "create" or "resolve"
+                                     && string.IsNullOrWhiteSpace(scratchSubtype))
+                                 || (scratchAction is "cleanup" or "reap"
+                                     && scratchSubtype is not null));
         return string.IsNullOrWhiteSpace(contractPath)
                || invalidAdministration
                || invalidApply
                || invalidRefresh
                || invalidLock
                || invalidReset
+               || invalidScratch
             ? null
             : new CommandRequest(
                 command,
@@ -525,7 +624,10 @@ internal static class TestRuntimeCommand
                 resetPhase,
                 refreshReason,
                 refreshConfirmed,
-                refreshMode);
+                refreshMode,
+                scratchAction,
+                scratchSubtype,
+                releaseOnStdinClose);
     }
 
     private static async Task<int> HoldLockAsync(
@@ -534,6 +636,7 @@ internal static class TestRuntimeCommand
         ContractValidationResult validation,
         InspectionTargetValidation targetValidation,
         TextWriter output,
+        TextReader? input,
         CancellationToken cancellationToken)
     {
         var acquisition = await AdvisoryLockProtocol.AcquireAsync(
@@ -577,7 +680,14 @@ internal static class TestRuntimeCommand
             await output.FlushAsync();
             try
             {
-                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                if (request.ReleaseOnStdinClose)
+                {
+                    await (input ?? TextReader.Null).ReadLineAsync(cancellationToken);
+                }
+                else
+                {
+                    await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+                }
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -645,7 +755,9 @@ internal static class TestRuntimeCommand
         error.WriteLine($"  QuranDashboard.TestRuntime admin apply --login <local-login> --run-id <run-id> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime refresh inspect|dry-run|verify --login <local-login>  # reads {DefaultConnectionStringEnvironmentVariable}");
         error.WriteLine($"  QuranDashboard.TestRuntime refresh apply --login <local-login> --run-id <run-id> --reason <reason> --yes  # reads {DefaultConnectionStringEnvironmentVariable}");
-        error.WriteLine($"  QuranDashboard.TestRuntime lock hold --mode shared|exclusive --run-id <run-id> --command <command> [--timeout-seconds <seconds>]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime lock hold --mode shared|exclusive --run-id <run-id> --command <command> [--timeout-seconds <seconds>] [--release-on-stdin-close]  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime scratch create|resolve --run-id <run-id> --command <command> --subtype <subtype>  # reads {DefaultConnectionStringEnvironmentVariable}");
+        error.WriteLine($"  QuranDashboard.TestRuntime scratch cleanup|reap --run-id <run-id> --command <command>  # reads {DefaultConnectionStringEnvironmentVariable}");
     }
 
     private sealed record CommandRequest(
@@ -663,5 +775,8 @@ internal static class TestRuntimeCommand
         string? ResetPhase = null,
         string? RefreshReason = null,
         bool RefreshConfirmed = false,
-        CapabilityRefreshMode? RefreshMode = null);
+        CapabilityRefreshMode? RefreshMode = null,
+        string? ScratchAction = null,
+        string? ScratchSubtype = null,
+        bool ReleaseOnStdinClose = false);
 }

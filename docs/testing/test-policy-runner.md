@@ -53,3 +53,11 @@ empty-scratch DestructiveRehearsal, and full-data DestructiveRehearsal. Legacy e
 separate temporary partition. In both focused and pre-PR modes, full-data work is omitted and reported
 in `authorizationRequired` unless the operator reviews the dry run and repeats the command with
 `--authorize-full-data`. Merely having a canonical pipeline in the repository never selects it.
+
+The empty-scratch partition is executable rather than plan-only. For each exact Backend selection,
+`scripts/test` holds the TestRuntime global exclusive lock, removes only receipt-verified crash leftovers,
+creates a runner-owned PostgreSQL 18 database from `template0`, supplies its receipt-validated context to
+the selected test process, and performs verified cleanup before releasing the lock. Migration-path,
+Permission catalogue reconciliation, and schema-drift classes are the initial migrated empty-scratch
+coverage. They remain cheap pre-PR candidates when Access or Schema scope selects them; the partition does
+not authorize or select any unrelated full canonical pipeline.

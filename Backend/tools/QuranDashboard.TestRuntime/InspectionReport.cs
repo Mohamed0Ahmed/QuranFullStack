@@ -73,7 +73,21 @@ internal sealed record TestRuntimeReport(
     AdvisoryLockReport? AdvisoryLock = null,
     ProtectedStateFingerprintReport? ProtectedStateFingerprint = null,
     MutableResetReport? MutableReset = null,
-    CapabilityRefreshReport? Refresh = null);
+    CapabilityRefreshReport? Refresh = null,
+    ScratchLifecycleReport? Scratch = null);
+
+internal sealed record ScratchLifecycleReport(
+    string Mode,
+    string? Database,
+    string Owner,
+    string? RunId,
+    string? Subtype,
+    string Template,
+    bool ReceiptRecorded,
+    bool Validated,
+    bool Removed,
+    IReadOnlyList<string> RemovedDatabases,
+    int DumpFilesRetained);
 
 internal sealed record CapabilityRefreshReport(
     string Mode,

@@ -123,7 +123,9 @@
     "migrationHead": "quran_dashboard.test_runtime.migration_head",
     "refreshedAtUtc": "quran_dashboard.test_runtime.refreshed_at_utc",
     "rehearsalEnabled": "quran_dashboard.test_runtime.rehearsal_enabled",
-    "rehearsalSubtype": "quran_dashboard.test_runtime.rehearsal_subtype"
+    "rehearsalSubtype": "quran_dashboard.test_runtime.rehearsal_subtype",
+    "scratchRunId": "quran_dashboard.test_runtime.scratch_run_id",
+    "scratchReceipt": "quran_dashboard.test_runtime.scratch_receipt"
   },
   "targets": {
     "developmentDatabase": "quran_dashboard",

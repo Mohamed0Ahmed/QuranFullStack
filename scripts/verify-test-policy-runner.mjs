@@ -29,7 +29,7 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
   row('Tests.Guarded', 'PhraseSearch', 'Database', 'TierB', '', 'GuardedReader', 'CanonicalQuranData', 'None', 'TestDatabase', 'None', 'None', 'Migrated'),
   row('Tests.Writer', 'Access', 'Database', 'TierB', '', 'MutableWriter', 'SystemCatalogue', 'MutableApplicationState', 'TestDatabase', 'None', 'None', 'Migrated'),
   row('Tests.FixtureUpgraded', 'Access', 'Database', 'TierB', '', 'CanonicalReader', 'SystemCatalogue', 'None', 'TestDatabase', 'None', 'WriterCollection', 'Migrated'),
-  row('Tests.EmptyMigration', 'Access', 'Migration', 'Pipeline', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'None', 'Migrated'),
+  row('Tests.EmptyMigration', 'Access', 'Migration', 'Pipeline', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'ScratchCollection', 'Migrated'),
   row('Tests.FullImport', 'FoundationImport', 'Canonical', 'Pipeline', 'Cli,Source,Safety', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.OtherFullImport', 'Tafsirs', 'Canonical', 'Pipeline', 'Cli,Source', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.LegacyFull', 'Smoke', 'Canonical', 'Smoke', '', '', '', '', '', '', '', 'Unmigrated'),
@@ -39,6 +39,7 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
 const resourceCatalog = parseBackendResourceCatalog(`${[
   'CollectionName\tResourceClassName\tParallelPolicy\tStatePolicy\tSetupWrites\tResetBehavior\tDatabaseTarget\tStartupEffects\tMigrationState',
   'WriterCollection\tTests.WriterFixture\tNonParallel\tResetPerTest\tMutableApplicationState\tMutableApplicationState\tTestDatabase\tMutableApi\tMigrated',
+  'ScratchCollection\tTests.ScratchFixture\tNonParallel\tFreshLeasePerCase\tSchemaState\tNone\tEmptyScratch\tNone\tMigrated',
 ].join('\n')}\n`);
 
 assert.deepEqual(EXECUTION_GROUPS, [
@@ -168,6 +169,7 @@ assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-critical'));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
+assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));
 assert.deepEqual(
   ordinaryPrePr.partitions.map(({ group }) => group),
   ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],
@@ -213,6 +215,10 @@ const cheapScratch = planPrePrSelection({
 });
 assert.ok(cheapScratch.commands.some(({ id }) => id.includes('Tests.EmptyMigration')));
 assert.deepEqual(cheapScratch.authorizationRequired, []);
+assert.equal(
+  cheapScratch.commands.find(({ id }) => id.includes('Tests.EmptyMigration')).scratchSubtype,
+  'migration',
+);
 
 assert.deepEqual(
   planPrePrSelection({

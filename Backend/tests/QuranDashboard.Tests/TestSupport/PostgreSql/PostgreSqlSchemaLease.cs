@@ -22,8 +22,16 @@ internal sealed class PostgreSqlSchemaLease : IAsyncDisposable
         string owner,
         CancellationToken cancellationToken = default)
     {
+        return await CreateAsync(database.ConnectionString, owner, cancellationToken);
+    }
+
+    internal static async Task<PostgreSqlSchemaLease> CreateAsync(
+        string databaseConnectionString,
+        string owner,
+        CancellationToken cancellationToken = default)
+    {
         var schemaName = PostgreSqlDatabaseName.CreateSchema(owner);
-        var maintenanceConnectionString = new NpgsqlConnectionStringBuilder(database.ConnectionString)
+        var maintenanceConnectionString = new NpgsqlConnectionStringBuilder(databaseConnectionString)
         {
             Pooling = false
         }.ConnectionString;
@@ -33,7 +41,7 @@ internal sealed class PostgreSqlSchemaLease : IAsyncDisposable
             $"CREATE SCHEMA {PostgreSqlDatabaseName.Quote(schemaName)}",
             cancellationToken);
 
-        var connectionString = new NpgsqlConnectionStringBuilder(database.ConnectionString)
+        var connectionString = new NpgsqlConnectionStringBuilder(databaseConnectionString)
         {
             SearchPath = schemaName
         }.ConnectionString;

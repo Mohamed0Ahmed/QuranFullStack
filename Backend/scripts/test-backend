@@ -23,6 +23,7 @@ EXCLUSIVE_POSTGRES_CLASSES=(
   "QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests"
   "QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests"
+  "QuranDashboard.Tests.TestRuntime.TestRuntimeScratchTests"
 )
 POSTGRES_CONTAINER_FILTERS=(
   --filter "label=com.qurandashboard.test.owner=backend-tests"

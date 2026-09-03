@@ -17,6 +17,7 @@ internal static class Program
                 args,
                 Console.Out,
                 Console.Error,
+                input: Console.In,
                 cancellationToken: cancellation.Token);
         }
         finally

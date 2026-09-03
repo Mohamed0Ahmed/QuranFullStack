@@ -148,6 +148,43 @@ System Catalogue reconciliation has a strict nested order: acquire and verify th
 first, then begin the reconciliation transaction and acquire its narrower transaction-level catalogue lock.
 Never acquire the catalogue lock while waiting for the global lock.
 
+## Run empty-scratch Destructive Rehearsals
+
+Use repository-root `scripts/test` for every migrated empty-scratch test. The runner holds the global
+exclusive lock, reaps only receipt-verified leftovers, creates exactly
+`quran_test_scratch_<32-lowercase-hex-run-id>` from `template0` on the configured local PostgreSQL 18
+server, runs one exact class or method selection, and removes the database before releasing the lock.
+
+The lifecycle commands are lower-level runner operations:
+
+```bash
+dotnet QuranDashboard.TestRuntime.dll lock hold --mode exclusive \
+  --run-id <run-id> --command scratch-rehearsal --release-on-stdin-close
+dotnet QuranDashboard.TestRuntime.dll scratch reap \
+  --run-id <run-id> --command scratch-rehearsal
+dotnet QuranDashboard.TestRuntime.dll scratch create \
+  --run-id <run-id> --command scratch-rehearsal --subtype migration
+dotnet QuranDashboard.TestRuntime.dll scratch resolve \
+  --run-id <run-id> --command scratch-rehearsal --subtype migration
+dotnet QuranDashboard.TestRuntime.dll scratch cleanup \
+  --run-id <run-id> --command scratch-rehearsal
+```
+
+`ConnectionStrings__QuranDashboardTest` remains the local server/base-capability connection and must name
+exactly `quran_dashboard_test`; it is never rewritten to the Development Database. Creation requires the
+provisioned `quran_dashboard_test_scratch_admin` role, its expected `CREATEDB`/`NOLOGIN` attributes, current
+login membership, PostgreSQL 18, non-recovery state, and the matching exclusive keeper identity. The
+scratch owner is always that role. Empty-scratch subtypes are canonical import, rebuild, and generation,
+migration, System Catalogue reconciliation, and schema drift; full-data recovery and PhraseSearch index
+rehearsals are refused.
+
+A private temporary receipt is recorded before database creation. The database records the same run ID,
+subtype, and receipt token in database-scoped settings. Normal and crash cleanup check the strict name,
+owner, run ID, subtype, receipt, and current exclusive lock before `DROP DATABASE`; any mismatch remains
+for inspection. Reports contain identities and booleans only, retain zero dump files, and never emit a
+connection string or credential. Closing the runner's lifetime pipe releases the keeper connection, so a
+killed runner cannot orphan the global advisory lock; its database is handled by the next verified reap.
+
 ## Fingerprint Protected State
 
 The control plane computes one deterministic SHA-256 fingerprint without writing a database dump or an

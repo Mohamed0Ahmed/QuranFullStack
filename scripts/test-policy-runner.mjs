@@ -419,6 +419,7 @@ function backendSelection(entry, resourceCatalog, selectorType, selector) {
     selector,
     className: entry.className,
     group: backendExecutionGroup(entry, resourceCatalog),
+    destructiveSubtype: entry.policy?.destructiveSubtype ?? null,
     legacyLane: entry.migrationState === 'Unmigrated'
       ? legacyReleaseLane(entry.className)
       : null,
@@ -533,6 +534,15 @@ function selectionCommand(selection) {
     'Backend/scripts/test-backend',
     ['feature', option, selection.selector, '--no-build'],
     selection.group,
+    selection.group === 'EmptyScratchDestructiveRehearsal'
+      ? { scratchSubtype: toScratchSubtype(selection.destructiveSubtype) }
+      : {},
+  );
+}
+
+function toScratchSubtype(subtype) {
+  return subtype.replace(/[A-Z]/g, (letter, offset) =>
+    `${offset === 0 ? '' : '-'}${letter.toLowerCase()}`,
   );
 }
 
@@ -566,8 +576,8 @@ function backendBuildCommand() {
   ]);
 }
 
-function command(id, cwd, executable, arguments_, group = null) {
-  return { id, cwd, executable, arguments: arguments_, group };
+function command(id, cwd, executable, arguments_, group = null, metadata = {}) {
+  return { id, cwd, executable, arguments: arguments_, group, ...metadata };
 }
 
 function requireBackendClass(catalog, className) {
