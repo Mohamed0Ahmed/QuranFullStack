@@ -14,17 +14,18 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
     private readonly List<string> tempDirs = [];
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(FullI3rabImportTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+            nameof(FullI3rabImportTestFixture),
+            "canonical-import");
 
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratchConnectionString));
         }
         catch
         {
@@ -38,11 +39,7 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
 
         DeleteTempDirs();
     }

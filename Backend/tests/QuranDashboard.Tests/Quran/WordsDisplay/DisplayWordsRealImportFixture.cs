@@ -10,7 +10,7 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 {
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public int ImportRunCount { get; private set; }
@@ -28,12 +28,13 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
             return;
         }
 
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(DisplayWordsRealImportFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+            nameof(DisplayWordsRealImportFixture),
+            "canonical-rebuild");
 
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratchConnectionString));
             await ImportAndRebuildAsync();
         }
         catch
@@ -48,11 +49,7 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
 
         DeleteRebuildReportDir();
     }
@@ -140,7 +137,7 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
 
     private ServiceProvider InitializedRootProvider =>
         rootProvider ?? throw new InvalidOperationException(
-            $"{nameof(DisplayWordsRealImportFixture)} holds no database. Use it through the "
+            $"{nameof(DisplayWordsRealImportFixture)} holds no runner-owned scratch database. Use it through the "
             + $"[{nameof(DisplayWordsRealImportCollection)}] collection fixture, and mark every case that reaches "
             + $"the database with [{nameof(CanonicalImportSourceFactAttribute)}] or "
             + $"[{nameof(CanonicalImportSourceTheoryAttribute)}] so it skips when "

@@ -24,18 +24,19 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(I3rabGenerationTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+            nameof(I3rabGenerationTestFixture),
+            "canonical-generation");
 
         try
         {
             rootProvider = ownedProviders.Own(
-                BuildServiceProvider(databaseLease.ConnectionString, expectedCounts: null, configure: null));
+                BuildServiceProvider(scratchConnectionString, expectedCounts: null, configure: null));
         }
         catch
         {
@@ -49,11 +50,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
     }
 
     public AsyncServiceScope CreateScope()
@@ -68,7 +65,7 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
         Action<IServiceCollection>? configure = null)
     {
         reportOutDir ??= Path.Combine(Path.GetTempPath(), $"simple-i3rab-report-{Guid.NewGuid():N}");
-        await using var runProvider = BuildServiceProvider(LeasedConnectionString, expectedCounts, configure);
+        await using var runProvider = BuildServiceProvider(ScratchConnectionString, expectedCounts, configure);
         await using var scope = runProvider.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<GenerateI3rabHandler>();
         return await handler.HandleAsync(new GenerateI3rabCommand(force, reportOutDir), CancellationToken.None);
@@ -258,9 +255,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
             $"{nameof(I3rabGenerationTestFixture)} has not been initialized. Use it through the "
             + $"[{nameof(I3rabGenerationTestCollection)}] collection fixture.");
 
-    private string LeasedConnectionString =>
-        databaseLease?.ConnectionString ?? throw new InvalidOperationException(
-            $"{nameof(I3rabGenerationTestFixture)} holds no database lease. Use it through the "
+    private string ScratchConnectionString =>
+        scratchConnectionString ?? throw new InvalidOperationException(
+            $"{nameof(I3rabGenerationTestFixture)} holds no runner-owned scratch database. Use it through the "
             + $"[{nameof(I3rabGenerationTestCollection)}] collection fixture.");
 
     private static ServiceProvider BuildServiceProvider(

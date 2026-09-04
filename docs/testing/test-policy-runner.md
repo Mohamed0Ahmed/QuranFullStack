@@ -68,6 +68,14 @@ Permission catalogue reconciliation, and schema-drift classes are the initial mi
 coverage. They remain cheap pre-PR candidates when Access or Schema scope selects them; the partition does
 not authorize or select any unrelated full canonical pipeline.
 
+Morphology and enriched-morphology imports, display-word rebuilds, simple i'rab generation, and full i'rab
+imports also use the empty-scratch partition. Their database-writing classes apply committed migrations
+inside the receipt-bound scratch database and never provision a PostgreSQL server or target
+`quran_dashboard_test`. Parsing, normalization, assembly, artifact, and manifest checks that do not need a
+database remain `FastNoDb`. Ordinary pre-PR selection excludes the destructive pipeline classes; affected
+feature, source, schema, contract, or safety scope selects them, as does an explicit scheduled/release
+policy.
+
 Migrated full-data PhraseSearch index and recovery selections use the manual full Rehearsal Database
 capability only after `--authorize-full-data`. The root runner asks TestRuntime to validate the dedicated
 rehearsal connection, recompute its Protected State fingerprint, verify its subtype, provenance, migration,
