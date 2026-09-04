@@ -225,7 +225,6 @@ internal static class ScratchDatabaseLifecycle
         "migration",
         "system-catalogue-reconciliation",
         "schema-drift",
-        "phrase-search-index-build",
     };
 
     internal static async Task<ScratchLifecycleResult> CreateAsync(

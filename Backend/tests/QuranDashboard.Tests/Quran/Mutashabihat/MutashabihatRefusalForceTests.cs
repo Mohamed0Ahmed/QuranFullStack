@@ -3,8 +3,8 @@ using QuranDashboard.Application.Quran.DataPipelines.Mutashabihat;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 
-[Collection(nameof(MutashabihatImportTestCollection))]
-public sealed class MutashabihatRefusalForceTests(MutashabihatImportTestFixture fixture)
+[Collection(nameof(MutashabihatRebuildTestCollection))]
+public sealed class MutashabihatRefusalForceTests(MutashabihatRebuildTestFixture fixture)
 {
     private static readonly MutashabihatExpectedCounts SyntheticExpected = new(1, 2, 2, 1, 1, 2);
 

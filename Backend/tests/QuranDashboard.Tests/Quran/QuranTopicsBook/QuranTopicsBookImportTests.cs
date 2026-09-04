@@ -68,7 +68,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task SourceReader_RejectsAChangedChecksumSidecarAfterValidation()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
         var reader = new QuranTopicsBookSourceReader();
         var loaded = await reader.LoadAsync(package.SourcePath, CancellationToken.None);
@@ -83,7 +83,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_RejectsAnInvalidChecksumBeforeAnyTargetMutation()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
         await QuranTopicsBookSyntheticPackageWriter.WriteChecksumSidecarAsync(
             package.SourcePath,
@@ -104,7 +104,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task SourceReader_RejectsAChecksumSidecarBoundToAnotherSourceFile()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
         var sourceSha256 = Convert.ToHexStringLower(SHA256.HashData(await File.ReadAllBytesAsync(package.SourcePath)));
         await QuranTopicsBookSyntheticPackageWriter.WriteChecksumSidecarAsync(
@@ -124,7 +124,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task SourceReader_RejectsANonUtf8ChecksumSidecar()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
         await File.WriteAllBytesAsync(package.SourcePath + ".sha256", [0xff]);
         var reader = new QuranTopicsBookSourceReader();
@@ -149,7 +149,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
         string invalidContract,
         string expectedError)
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(
             database.TempDirectory,
             document => ApplyInvalidContract(document, invalidContract));
@@ -166,7 +166,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_RejectsAnInactiveOrNonOwnerActorBeforeAnyTargetMutation()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
 
@@ -184,7 +184,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_RejectsAMissingCanonicalVerseWithoutPartialTopicsOrProjections()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var actorUserId = await fixture.CreateActiveOwnerAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(
@@ -206,7 +206,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_RefusesANonEmptyTargetAndValidateOnlyLeavesItUntouched()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var actorUserId = await fixture.CreateActiveOwnerAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
@@ -250,7 +250,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_RejectsATargetBehindTheCompiledMigrationHeadBeforeMutation()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
         await using (var connection = new NpgsqlConnection(database.ConnectionString))
         {
@@ -282,7 +282,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Import_RollsBackAllTopicsAndProjectionsWhenTheChecksumChangesBeforeCommit()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var actorUserId = await fixture.CreateActiveOwnerAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
@@ -313,7 +313,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_FailsClosedAndReportsUnknownPersistenceAfterAnAmbiguousCommitAcknowledgement()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var actorUserId = await fixture.CreateActiveOwnerAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);
@@ -334,7 +334,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
     [Fact]
     public async Task Command_ImportsExactHierarchyManualContributionsAndFullAyahProjections()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedCanonicalMushafSliceAsync(database);
         var actorUserId = await fixture.CreateActiveOwnerAsync(database);
         var package = await QuranTopicsBookSyntheticPackageWriter.WriteAsync(database.TempDirectory);

@@ -25,7 +25,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task MissingStorageProof_FailsBeforeSourceBootstrap_AndCreatesNoBuildAudit()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
 
         var run = await fixture.RunBuildAsync(database);
 
@@ -45,7 +45,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task MissingFoundation_FailsClosedBeforeBuildRowsExist()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
 
         var run = await fixture.RunBuildAsync(
             database,
@@ -65,7 +65,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task MissingWordIdentity_FailsClosedBeforeBuildRowsExist()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         await fixture.SeedMushafSliceWithMissingWordIdentityAsync(database);
 
         var run = await fixture.RunBuildAsync(
@@ -86,7 +86,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task IncompleteBuild_IsRecoveredWithoutAnActivePointer_AndLeavesNoChildData()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var buildId = await fixture.SeedIncompleteBuildAsync(database);
 
         var run = await fixture.RunBuildAsync(
@@ -107,7 +107,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task ExistingActiveBuild_RefusesSecondAndForceAttempts_WithoutReplacingIt()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var activeBuildId = await fixture.SeedValidatedBuildAsync(database);
         await fixture.ActivateSeededBuildAsync(database, activeBuildId);
 
@@ -125,7 +125,7 @@ public sealed class PhraseIndexBuildActivationTests(PhraseIndexBuildActivationFi
     [Fact]
     public async Task ActivatedBuild_ReportAndRuntimeCapabilitiesAgreeOnTheOnlyReadyBuild()
     {
-        await using var database = await fixture.LeaseDatabaseAsync();
+        await using var database = await fixture.ResetDatabaseAsync();
         var buildId = await fixture.SeedValidatedBuildAsync(database);
 
         await fixture.ActivateSeededBuildAsync(database, buildId);
@@ -158,7 +158,7 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
     {
         scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(PhraseIndexBuildActivationFixture),
-            DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
+            DestructiveRehearsalSubtype.CanonicalGeneration);
     }
 
     public Task DisposeAsync()
@@ -175,60 +175,14 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
         return Task.CompletedTask;
     }
 
-    internal async Task<PhraseIndexBuildActivationDatabase> LeaseDatabaseAsync()
+    internal async Task<PhraseIndexBuildActivationDatabase> ResetDatabaseAsync()
     {
         var connectionString = scratchConnectionString
             ?? throw new InvalidOperationException("PhraseIndexBuildActivationFixture not initialized.");
-        await ResetDatabaseAsync(connectionString);
+        await MigratedScratchDatabase.ResetAndMigrateAsync(connectionString);
         var reportRoot = Path.Combine(Path.GetTempPath(), $"phrase-index-activation-{Guid.NewGuid():N}");
         temporaryDirectories.Add(reportRoot);
         return new PhraseIndexBuildActivationDatabase(connectionString, reportRoot);
-    }
-
-    private static async Task ResetDatabaseAsync(string connectionString)
-    {
-        await using var connection = new NpgsqlConnection(connectionString);
-        await connection.OpenAsync();
-        await using var command = new NpgsqlCommand(
-            """
-            TRUNCATE
-                quran_phrase_search_tokens,
-                quran_phrase_index_builds,
-                quran_words,
-                quran_ayahs,
-                quran_surahs,
-                quran_mushaf_pages
-            RESTART IDENTITY CASCADE;
-
-            INSERT INTO quran_phrase_index_state (
-                id,
-                source_revision,
-                source_fingerprint,
-                active_build_id,
-                previous_build_id,
-                is_stale,
-                stale_reason,
-                updated_at_utc)
-            VALUES (
-                1,
-                0,
-                NULL,
-                NULL,
-                NULL,
-                FALSE,
-                NULL,
-                CURRENT_TIMESTAMP)
-            ON CONFLICT (id) DO UPDATE
-            SET source_revision = 0,
-                source_fingerprint = NULL,
-                active_build_id = NULL,
-                previous_build_id = NULL,
-                is_stale = FALSE,
-                stale_reason = NULL,
-                updated_at_utc = CURRENT_TIMESTAMP;
-            """,
-            connection);
-        await command.ExecuteNonQueryAsync();
     }
 
     internal async Task<PhraseIndexBuildCommandRun> RunBuildAsync(

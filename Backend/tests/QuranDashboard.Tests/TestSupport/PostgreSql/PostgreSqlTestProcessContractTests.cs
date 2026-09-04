@@ -63,6 +63,30 @@ public sealed class PostgreSqlTestProcessContractTests
     }
 
     [Fact]
+    public async Task ResetAndMigrate_RecreatesTheCompleteCurrentSchemaAndMigrationSeedData()
+    {
+        await using var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);
+        await PostgreSqlContractProbe.ExecuteAsync(
+            lease.ConnectionString,
+            "CREATE TABLE stale_reset_probe (id integer); DELETE FROM quran_phrase_index_state;");
+
+        await MigratedScratchDatabase.ResetAndMigrateAsync(lease.ConnectionString);
+
+        (await PostgreSqlContractProbe.ScalarAsync(
+                lease.ConnectionString,
+                "SELECT to_regclass('public.stale_reset_probe') IS NULL"))
+            .Should().Be(true);
+        (await PostgreSqlContractProbe.ScalarAsync(
+                lease.ConnectionString,
+                "SELECT count(*) FROM \"__EFMigrationsHistory\""))
+            .Should().BeOfType<long>().Which.Should().BeGreaterThan(0);
+        (await PostgreSqlContractProbe.ScalarAsync(
+                lease.ConnectionString,
+                "SELECT count(*) FROM quran_phrase_index_state WHERE id = 1"))
+            .Should().Be(1L);
+    }
+
+    [Fact]
     public async Task LeaseDisposal_ClearsOnlyItsOwnConnectionPool()
     {
         await using var survivor = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(Owner);

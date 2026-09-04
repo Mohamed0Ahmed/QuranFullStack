@@ -26,13 +26,15 @@ public sealed class TestRuntimeScratchTests(TestRuntimeScratchFixture fixture)
         (await DatabaseExistsAsync(ScratchName(runId))).Should().BeFalse();
     }
 
-    [Fact]
-    public async Task Create_RejectsAFullOnlyRehearsalSubtypeBeforeCreatingAnything()
+    [Theory]
+    [InlineData("phrase-search-index-build")]
+    [InlineData("recovery")]
+    public async Task Create_RejectsAFullOnlyRehearsalSubtypeBeforeCreatingAnything(string subtype)
     {
         var runId = NewRunId("full_only");
 
         var run = await ExecuteAsync(
-            ["scratch", "create", "--run-id", runId, "--command", "scratch-rehearsal", "--subtype", "recovery"]);
+            ["scratch", "create", "--run-id", runId, "--command", "scratch-rehearsal", "--subtype", subtype]);
 
         run.ExitCode.Should().Be(3, run.Report.ToString());
         run.Report.GetProperty("violations").EnumerateArray()

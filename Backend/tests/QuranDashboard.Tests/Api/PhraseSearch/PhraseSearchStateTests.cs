@@ -3,12 +3,16 @@ using QuranDashboard.Tests.TestSupport.Http;
 namespace QuranDashboard.Tests.Api.PhraseSearch;
 
 [Collection(nameof(PhraseSearchApiCollection))]
-public sealed class PhraseSearchStateTests(PhraseSearchStateFixture fixture)
+public sealed class PhraseSearchStateTests(PhraseSearchStateFixture fixture) : IAsyncLifetime
 {
     private const string IndexUnavailableMessage = "فهرس البحث في العبارات غير متاح حاليًا";
     private const string IndexChangedMessage = "تغير فهرس البحث، أعد اختيار النتيجة";
     private const string IndexUnavailableCode = "phrase_index_unavailable";
     private const string IndexChangedCode = "phrase_index_changed";
+
+    public Task InitializeAsync() => fixture.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task MissingActiveState_CapabilitiesReturnsTheDocumentedUnavailableEnvelope()

@@ -3,8 +3,8 @@ using QuranDashboard.Application.Quran.DataPipelines.Translations;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-[Collection(nameof(TranslationImportTestCollection))]
-public sealed class TranslationRefusalForceTests(TranslationImportTestFixture fixture)
+[Collection(nameof(TranslationRebuildTestCollection))]
+public sealed class TranslationRefusalForceTests(TranslationRebuildTestFixture fixture)
 {
     [Fact]
     public async Task Normal_rerun_refuses_when_translation_target_tables_contain_data()

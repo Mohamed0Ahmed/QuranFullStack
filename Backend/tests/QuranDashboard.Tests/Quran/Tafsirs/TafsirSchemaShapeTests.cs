@@ -204,5 +204,8 @@ public sealed class TafsirSchemaShapeTests(TafsirImportTestFixture fixture)
     private sealed record IndexShape(string Name, bool IsUnique, string[] ColumnNames);
 }
 
-[CollectionDefinition(nameof(TafsirImportTestCollection))]
+[CollectionDefinition(nameof(TafsirImportTestCollection), DisableParallelization = true)]
 public sealed class TafsirImportTestCollection : ICollectionFixture<TafsirImportTestFixture>;
+
+[CollectionDefinition(nameof(TafsirRebuildTestCollection), DisableParallelization = true)]
+public sealed class TafsirRebuildTestCollection : ICollectionFixture<TafsirRebuildTestFixture>;

@@ -358,5 +358,8 @@ public sealed class TranslationSchemaShapeTests(TranslationImportTestFixture fix
     private sealed record IndexShape(string Name, bool IsUnique, string[] ColumnNames);
 }
 
-[CollectionDefinition(nameof(TranslationImportTestCollection))]
+[CollectionDefinition(nameof(TranslationImportTestCollection), DisableParallelization = true)]
 public sealed class TranslationImportTestCollection : ICollectionFixture<TranslationImportTestFixture>;
+
+[CollectionDefinition(nameof(TranslationRebuildTestCollection), DisableParallelization = true)]
+public sealed class TranslationRebuildTestCollection : ICollectionFixture<TranslationRebuildTestFixture>;

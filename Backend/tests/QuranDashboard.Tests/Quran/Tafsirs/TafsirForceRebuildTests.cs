@@ -3,8 +3,8 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
-[Collection(nameof(TafsirImportTestCollection))]
-public sealed class TafsirForceRebuildTests(TafsirImportTestFixture fixture)
+[Collection(nameof(TafsirRebuildTestCollection))]
+public sealed class TafsirForceRebuildTests(TafsirRebuildTestFixture fixture)
 {
     [Fact]
     public async Task Force_rebuild_replaces_tafsir_owned_tables_and_preserves_quran_foundation()

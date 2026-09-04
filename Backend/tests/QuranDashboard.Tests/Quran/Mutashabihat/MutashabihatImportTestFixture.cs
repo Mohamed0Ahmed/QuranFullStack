@@ -11,20 +11,31 @@ using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
 
-public sealed class MutashabihatImportTestFixture : IAsyncLifetime
+public class MutashabihatImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempSourceDirs = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
+    private readonly DestructiveRehearsalSubtype expectedSubtype;
 
     private string? scratchConnectionString;
     private ServiceProvider? readerProvider;
     private ServiceProvider? importProvider;
 
+    public MutashabihatImportTestFixture()
+        : this(DestructiveRehearsalSubtype.CanonicalImport)
+    {
+    }
+
+    private protected MutashabihatImportTestFixture(DestructiveRehearsalSubtype expectedSubtype)
+    {
+        this.expectedSubtype = expectedSubtype;
+    }
+
     public async Task InitializeAsync()
     {
         scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(MutashabihatImportTestFixture),
-            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
+            expectedSubtype);
 
         try
         {
@@ -693,6 +704,14 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         ["sha256"] = fileEntry.TryGetProperty("sha256", out var sha) ? sha.GetString() : null,
         ["notes"] = fileEntry.TryGetProperty("notes", out var n) ? n.GetString() : null
     };
+}
+
+public sealed class MutashabihatRebuildTestFixture : MutashabihatImportTestFixture
+{
+    public MutashabihatRebuildTestFixture()
+        : base(DestructiveRehearsalSubtype.CanonicalRebuild)
+    {
+    }
 }
 
 public sealed record MutashabihatTableSnapshot(

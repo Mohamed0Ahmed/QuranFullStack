@@ -9,19 +9,30 @@ using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
-public sealed class TafsirImportTestFixture : IAsyncLifetime
+public class TafsirImportTestFixture : IAsyncLifetime
 {
     private readonly TafsirSyntheticPackage packages = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
+    private readonly DestructiveRehearsalSubtype expectedSubtype;
 
     private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
+
+    public TafsirImportTestFixture()
+        : this(DestructiveRehearsalSubtype.CanonicalImport)
+    {
+    }
+
+    private protected TafsirImportTestFixture(DestructiveRehearsalSubtype expectedSubtype)
+    {
+        this.expectedSubtype = expectedSubtype;
+    }
 
     public async Task InitializeAsync()
     {
         scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(TafsirImportTestFixture),
-            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
+            expectedSubtype);
 
         try
         {
@@ -105,11 +116,7 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         await dbContext.Database.ExecuteSqlRawAsync(
             """
-            TRUNCATE
-                quran_tafsir_ayah_entries,
-                quran_tafsir_entries,
-                quran_tafsir_sources
-            RESTART IDENTITY CASCADE;
+            TRUNCATE quran_tafsir_sources RESTART IDENTITY CASCADE;
             """);
     }
 
@@ -211,6 +218,14 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             .AddApplication()
             .AddInfrastructure(configuration)
             .BuildServiceProvider();
+    }
+}
+
+public sealed class TafsirRebuildTestFixture : TafsirImportTestFixture
+{
+    public TafsirRebuildTestFixture()
+        : base(DestructiveRehearsalSubtype.CanonicalRebuild)
+    {
     }
 }
 

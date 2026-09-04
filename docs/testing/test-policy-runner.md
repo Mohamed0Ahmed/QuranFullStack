@@ -9,10 +9,12 @@ default.
 Backend classes are catalogued in
 `Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`. A migrated row declares one
 of `FastNoDb`, `CanonicalReader`, `GuardedReader`, `MutableWriter`, or `DestructiveRehearsal`, its data
-reads and writes, database target, and destructive subtype. An unmigrated row must leave all policy
-fields blank and explicitly say `Unmigrated`. Fixture/resource effects are independently catalogued in
-`test-resources.tsv`; migrated resources declare setup writes, reset behavior, target, and API startup
-effects. The effective Backend policy is the strictest valid combination.
+reads and writes, database target, and destructive subtype. An unmigrated row normally leaves all policy
+fields blank and explicitly says `Unmigrated`; a legacy full-data rehearsal may remain operationally
+unmigrated while declaring a complete `DestructiveRehearsal`/`FullRehearsal` capability so authorization
+is still explicit. Fixture/resource effects are independently catalogued in `test-resources.tsv`;
+migrated resources and legacy full-data rehearsal resources declare setup writes, reset behavior, target,
+and API startup effects. The effective Backend policy is the strictest valid combination.
 
 Playwright uses `canonical-read`, `guarded-read`, or `mutating` plus one `fixture-policy` annotation.
 The fixture profiles and temporary legacy inventory live in `e2e/playwright-policy.json`. The inventory

@@ -9,21 +9,32 @@ using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Translations;
 
-public sealed class TranslationImportTestFixture : IAsyncLifetime
+public class TranslationImportTestFixture : IAsyncLifetime
 {
     private const int SyntheticSurahNumber = TranslationSyntheticSeed.SyntheticSurahNumber;
 
     private readonly TranslationSyntheticPackage packages = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
+    private readonly DestructiveRehearsalSubtype expectedSubtype;
 
     private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
+
+    public TranslationImportTestFixture()
+        : this(DestructiveRehearsalSubtype.CanonicalImport)
+    {
+    }
+
+    private protected TranslationImportTestFixture(DestructiveRehearsalSubtype expectedSubtype)
+    {
+        this.expectedSubtype = expectedSubtype;
+    }
 
     public async Task InitializeAsync()
     {
         scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(TranslationImportTestFixture),
-            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
+            expectedSubtype);
 
         try
         {
@@ -179,6 +190,14 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
             .AddApplication()
             .AddInfrastructure(configuration)
             .BuildServiceProvider();
+    }
+}
+
+public sealed class TranslationRebuildTestFixture : TranslationImportTestFixture
+{
+    public TranslationRebuildTestFixture()
+        : base(DestructiveRehearsalSubtype.CanonicalRebuild)
+    {
     }
 }
 

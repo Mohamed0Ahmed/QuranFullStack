@@ -318,7 +318,7 @@ assert.throws(
 );
 assert.throws(
   () => parseBackendPolicyCatalog(`${header}\n${row('Tests.Bad', 'ApiBehavior', 'Fast', 'TierB', '', 'FastNoDb', 'None', 'None', 'None', 'None', 'None', 'Unmigrated')}\n`),
-  /unmigrated.*blank policy metadata/i,
+  /only a legacy full-data rehearsal.*unmigrated/i,
 );
 assert.throws(
   () => parseBackendPolicyCatalog(`${header}\n${row('Tests.BadReader', 'ApiBehavior', 'Database', 'TierB', '', 'CanonicalReader', 'CanonicalQuranData', 'MutableApplicationState', 'TestDatabase', 'None', 'None', 'Migrated')}\n`),
@@ -350,6 +350,29 @@ const repositoryResources = parseBackendResourceCatalog(readFileSync(
   new URL('../Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-resources.tsv', import.meta.url),
   'utf8',
 ));
+const declaredLegacyPhraseIndex = repositoryCatalog.find(({ className }) =>
+  className === 'QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests');
+const declaredLegacyPhraseIndexResource = repositoryResources.find(({ collectionName }) =>
+  collectionName === 'PhraseIndexFullCanonicalRehearsalCollection');
+assert.equal(declaredLegacyPhraseIndex.migrationState, 'Unmigrated');
+assert.equal(declaredLegacyPhraseIndex.policy.databaseTarget, 'FullRehearsal');
+assert.equal(declaredLegacyPhraseIndex.policy.destructiveSubtype, 'PhraseSearchIndexBuild');
+assert.equal(declaredLegacyPhraseIndexResource.migrationState, 'Unmigrated');
+assert.equal(declaredLegacyPhraseIndexResource.policy.databaseTarget, 'FullRehearsal');
+
+const authorizedLegacyPhraseIndex = planFocusedSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  backendClasses: [declaredLegacyPhraseIndex.className],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+  authorizeFullData: true,
+});
+assert.deepEqual(
+  authorizedLegacyPhraseIndex.commands[0].arguments,
+  ['phrase-index-rehearsal', '--no-build'],
+);
 const foundationClasses = repositoryCatalog
   .filter(({ feature }) => feature === 'FoundationImport')
   .map(({ className }) => className)

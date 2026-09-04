@@ -8,7 +8,10 @@ public sealed class TestPolicyContractTests
         var entries = TestGateCatalog.GateEntries;
 
         entries.Should().OnlyContain(entry =>
-            (entry.MigrationState == TestPolicyMigrationState.Migrated) != (entry.Policy == null));
+            entry.Policy == null
+                ? entry.MigrationState == TestPolicyMigrationState.Unmigrated
+                : entry.MigrationState == TestPolicyMigrationState.Migrated
+                    || entry.Policy.Target == TestDatabaseTarget.FullRehearsal);
         entries.Select(entry => entry.ClassName)
             .Should()
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
@@ -21,8 +24,7 @@ public sealed class TestPolicyContractTests
 
         var compiledCollections = TestGateCatalog.DiscoverCollectedTestClasses()
             .ToDictionary(entry => entry.ClassName, entry => entry.CollectionName, StringComparer.Ordinal);
-        foreach (var entry in entries.Where(candidate =>
-                     candidate.MigrationState == TestPolicyMigrationState.Migrated))
+        foreach (var entry in entries.Where(candidate => candidate.Policy is not null))
         {
             if (compiledCollections.TryGetValue(entry.ClassName, out var collectionName))
             {
@@ -39,7 +41,10 @@ public sealed class TestPolicyContractTests
     public void EveryFixtureResource_IsEitherPolicyClassifiedOrExplicitlyUnmigrated()
     {
         TestGateCatalog.ResourceEntries.Should().OnlyContain(entry =>
-            (entry.MigrationState == TestPolicyMigrationState.Migrated) != (entry.Policy == null));
+            entry.Policy == null
+                ? entry.MigrationState == TestPolicyMigrationState.Unmigrated
+                : entry.MigrationState == TestPolicyMigrationState.Migrated
+                    || entry.Policy.Target == TestDatabaseTarget.FullRehearsal);
     }
 
     [Fact]
@@ -202,135 +207,76 @@ public sealed class TestPolicyContractTests
     }
 
     [Fact]
-    public void MorphologyDisplayAndI3rabPipelines_UseBoundedScratchRehearsals()
+    public void CanonicalPipelineClasses_UseRegistryDrivenBoundedScratchOrFastPolicies()
     {
-        string[] scratchCollections =
-        [
-            "MorphologyImportTestCollection",
-            "WordsDisplayTestCollection",
-            "DisplayWordsRealImportCollection",
-            "I3rabGenerationTestCollection",
-            "FullI3rabImportTestCollection",
-            "FullI3rabSchemaTestCollection",
-        ];
-        string[] fastClasses =
-        [
-            "QuranDashboard.Tests.Quran.WordsMorphology.MorphologyAssemblerTests",
-            "QuranDashboard.Tests.Quran.WordsMorphology.WordLemmaNormalizationApplierTests",
-            "QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests",
-            "QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyDryValidatorTests",
-            "QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyImportSourceTests",
-            "QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyManifestReaderTests",
-            "QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests",
-        ];
+        var entries = TestGateCatalog.GateEntries
+            .Where(entry => TestGateCatalog.PipelineClassPrefixes.Any(prefix =>
+                entry.ClassName.StartsWith(prefix, StringComparison.Ordinal)))
+            .Where(entry => entry.MigrationState == TestPolicyMigrationState.Migrated)
+            .ToArray();
+        var allowedScratchSubtypes = new HashSet<DestructiveRehearsalSubtype>
+        {
+            DestructiveRehearsalSubtype.CanonicalImport,
+            DestructiveRehearsalSubtype.CanonicalRebuild,
+            DestructiveRehearsalSubtype.CanonicalGeneration,
+        };
 
+        entries.Should().NotBeEmpty();
+        entries.Should().OnlyContain(entry => entry.Policy != null && (
+            entry.Policy.Policy == BackendTestPolicy.FastNoDb
+                && entry.Policy.Reads.Count == 0
+                && entry.Policy.Writes.Count == 0
+                && entry.Policy.Target == TestDatabaseTarget.None
+                && entry.ResourceCollection == null
+            || entry.Policy.Policy == BackendTestPolicy.DestructiveRehearsal
+                && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
+                && allowedScratchSubtypes.Contains(entry.Policy.DestructiveSubtype)
+                && entry.ResourceCollection != null));
+
+        var scratchCollectionNames = entries
+            .Where(entry => entry.Policy!.Target == TestDatabaseTarget.EmptyScratch)
+            .Select(entry => entry.ResourceCollection!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
         var scratchResources = TestGateCatalog.ResourceEntries
-            .Where(entry => scratchCollections.Contains(entry.CollectionName, StringComparer.Ordinal))
-            .ToArray();
-        var scratchClasses = TestGateCatalog.GateEntries
-            .Where(entry => entry.ResourceCollection is not null
-                && scratchCollections.Contains(entry.ResourceCollection, StringComparer.Ordinal))
-            .ToArray();
-        var fastEntries = TestGateCatalog.GateEntries
-            .Where(entry => fastClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .Where(entry => scratchCollectionNames.Contains(
+                entry.CollectionName,
+                StringComparer.Ordinal))
             .ToArray();
 
-        scratchResources.Select(entry => entry.CollectionName).Should().BeEquivalentTo(scratchCollections);
+        scratchResources.Select(entry => entry.CollectionName)
+            .Should().BeEquivalentTo(scratchCollectionNames);
         scratchResources.Should().OnlyContain(entry =>
             entry.MigrationState == TestPolicyMigrationState.Migrated
             && entry.Policy != null
             && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
-            && entry.Policy.ResetBehavior == TestResetBehavior.None
             && entry.Policy.StartupEffects.Count == 0
             && entry.Policy.SetupWrites.Contains(TestDataClass.SchemaState));
-        scratchClasses.Should().NotBeEmpty();
-        scratchClasses.Should().OnlyContain(entry =>
-            entry.MigrationState == TestPolicyMigrationState.Migrated
-            && entry.Policy != null
-            && entry.Policy.Policy == BackendTestPolicy.DestructiveRehearsal
-            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
-            && new[]
-            {
-                DestructiveRehearsalSubtype.CanonicalImport,
-                DestructiveRehearsalSubtype.CanonicalRebuild,
-                DestructiveRehearsalSubtype.CanonicalGeneration,
-            }.Contains(entry.Policy.DestructiveSubtype));
-        fastEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(fastClasses);
-        fastEntries.Should().OnlyContain(entry =>
-            entry.MigrationState == TestPolicyMigrationState.Migrated
-            && entry.Policy != null
-            && entry.Policy.Policy == BackendTestPolicy.FastNoDb
-            && entry.Policy.Reads.Count == 0
-            && entry.Policy.Writes.Count == 0
-            && entry.Policy.Target == TestDatabaseTarget.None
-            && entry.ResourceCollection == null);
     }
 
     [Fact]
-    public void CanonicalPipelineRehearsals_UseBoundedScratchRehearsals()
+    public void FullCanonicalPhraseIndex_DeclaresItsSeparateFullDataCapabilityWhileRemainingLegacy()
     {
-        string[] scratchCollections =
-        [
-            "TafsirImportTestCollection",
-            "TranslationImportTestCollection",
-            "MutashabihatImportTestCollection",
-            "QuranTopicsBookImportTestCollection",
-            "PhraseSearchApiCollection",
-            "PhraseIndexBuildActivationCollection",
-        ];
-        string[] fastClasses =
-        [
-            "QuranDashboard.Tests.Quran.Tafsirs.TafsirManifestReaderTests",
-            "QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceReaderTests",
-            "QuranDashboard.Tests.Quran.Tafsirs.TafsirValidationFailureTests",
-            "QuranDashboard.Tests.Quran.Translations.TranslationManifestReaderTests",
-            "QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests",
-            "QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests",
-            "QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests",
-            "QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests",
-            "QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests",
-        ];
+        var entry = TestGateCatalog.GateEntries.Single(candidate =>
+            candidate.ClassName ==
+                "QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests");
+        var resource = TestGateCatalog.ResourceEntries.Single(candidate =>
+            candidate.CollectionName == "PhraseIndexFullCanonicalRehearsalCollection");
 
-        var scratchResources = TestGateCatalog.ResourceEntries
-            .Where(entry => scratchCollections.Contains(entry.CollectionName, StringComparer.Ordinal))
-            .ToArray();
-        var scratchClasses = TestGateCatalog.GateEntries
-            .Where(entry => entry.ResourceCollection is not null
-                && scratchCollections.Contains(entry.ResourceCollection, StringComparer.Ordinal))
-            .ToArray();
-        var fastEntries = TestGateCatalog.GateEntries
-            .Where(entry => fastClasses.Contains(entry.ClassName, StringComparer.Ordinal))
-            .ToArray();
+        entry.MigrationState.Should().Be(TestPolicyMigrationState.Unmigrated);
+        entry.Policy.Should().NotBeNull();
+        entry.Policy!.Policy.Should().Be(BackendTestPolicy.DestructiveRehearsal);
+        entry.Policy.Target.Should().Be(TestDatabaseTarget.FullRehearsal);
+        entry.Policy.DestructiveSubtype.Should().Be(DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
+        entry.ResourceCollection.Should().Be(resource.CollectionName);
 
-        scratchResources.Select(entry => entry.CollectionName).Should().BeEquivalentTo(scratchCollections);
-        scratchResources.Should().OnlyContain(entry =>
-            entry.MigrationState == TestPolicyMigrationState.Migrated
-            && entry.Policy != null
-            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
-            && entry.Policy.ResetBehavior == TestResetBehavior.None
-            && entry.Policy.StartupEffects.Count == 0
-            && entry.Policy.SetupWrites.Contains(TestDataClass.SchemaState));
-        scratchClasses.Should().NotBeEmpty();
-        scratchClasses.Should().OnlyContain(entry =>
-            entry.MigrationState == TestPolicyMigrationState.Migrated
-            && entry.Policy != null
-            && entry.Policy.Policy == BackendTestPolicy.DestructiveRehearsal
-            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
-            && new[]
-            {
-                DestructiveRehearsalSubtype.CanonicalImport,
-                DestructiveRehearsalSubtype.CanonicalRebuild,
-                DestructiveRehearsalSubtype.PhraseSearchIndexBuild,
-            }.Contains(entry.Policy.DestructiveSubtype));
-        fastEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(fastClasses);
-        fastEntries.Should().OnlyContain(entry =>
-            entry.MigrationState == TestPolicyMigrationState.Migrated
-            && entry.Policy != null
-            && entry.Policy.Policy == BackendTestPolicy.FastNoDb
-            && entry.Policy.Reads.Count == 0
-            && entry.Policy.Writes.Count == 0
-            && entry.Policy.Target == TestDatabaseTarget.None
-            && entry.ResourceCollection == null);
+        resource.MigrationState.Should().Be(TestPolicyMigrationState.Unmigrated);
+        resource.StatePolicy.Should().Be("PersistentCapability");
+        resource.Policy.Should().NotBeNull();
+        resource.Policy!.Target.Should().Be(TestDatabaseTarget.FullRehearsal);
+        resource.Policy.SetupWrites.Should().BeEmpty();
+        resource.Policy.ResetBehavior.Should().Be(TestResetBehavior.None);
+        resource.Policy.StartupEffects.Should().BeEmpty();
     }
 
     [Fact]

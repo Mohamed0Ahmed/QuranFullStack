@@ -21,18 +21,20 @@ public sealed class PhraseSearchStateFixture : IAsyncLifetime
     {
         ConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(PhraseSearchStateFixture),
-            DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
+            DestructiveRehearsalSubtype.CanonicalGeneration);
     }
 
     public async Task DisposeAsync()
     {
-        if (apiFactory is not null)
-        {
-            await apiFactory.DisposeAsync();
-            apiFactory = null;
-        }
+        await DisposeFactoryAsync();
 
         ConnectionString = string.Empty;
+    }
+
+    public async Task ResetDatabaseAsync()
+    {
+        await DisposeFactoryAsync();
+        await MigratedScratchDatabase.ResetAndMigrateAsync(ConnectionString);
     }
 
     public HttpClient CreateClient()
@@ -116,5 +118,5 @@ public sealed class PhraseSearchStateFixture : IAsyncLifetime
     }
 }
 
-[CollectionDefinition(nameof(PhraseSearchApiCollection))]
+[CollectionDefinition(nameof(PhraseSearchApiCollection), DisableParallelization = true)]
 public sealed class PhraseSearchApiCollection : ICollectionFixture<PhraseSearchStateFixture>;

@@ -42,6 +42,7 @@ internal enum TestResetBehavior
 {
     None,
     MutableApplicationState,
+    ScratchDatabase,
 }
 
 internal enum TestApiStartupEffect
@@ -197,12 +198,18 @@ internal static class TestPolicyContract
         {
             throw Invalid(subject, "a destructive API cannot target the persistent Test Database.");
         }
+        if (metadata.ResetBehavior == TestResetBehavior.ScratchDatabase
+            && metadata.Target != TestDatabaseTarget.EmptyScratch)
+        {
+            throw Invalid(subject, "a full scratch reset requires the EmptyScratch target.");
+        }
     }
 
     private static BackendTestPolicy MinimumPolicyFor(TestResourcePolicyMetadata metadata)
     {
         if (metadata.SetupWrites.Any(ProtectedState.Contains)
             || metadata.StartupEffects.Contains(TestApiStartupEffect.DestructiveApi)
+            || metadata.ResetBehavior == TestResetBehavior.ScratchDatabase
             || metadata.Target is TestDatabaseTarget.EmptyScratch or TestDatabaseTarget.FullRehearsal)
         {
             return BackendTestPolicy.DestructiveRehearsal;
@@ -253,10 +260,14 @@ internal static class TestPolicyMetadataParser
     {
         var state = ParseEnum<TestPolicyMigrationState>(columns[11], path, lineNumber, "MigrationState");
         var values = columns.Skip(5).Take(6).ToArray();
-        if (state == TestPolicyMigrationState.Unmigrated)
+        var hasDeclaration = values.Any(value => !string.IsNullOrWhiteSpace(value));
+        if (state == TestPolicyMigrationState.Unmigrated && !hasDeclaration)
         {
-            RequireAllBlank(values, path, lineNumber, "unmigrated class policy");
             return (state, null);
+        }
+        if (values.Any(string.IsNullOrWhiteSpace))
+        {
+            throw Invalid(path, lineNumber, "declared class policy metadata must be complete");
         }
 
         var metadata = new BackendTestPolicyMetadata(
@@ -270,6 +281,15 @@ internal static class TestPolicyMetadataParser
             throw Invalid(path, lineNumber, "ResourceCollection must be explicit; use None when no fixture/resource applies");
         }
         TestPolicyContract.Validate(metadata, $"class policy in {path} line {lineNumber}");
+        if (state == TestPolicyMigrationState.Unmigrated
+            && (metadata.Policy != BackendTestPolicy.DestructiveRehearsal
+                || metadata.Target != TestDatabaseTarget.FullRehearsal))
+        {
+            throw Invalid(
+                path,
+                lineNumber,
+                "only a legacy full-data rehearsal may declare policy metadata while remaining unmigrated");
+        }
         return (state, metadata);
     }
 
@@ -278,10 +298,14 @@ internal static class TestPolicyMetadataParser
     {
         var state = ParseEnum<TestPolicyMigrationState>(columns[8], path, lineNumber, "MigrationState");
         var values = columns.Skip(4).Take(4).ToArray();
-        if (state == TestPolicyMigrationState.Unmigrated)
+        var hasDeclaration = values.Any(value => !string.IsNullOrWhiteSpace(value));
+        if (state == TestPolicyMigrationState.Unmigrated && !hasDeclaration)
         {
-            RequireAllBlank(values, path, lineNumber, "unmigrated fixture/resource policy");
             return (state, null);
+        }
+        if (values.Any(string.IsNullOrWhiteSpace))
+        {
+            throw Invalid(path, lineNumber, "declared fixture/resource policy metadata must be complete");
         }
 
         var metadata = new TestResourcePolicyMetadata(
@@ -290,6 +314,14 @@ internal static class TestPolicyMetadataParser
             ParseEnum<TestDatabaseTarget>(columns[6], path, lineNumber, "DatabaseTarget"),
             ParseSet<TestApiStartupEffect>(columns[7], path, lineNumber, "StartupEffects"));
         TestPolicyContract.Validate(metadata, $"fixture/resource policy in {path} line {lineNumber}");
+        if (state == TestPolicyMigrationState.Unmigrated
+            && metadata.Target != TestDatabaseTarget.FullRehearsal)
+        {
+            throw Invalid(
+                path,
+                lineNumber,
+                "only a legacy full-data rehearsal resource may declare policy metadata while remaining unmigrated");
+        }
         return (state, metadata);
     }
 

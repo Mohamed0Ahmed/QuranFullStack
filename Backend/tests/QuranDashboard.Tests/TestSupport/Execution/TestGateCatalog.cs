@@ -65,17 +65,19 @@ internal static class TestGateCatalog
 
     internal static IReadOnlyList<string> PipelineClassPrefixes { get; } =
     [
+        "QuranDashboard.Tests.Api.PhraseSearch.",
         "QuranDashboard.Tests.Quran.FullI3rab.",
         "QuranDashboard.Tests.Quran.Import.",
         "QuranDashboard.Tests.Quran.Mutashabihat.",
         "QuranDashboard.Tests.Quran.Navigation.",
+        "QuranDashboard.Tests.Quran.PhraseSearch.",
         "QuranDashboard.Tests.Quran.QuranTopicsBook.",
         "QuranDashboard.Tests.Quran.Tafsirs.",
         "QuranDashboard.Tests.Quran.Translations.",
         "QuranDashboard.Tests.Quran.WordsDisplay.",
         "QuranDashboard.Tests.Quran.WordsMorphology.",
         "QuranDashboard.Tests.Quran.WordsMorphologyEnriched.",
-        "QuranDashboard.Tests.Quran.WordsSimpleI3rab."
+        "QuranDashboard.Tests.Quran.WordsSimpleI3rab.",
     ];
 
     private static readonly Lazy<IReadOnlyList<TestGateEntry>> GateEntryLoader =
@@ -274,7 +276,7 @@ internal static class TestGateCatalog
                         .ToHashSet(StringComparer.Ordinal),
                     parsed.MigrationState,
                     parsed.Policy,
-                    parsed.MigrationState == TestPolicyMigrationState.Migrated
+                    parsed.Policy is not null
                         ? columns[10] == "None"
                             ? null
                             : columns[10]

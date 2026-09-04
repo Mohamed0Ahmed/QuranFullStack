@@ -55,7 +55,7 @@ const PROTECTED_DATA_CLASSES = new Set([
   'SystemCatalogue',
   'SchemaState',
 ]);
-const RESET_BEHAVIORS = new Set(['None', 'MutableApplicationState']);
+const RESET_BEHAVIORS = new Set(['None', 'MutableApplicationState', 'ScratchDatabase']);
 const STARTUP_EFFECTS = new Set(['ReadOnlyApi', 'MutableApi', 'DestructiveApi']);
 const POLICY_SEVERITY = new Map([
   ['FastNoDb', 0],
@@ -305,6 +305,7 @@ export function parseBackendPolicyCatalog(source) {
       migrationState,
     ] = columns;
     const policyValues = columns.slice(5, 11);
+    const hasPolicyDeclaration = policyValues.some((value) => value.length > 0);
     if (migrationState === 'Migrated') {
       if (policyValues.some((value) => value.length === 0)) {
         throw invalidRow(lineNumber, 'migrated classes require complete policy metadata');
@@ -314,8 +315,20 @@ export function parseBackendPolicyCatalog(source) {
         lineNumber,
       );
     } else if (migrationState === 'Unmigrated') {
-      if (policyValues.some((value) => value.length !== 0)) {
-        throw invalidRow(lineNumber, 'unmigrated classes must keep blank policy metadata');
+      if (hasPolicyDeclaration && policyValues.some((value) => value.length === 0)) {
+        throw invalidRow(lineNumber, 'declared unmigrated classes require complete policy metadata');
+      }
+      if (hasPolicyDeclaration) {
+        validateMigratedPolicy(
+          { backendPolicy, dataReads, dataWrites, databaseTarget, destructiveSubtype },
+          lineNumber,
+        );
+        if (backendPolicy !== 'DestructiveRehearsal' || databaseTarget !== 'FullRehearsal') {
+          throw invalidRow(
+            lineNumber,
+            'only a legacy full-data rehearsal may declare policy metadata while remaining unmigrated',
+          );
+        }
       }
     } else {
       throw invalidRow(lineNumber, `unsupported MigrationState ${migrationState}`);
@@ -327,7 +340,7 @@ export function parseBackendPolicyCatalog(source) {
       kind,
       gate,
       concerns: splitSet(concerns),
-      policy: migrationState === 'Migrated'
+      policy: migrationState === 'Migrated' || hasPolicyDeclaration
         ? {
             backendPolicy,
             dataReads: splitSet(dataReads),
@@ -336,7 +349,8 @@ export function parseBackendPolicyCatalog(source) {
             destructiveSubtype,
           }
         : null,
-      resourceCollection: migrationState === 'Migrated' && resourceCollection !== 'None'
+      resourceCollection: (migrationState === 'Migrated' || hasPolicyDeclaration)
+          && resourceCollection !== 'None'
         ? resourceCollection
         : null,
       migrationState,
@@ -385,6 +399,7 @@ export function parseBackendResourceCatalog(source) {
       migrationState,
     ] = columns;
     const policyValues = columns.slice(4, 8);
+    const hasPolicyDeclaration = policyValues.some((value) => value.length > 0);
     if (migrationState === 'Migrated') {
       if (policyValues.some((value) => value.length === 0)) {
         throw invalidResourceRow(lineNumber, 'migrated resources require complete policy metadata');
@@ -394,8 +409,23 @@ export function parseBackendResourceCatalog(source) {
         lineNumber,
       );
     } else if (migrationState === 'Unmigrated') {
-      if (policyValues.some((value) => value.length !== 0)) {
-        throw invalidResourceRow(lineNumber, 'unmigrated resources must keep blank policy metadata');
+      if (hasPolicyDeclaration && policyValues.some((value) => value.length === 0)) {
+        throw invalidResourceRow(
+          lineNumber,
+          'declared unmigrated resources require complete policy metadata',
+        );
+      }
+      if (hasPolicyDeclaration) {
+        validateResourcePolicy(
+          { setupWrites, resetBehavior, databaseTarget, startupEffects },
+          lineNumber,
+        );
+        if (databaseTarget !== 'FullRehearsal') {
+          throw invalidResourceRow(
+            lineNumber,
+            'only a legacy full-data rehearsal resource may declare policy metadata while remaining unmigrated',
+          );
+        }
       }
     } else {
       throw invalidResourceRow(lineNumber, `unsupported MigrationState ${migrationState}`);
@@ -406,7 +436,7 @@ export function parseBackendResourceCatalog(source) {
       resourceClassName,
       parallelPolicy,
       statePolicy,
-      policy: migrationState === 'Migrated'
+      policy: migrationState === 'Migrated' || hasPolicyDeclaration
         ? {
             setupWrites: parseExplicitSet(setupWrites, DATA_CLASSES, lineNumber, 'SetupWrites'),
             resetBehavior,
@@ -706,6 +736,7 @@ function effectiveBackendPolicy(entry, resourceCatalog) {
 function minimumResourcePolicy(policy) {
   if (policy.setupWrites.some((dataClass) => PROTECTED_DATA_CLASSES.has(dataClass))
       || policy.startupEffects.includes('DestructiveApi')
+      || policy.resetBehavior === 'ScratchDatabase'
       || ['EmptyScratch', 'FullRehearsal'].includes(policy.databaseTarget)) {
     return 'DestructiveRehearsal';
   }
@@ -937,6 +968,9 @@ function validateResourcePolicy(policy, lineNumber) {
   }
   if (startupEffects.includes('DestructiveApi') && policy.databaseTarget === 'TestDatabase') {
     throw invalidResourceRow(lineNumber, 'a destructive API cannot target the persistent Test Database');
+  }
+  if (policy.resetBehavior === 'ScratchDatabase' && policy.databaseTarget !== 'EmptyScratch') {
+    throw invalidResourceRow(lineNumber, 'a full scratch reset requires the EmptyScratch target');
   }
 }
 

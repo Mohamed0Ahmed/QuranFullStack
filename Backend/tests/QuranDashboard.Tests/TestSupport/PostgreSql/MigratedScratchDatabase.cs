@@ -5,36 +5,29 @@ namespace QuranDashboard.Tests.TestSupport.PostgreSql;
 
 internal static class MigratedScratchDatabase
 {
-    internal static Task<string> ResolveAndMigrateAsync(
-        string fixtureName,
-        DestructiveRehearsalSubtype expectedSubtype,
-        CancellationToken cancellationToken = default) =>
-        ResolveAndMigrateAsync(fixtureName, [expectedSubtype], cancellationToken);
-
     internal static async Task<string> ResolveAndMigrateAsync(
         string fixtureName,
-        IReadOnlyCollection<DestructiveRehearsalSubtype> expectedSubtypes,
+        DestructiveRehearsalSubtype expectedSubtype,
         CancellationToken cancellationToken = default)
     {
-        var expectedSubtypeWireValues = expectedSubtypes.Select(expectedSubtype => expectedSubtype switch
+        var expectedSubtypeWireValue = expectedSubtype switch
         {
             DestructiveRehearsalSubtype.CanonicalImport => "canonical-import",
             DestructiveRehearsalSubtype.CanonicalRebuild => "canonical-rebuild",
             DestructiveRehearsalSubtype.CanonicalGeneration => "canonical-generation",
-            DestructiveRehearsalSubtype.PhraseSearchIndexBuild => "phrase-search-index-build",
             _ => throw new ArgumentOutOfRangeException(
-                nameof(expectedSubtypes),
+                nameof(expectedSubtype),
                 expectedSubtype,
-                "The migrated canonical-pipeline fixtures require an import, rebuild, generation, or phrase-search-index-build subtype."),
-        }).ToHashSet(StringComparer.Ordinal);
+                "The migrated canonical-pipeline fixtures require an import, rebuild, or generation subtype."),
+        };
 
         var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
             QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath,
             cancellationToken: cancellationToken);
-        if (!expectedSubtypeWireValues.Contains(scratch.Subtype))
+        if (!string.Equals(scratch.Subtype, expectedSubtypeWireValue, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
-                $"{fixtureName} requires one of [{string.Join(", ", expectedSubtypeWireValues)}] empty-scratch subtypes, "
+                $"{fixtureName} requires the '{expectedSubtypeWireValue}' empty-scratch subtype, "
                 + $"but the repository runner supplied '{scratch.Subtype}'.");
         }
 
@@ -46,4 +39,20 @@ internal static class MigratedScratchDatabase
 
         return scratch.ConnectionString;
     }
+
+    internal static async Task ResetAndMigrateAsync(
+        string connectionString,
+        CancellationToken cancellationToken = default)
+    {
+        await using var dbContext = CreateDbContext(connectionString);
+        await dbContext.Database.ExecuteSqlRawAsync(
+            "DROP SCHEMA public CASCADE; CREATE SCHEMA public;",
+            cancellationToken);
+        await dbContext.Database.MigrateAsync(cancellationToken);
+    }
+
+    private static QuranDashboardDbContext CreateDbContext(string connectionString) =>
+        new(new DbContextOptionsBuilder<QuranDashboardDbContext>()
+            .UseNpgsql(connectionString)
+            .Options);
 }

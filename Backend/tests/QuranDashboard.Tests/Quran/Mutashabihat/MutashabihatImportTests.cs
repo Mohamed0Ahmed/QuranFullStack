@@ -232,5 +232,8 @@ public sealed class MutashabihatImportTests(MutashabihatImportTestFixture fixtur
         };
 }
 
-[CollectionDefinition(nameof(MutashabihatImportTestCollection))]
+[CollectionDefinition(nameof(MutashabihatImportTestCollection), DisableParallelization = true)]
 public sealed class MutashabihatImportTestCollection : ICollectionFixture<MutashabihatImportTestFixture>;
+
+[CollectionDefinition(nameof(MutashabihatRebuildTestCollection), DisableParallelization = true)]
+public sealed class MutashabihatRebuildTestCollection : ICollectionFixture<MutashabihatRebuildTestFixture>;
