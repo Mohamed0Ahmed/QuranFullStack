@@ -265,4 +265,91 @@ public sealed class TestPolicyContractTests
             && entry.Policy.Target == TestDatabaseTarget.None
             && entry.ResourceCollection == null);
     }
+
+    [Fact]
+    public void LinkingMutableWriters_UseTheSinglePersistentMutableDatabaseResource()
+    {
+        string[] expectedClasses =
+        [
+            "QuranDashboard.Tests.Api.Linking.LinkingCollectionResetContractTests",
+            "QuranDashboard.Tests.Api.Linking.LinkingConfirmationIdempotencyTests",
+            "QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests",
+            "QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests",
+        ];
+
+        var entries = TestGateCatalog.GateEntries
+            .Where(entry => expectedClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+
+        entries.Select(entry => entry.ClassName).Should().BeEquivalentTo(expectedClasses);
+        entries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.MutableWriter
+            && entry.Policy.Reads.IsSupersetOf(
+                new HashSet<TestDataClass>
+                {
+                    TestDataClass.CanonicalQuranData,
+                    TestDataClass.SystemCatalogue,
+                    TestDataClass.MutableApplicationState,
+                })
+            && entry.Policy.Writes.SetEquals(
+                new HashSet<TestDataClass> { TestDataClass.MutableApplicationState })
+            && entry.Policy.Target == TestDatabaseTarget.TestDatabase
+            && entry.Policy.DestructiveSubtype == DestructiveRehearsalSubtype.None
+            && entry.ResourceCollection == "MutableDatabaseCollection");
+        entries.Single(entry => entry.ClassName.EndsWith(
+                ".LinkingCollectionResetContractTests",
+                StringComparison.Ordinal))
+            .Policy!.Reads.Should().Contain(TestDataClass.SchemaState);
+    }
+
+    [Fact]
+    public void SmokePolicies_SeparateMutableApiBehaviorFromReadOnlyAndFastContracts()
+    {
+        string[] mutableClasses =
+        [
+            "QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests",
+            "QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests",
+            "QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests",
+            "QuranDashboard.Tests.Smoke.SmokeMutableBootGuardTests",
+        ];
+        string[] readerClasses =
+        [
+            "QuranDashboard.Tests.Smoke.SmokeAuthPipelineReadTests",
+            "QuranDashboard.Tests.Smoke.SmokeCoverageParityTests",
+            "QuranDashboard.Tests.Smoke.SmokeReadOnlyBootGuardTests",
+            "QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests",
+        ];
+
+        var mutableEntries = TestGateCatalog.GateEntries
+            .Where(entry => mutableClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+        mutableEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(mutableClasses);
+        mutableEntries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.MutableWriter
+            && entry.Policy.Writes.All(dataClass => dataClass == TestDataClass.MutableApplicationState)
+            && entry.Policy.Target == TestDatabaseTarget.TestDatabase
+            && entry.ResourceCollection == "MutableDatabaseCollection");
+
+        var readerEntries = TestGateCatalog.GateEntries
+            .Where(entry => readerClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+        readerEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(readerClasses);
+        readerEntries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.GuardedReader
+            && entry.Policy.Writes.Count == 0
+            && entry.Policy.Target == TestDatabaseTarget.TestDatabase
+            && entry.ResourceCollection == "SmokeDataCollection");
+
+        var baseline = TestGateCatalog.GateEntries.Single(entry =>
+            entry.ClassName == "QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests");
+        baseline.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
+        baseline.Policy!.Policy.Should().Be(BackendTestPolicy.FastNoDb);
+        baseline.ResourceCollection.Should().BeNull();
+    }
 }

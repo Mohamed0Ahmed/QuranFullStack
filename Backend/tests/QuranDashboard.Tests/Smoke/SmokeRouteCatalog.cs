@@ -30,23 +30,22 @@ internal sealed record SmokeRouteAccess(SmokeRouteAccessKind Kind, string? Permi
 // summary that is itself the payload. Each variant below states the one thing it reads, so an assertion
 // is never a generic hunt for a non-empty anything.
 //
-// Every pinned count names a manifest table, never a literal: the dump and the numbers asserted against
-// it then move together, and a count typed from memory cannot drift away from the artifact. Where the
-// answer is one word's own occurrence count, which no manifest table records, the variant asserts a
-// property real data produces rather than inventing a literal to pin.
+// Every pinned count names a table in the reviewed oracle, never an inline literal. Where the answer is
+// one word's own occurrence count, which the oracle does not record, the variant asserts a property real
+// Canonical Quran Data produces rather than inventing a literal to pin.
 internal abstract record SmokeSeededPayload
 {
     private SmokeSeededPayload() { }
 
-    // data.totalCount equals the table's manifest row count, and data.items carries at least one row.
-    internal sealed record PagedTable(string ManifestTable) : SmokeSeededPayload;
+    // data.totalCount equals the table's reviewed oracle row count, and data.items carries at least one row.
+    internal sealed record PagedTable(string OracleTable) : SmokeSeededPayload;
 
     // data.items carries at least one row, with the total left unpinned: on the id-scoped reads the total
-    // is one word's occurrence count, which no manifest table records and which only a literal could fix.
+    // is one word's occurrence count, which the oracle does not record and which only a literal could fix.
     internal sealed record NonEmptyPage : SmokeSeededPayload;
 
-    // data.<Property> is an array whose length equals the table's manifest row count.
-    internal sealed record CountedCollection(string Property, string ManifestTable) : SmokeSeededPayload;
+    // data.<Property> is an array whose length equals the table's reviewed oracle row count.
+    internal sealed record CountedCollection(string Property, string OracleTable) : SmokeSeededPayload;
 
     // data.<Property> is a non-empty array. Used where the row count of no single table is the answer.
     internal sealed record NonEmptyCollection(string Property) : SmokeSeededPayload;
@@ -90,6 +89,10 @@ internal sealed record SmokeRoute(
     public SmokeRouteAccess Access { get; init; } = Access ?? SmokeRouteAccess.Public;
 
     public SmokeSeededExpectation? Seeded { get; init; }
+
+    // The complete Test Database can legitimately answer differently from the retired empty-schema
+    // smoke fixture. Seeded expectations still own the independently reviewed payload-bearing cases.
+    public HttpStatusCode PersistentStatus { get; init; } = DerivedStatus;
 
     // Defaults to GET so all pre-existing entries stay untouched. A write route sets this explicitly.
     public HttpMethod Method { get; init; } = HttpMethod.Get;
@@ -146,13 +149,13 @@ internal static class SmokeRouteCatalog
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.PagedTable("quran_roots")),
         },
-        new("api/words/roots/{id:int}", "/api/words/roots/1", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/ayahs", "/api/words/roots/1/ayahs", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/words/{wordKind}", "/api/words/roots/1/words/tashkeel", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/surahs", "/api/words/roots/1/surahs", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/missing-surahs", "/api/words/roots/1/missing-surahs", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/lemmas", "/api/words/roots/1/lemmas", HttpStatusCode.NotFound),
-        new("api/words/roots/{id:int}/stems", "/api/words/roots/1/stems", HttpStatusCode.NotFound),
+        new("api/words/roots/{id:int}", "/api/words/roots/1", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/ayahs", "/api/words/roots/1/ayahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/words/{wordKind}", "/api/words/roots/1/words/tashkeel", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/surahs", "/api/words/roots/1/surahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/missing-surahs", "/api/words/roots/1/missing-surahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/lemmas", "/api/words/roots/1/lemmas", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/roots/{id:int}/stems", "/api/words/roots/1/stems", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
 
         // api/words/lemmas — LemmasController
         new("api/words/lemmas", "/api/words/lemmas", HttpStatusCode.OK)
@@ -200,32 +203,32 @@ internal static class SmokeRouteCatalog
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.NonEmptyPage()),
         },
 
-        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable),
-        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable),
+        new("api/quran/phrase-search/capabilities", "/api/quran/phrase-search/capabilities", HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.OK },
+        new("api/quran/phrase-search/repetitions", "/api/quran/phrase-search/repetitions", HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.OK },
         new(
             "api/quran/phrase-search/repetitions/{buildId}/{variantId}/occurrences",
             "/api/quran/phrase-search/repetitions/00000000-0000-0000-0000-000000000001/1/occurrences",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
         new(
             "api/quran/phrase-search/query-resolutions",
             "/api/quran/phrase-search/query-resolutions?mode=simple&q64=eA",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.OK },
         new(
             "api/quran/phrase-search/contexts/branches",
             "/api/quran/phrase-search/contexts/branches?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
         new(
             "api/quran/phrase-search/contexts/groups",
             "/api/quran/phrase-search/contexts/groups?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
         new(
             "api/quran/phrase-search/contexts/results",
             "/api/quran/phrase-search/contexts/results?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQABAAAAAbYiC6LJ4ppO",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
         new(
             "api/quran/phrase-search/contexts/occurrences",
             "/api/quran/phrase-search/contexts/occurrences?contextRef=AQMAAAAAAAAAAAAAAAAAAAABAQABAAAAAQAAAAC4ajMICm8ryg",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
         new(
             "api/quran/phrase-search/contexts/linking-selection",
             "/api/quran/phrase-search/contexts/linking-selection",
@@ -241,15 +244,24 @@ internal static class SmokeRouteCatalog
         new(
             "api/quran/phrase-search/similarities/search",
             "/api/quran/phrase-search/similarities/search?resolutionRef=AQEAAAAAAAAAAAAAAAAAAAABAQACAAAAAQAAAALDBrQxDPHCLw&minimumMatchedWords=1",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
+        new(
+            "api/quran/phrase-search/similarities/linking-selection",
+            "/api/quran/phrase-search/similarities/linking-selection",
+            HttpStatusCode.ServiceUnavailable,
+            SmokeRouteAccess.OwnerOnly)
+        {
+            Method = HttpMethod.Post,
+            ParityOnly = true,
+        },
         new(
             "api/quran/phrase-search/similarity-groups",
             "/api/quran/phrase-search/similarity-groups?mode=simple&length=4&threshold=50",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.OK },
         new(
             "api/quran/phrase-search/similarity-groups/{buildId}/{variantId}/matches",
             "/api/quran/phrase-search/similarity-groups/00000000-0000-0000-0000-000000000001/1/matches?threshold=50",
-            HttpStatusCode.ServiceUnavailable),
+            HttpStatusCode.ServiceUnavailable) { PersistentStatus = HttpStatusCode.Conflict },
 
         // api/words/word-types — WordTypesController + WordTypesController.Details.
         // `.../word-types/words` (list) and `.../word-types/words/{tashkeelWordId:int}` (detail) are
@@ -264,10 +276,10 @@ internal static class SmokeRouteCatalog
         new("api/words/word-types/words/{tashkeelWordId:int}/surahs", "/api/words/word-types/words/1/surahs?contextCode=unspecified", HttpStatusCode.NotFound),
 
         // api/words/word-types/table — WordTypeGroupedDetailsController
-        new("api/words/word-types/table/{kind}/{dimensionId:int}", "/api/words/word-types/table/roots/1", HttpStatusCode.NotFound),
-        new("api/words/word-types/table/{kind}/{dimensionId:int}/words", "/api/words/word-types/table/roots/1/words", HttpStatusCode.NotFound),
-        new("api/words/word-types/table/{kind}/{dimensionId:int}/ayahs", "/api/words/word-types/table/roots/1/ayahs", HttpStatusCode.NotFound),
-        new("api/words/word-types/table/{kind}/{dimensionId:int}/surahs", "/api/words/word-types/table/roots/1/surahs", HttpStatusCode.NotFound),
+        new("api/words/word-types/table/{kind}/{dimensionId:int}", "/api/words/word-types/table/roots/1", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/word-types/table/{kind}/{dimensionId:int}/words", "/api/words/word-types/table/roots/1/words", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/word-types/table/{kind}/{dimensionId:int}/ayahs", "/api/words/word-types/table/roots/1/ayahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/words/word-types/table/{kind}/{dimensionId:int}/surahs", "/api/words/word-types/table/roots/1/surahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
 
         // api/mushaf — the reader controllers. The two catalogs answer Ok unconditionally (no outcome
         // switch at all), so they stay 200 even on an empty schema.
@@ -289,8 +301,8 @@ internal static class SmokeRouteCatalog
         {
             Seeded = new(HttpStatusCode.OK),
         },
-        new("api/mushaf/ayahs/{verseKey}/mutashabihat", "/api/mushaf/ayahs/1:1/mutashabihat", HttpStatusCode.NotFound),
-        new("api/mushaf/ayahs/{verseKey}/similar-ayahs", "/api/mushaf/ayahs/1:1/similar-ayahs", HttpStatusCode.NotFound),
+        new("api/mushaf/ayahs/{verseKey}/mutashabihat", "/api/mushaf/ayahs/1:1/mutashabihat", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
+        new("api/mushaf/ayahs/{verseKey}/similar-ayahs", "/api/mushaf/ayahs/1:1/similar-ayahs", HttpStatusCode.NotFound) { PersistentStatus = HttpStatusCode.OK },
         new("api/mushaf/words/{wordLocation}/analysis", "/api/mushaf/words/1:1:1/analysis", HttpStatusCode.NotFound)
         {
             Seeded = new(HttpStatusCode.OK, new SmokeSeededPayload.EchoedKey("word", "wordLocation", "1:1:1")),
@@ -376,8 +388,8 @@ internal static class SmokeRouteCatalog
             ParityOnly = true,
         },
 
-        // System routes. Health answers 503 when the container-backed check fails, so 200 is real
-        // evidence; session mutations use their dedicated authenticated-action classifications.
+        // System routes. Health answers 503 when the Test Database Capability check fails, so 200 is
+        // real evidence; session mutations use their dedicated authenticated-action classifications.
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),

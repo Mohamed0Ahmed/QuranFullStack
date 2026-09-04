@@ -69,7 +69,7 @@ public sealed class WordTypesTestFixture : IAsyncLifetime
             factory = _apiFactory ??= SmokeApiHost.Build(
                 _database.BaseConnectionString,
                 new FakeExternalUserProfileSource(),
-                new SmokeSqlCommandCapture(),
+                new TestSqlCommandCapture(),
                 readOnlySharedState: true);
         }
 

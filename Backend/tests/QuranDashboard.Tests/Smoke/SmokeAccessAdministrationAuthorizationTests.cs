@@ -1,20 +1,21 @@
 using QuranDashboard.Application.Abstractions.Security.Permissions;
+using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Smoke;
 
-[Collection(nameof(SmokeCollection))]
-public sealed class SmokeAccessAdministrationAuthorizationTests(SmokeApiFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class SmokeAccessAdministrationAuthorizationTests(AccessTestFixture fixture)
+    : SmokeMutableWriterTest(fixture)
 {
     [Fact]
     public async Task EveryOwnerOnlyAdministrationRoute_RejectsAnonymousAndDirectGrantCallers()
     {
-        await fixture.ResetAsync();
-        await fixture.SeedAuthorizationPersonasAsync(
+        await SeedAuthorizationPersonasAsync(
             AbwabPermissions.Doors.Create,
             AbwabPermissions.Doors.Edit);
-        using var anonymousClient = fixture.CreateClientFor(SmokePersona.Anonymous);
-        using var directGrantClient = fixture.CreateClientFor(SmokePersona.ExactPermission);
+        using var anonymousClient = CreateClientFor(SmokePersona.Anonymous);
+        using var directGrantClient = CreateClientFor(SmokePersona.ExactPermission);
 
         foreach (var route in SmokeRouteCatalog.Routes.Where(route =>
                      route.Access.Kind == SmokeRouteAccessKind.OwnerOnly))

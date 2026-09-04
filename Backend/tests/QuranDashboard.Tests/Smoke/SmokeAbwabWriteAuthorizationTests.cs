@@ -1,11 +1,13 @@
 using System.Net.Http.Json;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
+using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Smoke;
 
-[Collection(nameof(SmokeCollection))]
-public sealed class SmokeAbwabWriteAuthorizationTests(SmokeApiFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class SmokeAbwabWriteAuthorizationTests(AccessTestFixture fixture)
+    : SmokeMutableWriterTest(fixture)
 {
     private static readonly IReadOnlyDictionary<string, SmokeAbwabWriteAuthorizationRoute> Routes =
         new SmokeAbwabWriteAuthorizationRoute[]
@@ -295,28 +297,27 @@ public sealed class SmokeAbwabWriteAuthorizationTests(SmokeApiFixture fixture)
         string routeName)
     {
         var route = Routes[routeName];
-        await fixture.ResetAsync();
-        await fixture.SeedAuthorizationPersonasAsync(route.PermissionCode, route.NeighboringPermissionCode);
-        (await fixture.GetDirectPermissionCodesAsync(SmokePersona.Owner)).Should().BeEmpty();
-        (await fixture.GetDirectPermissionCodesAsync(SmokePersona.Disabled))
+        await SeedAuthorizationPersonasAsync(route.PermissionCode, route.NeighboringPermissionCode);
+        (await GetDirectPermissionCodesAsync(SmokePersona.Owner)).Should().BeEmpty();
+        (await GetDirectPermissionCodesAsync(SmokePersona.Disabled))
             .Should().ContainSingle().Which.Should().Be(route.PermissionCode);
 
-        var stateBeforeDenials = await fixture.GetAbwabWriteStateAsync();
+        var stateBeforeDenials = await GetAbwabWriteStateAsync();
         var validatorsBeforeDenials = await ReadValidatorsAsync();
 
         foreach (var persona in DeniedPersonas)
         {
-            fixture.CommandCapture.Reset();
-            using var client = fixture.CreateClientFor(persona);
+            CommandCapture.Reset();
+            using var client = CreateClientFor(persona);
             using var request = route.CreateRequest();
             using var response = await client.SendAsync(request);
 
             await AssertDeniedAsync(response, persona);
-            fixture.CommandCapture.CommandTexts.Should().NotContain(command =>
+            CommandCapture.CommandTexts.Should().NotContain(command =>
                 command.Contains("abwab_", StringComparison.OrdinalIgnoreCase));
         }
 
-        (await fixture.GetAbwabWriteStateAsync()).Should().Be(stateBeforeDenials);
+        (await GetAbwabWriteStateAsync()).Should().Be(stateBeforeDenials);
         (await ReadValidatorsAsync()).Should().Be(validatorsBeforeDenials);
 
         await AssertAuthorizedRouteReachesDomainAsync(route, SmokePersona.ExactPermission);
@@ -327,7 +328,7 @@ public sealed class SmokeAbwabWriteAuthorizationTests(SmokeApiFixture fixture)
         SmokeAbwabWriteAuthorizationRoute route,
         SmokePersona persona)
     {
-        using var client = fixture.CreateClientFor(persona);
+        using var client = CreateClientFor(persona);
         using var request = route.CreateRequest();
         using var response = await client.SendAsync(request);
 
@@ -337,7 +338,7 @@ public sealed class SmokeAbwabWriteAuthorizationTests(SmokeApiFixture fixture)
 
     private async Task<(string Tree, string Templates)> ReadValidatorsAsync()
     {
-        using var client = fixture.CreateClientFor(SmokePersona.Anonymous);
+        using var client = CreateClientFor(SmokePersona.Anonymous);
         using var tree = await client.GetAsync("/api/abwab/tree");
         using var templates = await client.GetAsync("/api/abwab/templates");
 

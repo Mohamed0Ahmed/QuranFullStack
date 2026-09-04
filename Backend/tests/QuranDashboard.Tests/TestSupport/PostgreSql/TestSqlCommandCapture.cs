@@ -1,29 +1,29 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace QuranDashboard.Tests.Smoke;
+namespace QuranDashboard.Tests.TestSupport.PostgreSql;
 
-internal sealed class SmokeSqlCommandCapture : DbCommandInterceptor
+internal sealed class TestSqlCommandCapture : DbCommandInterceptor
 {
-    private readonly object _sync = new();
-    private readonly List<string> _commandTexts = [];
+    private readonly object sync = new();
+    private readonly List<string> commandTexts = [];
 
     public IReadOnlyList<string> CommandTexts
     {
         get
         {
-            lock (_sync)
+            lock (sync)
             {
-                return _commandTexts.ToArray();
+                return commandTexts.ToArray();
             }
         }
     }
 
     public void Reset()
     {
-        lock (_sync)
+        lock (sync)
         {
-            _commandTexts.Clear();
+            commandTexts.Clear();
         }
     }
 
@@ -86,9 +86,9 @@ internal sealed class SmokeSqlCommandCapture : DbCommandInterceptor
 
     private void Record(DbCommand command)
     {
-        lock (_sync)
+        lock (sync)
         {
-            _commandTexts.Add(command.CommandText);
+            commandTexts.Add(command.CommandText);
         }
     }
 }

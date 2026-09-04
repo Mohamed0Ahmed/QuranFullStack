@@ -1,17 +1,18 @@
 using System.Net.Http.Json;
+using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Linking;
 
-[Collection(nameof(LinkingCollection))]
-public sealed class LinkingSuccessfulJourneyTests(LinkingTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class LinkingSuccessfulJourneyTests(AccessTestFixture fixture)
+    : LinkingMutableWriterTest(fixture, LinkingProcessors)
 {
     [Fact]
     public async Task OwnerConfirmation_AcceptsThenReturnsDurableOutcomeAndFreshProjections()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("successful-owner");
@@ -66,12 +67,17 @@ public sealed class LinkingSuccessfulJourneyTests(LinkingTestFixture fixture)
             .Select(id => id.GetInt32()).Should().Equal(doorId);
     }
 
+}
+
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class LinkingConfirmationIdempotencyTests(AccessTestFixture fixture)
+    : LinkingMutableWriterTest(fixture, PreparedPreflightProcessor)
+{
     [Fact]
     public async Task OwnerConfirmation_ImmediateRepeatReturnsExistingJobBeforeProcessing()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedConfirmationClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("existing-confirmation-job");
@@ -95,7 +101,7 @@ public sealed class LinkingSuccessfulJourneyTests(LinkingTestFixture fixture)
         existing.GetProperty("resourceKind").GetString().Should().Be("job");
         existing.GetProperty("job").GetProperty("jobId").GetGuid().Should().Be(jobId);
 
-        await fixture.ProcessNextConfirmationAsync();
+        await ProcessNextConfirmationAsync();
         var terminalJob = await scenario.PollConfirmationAsync(
             jobId,
             status => status == "succeeded");

@@ -11,6 +11,7 @@ using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestRuntime;
 using QuranDashboard.Tests.TestSupport.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -36,14 +37,19 @@ public sealed class AccessTestFixture : IAsyncLifetime
     private string controlConnectionString = string.Empty;
     private string applicationConnectionString = string.Empty;
     private IReadOnlyCollection<DatabaseBackgroundActivity> scenarioBackgroundActivities = [];
+    private IReadOnlyCollection<string> scenarioOwnerEmails = [];
     private ProtectedStateFingerprintReport? verifiedBoundaryFingerprint;
     private bool scenarioActive;
 
     public FakeExternalUserProfileSource ProfileSource { get; } = new();
 
+    internal TestSqlCommandCapture CommandCapture { get; } = new();
+
     private string targetConnectionString = string.Empty;
 
     public string ApplicationConnectionString => applicationConnectionString;
+
+    public string TargetConnectionString => targetConnectionString;
 
     public const string OwnerSub = "logto-owner";
 
@@ -148,7 +154,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
     }
 
     public async Task BeginScenarioAsync(
-        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null)
+        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null,
+        IReadOnlyCollection<string>? additionalOwnerEmails = null)
     {
         if (scenarioActive)
         {
@@ -160,9 +167,10 @@ public sealed class AccessTestFixture : IAsyncLifetime
         try
         {
             scenarioBackgroundActivities = backgroundActivities?.ToArray() ?? [];
+            scenarioOwnerEmails = additionalOwnerEmails?.ToArray() ?? [];
             ProfileSource.Reset();
             queryProvider = BuildQueryProvider();
-            apiFactory = BuildApiFactory(scenarioBackgroundActivities);
+            apiFactory = BuildApiFactory(scenarioBackgroundActivities, scenarioOwnerEmails);
             _ = apiFactory.Services;
             scenarioActive = true;
         }
@@ -189,8 +197,22 @@ public sealed class AccessTestFixture : IAsyncLifetime
     public async Task RestartScenarioAsync()
     {
         var backgroundActivities = scenarioBackgroundActivities;
+        var ownerEmails = scenarioOwnerEmails;
         await EndScenarioAsync();
-        await BeginScenarioAsync(backgroundActivities);
+        await BeginScenarioAsync(backgroundActivities, ownerEmails);
+    }
+
+    public async Task RestartScenarioApiAsync()
+    {
+        if (!scenarioActive)
+        {
+            throw new InvalidOperationException("A MutableWriter scenario is not active.");
+        }
+
+        await StopScenarioApiAsync();
+        queryProvider = BuildQueryProvider();
+        apiFactory = BuildApiFactory(scenarioBackgroundActivities, scenarioOwnerEmails);
+        _ = apiFactory.Services;
     }
 
     public HttpClient CreateApiClient() => CreateApiClient(Factory);
@@ -347,7 +369,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
             "The Access MutableWriter query provider is stopped outside an active scenario.");
 
     private WebApplicationFactory<AccessController> BuildApiFactory(
-        IReadOnlyCollection<DatabaseBackgroundActivity> backgroundActivities)
+        IReadOnlyCollection<DatabaseBackgroundActivity> backgroundActivities,
+        IReadOnlyCollection<string> additionalOwnerEmails)
     {
         return new WebApplicationFactory<AccessController>()
             .WithWebHostBuilder(builder =>
@@ -377,6 +400,11 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                         ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
                     };
+                    var ownerEmailIndex = 2;
+                    foreach (var ownerEmail in additionalOwnerEmails)
+                    {
+                        settings[$"OwnerBootstrap:Emails:{ownerEmailIndex++}"] = ownerEmail;
+                    }
                     activityIndex = 0;
                     foreach (var activity in backgroundActivities)
                     {
@@ -389,6 +417,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
                 builder.ConfigureTestServices(services =>
                 {
+                    services.AddDbContext<QuranDashboardDbContext>(options =>
+                        options.AddInterceptors(CommandCapture));
                     services.RemoveAll<IExternalUserProfileSource>();
                     services.AddSingleton<IExternalUserProfileSource>(ProfileSource);
                     TestJwtTokens.ConfigureOfflineValidation(services);
@@ -419,6 +449,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
 
         NpgsqlConnection.ClearAllPools();
+        CommandCapture.Reset();
     }
 
     private async Task ResetAfterApiStoppedAsync(string phase)

@@ -105,8 +105,8 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
     {
         switch (payload)
         {
-            case SmokeSeededPayload.PagedTable(var manifestTable):
-                data.GetProperty("totalCount").GetInt32().Should().Be(fixture.Oracle.RowCounts[manifestTable]);
+            case SmokeSeededPayload.PagedTable(var oracleTable):
+                data.GetProperty("totalCount").GetInt32().Should().Be(fixture.Oracle.RowCounts[oracleTable]);
                 data.GetProperty("items").GetArrayLength().Should().BePositive();
                 break;
 
@@ -114,8 +114,8 @@ public sealed class SmokeDataReadTests(SmokeDataFixture fixture)
                 data.GetProperty("items").GetArrayLength().Should().BePositive();
                 break;
 
-            case SmokeSeededPayload.CountedCollection(var property, var manifestTable):
-                data.GetProperty(property).GetArrayLength().Should().Be(fixture.Oracle.RowCounts[manifestTable]);
+            case SmokeSeededPayload.CountedCollection(var property, var oracleTable):
+                data.GetProperty(property).GetArrayLength().Should().Be(fixture.Oracle.RowCounts[oracleTable]);
                 break;
 
             case SmokeSeededPayload.NonEmptyCollection(var property):

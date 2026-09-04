@@ -8,7 +8,7 @@ namespace QuranDashboard.Tests.Smoke.Data;
 
 public sealed class SmokeDataFixture : IAsyncLifetime
 {
-    private readonly SmokeSqlCommandCapture commandCapture = new();
+    private readonly TestSqlCommandCapture commandCapture = new();
     private readonly PersistentTestDatabaseReader database = new(guarded: true);
     private readonly FakeExternalUserProfileSource profileSource = new();
 
@@ -39,6 +39,11 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         apiFactory
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture."));
+
+    internal IServiceProvider ApiServices => (apiFactory
+        ?? throw new InvalidOperationException(
+            $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture."))
+        .Services;
 
     internal QuranFidelityOracle Oracle { get; } = QuranFidelityOracleDocument.ReadOracle();
 

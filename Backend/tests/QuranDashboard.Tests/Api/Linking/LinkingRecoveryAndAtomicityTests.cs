@@ -1,17 +1,18 @@
 using System.Net.Http.Json;
+using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Linking;
 
-[Collection(nameof(LinkingCollection))]
-public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class LinkingRecoveryAndAtomicityTests(AccessTestFixture fixture)
+    : LinkingMutableWriterTest(fixture)
 {
     [Fact]
     public async Task IncoherentInlineConfiguration_IsRejectedSynchronouslyWithoutPreparedRows()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("incoherent-inline-configuration");
@@ -51,16 +52,15 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
             response,
             HttpStatusCode.BadRequest,
             ApiMessages.LinkingPreparedPreflightInvalid);
-        (await fixture.ReadPersistentStateCountsAsync(doorId)).Should().Be(
+        (await ReadPersistentStateCountsAsync(doorId)).Should().Be(
             new LinkingPersistentStateCounts(0, 0, 0, 0, 0, 0));
     }
 
     [Fact]
     public async Task StaleLinkingDataRevision_IsRejectedBeforeAnyWorkflowOrLinkWrite()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("stale-linking-data");
@@ -75,7 +75,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         var error = await ApiEnvelope.ReadDataAsync(response);
         error.GetProperty("code").GetString().Should().Be("LINKING_DATA_STALE");
 
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(0, 0, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -83,9 +83,8 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task StaleWorkspaceSourceRevision_IsRejectedBeforeAnyWorkflowOrLinkWrite()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("stale-workspace-source");
@@ -119,7 +118,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         var error = await ApiEnvelope.ReadDataAsync(response);
         error.GetProperty("code").GetString().Should().Be("WORKSPACE_SOURCE_STALE");
 
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(0, 0, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -127,9 +126,8 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task RepeatedPreflightRequest_ReusesOneLifecycleAcrossActiveAndTerminalResponses()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("preflight-idempotency");
@@ -156,7 +154,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
             immediateRepeatCode);
         immediateRepeat.GetProperty("preflightId").GetGuid().Should().Be(preflightId);
 
-        await fixture.ProcessNextPausedPreflightAsync();
+        await ProcessNextPreflightAsync();
         var ready = await scenario.PollPreflightAsync(preflightId, status => status == "ready");
         ready.GetProperty("preflightToken").GetString().Should().NotBeNullOrWhiteSpace();
 
@@ -174,7 +172,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         terminalRepeat.GetProperty("preflightId").GetGuid().Should().Be(preflightId);
         terminalRepeat.GetProperty("status").GetString().Should().Be("cancelled");
 
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 0, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -182,9 +180,8 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task PreparationKey_ReusedWithDifferentContent_IsRejectedWithoutExtraWrites()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("preflight-key-conflict");
@@ -208,7 +205,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         var conflict = await ApiEnvelope.ReadDataAsync(conflictingRepeatResponse);
         conflict.GetProperty("code").GetString().Should().Be("IDEMPOTENCY_CONFLICT");
 
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 0, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -216,15 +213,14 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task RepeatedConfirmationRequest_ReusesQueuedAndCancelledJobResponses()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("confirmation-replay");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var idempotencyKey = Guid.NewGuid();
         var request = new { preflightToken = prepared.Token, idempotencyKey };
 
@@ -259,7 +255,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         terminalRepeat.GetProperty("job").GetProperty("jobId").GetGuid().Should().Be(jobId);
         terminalRepeat.GetProperty("job").GetProperty("status").GetString().Should().Be("cancelled");
 
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 1, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -267,15 +263,14 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task BoundedConfirmationPollingTimeout_ReportsSanitizedLastBusinessState()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("confirmation-cancel");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var request = new
         {
             preflightToken = prepared.Token,
@@ -283,7 +278,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         };
         var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
 
-        Func<Task> impossibleWait = async () => _ = await fixture.PollDataAsync(
+        Func<Task> impossibleWait = async () => _ = await PollDataAsync(
             client,
             $"/api/linking/confirmation-jobs/{jobId}",
             "confirmation-job",
@@ -294,21 +289,20 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         timeout.Which.Message.Should().Contain($"resourceId={jobId:D}");
         timeout.Which.Message.Should().Contain("lastBusinessState=status:queued,stage:loading-prepared");
         timeout.Which.Message.Should().Contain("sanitizedSqlTail=");
-        timeout.Which.Message.Should().NotContain(fixture.ConnectionString);
+        timeout.Which.Message.Should().NotContain(Fixture.ApplicationConnectionString);
     }
 
     [Fact]
     public async Task QueuedConfirmationCancellation_IsIdempotentAndLeavesNoPartialWrites()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("confirmation-cancel-idempotent");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var request = new
         {
             preflightToken = prepared.Token,
@@ -332,7 +326,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
 
         var terminal = await scenario.PollConfirmationAsync(jobId, status => status == "cancelled");
         terminal.GetProperty("failureCode").GetString().Should().Be("CONFIRMATION_CANCELLED");
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 1, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -340,31 +334,30 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task QueuedConfirmation_AfterHostRestart_CompletesOnceAndReturnsDurableOutcome()
     {
-        await fixture.ResetAsync();
-        var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("restart-recovery");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var idempotencyKey = Guid.NewGuid();
         var request = new { preflightToken = prepared.Token, idempotencyKey };
         var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
 
         client.Dispose();
-        await fixture.RestartPausedWorkersAsync();
-        using var restartedClient = fixture.CreatePausedWorkersClient();
-        var restartedScenario = new LinkingTestScenario(fixture, restartedClient);
+        await RestartApiAsync();
+        using var restartedClient = CreateClient();
+        var restartedScenario = new LinkingTestScenario(this, restartedClient, AccessTestFixture.OwnerSub);
         restartedScenario.ConfigureOwner();
 
-        await fixture.ProcessNextPausedConfirmationAsync();
+        await ProcessNextConfirmationAsync();
         var terminal = await restartedScenario.PollConfirmationAsync(
             jobId,
             status => status == "succeeded");
         terminal.GetProperty("failureCode").ValueKind.Should().Be(JsonValueKind.Null);
-        (await fixture.ReadConfirmationAttemptCountAsync(jobId)).Should().Be(1);
+        (await ReadConfirmationAttemptCountAsync(jobId)).Should().Be(1);
 
         await AssertDurableReplayAsync(
             restartedClient,
@@ -379,27 +372,26 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task ExpiredWorkerLease_IsRecoveredByOneNewAttemptWithoutDuplicateWrites()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("lease-recovery");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var idempotencyKey = Guid.NewGuid();
         var request = new { preflightToken = prepared.Token, idempotencyKey };
         var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
 
-        await fixture.ClaimAndExpireConfirmationLeaseAsync(jobId);
-        await fixture.ProcessNextPausedConfirmationAsync();
+        await ClaimAndExpireConfirmationLeaseAsync(jobId);
+        await ProcessNextConfirmationAsync();
 
         var terminal = await scenario.PollConfirmationAsync(
             jobId,
             status => status == "succeeded");
         terminal.GetProperty("failureCode").ValueKind.Should().Be(JsonValueKind.Null);
-        (await fixture.ReadConfirmationAttemptCountAsync(jobId)).Should().Be(2);
+        (await ReadConfirmationAttemptCountAsync(jobId)).Should().Be(2);
         await AssertDurableReplayAsync(
             client,
             prepared,
@@ -413,23 +405,22 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task InclusionSynchronizationConflict_RollsBackEverythingAndRemainsOneStaleJob()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await scenario.CreateTargetDoorAsync("inclusion-source");
         var consumerDoorId = await scenario.CreateTargetDoorAsync("inclusion-consumer");
         var inclusionId = await AddDoorInclusionAsync(client, consumerDoorId, doorId);
-        await fixture.RemoveInclusionSynchronizationContributionAsync(inclusionId);
+        await RemoveInclusionSynchronizationContributionAsync(inclusionId);
         var prepared = await scenario.PrepareReadyPreflightAsync(
             doorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var idempotencyKey = Guid.NewGuid();
         var request = new { preflightToken = prepared.Token, idempotencyKey };
         var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
 
-        await fixture.ProcessNextPausedConfirmationAsync();
+        await ProcessNextConfirmationAsync();
         var terminal = await scenario.PollConfirmationAsync(
             jobId,
             status => status == "stale");
@@ -448,7 +439,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         using var outcomeResponse = await client.GetAsync(
             $"/api/linking/confirmation-outcomes/{idempotencyKey}");
         outcomeResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 1, 0, 0, 0, 0));
         await AssertNoPublicLinksAsync(client, doorId);
     }
@@ -456,16 +447,15 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     [Fact]
     public async Task ConcurrentConfirmationAndInclusionAdd_SerializeWithoutDeadlockAndLeaveMatchingPublicProjections()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreatePausedWorkersClient();
-        var scenario = new LinkingTestScenario(fixture, client);
+        using var client = CreateClient();
+        var scenario = new LinkingTestScenario(this, client, AccessTestFixture.OwnerSub);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var sourceDoorId = await scenario.CreateTargetDoorAsync("concurrent-confirmation-source");
         var targetDoorId = await scenario.CreateTargetDoorAsync("concurrent-confirmation-target");
         var prepared = await scenario.PrepareReadyPreflightAsync(
             sourceDoorId,
-            fixture.ProcessNextPausedPreflightAsync);
+            ProcessNextPreflightAsync);
         var idempotencyKey = Guid.NewGuid();
         var request = new { preflightToken = prepared.Token, idempotencyKey };
         var jobId = await EnqueueConfirmationAsync(client, prepared.Id, request);
@@ -475,7 +465,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         var targetVersion = (await ApiEnvelope.ReadDataAsync(topologyResponse))
             .GetProperty("doorVersion").GetUInt32();
 
-        await using var gateConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var gateConnection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await gateConnection.OpenAsync();
         await using var gateTransaction = await gateConnection.BeginTransactionAsync();
         await using (var gateCommand = new NpgsqlCommand(
@@ -489,7 +479,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         await using var gatePidCommand = new NpgsqlCommand("SELECT pg_backend_pid()", gateConnection, gateTransaction);
         var gateBackendPid = Convert.ToInt32(await gatePidCommand.ExecuteScalarAsync());
 
-        var confirmation = fixture.ProcessNextPausedConfirmationAsync();
+        var confirmation = ProcessNextConfirmationAsync();
         var inclusion = client.PostAsJsonAsync(
             $"/api/abwab/doors/{targetDoorId}/inclusions",
             new { expectedTargetDoorVersion = targetVersion, sourceDoorIds = new[] { sourceDoorId } });
@@ -542,9 +532,9 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
         projection.GetProperty("doorIds").EnumerateArray()
             .Select(id => id.GetInt32()).Should().Equal(sourceDoorId, targetDoorId);
 
-        (await fixture.ReadPersistentStateCountsAsync(sourceDoorId)).Should().Be(
+        (await ReadPersistentStateCountsAsync(sourceDoorId)).Should().Be(
             new LinkingPersistentStateCounts(1, 1, 1, 1, 1, 1));
-        (await fixture.ReadPersistentStateCountsAsync(targetDoorId)).Should().Be(
+        (await ReadPersistentStateCountsAsync(targetDoorId)).Should().Be(
             new LinkingPersistentStateCounts(0, 0, 0, 1, 1, 1));
         await AssertSingleCompleteInclusionAsync(sourceDoorId, targetDoorId);
     }
@@ -591,7 +581,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
 
     private async Task AssertSingleCommittedLinkAsync(HttpClient client, int doorId)
     {
-        var counts = await fixture.ReadPersistentStateCountsAsync(doorId);
+        var counts = await ReadPersistentStateCountsAsync(doorId);
         counts.Should().Be(new LinkingPersistentStateCounts(1, 1, 1, 1, 1, 1));
 
         using var snapshotResponse = await client.GetAsync($"/api/abwab/doors/{doorId}/links/snapshot");
@@ -624,7 +614,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
     {
         var deadline = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(10);
         var observed = 0;
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """
@@ -657,7 +647,7 @@ public sealed class LinkingRecoveryAndAtomicityTests(LinkingTestFixture fixture)
 
     private async Task AssertSingleCompleteInclusionAsync(int sourceDoorId, int targetDoorId)
     {
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """

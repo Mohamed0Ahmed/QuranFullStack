@@ -5,13 +5,12 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Smoke;
 
-// The one Testing-environment composition, shared by the empty-schema fixture and the dump-seeded one.
-// The two tiers own separate databases on purpose, but they must not own separate host wiring: if they
-// did, a route answering differently between them could mean a difference in configuration rather than
-// the difference in data the data tier is there to measure.
+// Shared Testing-environment API composition for fixtures that supply their own database lifecycle.
+// Callers explicitly select read-only or mutable activity rather than inheriting an implicit default.
 internal static class SmokeApiHost
 {
     // The pipeline calls UseHttpsRedirection, so an http base address answers 307 instead of the route.
@@ -26,7 +25,7 @@ internal static class SmokeApiHost
     public static WebApplicationFactory<HealthController> Build(
         string connectionString,
         FakeExternalUserProfileSource profileSource,
-        SmokeSqlCommandCapture commandCapture,
+        TestSqlCommandCapture commandCapture,
         bool readOnlySharedState = false,
         IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null)
     {
@@ -90,8 +89,8 @@ internal static class SmokeApiHost
                     TestJwtTokens.ConfigureOfflineValidation(services);
 
                     // Deliberately no health-check stub, unlike HealthApiFactory and RateLimitingApiFactory:
-                    // the real AddDbContextCheck runs against the container, so a green /api/health proves
-                    // the connection and the migrations.
+                    // the real AddDbContextCheck runs against the Test Database Capability, so a green
+                    // /api/health proves the connection and migrations.
                 });
             });
     }

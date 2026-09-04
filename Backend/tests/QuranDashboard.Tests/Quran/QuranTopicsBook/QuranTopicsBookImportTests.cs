@@ -6,6 +6,7 @@ using QuranDashboard.Domain.Linking;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.Http;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.QuranTopicsBook;
 
@@ -580,7 +581,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
         await using var factory = SmokeApiHost.Build(
             database.ConnectionString,
             new FakeExternalUserProfileSource(),
-            new SmokeSqlCommandCapture());
+            new TestSqlCommandCapture());
         using var client = SmokeApiHost.CreateClient(factory);
 
         using var rootResponse = await client.GetAsync($"/api/abwab/doors/{rootDoorId}/links/snapshot");
