@@ -77,6 +77,8 @@ const ALL_GROUPS = [...EXECUTION_GROUPS, 'LegacyUnmigrated'];
 
 export function assessScratchLifecycleResult({
   action,
+  runId,
+  subtype = null,
   processStatus,
   report,
   durationMilliseconds,
@@ -84,7 +86,7 @@ export function assessScratchLifecycleResult({
   parseError = false,
 }) {
   const reportObject = report !== null && typeof report === 'object' ? report : null;
-  const evidenceValid = reportObject !== null
+  const evidenceShapeValid = reportObject !== null
     && typeof reportObject.succeeded === 'boolean'
     && Array.isArray(reportObject.violations)
     && reportObject.scratch !== null
@@ -95,6 +97,12 @@ export function assessScratchLifecycleResult({
     && typeof reportObject.scratch.removed === 'boolean'
     && Number.isInteger(reportObject.scratch.dumpFilesRetained)
     && reportObject.scratch.dumpFilesRetained >= 0;
+  const identityMatches = evidenceShapeValid
+    && /^[0-9a-f]{32}$/.test(runId)
+    && reportObject.scratch.runId === runId
+    && reportObject.scratch.database === `quran_test_scratch_${runId}`
+    && reportObject.scratch.subtype === (action === 'reap' ? null : subtype);
+  const evidenceValid = evidenceShapeValid && identityMatches;
   const successfulEvidence = evidenceValid
     && reportObject.scratch.validated === true
     && reportObject.scratch.dumpFilesRetained === 0
@@ -106,13 +114,15 @@ export function assessScratchLifecycleResult({
       ? 'invalid-json-evidence'
       : reportObject === null
         ? 'missing-evidence'
-        : !evidenceValid
+        : !evidenceShapeValid
           ? 'invalid-evidence'
-          : reportObject.succeeded !== true
-            ? 'lifecycle-failed'
-            : !successfulEvidence
-              ? 'invalid-evidence'
-              : null;
+          : !identityMatches
+            ? 'identity-mismatch'
+            : reportObject.succeeded !== true
+              ? 'lifecycle-failed'
+              : !successfulEvidence
+                ? 'invalid-evidence'
+                : null;
   const reportedStatus = Number.isInteger(processStatus) ? processStatus : 1;
 
   return {
@@ -145,13 +155,16 @@ export function createEmptyScratchExecutionEvidence({
     && reap?.status === 0
     && reap?.evidenceValid === true
     && reap?.report?.succeeded === true
+    && lifecycleIdentityMatches(reap, 'reap', runId, null)
     && create?.status === 0
     && create?.evidenceValid === true
     && create?.report?.succeeded === true
+    && lifecycleIdentityMatches(create, 'create', runId, command.scratchSubtype)
     && testStatus === 0
     && cleanup?.status === 0
     && cleanup?.evidenceValid === true
     && cleanup?.report?.succeeded === true
+    && lifecycleIdentityMatches(cleanup, 'cleanup', runId, command.scratchSubtype)
     && cleanupScratch?.removed === true
     && cleanupScratch?.dumpFilesRetained === 0
     && finalStatus === 0;
@@ -229,6 +242,14 @@ function sanitizeEvidenceCode(value) {
   return typeof value === 'string' && /^[a-z0-9][a-z0-9._-]{0,127}$/i.test(value)
     ? value
     : null;
+}
+
+function lifecycleIdentityMatches(result, mode, runId, subtype) {
+  const scratch = result?.report?.scratch;
+  return scratch?.mode === mode
+    && scratch?.runId === runId
+    && scratch?.database === `quran_test_scratch_${runId}`
+    && scratch?.subtype === subtype;
 }
 
 function sanitizeDatabaseIdentity(value) {

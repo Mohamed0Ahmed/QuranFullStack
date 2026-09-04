@@ -46,6 +46,9 @@ on their existing runner until their migration tickets land.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
 typecheck, persistent canonical-read critical Chromium gate, and the remaining legacy critical gate.
+The direct `Backend/scripts/test-backend pre-pr` delegate retains its non-scratch Backend coverage but
+excludes runner-owned empty-scratch rehearsals because it has no affected-scope inputs; invoke this
+repository-root coordinator with a feature or concern when that scope requires those rehearsals.
 Add only the affected pipeline/contract scope:
 
 ```bash

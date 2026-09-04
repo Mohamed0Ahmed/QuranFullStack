@@ -400,10 +400,12 @@ After fresh measurement, every PR has four parallel, independently bounded jobs:
 3. Frontend policy checks, type-checking, and production build.
 4. Critical Chromium Playwright journeys, with mobile emulation only where tagged.
 
-The Backend candidate remains the full supported `Backend/scripts/test-backend pre-pr` lane. Its
-current full-canonical requirement is explicit; no reduced lane is relabeled as the full command. The
-final owner scope makes this established job blocking without a new pilot and accepts its existing
-12-minute outer timeout as the fail-closed bound.
+The retained Backend candidate remains the supported `Backend/scripts/test-backend pre-pr` lane for
+non-scratch coverage. Runner-owned empty-scratch rehearsals are selected only by repository-root
+`scripts/test pre-pr` when the affected feature or concern requires them; the Backend delegate has no
+affected-scope inputs and excludes those classes. Full-data authorization remains explicit. The final
+owner scope makes the established job blocking without a new pilot and accepts its existing 12-minute
+outer timeout as the fail-closed bound.
 
 Contract and model verification use the repository-supported Backend scripts. Frontend verification
 includes `test:pre-pr` and `e2e:typecheck`. The provider-neutral

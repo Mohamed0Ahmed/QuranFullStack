@@ -441,6 +441,8 @@ assert.ok(!JSON.stringify(scratchEvidence).includes(credentialSentinel));
 
 const missingLifecycleEvidence = assessScratchLifecycleResult({
   action: 'create',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
   processStatus: 0,
   report: null,
   durationMilliseconds: 4,
@@ -451,6 +453,8 @@ assert.equal(missingLifecycleEvidence.failureCategory, 'missing-evidence');
 
 const failedLifecycleEvidence = assessScratchLifecycleResult({
   action: 'cleanup',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
   processStatus: 0,
   durationMilliseconds: 12,
   report: {
@@ -464,6 +468,8 @@ const failedLifecycleEvidence = assessScratchLifecycleResult({
     scratch: {
       mode: 'cleanup',
       database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+      runId: '0123456789abcdef0123456789abcdef',
+      subtype: 'canonical-rebuild',
       receiptRecorded: true,
       validated: true,
       removed: false,
@@ -474,6 +480,37 @@ const failedLifecycleEvidence = assessScratchLifecycleResult({
 assert.equal(failedLifecycleEvidence.status, 1);
 assert.equal(failedLifecycleEvidence.evidenceValid, true);
 assert.equal(failedLifecycleEvidence.failureCategory, 'lifecycle-failed');
+
+const mismatchedLifecycleReport = lifecycleResult('create', false).report;
+mismatchedLifecycleReport.scratch.runId = 'fedcba9876543210fedcba9876543210';
+const mismatchedLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'create',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
+  processStatus: 0,
+  durationMilliseconds: 5,
+  report: mismatchedLifecycleReport,
+});
+assert.equal(mismatchedLifecycleEvidence.status, 1);
+assert.equal(mismatchedLifecycleEvidence.evidenceValid, false);
+assert.equal(mismatchedLifecycleEvidence.failureCategory, 'identity-mismatch');
+
+const mismatchedCleanup = lifecycleResult('cleanup', true);
+mismatchedCleanup.report.scratch.runId = 'fedcba9876543210fedcba9876543210';
+mismatchedCleanup.report.scratch.database =
+  'quran_test_scratch_fedcba9876543210fedcba9876543210';
+const crossPhaseMismatchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  cleanup: mismatchedCleanup,
+  finalStatus: 0,
+});
+assert.equal(crossPhaseMismatchEvidence.succeeded, false);
 
 const failedScratchEvidence = createEmptyScratchExecutionEvidence({
   command: focusedFoundationRebuild.commands[0],
@@ -514,6 +551,8 @@ function lifecycleResult(mode, removed) {
       scratch: {
         mode,
         database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+        runId: '0123456789abcdef0123456789abcdef',
+        subtype: mode === 'reap' ? null : 'canonical-rebuild',
         receiptRecorded: mode !== 'reap',
         validated: true,
         removed,

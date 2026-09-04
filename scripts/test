@@ -177,7 +177,7 @@ async function executeEmptyScratch(command) {
     }
   } finally {
     if (created) {
-      cleanup = runScratchLifecycle('cleanup', runId);
+      cleanup = runScratchLifecycle('cleanup', runId, command.scratchSubtype);
     }
     keeper.stdin.end();
     keeperExitStatus = await waitForExit(keeper);
@@ -249,7 +249,7 @@ function runScratchLifecycle(action, runId, subtype = null) {
     '--command',
     SCRATCH_LOCK_COMMAND,
   ];
-  if (subtype !== null) {
+  if (action === 'create' && subtype !== null) {
     arguments_.push('--subtype', subtype);
   }
   const result = spawnSync('dotnet', arguments_, {
@@ -267,6 +267,8 @@ function runScratchLifecycle(action, runId, subtype = null) {
     console.error(`[scripts/test] scratch ${action} could not start: ${result.error.message}`);
     return assessScratchLifecycleResult({
       action,
+      runId,
+      subtype,
       processStatus: result.status,
       report: null,
       durationMilliseconds: performance.now() - startedAt,
@@ -286,6 +288,8 @@ function runScratchLifecycle(action, runId, subtype = null) {
   }
   return assessScratchLifecycleResult({
     action,
+    runId,
+    subtype,
     processStatus: result.status,
     report,
     durationMilliseconds: performance.now() - startedAt,
