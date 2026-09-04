@@ -102,7 +102,10 @@ for (const command of materializedPlan.commands) {
     ? await executeEmptyScratch(command)
     : command.group === 'FullDataDestructiveRehearsal' && command.rehearsalSubtype
       ? await executeFullRehearsal(command)
-    : executeCommand(command);
+    : executeCommand(command, {
+      ...process.env,
+      QURAN_DASHBOARD_TEST_RUN_ID: createScratchRunId(),
+    });
   if (status !== 0) {
     process.exit(status);
   }
