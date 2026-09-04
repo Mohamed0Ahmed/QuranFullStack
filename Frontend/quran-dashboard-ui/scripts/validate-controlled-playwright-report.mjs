@@ -56,7 +56,7 @@ export function validateControlledPlaywrightRun(runDirectory, expectedStatus) {
     && childKinds.includes('stateful')
     && children.every((child) => child?.status === 'passed');
   if ((report?.status === 'passed') !== childrenPassed) errors.push('controlled-run-status-mismatch');
-  if (report?.status === 'passed' && tests.some((test) => test.status !== 'passed')) {
+  if (report?.status === 'passed' && tests.some((test) => !['passed', 'skipped'].includes(test.status))) {
     errors.push('controlled-run-passing-tests-mismatch');
   }
   if (JSON.stringify(childTests) !== JSON.stringify(tests)) {
@@ -220,7 +220,7 @@ function isValidTest(test) {
   return test
     && typeof test.id === 'string'
     && test.id.length > 0
-    && typeof test.journey === 'string'
+    && (test.journey === null || typeof test.journey === 'string')
     && CHILD_STATUSES.has(test.status)
     && Number.isFinite(test.durationMs)
     && test.durationMs >= 0

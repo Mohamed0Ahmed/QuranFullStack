@@ -105,24 +105,30 @@ export function createControlledPlaywrightEnvironment(source, receipt, paths) {
 
 export function createPrivatePlaywrightRuntime(evidenceDirectory, cleanupOwner = evidenceDirectory) {
   let homeDirectory;
+  let homeRoot;
   let playwrightOutputDirectory;
+  let playwrightOutputRoot;
   try {
     mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
     chmodSync(dirname(evidenceDirectory), 0o700);
     chmodSync(evidenceDirectory, 0o700);
-    playwrightOutputDirectory = mkdtempSync(
+    playwrightOutputRoot = mkdtempSync(
       resolve(tmpdir(), 'qdb-controlled-playwright-output-'),
     );
-    homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
+    playwrightOutputDirectory = resolve(playwrightOutputRoot, 'output');
+    homeRoot = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
+    homeDirectory = resolve(homeRoot, 'home');
+    mkdirSync(playwrightOutputDirectory, { mode: 0o700 });
+    mkdirSync(homeDirectory, { mode: 0o700 });
     chmodSync(playwrightOutputDirectory, 0o700);
     chmodSync(homeDirectory, 0o700);
-    writeRuntimeOwner(playwrightOutputDirectory, cleanupOwner);
-    writeRuntimeOwner(homeDirectory, cleanupOwner);
+    writeRuntimeOwner(playwrightOutputRoot, cleanupOwner);
+    writeRuntimeOwner(homeRoot, cleanupOwner);
   } catch (error) {
-    if (playwrightOutputDirectory) {
-      rmSync(playwrightOutputDirectory, { recursive: true, force: true });
+    if (playwrightOutputRoot) {
+      rmSync(playwrightOutputRoot, { recursive: true, force: true });
     }
-    if (homeDirectory) rmSync(homeDirectory, { recursive: true, force: true });
+    if (homeRoot) rmSync(homeRoot, { recursive: true, force: true });
     throw error;
   }
   return {
@@ -130,8 +136,8 @@ export function createPrivatePlaywrightRuntime(evidenceDirectory, cleanupOwner =
     homeDirectory,
     playwrightOutputDirectory,
     cleanup() {
-      rmSync(playwrightOutputDirectory, { recursive: true, force: true });
-      rmSync(homeDirectory, { recursive: true, force: true });
+      rmSync(playwrightOutputRoot, { recursive: true, force: true });
+      rmSync(homeRoot, { recursive: true, force: true });
     },
   };
 }

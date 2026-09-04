@@ -295,6 +295,8 @@ const cleanupResults = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-cleanup-con
 const cleanupOwner = resolve(cleanupResults, 'attempts/primary/playwright-evidence/run/evidence');
 const orphanedRuntime = createPrivatePlaywrightRuntime(cleanupOwner);
 try {
+  rmSync(orphanedRuntime.playwrightOutputDirectory, { recursive: true, force: true });
+  mkdirSync(orphanedRuntime.playwrightOutputDirectory, { mode: 0o700 });
   assert.equal(cleanupControlledPlaywrightRuntime(cleanupResults, 'primary'), 2);
   assert.equal(existsSync(orphanedRuntime.homeDirectory), false);
   assert.equal(existsSync(orphanedRuntime.playwrightOutputDirectory), false);
