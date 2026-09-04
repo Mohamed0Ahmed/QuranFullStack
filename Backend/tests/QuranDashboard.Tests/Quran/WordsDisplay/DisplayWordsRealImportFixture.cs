@@ -2,6 +2,7 @@ using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayR
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
 using QuranDashboard.Application.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
@@ -28,9 +29,9 @@ public sealed class DisplayWordsRealImportFixture : IAsyncLifetime
             return;
         }
 
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(DisplayWordsRealImportFixture),
-            "canonical-rebuild");
+            DestructiveRehearsalSubtype.CanonicalRebuild);
 
         try
         {

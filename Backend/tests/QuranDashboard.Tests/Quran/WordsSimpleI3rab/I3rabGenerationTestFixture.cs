@@ -7,6 +7,7 @@ using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Domain.Quran.Words.Morphology;
 using QuranDashboard.Domain.Quran.Words.Morphology.Irab;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsSimpleI3rab;
@@ -29,9 +30,9 @@ public sealed class I3rabGenerationTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(I3rabGenerationTestFixture),
-            "canonical-generation");
+            DestructiveRehearsalSubtype.CanonicalGeneration);
 
         try
         {

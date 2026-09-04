@@ -1,4 +1,5 @@
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
@@ -12,9 +13,9 @@ public sealed class FullI3rabSchemaFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(FullI3rabSchemaFixture),
-            "canonical-import");
+            DestructiveRehearsalSubtype.CanonicalImport);
 
         try
         {

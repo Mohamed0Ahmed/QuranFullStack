@@ -31,6 +31,7 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
   row('Tests.FixtureUpgraded', 'Access', 'Database', 'TierB', '', 'CanonicalReader', 'SystemCatalogue', 'None', 'TestDatabase', 'None', 'WriterCollection', 'Migrated'),
   row('Tests.EmptyMigration', 'Access', 'Migration', 'TierB', 'Schema', 'DestructiveRehearsal', 'None', 'SchemaState', 'EmptyScratch', 'Migration', 'ScratchCollection', 'Migrated'),
   row('Tests.EmptyCanonicalGenerator', 'WordsMorphology', 'Database', 'Pipeline', 'Contract,Safety,Schema,Source', 'DestructiveRehearsal', 'CanonicalQuranData,SchemaState', 'CanonicalQuranData', 'EmptyScratch', 'CanonicalImport', 'ScratchCollection', 'Migrated'),
+  row('Tests.EmptyOtherGenerator', 'WordsDisplay', 'Database', 'Pipeline', 'Contract,Safety,Schema,Source', 'DestructiveRehearsal', 'CanonicalQuranData,SchemaState', 'CanonicalQuranData', 'EmptyScratch', 'CanonicalRebuild', 'ScratchCollection', 'Migrated'),
   row('Tests.FullImport', 'FoundationImport', 'Canonical', 'Pipeline', 'Cli,Source,Safety', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.OtherFullImport', 'Tafsirs', 'Canonical', 'Pipeline', 'Cli,Source', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.FullIndex', 'PhraseSearch', 'Release', 'Release', 'Cli,Execution', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'PhraseSearchIndexBuild', 'None', 'Migrated'),
@@ -196,6 +197,7 @@ assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyCanonicalGenerator')));
+assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyOtherGenerator')));
 assert.deepEqual(
   ordinaryPrePr.partitions.map(({ group }) => group),
   ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],
@@ -211,6 +213,18 @@ const affectedPipeline = planPrePrSelection({
 assert.deepEqual(affectedPipeline.authorizationRequired, ['Tests.FullImport']);
 assert.ok(!affectedPipeline.commands.some(({ id }) => id.includes('Tests.FullImport')));
 assert.ok(!affectedPipeline.commands.some(({ id }) => id.includes('Tests.OtherFullImport')));
+
+const affectedEmptyPipeline = planPrePrSelection({
+  backendCatalog: catalog,
+  backendResources: resourceCatalog,
+  affectedFeatures: ['WordsMorphology'],
+  affectedConcerns: [],
+  authorizeFullData: false,
+});
+assert.ok(affectedEmptyPipeline.commands.some(({ id }) =>
+  id.includes('EmptyCanonicalGenerator')));
+assert.ok(!affectedEmptyPipeline.commands.some(({ id }) =>
+  id.includes('EmptyOtherGenerator')));
 
 const affectedSafety = planPrePrSelection({
   backendCatalog: catalog,
@@ -272,6 +286,8 @@ const scheduledWithoutAuthorization = planPrePrSelection({
 });
 assert.ok(scheduledWithoutAuthorization.commands.some(({ id }) =>
   id.includes('EmptyCanonicalGenerator')));
+assert.ok(scheduledWithoutAuthorization.commands.some(({ id }) =>
+  id.includes('EmptyOtherGenerator')));
 assert.deepEqual(scheduledWithoutAuthorization.authorizationRequired, [
   'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests',
   'Tests.FullImport',

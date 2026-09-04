@@ -7,6 +7,7 @@ using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
@@ -20,9 +21,9 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(MorphologyImportTestFixture),
-            "canonical-import");
+            DestructiveRehearsalSubtype.CanonicalImport);
 
         try
         {

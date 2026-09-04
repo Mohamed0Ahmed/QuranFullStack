@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
@@ -17,9 +18,9 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(WordsDisplayTestFixture),
-            "canonical-rebuild");
+            DestructiveRehearsalSubtype.CanonicalRebuild);
 
         try
         {

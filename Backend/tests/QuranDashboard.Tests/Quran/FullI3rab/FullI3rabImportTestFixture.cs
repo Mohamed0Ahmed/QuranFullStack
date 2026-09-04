@@ -5,6 +5,7 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.FullI3rab;
@@ -19,9 +20,9 @@ public sealed class FullI3rabImportTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        scratchConnectionString = await MigratedScratchDatabase.ResolveAsync(
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
             nameof(FullI3rabImportTestFixture),
-            "canonical-import");
+            DestructiveRehearsalSubtype.CanonicalImport);
 
         try
         {
