@@ -45,6 +45,33 @@ internal static class ProtectedStateFingerprint
             transaction,
             contract,
             useReaderRole: true,
+            verifiedCanonicalQuranDataFingerprint: null,
+            cancellationToken);
+        await transaction.RollbackAsync(cancellationToken);
+        return report;
+    }
+
+    internal static async Task<ProtectedStateFingerprintReport> ComputeWithVerifiedCanonicalAsync(
+        NpgsqlConnection connection,
+        DatabaseContract contract,
+        string verifiedCanonicalQuranDataFingerprint,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await connection.BeginTransactionAsync(
+            IsolationLevel.RepeatableRead,
+            cancellationToken);
+        await ExecuteAsync(
+            connection,
+            transaction,
+            "SET TRANSACTION READ ONLY; SET LOCAL timezone = 'UTC'; SET LOCAL datestyle = 'ISO, YMD'; SET LOCAL intervalstyle = 'iso_8601'; SET LOCAL bytea_output = 'hex'; SET LOCAL extra_float_digits = 3",
+            cancellationToken);
+
+        var report = await ComputeAsync(
+            connection,
+            transaction,
+            contract,
+            useReaderRole: true,
+            verifiedCanonicalQuranDataFingerprint,
             cancellationToken);
         await transaction.RollbackAsync(cancellationToken);
         return report;
@@ -61,6 +88,23 @@ internal static class ProtectedStateFingerprint
             transaction,
             contract,
             useReaderRole: false,
+            verifiedCanonicalQuranDataFingerprint: null,
+            cancellationToken);
+    }
+
+    internal static Task<ProtectedStateFingerprintReport> ComputeWithVerifiedCanonicalAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        DatabaseContract contract,
+        string verifiedCanonicalQuranDataFingerprint,
+        CancellationToken cancellationToken = default)
+    {
+        return ComputeAsync(
+            connection,
+            transaction,
+            contract,
+            useReaderRole: false,
+            verifiedCanonicalQuranDataFingerprint,
             cancellationToken);
     }
 
@@ -69,6 +113,7 @@ internal static class ProtectedStateFingerprint
         NpgsqlTransaction transaction,
         DatabaseContract contract,
         bool useReaderRole,
+        string? verifiedCanonicalQuranDataFingerprint,
         CancellationToken cancellationToken)
     {
         if (useReaderRole)
@@ -80,12 +125,16 @@ internal static class ProtectedStateFingerprint
                 cancellationToken);
         }
 
-        var canonical = await HashTablesAsync(
-            connection,
-            transaction,
-            "canonical-quran-data",
-            contract.DataClasses.CanonicalQuranData,
-            cancellationToken);
+        var canonical = verifiedCanonicalQuranDataFingerprint is null
+            ? await HashTablesAsync(
+                connection,
+                transaction,
+                "canonical-quran-data",
+                contract.DataClasses.CanonicalQuranData,
+                cancellationToken)
+            : new ComponentHash(
+                NormalizeVerifiedFingerprint(verifiedCanonicalQuranDataFingerprint),
+                ProtectedSequenceCount: 0);
         var catalogue = await HashTablesAsync(
             connection,
             transaction,
@@ -112,6 +161,18 @@ internal static class ProtectedStateFingerprint
             contract.DataClasses.SchemaState.Length,
             schema.ProtectedSequenceCount,
             0);
+    }
+
+    private static string NormalizeVerifiedFingerprint(string fingerprint)
+    {
+        if (fingerprint.Length != 64 || !fingerprint.All(Uri.IsHexDigit))
+        {
+            throw new ArgumentException(
+                "A verified Canonical Quran Data fingerprint must be a 64-character SHA-256 value.",
+                nameof(fingerprint));
+        }
+
+        return fingerprint.ToLowerInvariant();
     }
 
     private static async Task<ComponentHash> HashTablesAsync(
