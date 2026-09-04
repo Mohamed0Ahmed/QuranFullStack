@@ -10,12 +10,14 @@ const policyContract = {
   schemaVersion: 1,
   fixtureProfiles: {
     canonical: {
+      backgroundActivities: [],
       setupWrites: [],
       resetBehavior: 'none',
       databaseTarget: 'test-database',
       startupEffects: ['read-only-api'],
     },
     mutating: {
+      backgroundActivities: [],
       setupWrites: ['mutable-application-state'],
       resetBehavior: 'mutable-application-state',
       databaseTarget: 'test-database',
@@ -83,6 +85,7 @@ const requiredReadOnly = [
 
 verifySuccess('selects a complete critical read-only journey', [requiredReadOnly], [
   {
+    backgroundActivities: [],
     file: 'contract.e2e.ts',
     fixtureProfile: 'canonical',
     journey: 'quran-fidelity.reader',
@@ -99,6 +102,7 @@ verifySuccess(
   [[...requiredReadOnly, annotation('mobile')]],
   [
     {
+      backgroundActivities: [],
       file: 'contract.e2e.ts',
       fixtureProfile: 'canonical',
       journey: 'quran-fidelity.reader',

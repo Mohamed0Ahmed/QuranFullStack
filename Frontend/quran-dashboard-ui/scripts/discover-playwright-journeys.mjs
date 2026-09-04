@@ -108,6 +108,7 @@ function validateMetadata(test, rootDir, policyContract) {
     }
 
     return {
+      backgroundActivities: policy.backgroundActivities,
       file,
       fixtureProfile: policy.fixtureProfile,
       journey: requireIdentifier(annotations, 'journey', location),

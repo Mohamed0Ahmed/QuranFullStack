@@ -1,8 +1,14 @@
 import { expect, test } from './fixtures/app-test';
 
 const API_BASE = 'https://localhost:5015';
+const GUARDED_READ = {
+  annotation: [
+    { type: 'guarded-read' },
+    { type: 'fixture-policy', description: 'guarded-read-only' },
+  ],
+};
 
-test('anonymous visitors retain Abwab reads while write controls and restored write overlays stay unavailable', async ({ page }) => {
+test('anonymous visitors retain Abwab reads while write controls and restored write overlays stay unavailable', GUARDED_READ, async ({ page }) => {
   await page.goto('/abwab?view=tree&q=%D8%A7%D9%84%D9%82%D8%B1%D8%A2%D9%86&modal=create');
 
   await expect(page.getByTestId('abwab-page')).toBeVisible();
@@ -28,7 +34,7 @@ test('anonymous visitors retain Abwab reads while write controls and restored wr
   await expect(page.getByTestId('abwab-templates-page-add')).toHaveCount(0);
 });
 
-test('a handcrafted anonymous Abwab write remains independently forbidden', async ({ request }) => {
+test('a handcrafted anonymous Abwab write remains independently forbidden', GUARDED_READ, async ({ request }) => {
   const response = await request.post(`${API_BASE}/api/abwab/doors/999999/inclusions`, {
     data: {
       expectedTargetDoorVersion: 0,

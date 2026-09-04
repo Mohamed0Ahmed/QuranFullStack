@@ -195,7 +195,10 @@ assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Fa
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Legacy'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-canonical-critical'));
-assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-critical'));
+assert.deepEqual(
+  ordinaryPrePr.commands.find(({ id }) => id === 'playwright-stateful-critical').arguments,
+  ['run', 'e2e:stateful:critical'],
+);
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));

@@ -24,7 +24,7 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-authenticated' },
       { type: 'journey', description: 'device-session.lifecycle' },
     ],
   },

@@ -17,7 +17,7 @@ const testRuntime = resolve(
   repositoryRoot,
   'Backend/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll',
 );
-const [mode = '--full', selector, ...extraArguments] = process.argv.slice(2);
+const [mode = '--full', selector, interactiveMode, ...extraArguments] = process.argv.slice(2);
 
 if (!['--critical', '--focused', '--full'].includes(mode)) {
   throw new Error('Use --critical, --focused, or --full for canonical Playwright execution.');
@@ -25,7 +25,17 @@ if (!['--critical', '--focused', '--full'].includes(mode)) {
 if (mode === '--focused' && (!selector || extraArguments.length > 0)) {
   throw new Error('--focused requires exactly one Playwright file:line selector.');
 }
-if (mode !== '--focused' && (selector !== undefined || extraArguments.length > 0)) {
+if (
+  mode === '--focused'
+  && interactiveMode !== undefined
+  && !['--headed', '--ui'].includes(interactiveMode)
+) {
+  throw new Error('Focused canonical Playwright supports only --headed or --ui interactive mode.');
+}
+if (
+  mode !== '--focused'
+  && (selector !== undefined || interactiveMode !== undefined || extraArguments.length > 0)
+) {
   throw new Error(`${mode} does not accept a Playwright selector.`);
 }
 
@@ -45,7 +55,9 @@ if (!existsSync(testRuntime)) {
 }
 
 run('dotnet', [testRuntime, 'inspect'], environment);
-run(playwright, ['test', ...selectors, '--workers=2'], environment);
+const playwrightArguments = ['test', ...selectors, `--workers=${interactiveMode ? 1 : 2}`];
+if (interactiveMode) playwrightArguments.push(interactiveMode);
+run(playwright, playwrightArguments, environment);
 
 function discover(reporter) {
   const result = spawnSync(

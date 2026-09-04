@@ -1,7 +1,8 @@
 import { spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { dirname, resolve } from 'node:path';
+import { dirname, isAbsolute, resolve } from 'node:path';
 
 import { COMPACT_ARTIFACT_IDS } from './harness/artifact-contract.mjs';
 import {
@@ -18,6 +19,7 @@ const API_PROJECT = resolve(
 const managementClientId = 'e2e-management-client';
 const managementClientSecret = randomBytes(24).toString('base64url');
 const managementAccessToken = randomBytes(24).toString('base64url');
+const statefulExecution = process.env.E2E_DATABASE_MODE === 'persistent-stateful';
 
 let backendProcess;
 let databaseRuntime;
@@ -31,15 +33,21 @@ try {
   if (process.env.E2E_SEALED_EXECUTION === '1' && process.env.E2E_PREPARED_DATABASE !== '1') {
     throw new Error('Sealed execution requires database preparation before application startup.');
   }
-  databaseRuntime = process.env.E2E_PREPARED_DATABASE === '1'
-    ? readPreparedDatabaseRuntime()
-    : await provisionDatabaseRuntime(API_PROJECT);
+  databaseRuntime = statefulExecution
+    ? persistentStatefulRuntime()
+    : process.env.E2E_PREPARED_DATABASE === '1'
+      ? readPreparedDatabaseRuntime()
+      : await provisionDatabaseRuntime(API_PROJECT);
   const managementApi = await startManagementApiStub();
   managementServer = managementApi.server;
 
-  writeDatabaseRuntimeState(databaseRuntime);
+  if (!statefulExecution) {
+    writeDatabaseRuntimeState(databaseRuntime);
+  }
   console.log(
-    databaseRuntime.mode === 'artifact'
+    statefulExecution
+      ? `[e2e] database mode=persistent-stateful target=quran_dashboard_test profile=${process.env.Testing__DatabaseActivity__Profile}`
+      : databaseRuntime.mode === 'artifact'
       ? `[e2e] database mode=artifact artifacts=${COMPACT_ARTIFACT_IDS.join(',')} evidence=canonical`
       : '[e2e] database mode=clone-local evidence=non-canonical',
   );
@@ -63,6 +71,9 @@ try {
       stdio: 'inherit',
     },
   );
+  if (statefulExecution) {
+    writeApiProcessReceipt(backendProcess.pid);
+  }
   backendProcess.once('error', () => finish(1, 'The E2E backend process could not be started.'));
   backendProcess.once('exit', (code) => {
     if (!stopping) {
@@ -99,13 +110,65 @@ function finish(exitCode, message) {
   databaseRuntime?.cleanup();
   managementServer?.closeAllConnections();
   managementServer?.close();
-  if (process.env.E2E_PREPARED_DATABASE !== '1') {
+  if (!statefulExecution && process.env.E2E_PREPARED_DATABASE !== '1') {
     removeDatabaseRuntimeState();
   }
   if (message) {
     console.error(message);
   }
   process.exit(exitCode);
+}
+
+function persistentStatefulRuntime() {
+  const connectionString = process.env.ConnectionStrings__QuranDashboardTest?.trim();
+  const profile = process.env.Testing__DatabaseActivity__Profile;
+  if (!connectionString) {
+    throw new Error('Stateful Playwright requires ConnectionStrings__QuranDashboardTest.');
+  }
+  if (!process.env.E2E_BACKEND_ASSEMBLY || !isAbsolute(process.env.E2E_BACKEND_ASSEMBLY)) {
+    throw new Error('Stateful Playwright requires the absolute built Backend assembly path.');
+  }
+  if (!['ReadOnly', 'Mutable'].includes(profile)) {
+    throw new Error('Stateful Playwright requires a ReadOnly or Mutable API activity profile.');
+  }
+  const expectedContext = profile === 'ReadOnly'
+    ? process.env.QURAN_DASHBOARD_TEST_RUNTIME_READER_CONTEXT
+    : process.env.QURAN_DASHBOARD_TEST_RUNTIME_WRITER_CONTEXT;
+  if (expectedContext !== 'verified-v1') {
+    throw new Error(`Stateful Playwright requires the verified TestRuntime ${profile} context.`);
+  }
+  if (
+    profile === 'ReadOnly'
+    && Object.keys(process.env).some((name) =>
+      name.startsWith('Testing__DatabaseActivity__EnabledBackgroundActivities__'))
+  ) {
+    throw new Error('Stateful guarded-read Playwright cannot enable background activity.');
+  }
+  return {
+    mode: 'persistent-stateful',
+    connectionString,
+    cleanup() {},
+  };
+}
+
+function writeApiProcessReceipt(processId) {
+  const path = process.env.E2E_API_PROCESS_RECEIPT;
+  if (!path || !isAbsolute(path)) {
+    throw new Error('Stateful Playwright requires an absolute API process receipt path.');
+  }
+  if (!Number.isInteger(processId) || processId < 1) {
+    throw new Error('Stateful Playwright could not verify the spawned API process ID.');
+  }
+  try {
+    writeFileSync(
+      path,
+      `${JSON.stringify({ schemaVersion: 1, processId, port: 5015 })}\n`,
+      { encoding: 'utf8', mode: 0o600 },
+    );
+  } catch (error) {
+    backendProcess.kill('SIGTERM');
+    throw error;
+  }
 }
 
 function startManagementApiStub() {

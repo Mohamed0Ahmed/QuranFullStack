@@ -47,7 +47,7 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-authenticated' },
       { type: 'journey', description: 'permission.lifecycle' },
     ],
   },
@@ -219,6 +219,12 @@ test(
 
 test(
   'an Access mutation is single-flight and conflict recovery rereads its target once',
+  {
+    annotation: [
+      { type: 'mutating' },
+      { type: 'fixture-policy', description: 'mutable-authenticated' },
+    ],
+  },
   async ({ permissionLifecyclePersona }) => {
     const persona = permissionLifecyclePersona;
     const ownerPage = persona.ownerPage;

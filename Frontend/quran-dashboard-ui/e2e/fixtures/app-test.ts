@@ -1,31 +1,9 @@
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
 import { test as base, expect, type BrowserContext, type TestInfo } from '@playwright/test';
 
 import { LOGTO_ORIGIN, stubLogto } from './logto';
 
 const LOCAL_HOSTNAMES = new Set(['localhost', '127.0.0.1', '[::1]']);
-const FRONTEND_ROOT = process.cwd();
-const RESET_DATABASE = resolve(FRONTEND_ROOT, 'e2e/reset-database.mjs');
-
-export const test = base.extend<{ mutableDatabaseState: void }>({
-  mutableDatabaseState: [
-    async ({}, use, testInfo) => {
-      const mutating = testInfo.annotations.some((annotation) => annotation.type === 'mutating');
-      if (mutating) {
-        resetMutableDatabase();
-      }
-
-      try {
-        await use();
-      } finally {
-        if (mutating) {
-          resetMutableDatabase();
-        }
-      }
-    },
-    { auto: true },
-  ],
+export const test = base.extend({
   page: async ({ page }, use, testInfo) => {
     await use(page);
     if (testInfo.status === testInfo.expectedStatus || page.isClosed()) return;
@@ -153,13 +131,6 @@ export async function instrumentAppContext(
 
     expect(leaked, `requests left localhost: ${leaked.join(', ')}`).toEqual([]);
   };
-}
-
-function resetMutableDatabase(): void {
-  execFileSync(process.execPath, [RESET_DATABASE], {
-    cwd: FRONTEND_ROOT,
-    stdio: 'inherit',
-  });
 }
 
 function sanitizeBrowserDiagnostic(value: string): string {

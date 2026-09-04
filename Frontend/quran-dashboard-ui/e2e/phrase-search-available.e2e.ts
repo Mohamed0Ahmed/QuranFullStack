@@ -1,5 +1,3 @@
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
 import type { APIRequestContext, Page } from '@playwright/test';
 import type { PhraseSimilarityLinkingSelectionResponse } from '../src/app/core/api/generated/models/phrase-similarity-linking-selection-response';
 
@@ -19,7 +17,6 @@ import {
 import { expect, test } from './fixtures/auth';
 
 const API_ORIGIN = environment.apiBaseUrl;
-const PREPARE_LINKING = resolve(process.cwd(), 'e2e/prepare-linking.mjs');
 
 interface PhraseReadyOracle {
   query: {
@@ -86,14 +83,13 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-phrase-search-ready' },
+      { type: 'fixture-policy', description: 'mutable-authenticated' },
       { type: 'journey', description: 'phrase-search.available-add-to-workspace' },
     ],
   },
   async ({ page, request, ownerPersona }, testInfo) => {
     const accessibility = createAccessibilityAudit(testInfo);
     try {
-      prepareLinking();
 
       const capabilitiesBefore = await readPublicData<PhraseCapabilities>(
         request,
@@ -129,10 +125,6 @@ test(
     }
   },
 );
-
-function prepareLinking(): void {
-  execFileSync(process.execPath, [PREPARE_LINKING], { stdio: 'inherit' });
-}
 
 async function exerciseContextAndPersist(
   page: Page,

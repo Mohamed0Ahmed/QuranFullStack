@@ -600,7 +600,12 @@ export function planPrePrSelection({
       ['run', 'e2e:canonical:critical'],
       'CanonicalReader',
     ),
-    command('playwright-critical', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:critical']),
+    command(
+      'playwright-stateful-critical',
+      'Frontend/quran-dashboard-ui',
+      'npm',
+      ['run', 'e2e:stateful:critical'],
+    ),
   ];
 
   return {

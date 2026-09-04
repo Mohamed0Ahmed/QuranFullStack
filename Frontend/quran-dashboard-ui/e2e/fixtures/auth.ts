@@ -1,6 +1,4 @@
-import { execFileSync } from 'node:child_process';
 import { createPrivateKey, sign } from 'node:crypto';
-import { resolve } from 'node:path';
 import type { APIRequestContext, BrowserContext, Page } from '@playwright/test';
 
 import { ABWAB_PERMISSION_CODES } from '../../src/app/core/auth/permission-codes.generated';
@@ -43,7 +41,6 @@ D/87qVxDKhIVRcV/AxdZ3Q==
 -----END PRIVATE KEY-----`;
 const API_ORIGIN = environment.apiBaseUrl;
 const OIDC_SESSION_KEY = `0-${environment.logto.appId}`;
-const PREPARE_ACCESS_ADMIN = resolve(process.cwd(), 'e2e/prepare-access-admin.mjs');
 const IDENTITY_EVIDENCE_HEADER = 'X-Interactive-Identity-Evidence';
 const SETUP_REASON = 'Authenticated E2E fixture setup.';
 const TEARDOWN_REASON = 'Authenticated E2E fixture teardown.';
@@ -143,7 +140,6 @@ export const test = appTest.extend<{
     }
   },
   ownerPersona: async ({ context, request }, use) => {
-    prepareAccessAdministration();
     const ownerTokens = mintTokenPair(E2E_OWNER_SUBJECT);
     const owner = await provisionCurrentUser(request, ownerTokens);
     if (owner.status !== 'active' || !owner.isOwner) {
@@ -161,7 +157,6 @@ export const test = appTest.extend<{
     let finalizeOwnerInstrumentation: (() => Promise<void>) | null = null;
 
     try {
-      prepareAccessAdministration();
       const owner = await provisionCurrentUser(request, ownerTokens);
       if (owner.status !== 'active' || !owner.isOwner) {
         throw new Error('The E2E Owner was not provisioned as an active Owner.');
@@ -234,13 +229,6 @@ function mintToken(
 
 function encodeJson(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
-}
-
-function prepareAccessAdministration(): void {
-  execFileSync(process.execPath, [PREPARE_ACCESS_ADMIN], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  });
 }
 
 function oidcSession(tokens: TokenPair): Record<string, unknown> {

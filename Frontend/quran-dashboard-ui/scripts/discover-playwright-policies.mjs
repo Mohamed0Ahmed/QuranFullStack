@@ -27,6 +27,7 @@ export default class PlaywrightPolicyDiscoveryReporter {
           : requireLegacyMigrationEntry(test.location.file, e2eRoot, contract, location);
 
         return {
+          backgroundActivities: policy.backgroundActivities,
           declaredPolicy: policy.declaredPolicy,
           effectiveGroup: policy.effectiveGroup,
           file,

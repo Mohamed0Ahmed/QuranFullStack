@@ -25,7 +25,7 @@ const tests = JSON.parse(discovery.stdout);
 const partition = classifyFocusedPlaywrightSelector(tests, selector);
 const script = partition === 'canonical-read'
   ? 'run-canonical-playwright.mjs'
-  : 'run-sealed-playwright.mjs';
+  : 'run-stateful-playwright.mjs';
 const result = spawnSync(process.execPath, [resolve(frontendRoot, 'scripts', script), '--focused', selector], {
   cwd: frontendRoot,
   env: process.env,

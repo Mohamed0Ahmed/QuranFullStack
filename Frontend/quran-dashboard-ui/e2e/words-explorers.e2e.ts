@@ -65,6 +65,12 @@ for (const explorer of SEARCHABLE_EXPLORERS) {
 
 authenticatedTest(
   'word-types explorer: detail sessions fence stale reads and remain isolated',
+  {
+    annotation: [
+      { type: 'mutating' },
+      { type: 'fixture-policy', description: 'mutable-authenticated' },
+    ],
+  },
   async ({ page, ownerPersona: _ownerPersona }) => {
     let releaseStaleDetail!: () => void;
     const staleDetailReleased = new Promise<void>((resolve) => {

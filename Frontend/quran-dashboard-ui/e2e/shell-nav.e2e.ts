@@ -1,6 +1,13 @@
 import { expect, test } from './fixtures/app-test';
 
-test('the navbar links reach the Mushaf reader', async ({ page }) => {
+const CANONICAL_READ = {
+  annotation: [
+    { type: 'canonical-read' },
+    { type: 'fixture-policy', description: 'canonical-read-only' },
+  ],
+};
+
+test('the navbar links reach the Mushaf reader', CANONICAL_READ, async ({ page }) => {
   await page.goto('/dashboard');
 
   await page.getByTestId('nav-link--mushaf').click();
@@ -9,7 +16,7 @@ test('the navbar links reach the Mushaf reader', async ({ page }) => {
   await expect(page.getByTestId('mushaf-page-area')).toBeVisible();
 });
 
-test('the words dropdown reaches the words hub', async ({ page }) => {
+test('the words dropdown reaches the words hub', CANONICAL_READ, async ({ page }) => {
   await page.goto('/dashboard');
 
   // Hover is the pointer path this spec pins: the item opens on hover-intent alone, and the
@@ -23,7 +30,7 @@ test('the words dropdown reaches the words hub', async ({ page }) => {
   await expect(page.getByTestId('words-hub-title')).toBeVisible();
 });
 
-test('the more dropdown reaches a placeholder section', async ({ page }) => {
+test('the more dropdown reaches a placeholder section', CANONICAL_READ, async ({ page }) => {
   await page.goto('/dashboard');
 
   await page.getByTestId('nav-more-trigger').click();

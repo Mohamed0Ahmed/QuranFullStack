@@ -1,10 +1,9 @@
 # Executable test policy and repository runner
 
 Repository-root `scripts/test` is the additive policy-aware coordinator for the Test Database
-Capability migration. It does not activate the TestRuntime cutover: the existing Backend and sealed
-Playwright commands remain the operational implementation for entries explicitly marked `Unmigrated`
-until the atomic cutover ticket lands. Absence of policy metadata is never treated as an execution
-default.
+Capability migration. Backend entries explicitly marked `Unmigrated` retain their staged operational
+implementation until the atomic cutover ticket lands. Playwright state-policy execution is migrated;
+absence of policy metadata is never treated as an execution default.
 
 Backend classes are catalogued in
 `Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`. A migrated row declares one
@@ -17,10 +16,9 @@ migrated resources and legacy full-data rehearsal resources declare setup writes
 and API startup effects. The effective Backend policy is the strictest valid combination.
 
 Playwright uses `canonical-read`, `guarded-read`, or `mutating` plus one `fixture-policy` annotation.
-The fixture profiles and temporary legacy inventory live in `e2e/playwright-policy.json`. The inventory
-pins each unmigrated E2E source by SHA-256, so changing or adding a test requires either policy metadata
-or an explicit inventory update. Artifact and `read-only` annotations remain accepted only on these
-hash-pinned legacy sources until their migration tickets land.
+The fixture profiles live in `e2e/playwright-policy.json` and record setup writes, reset behavior, API
+startup effects, and enabled background activities. The legacy inventory is empty: every E2E source is
+classified, and authentication/persona fixtures that create or change users require a mutating profile.
 
 Focused implementation examples preserve exact selectors:
 
@@ -43,11 +41,15 @@ delegate performs `QuranDashboard.TestRuntime inspect`, starts one reusable Test
 against `quran_dashboard_test`, and keeps Playwright's two-worker parallelism. The API applies the
 restricted reader role and read-only transactions, with Permission synchronization and every Linking
 background writer omitted. Canonical execution acquires no advisory lock and never provisions, restores,
-resets, migrates, or rebuilds database state. Guarded, mutating, and legacy Playwright selections remain
-on their existing runner until their migration tickets land.
+resets, migrates, or rebuilds database state. Guarded and mutating selections run as separate exact
+`file:line` children. A guarded child retains one shared TestRuntime keeper around a fresh `ReadOnly`
+API lifecycle. A mutating child retains one exclusive keeper, receives a centralized verified reset
+before API startup, starts a fresh `Mutable` API with only its declared activities, and proves that API
+stopped before verified final cleanup. Per-child private evidence is aggregated without retaining raw
+Playwright output.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
-typecheck, persistent canonical-read critical Chromium gate, and the remaining legacy critical gate.
+typecheck, persistent canonical-read critical Chromium gate, and the stateful critical gate.
 The direct `Backend/scripts/test-backend pre-pr` delegate retains its non-scratch Backend coverage but
 excludes runner-owned empty-scratch rehearsals because it has no affected-scope inputs; invoke this
 repository-root coordinator with a feature or concern when that scope requires those rehearsals.

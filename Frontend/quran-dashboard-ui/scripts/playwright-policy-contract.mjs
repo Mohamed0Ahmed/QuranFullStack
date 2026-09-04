@@ -7,6 +7,12 @@ const DATABASE_TARGETS = new Set(['test-database']);
 const RESET_BEHAVIORS = new Set(['none', 'mutable-application-state']);
 const SETUP_WRITES = new Set(['mutable-application-state']);
 const STARTUP_EFFECTS = new Set(['read-only-api', 'mutable-api']);
+const BACKGROUND_ACTIVITIES = new Set([
+  'LinkingPreparedPreflightProcessor',
+  'LinkingConfirmationJobProcessor',
+  'LinkingPreparedPreflightCleanup',
+  'LinkingConfirmationJobCleanup',
+]);
 const POLICY_SEVERITY = new Map([
   ['canonical-read', 0],
   ['guarded-read', 1],
@@ -40,6 +46,11 @@ export function validatePlaywrightPolicyContract(contract, e2eRoot) {
 
   for (const [name, profile] of Object.entries(contract.fixtureProfiles)) {
     requireCondition(/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(name), `invalid fixture profile ${name}`);
+    requireStringArray(
+      profile.backgroundActivities,
+      `${name}.backgroundActivities`,
+      BACKGROUND_ACTIVITIES,
+    );
     requireStringArray(profile.setupWrites, `${name}.setupWrites`, SETUP_WRITES);
     requireCondition(
       RESET_BEHAVIORS.has(profile.resetBehavior),
@@ -55,6 +66,16 @@ export function validatePlaywrightPolicyContract(contract, e2eRoot) {
       requireCondition(
         !profile.startupEffects.includes('mutable-api'),
         `${name} has contradictory API startup effects`,
+      );
+      requireCondition(
+        profile.backgroundActivities.length === 0,
+        `${name} has read-only startup with background activity`,
+      );
+    }
+    if (profile.backgroundActivities.length > 0) {
+      requireCondition(
+        profile.startupEffects.includes('mutable-api'),
+        `${name} enables background activity without a mutable API`,
       );
     }
   }
@@ -116,6 +137,7 @@ export function classifyPlaywrightPolicy(annotations, contract, location) {
   }
 
   return {
+    backgroundActivities: [...fixture.backgroundActivities],
     declaredPolicy,
     effectiveGroup: EXECUTION_GROUP.get(declaredPolicy),
     fixtureProfile,
@@ -138,6 +160,7 @@ export function requireLegacyMigrationEntry(file, e2eRoot, contract, location) {
   }
 
   return {
+    backgroundActivities: [],
     declaredPolicy: 'legacy-unmigrated',
     effectiveGroup: 'LegacyUnmigrated',
     fixtureProfile: null,
@@ -147,6 +170,7 @@ export function requireLegacyMigrationEntry(file, e2eRoot, contract, location) {
 export function isNewPolicyAnnotation(annotation) {
   return annotation.type === 'canonical-read'
     || annotation.type === 'guarded-read'
+    || annotation.type === 'mutating'
     || annotation.type === 'fixture-policy';
 }
 

@@ -1,5 +1,3 @@
-import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
 import {
   devices,
   type APIRequestContext,
@@ -14,7 +12,6 @@ import { expectNoBlockingAccessibilityViolations } from './fixtures/accessibilit
 import { expect, test } from './fixtures/auth';
 
 const API_ORIGIN = environment.apiBaseUrl;
-const PREPARE_LINKING = resolve(process.cwd(), 'e2e/prepare-linking.mjs');
 const TARGET_DOOR_NAME = 'باب رحلة الربط الناجحة';
 const {
   defaultBrowserType: _approvedBrowserType,
@@ -88,12 +85,11 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-linking-authenticated' },
       { type: 'journey', description: 'linking.successful-owner' },
     ],
   },
   async ({ page, request, ownerPersona }, testInfo) => {
-    prepareLinking();
     await runSuccessfulLinkingJourney(
       page,
       request,
@@ -135,12 +131,11 @@ test.describe('approved Linking mobile variant', () => {
         { type: 'critical' },
         { type: 'mobile' },
         { type: 'mutating' },
-        { type: 'artifact', description: 'compact-cross-stack-base' },
+        { type: 'fixture-policy', description: 'mutable-linking-authenticated' },
         { type: 'journey', description: 'linking.successful-owner-mobile' },
       ],
     },
     async ({ page, request, ownerPersona }, testInfo) => {
-      prepareLinking();
       await runSuccessfulLinkingJourney(
         page,
         request,
@@ -462,13 +457,6 @@ function describeBusinessState(data: unknown): string {
   const status = String(data.status).slice(0, 32);
   const stage = 'stage' in data ? String(data.stage).slice(0, 32) : 'unknown';
   return `status:${status},stage:${stage}`;
-}
-
-function prepareLinking(): void {
-  execFileSync(process.execPath, [PREPARE_LINKING], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  });
 }
 
 async function createTargetDoor(

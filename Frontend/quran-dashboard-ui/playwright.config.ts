@@ -18,6 +18,8 @@ const tlsCertificate = process.env['E2E_TLS_CERTIFICATE'];
 const tlsPrivateKey = process.env['E2E_TLS_PRIVATE_KEY'];
 const chromiumExecutable = process.env['E2E_CHROMIUM_EXECUTABLE'];
 const canonicalReadExecution = process.env['E2E_DATABASE_MODE'] === 'persistent-read-only';
+const statefulExecution = process.env['E2E_DATABASE_MODE'] === 'persistent-stateful';
+const databaseActivityProfile = resolveDatabaseActivityProfile();
 const frontendCommand = sealedExecution ? 'node e2e/run-frontend.mjs' : 'npm run start:https';
 const backendCommand = canonicalReadExecution
   ? 'node e2e/run-canonical-backend.mjs'
@@ -84,8 +86,8 @@ export default defineConfig({
       env: {
         ASPNETCORE_ENVIRONMENT: 'Testing',
         ASPNETCORE_URLS: 'https://localhost:5015',
-        Testing__DatabaseActivity__Profile: canonicalReadExecution ? 'ReadOnly' : 'Mutable',
-        ...(canonicalReadExecution
+        Testing__DatabaseActivity__Profile: databaseActivityProfile,
+        ...(canonicalReadExecution || statefulExecution
           ? {}
           : {
               Testing__DatabaseActivity__EnabledBackgroundActivities__0:
@@ -112,3 +114,12 @@ export default defineConfig({
     },
   ],
 });
+
+function resolveDatabaseActivityProfile(): 'ReadOnly' | 'Mutable' {
+  if (!statefulExecution) return canonicalReadExecution ? 'ReadOnly' : 'Mutable';
+  const configured = process.env['Testing__DatabaseActivity__Profile'];
+  if (configured !== 'ReadOnly' && configured !== 'Mutable') {
+    throw new Error('Stateful Playwright requires a ReadOnly or Mutable API activity profile.');
+  }
+  return configured;
+}

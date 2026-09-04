@@ -1,4 +1,9 @@
-# Playwright provisioning and database modes
+# Playwright state-policy execution
+
+All Playwright tests declare exactly one `canonical-read`, `guarded-read`, or `mutating` policy plus a
+fixture profile. The profile records setup writes and the exact API background activities required by
+the scenario. `ConnectionStrings__QuranDashboardTest` must point at the existing verified local Test
+Database Capability for every supported command.
 
 ## Persistent canonical reads
 
@@ -18,8 +23,54 @@ startup/background writers. Canonical readers retain two-worker Playwright paral
 advisory lock or reset, and consume the reviewed expectations under repository-root `test-oracles/`.
 Missing or unhealthy capability state fails before the browser starts.
 
-The artifact-backed commands below remain temporary only for the guarded, mutating, and explicitly
-unmigrated scenarios. Their later migration and the final runner cutover are separate tickets.
+## Guarded and mutating scenarios
+
+Stateful scenarios run sequentially as exact `file:line` Playwright children:
+
+```bash
+npm run e2e:stateful
+npm run e2e:stateful:critical
+npm run e2e:stateful:focused -- e2e/abwab-permissions.e2e.ts:11
+```
+
+Each guarded child holds one outer shared TestRuntime keeper lock and starts a fresh `ReadOnly` API.
+Each mutating child holds one outer exclusive keeper lock, captures a Protected State fingerprint,
+proves the API port is free, and performs the centralized Mutable Application State reset before
+starting a fresh `Mutable` API with only its fixture profile's declared background activities. After
+the child exits, its API process receipt must prove that exact process stopped before the final reset.
+Missing or mismatched process evidence makes cleanup fail closed.
+
+Each child owns a private Playwright output directory and a private structured-evidence directory.
+The stateful runner removes raw Playwright output and aggregates only sanitized child results under
+`.playwright/evidence/<run-id>/stateful-results.json`.
+
+The complete supported suites run canonical readers first and stateful children second:
+
+```bash
+npm run e2e:critical
+npm run e2e
+```
+
+Focused selection routes automatically by its declared policy:
+
+```bash
+npm run e2e:focused -- e2e/linking-success.e2e.ts:82
+```
+
+Headed and UI debugging require an explicit read-only or mutating declaration and one exact selector.
+A mutating interactive process retains its exclusive keeper lock until the Playwright window closes,
+then performs verified final cleanup:
+
+```bash
+npm run e2e:headed -- --read-only e2e/abwab-permissions.e2e.ts:11
+npm run e2e:ui -- --mutating e2e/linking-success.e2e.ts:82
+```
+
+## Legacy sealed provisioning
+
+The artifact-backed provisioning and sealed-execution implementation remains temporarily present for
+its separate retirement work, but supported Playwright suite, focused, headed, and UI commands no
+longer select it.
 
 Required critical and full evidence uses two explicit phases. Controlled provisioning may use the
 network and any short-lived artifact/dependency credentials available to the job:
@@ -35,32 +86,19 @@ generation, and Backend/Frontend builds. It writes a credential-free receipt und
 `.playwright/provisioning/`; the receipt is rejected after any npm, NuGet, artifact-lock, browser, or
 image drift.
 
-Execution consumes only that preloaded receipt and its outputs:
-
-```bash
-npm run e2e:critical
-npm run e2e
-```
-
-Both commands strip artifact/dependency/application credentials, verify the fixture again without
-restore or build, restore PostgreSQL once with pulling disabled, and start the compiled API plus the
+The retained sealed runner strips artifact/dependency/application credentials, verifies the fixture without
+restore or build, restores PostgreSQL once with pulling disabled, and starts the compiled API plus the
 prebuilt Angular output. A preloaded system-call guard permits only loopback and the exact private
 PostgreSQL address for the UI, API, browser, and their child processes. PostgreSQL remains on a Docker
 `--internal` network, so unexpected process and container egress fail closed. Local OIDC/JWKS and
 Logto Management API behavior remain stubbed.
 
-For developer iteration without the sealed receipt, use the explicit local commands. Artifact remains
-the default; cloning a developer database remains opt-in, loopback-only, and non-canonical:
+The supported local aliases use the same policy-aware persistent-capability orchestration:
 
 ```bash
 npm run e2e:critical:local
 npm run e2e:local
-E2E_DATABASE_MODE=clone-local npm run e2e:local
 ```
-
-`clone-local` is non-canonical evidence. It accepts loopback PostgreSQL only, is rejected whenever a
-CI environment marker is present, and is never selected because a connection string or user secret
-happens to exist.
 
 Each sealed run writes structured durations for artifact provisioning, database preparation,
 application startup, and test execution under `.playwright/evidence/<run-id>/`. Failed runs also keep
@@ -83,12 +121,8 @@ Artifact execution restores `compact-cross-stack-base` and composes the verified
 the runtime active build, source fingerprint, non-stale state, succeeded status, and exact/similarity
 readiness against the verified manifest. Ordinary execution never runs the PhraseSearch builder.
 
-Tests annotated `mutating` reset state before and after their scenario. The reset truncates only the
-literal allowlist in `e2e/harness/database-contract.mjs`; `permissions`, every `quran_*` table, and
-therefore all PhraseSearch tables stay outside it. The reset verifies every allowlisted table is
-empty, requires Linking background processors to be idle, and compares deterministic before/after
-SHA-256 fingerprints of all Quran and PhraseSearch table data with the baseline captured immediately
-after restore. A scenario-side mutation or reset-side mismatch fails the test run.
+Legacy sealed resets remain governed by their sealed-execution contract. Supported mutating execution
+uses only the centralized TestRuntime reset contract and introduces no test-only HTTP reset endpoint.
 
 Critical execution discovers annotated journeys from the specifications, then runs the selected
 file/line locations. It does not maintain a second journey catalogue.

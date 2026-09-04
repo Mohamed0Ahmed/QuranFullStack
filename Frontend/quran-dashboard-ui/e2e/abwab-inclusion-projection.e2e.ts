@@ -1,6 +1,4 @@
-import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { resolve } from 'node:path';
 import type { APIRequestContext, APIResponse } from '@playwright/test';
 
 import { ABWAB_PERMISSION_CODES } from '../src/app/core/auth/permission-codes.generated';
@@ -10,7 +8,6 @@ import { expectNoBlockingAccessibilityViolations } from './fixtures/accessibilit
 import { expect, test } from './fixtures/auth';
 
 const API_ORIGIN = environment.apiBaseUrl;
-const PREPARE_LINKING = resolve(process.cwd(), 'e2e/prepare-linking.mjs');
 const SOURCE_NAME = 'Abwab inclusion source';
 const TARGET_NAME = 'Abwab inclusion target';
 const INCLUSION_PERMISSION = ABWAB_PERMISSION_CODES.inclusions.create;
@@ -91,12 +88,11 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-linking-authenticated' },
       { type: 'journey', description: 'abwab.inclusion-projection' },
     ],
   },
   async ({ page, request, permissionLifecyclePersona }, testInfo) => {
-    prepareLinking();
     const persona = permissionLifecyclePersona;
     const source = await createDoorPrerequisite(request, persona.ownerAccessToken, SOURCE_NAME);
     const target = await createDoorPrerequisite(request, persona.ownerAccessToken, TARGET_NAME);
@@ -207,12 +203,11 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-linking-authenticated' },
       { type: 'journey', description: 'abwab.inclusion-revoked-permission' },
     ],
   },
   async ({ page, request, permissionLifecyclePersona }, testInfo) => {
-    prepareLinking();
     const persona = permissionLifecyclePersona;
     const source = await createDoorPrerequisite(request, persona.ownerAccessToken, SOURCE_NAME);
     const target = await createDoorPrerequisite(request, persona.ownerAccessToken, TARGET_NAME);
@@ -296,7 +291,7 @@ test(
     annotation: [
       { type: 'critical' },
       { type: 'mutating' },
-      { type: 'artifact', description: 'compact-cross-stack-base' },
+      { type: 'fixture-policy', description: 'mutable-linking-authenticated' },
       { type: 'journey', description: 'abwab.inclusion-conflict-evidence' },
     ],
   },
@@ -374,13 +369,6 @@ test(
     await expectNoBlockingAccessibilityViolations(page, testInfo);
   },
 );
-
-function prepareLinking(): void {
-  execFileSync(process.execPath, [PREPARE_LINKING], {
-    cwd: process.cwd(),
-    stdio: 'inherit',
-  });
-}
 
 async function createDoorPrerequisite(
   request: APIRequestContext,

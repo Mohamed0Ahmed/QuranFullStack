@@ -123,10 +123,10 @@ assert.match(redacted, /-----BEGIN PRIVATE KEY-----\[REDACTED\]-----END PRIVATE 
 
 const frontendRoot = process.cwd();
 const packageManifest = JSON.parse(readFileSync(resolve(frontendRoot, 'package.json'), 'utf8'));
-assert.equal(packageManifest.scripts.e2e, 'node scripts/run-sealed-playwright.mjs --full');
+assert.equal(packageManifest.scripts.e2e, 'node scripts/run-all-playwright.mjs --full');
 assert.equal(
   packageManifest.scripts['e2e:critical'],
-  'node scripts/run-sealed-playwright.mjs --critical',
+  'node scripts/run-all-playwright.mjs --critical',
 );
 assert.equal(
   packageManifest.scripts['e2e:focused'],
@@ -135,6 +135,18 @@ assert.equal(
 assert.equal(
   packageManifest.scripts['e2e:provision'],
   'node scripts/provision-sealed-playwright.mjs',
+);
+assert.equal(
+  packageManifest.scripts['e2e:stateful:critical'],
+  'node scripts/run-stateful-playwright.mjs --critical',
+);
+assert.equal(
+  packageManifest.scripts['e2e:headed'],
+  'node scripts/run-interactive-playwright.mjs --headed',
+);
+assert.equal(
+  packageManifest.scripts['e2e:ui'],
+  'node scripts/run-interactive-playwright.mjs --ui',
 );
 const playwrightConfiguration = readFileSync(resolve(frontendRoot, 'playwright.config.ts'), 'utf8');
 assert.match(playwrightConfiguration, /E2E_PLAYWRIGHT_OUTPUT_DIRECTORY/);
