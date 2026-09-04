@@ -7,6 +7,7 @@ using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Words.MorphologyImporting;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Words.MorphologyImporting;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsMorphology;
@@ -15,18 +16,19 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
 {
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(MorphologyImportTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(MorphologyImportTestFixture),
+            DestructiveRehearsalSubtype.CanonicalImport);
 
         try
         {
             rootProvider = ownedProviders.Own(
-                BuildServiceProvider(databaseLease.ConnectionString, configure: null));
+                BuildServiceProvider(scratchConnectionString, configure: null));
         }
         catch
         {
@@ -40,11 +42,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
     }
 
     public AsyncServiceScope CreateScope()
@@ -57,7 +55,7 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
         ArgumentNullException.ThrowIfNull(configure);
 
         return ownedProviders
-            .Own(BuildServiceProvider(LeasedConnectionString, configure))
+            .Own(BuildServiceProvider(ScratchConnectionString, configure))
             .CreateAsyncScope();
     }
 
@@ -673,11 +671,11 @@ public sealed class MorphologyImportTestFixture : IAsyncLifetime
     private ServiceProvider InitializedRootProvider =>
         rootProvider ?? throw UninitializedFixture();
 
-    private string LeasedConnectionString =>
-        databaseLease?.ConnectionString ?? throw UninitializedFixture();
+    private string ScratchConnectionString =>
+        scratchConnectionString ?? throw UninitializedFixture();
 
     private static InvalidOperationException UninitializedFixture() => new(
-        $"{nameof(MorphologyImportTestFixture)} holds no database. Every helper needs the "
+        $"{nameof(MorphologyImportTestFixture)} holds no runner-owned scratch database. Every helper needs the "
         + $"[{nameof(MorphologyImportTestCollection)}] collection fixture.");
 
     private static ServiceProvider BuildServiceProvider(

@@ -333,7 +333,13 @@ export function planPrePrSelection({
   );
   const explicitCandidates = explicitPolicy === null
     ? []
-    : backendCatalog.filter((entry) => entry.kind === 'Release' || entry.gate === 'Release');
+    : backendCatalog.filter((entry) =>
+        entry.kind === 'Release'
+        || entry.gate === 'Release'
+        || (entry.gate === 'Pipeline'
+          && (isEmptyScratchEntry(entry, backendResources)
+            || isFullDataEntry(entry, backendResources))),
+      );
   const candidates = deduplicateEntries([
     ...requiredCandidates,
     ...affectedCandidates,

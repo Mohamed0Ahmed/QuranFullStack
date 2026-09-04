@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.WordsDisplay;
@@ -12,16 +13,18 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
 {
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(WordsDisplayTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(WordsDisplayTestFixture),
+            DestructiveRehearsalSubtype.CanonicalRebuild);
 
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratchConnectionString));
         }
         catch
         {
@@ -35,11 +38,7 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
         rootProvider = null;
         await ownedProviders.DisposeAsync();
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
     }
 
     public AsyncServiceScope CreateScope()
@@ -100,7 +99,7 @@ public sealed class WordsDisplayTestFixture : IAsyncLifetime
 
     private ServiceProvider InitializedRootProvider =>
         rootProvider ?? throw new InvalidOperationException(
-            $"{nameof(WordsDisplayTestFixture)} holds no database. Use it through the "
+            $"{nameof(WordsDisplayTestFixture)} holds no runner-owned scratch database. Use it through the "
             + $"[{nameof(WordsDisplayTestCollection)}] collection fixture.");
 
     private static ServiceProvider BuildServiceProvider(string connectionString)

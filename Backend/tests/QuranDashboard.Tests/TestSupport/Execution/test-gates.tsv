@@ -46,10 +46,10 @@ QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests	P
 QuranDashboard.Tests.Api.RateLimiting.RateLimitingIntegrationTests	RateLimiting	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Testing.DatabaseActivityPolicyTests	ApiBehavior	Fast	TierB	Startup							Unmigrated
 QuranDashboard.Tests.Api.Testing.DatabaseActivityProfileIntegrationTests	ApiBehavior	Database	TierB	Execution,Startup							Unmigrated
-QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests	FullI3rab	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSchemaShapeTests	FullI3rab	Database	Pipeline								Unmigrated
+QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	FullI3rabImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	FullI3rabImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests	FullI3rab	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSchemaShapeTests	FullI3rab	Database	Pipeline	Contract,Schema	DestructiveRehearsal	SchemaState	None	EmptyScratch	CanonicalImport	FullI3rabSchemaTestCollection	Migrated
 QuranDashboard.Tests.Quran.Import.ForceReloadTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ImlaeiCleanKeyImportTests	FoundationImport	Canonical	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Import.ImportCountsTests	FoundationImport	Canonical	Pipeline								Unmigrated
@@ -95,38 +95,38 @@ QuranDashboard.Tests.Quran.Translations.TranslationSchemaShapeTests	Translations
 QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests	Translations	Fast	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests	Translations	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests	Translations	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsDeterministicIdTests	WordsDisplay	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsFirstOccurrenceTests	WordsDisplay	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdempotencyTests	WordsDisplay	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdentityLinksTests	WordsDisplay	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests	WordsDisplay	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRebuildTests	WordsDisplay	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRefusalForceTests	WordsDisplay	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsSourceUntouchedTests	WordsDisplay	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsValidationFailureTests	WordsDisplay	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyAssemblerTests	WordsMorphology	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyDimensionTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportSourceNormalizationTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyPosResolutionTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyRefusalForceTests	WordsMorphology	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologySegmentRenderingTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyUs1GateTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyValidationFailureTests	WordsMorphology	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.MorphologyVerbFeatureTests	WordsMorphology	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphology.WordLemmaNormalizationApplierTests	WordsMorphology	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests	WordsMorphologyEnriched	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyDryValidatorTests	WordsMorphologyEnriched	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyImportSourceTests	WordsMorphologyEnriched	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyManifestReaderTests	WordsMorphologyEnriched	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyWriterIntegrationTests	WordsMorphologyEnriched	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabGenerationTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabIdempotencyTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabLabelCorrectnessTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabRefusalTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSchemaShapeTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsDeterministicIdTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsFirstOccurrenceTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdempotencyTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdentityLinksTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests	WordsDisplay	Canonical	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	DisplayWordsRealImportCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRebuildTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRefusalForceTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsSourceUntouchedTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsValidationFailureTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyAssemblerTests	WordsMorphology	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyDimensionTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportSourceNormalizationTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyPosResolutionTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyRefusalForceTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologySegmentRenderingTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyUs1GateTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyValidationFailureTests	WordsMorphology	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.MorphologyVerbFeatureTests	WordsMorphology	Database	Pipeline	Cli,Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsMorphology.WordLemmaNormalizationApplierTests	WordsMorphology	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests	WordsMorphologyEnriched	Canonical	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyDryValidatorTests	WordsMorphologyEnriched	Fast	Pipeline	Contract,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyImportSourceTests	WordsMorphologyEnriched	Fast	Pipeline	Contract,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyManifestReaderTests	WordsMorphologyEnriched	Fast	Pipeline	Contract,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyWriterIntegrationTests	WordsMorphologyEnriched	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	MorphologyImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabGenerationTests	WordsSimpleI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabIdempotencyTests	WordsSimpleI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabLabelCorrectnessTests	WordsSimpleI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabRefusalTests	WordsSimpleI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSchemaShapeTests	WordsSimpleI3rab	Database	Pipeline	Contract,Schema	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3rab	Database	Pipeline	Safety,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
+QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalGeneration	I3rabGenerationTestCollection	Migrated
 QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke		GuardedReader	CanonicalQuranData,MutableApplicationState	None	TestDatabase	None	SmokeDataCollection	Migrated
 QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke								Unmigrated
