@@ -163,6 +163,7 @@ if (errors.length === 0) {
 
   verifyBlockingFailureContract();
   verifyJourneyGroupEnforcementContract();
+  verifyOrphanDescendantCleanupContract();
 }
 
 if (errors.length > 0) {
@@ -496,6 +497,68 @@ process.exit(7);
     }
   } catch (error) {
     errors.push(`Journey-group enforcement probe failed: ${error.message}`);
+  } finally {
+    rmSync(temporaryRoot, { force: true, recursive: true });
+  }
+}
+
+function verifyOrphanDescendantCleanupContract() {
+  const temporaryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-pr-orphan-cleanup-'));
+  const fixturePath = resolve(temporaryRoot, 'matrix.json');
+  const resultsDirectory = resolve(temporaryRoot, 'results');
+  const fixture = {
+    schemaVersion: 1,
+    id: 'orphan-cleanup-probe',
+    scheduling: 'parallel',
+    durationScope: 'probe duration with queue time excluded',
+    durationComponents: ['testExecution'],
+    jobs: [{
+      id: 'critical-probe',
+      title: 'Critical cleanup probe',
+      policy: {
+        blocking: false,
+        maxAttempts: 1,
+        timeoutSeconds: 1,
+        queueTimeIncluded: false,
+        journeyGroups: [{ id: 'probe', blocking: true, journeys: ['probe.journey'] }],
+      },
+      commands: [{
+        id: 'orphan-probe',
+        phase: 'execution',
+        cwd: '.',
+        executable: process.execPath,
+        arguments: ['scripts/test-fixtures/pr-orphan-descendant-probe.mjs'],
+      }],
+    }],
+  };
+  try {
+    writeFileSync(fixturePath, `${JSON.stringify(fixture, null, 2)}\n`);
+    let exitCode = 0;
+    try {
+      execFileSync(process.execPath, [
+        RUNNER_PATH,
+        '--matrix', fixturePath,
+        '--job', 'critical-probe',
+        '--results-dir', resultsDirectory,
+      ], { cwd: REPOSITORY_ROOT, stdio: 'pipe' });
+    } catch (error) {
+      exitCode = error.status ?? 1;
+    }
+    const result = JSON.parse(readFileSync(resolve(resultsDirectory, 'job-result.json'), 'utf8'));
+    const descendantPid = Number(readFileSync(resolve(resultsDirectory, 'descendant-pid.txt'), 'utf8'));
+    const runtime = readFileSync(resolve(resultsDirectory, 'owned-runtime-path.txt'), 'utf8');
+    check(exitCode === 1 && result.status === 'timed-out', 'The orphan probe must time out.');
+    check(result.runtimeCleanup?.status === 'passed', 'PR timeout cleanup must be verified.');
+    check(!existsSync(runtime), 'PR timeout cleanup must remove the owned private runtime.');
+    let descendantAlive = true;
+    try {
+      process.kill(descendantPid, 0);
+    } catch (error) {
+      descendantAlive = error?.code !== 'ESRCH';
+    }
+    check(!descendantAlive, 'PR timeout cleanup must follow the process-group SIGKILL sweep.');
+  } catch (error) {
+    errors.push(`PR orphan-descendant cleanup probe failed: ${error.message}`);
   } finally {
     rmSync(temporaryRoot, { force: true, recursive: true });
   }

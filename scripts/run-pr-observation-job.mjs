@@ -251,12 +251,33 @@ function runCommand(command, timeoutMs, jobResultsDirectory) {
     let timedOut = false;
     let spawnError = null;
     let forceKillTimer;
+    let closed;
+    let resolved = false;
+
+    const complete = () => {
+      if (resolved || !closed || (timedOut && forceKillTimer)) return;
+      resolved = true;
+      if (!timedOut) clearTimeout(timeout);
+      resolvePromise({
+        id: command.id,
+        phase: command.phase,
+        status: timedOut ? 'timed-out' : closed.exitCode === 0 ? 'passed' : 'failed',
+        durationMs: Date.now() - commandStartedAt,
+        exitCode: closed.exitCode,
+        signal: closed.signal,
+        ...(spawnError ? { error: spawnError.message } : {}),
+      });
+    };
 
     const timeout = setTimeout(() => {
       timedOut = true;
       terminateProcessTree(child, 'SIGTERM');
-      forceKillTimer = setTimeout(() => terminateProcessTree(child, 'SIGKILL'), 5_000);
-      forceKillTimer.unref();
+      forceKillTimer = setTimeout(() => {
+        // The direct child may exit before descendants; sweep the process group before cleanup.
+        terminateProcessTree(child, 'SIGKILL');
+        forceKillTimer = null;
+        complete();
+      }, 5_000);
     }, timeoutMs);
     timeout.unref();
 
@@ -264,17 +285,8 @@ function runCommand(command, timeoutMs, jobResultsDirectory) {
       spawnError = error;
     });
     child.once('close', (exitCode, signal) => {
-      clearTimeout(timeout);
-      clearTimeout(forceKillTimer);
-      resolvePromise({
-        id: command.id,
-        phase: command.phase,
-        status: timedOut ? 'timed-out' : exitCode === 0 ? 'passed' : 'failed',
-        durationMs: Date.now() - commandStartedAt,
-        exitCode,
-        signal,
-        ...(spawnError ? { error: spawnError.message } : {}),
-      });
+      closed = { exitCode, signal };
+      complete();
     });
   });
 }
