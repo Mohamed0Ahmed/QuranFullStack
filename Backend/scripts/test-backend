@@ -413,9 +413,10 @@ if [[ "${list_tests}" == false && "${reader_selected}" == true ]]; then
   export QURAN_DASHBOARD_TEST_RUNTIME_READER_CONTEXT=verified-v1
 fi
 
-# Migrated EmptyScratch classes are owned by the repository runner. Broad legacy Backend lanes delegate
-# those exact selections before building their remaining local shard; a child already carrying the
-# receipt-validated scratch context executes normally and never recurses.
+# Migrated EmptyScratch classes are owned by the repository runner. Focused legacy Backend lanes delegate
+# exact selections, while ordinary Backend pre-pr excludes scope-owned rehearsals; `scripts/test pre-pr`
+# adds only affected scope. A child carrying receipt-validated scratch context never recurses.
+declare -a delegated_scratch_classes=()
 if [[ "${list_tests}" == false && -z "${QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE:-}" ]]; then
   declare -a retained_classes=()
   declare -a retained_features=()
@@ -428,12 +429,17 @@ if [[ "${list_tests}" == false && -z "${QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE:-}"
     database_target="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $9 }' "${CATALOG}")"
     migration_state="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $12 }' "${CATALOG}")"
     if [[ "${database_target}" == "EmptyScratch" && "${migration_state}" == "Migrated" ]]; then
-      echo "delegating EmptyScratch class through scripts/test: ${class_name}"
-      if [[ -n "${test_selector}" ]]; then
-        node "${ROOT_TEST_RUNNER}" focused --backend-test "${test_selector}" --no-build
+      if [[ "${lane}" == "pre-pr" ]]; then
+        echo "excluding scope-owned EmptyScratch class from ordinary pre-pr: ${class_name}"
       else
-        node "${ROOT_TEST_RUNNER}" focused --backend-class "${class_name}" --no-build
+        echo "delegating EmptyScratch class through scripts/test: ${class_name}"
+        if [[ -n "${test_selector}" ]]; then
+          node "${ROOT_TEST_RUNNER}" focused --backend-test "${test_selector}" --no-build
+        else
+          node "${ROOT_TEST_RUNNER}" focused --backend-class "${class_name}" --no-build
+        fi
       fi
+      delegated_scratch_classes+=("${class_name}")
       delegated_scratch=$((delegated_scratch + 1))
       continue
     fi
@@ -502,6 +508,9 @@ elif [[ "${lane}" == "pre-pr" ]]; then
   for class_name in "${release_classes[@]}"; do
     filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
   done
+  for class_name in "${delegated_scratch_classes[@]}"; do
+    filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
+  done
 elif [[ "${lane}" != "pre-pr" ]]; then
   for class_name in "${selected_classes[@]}"; do
     term="(FullyQualifiedName~${class_name}.)"
@@ -528,6 +537,9 @@ if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selecte
       shared_filter="${shared_filter:+${shared_filter}&}FullyQualifiedName!~${exclusive_class}."
     done
     for class_name in "${release_classes[@]}"; do
+      shared_filter+="&FullyQualifiedName!~${class_name}."
+    done
+    for class_name in "${delegated_scratch_classes[@]}"; do
       shared_filter+="&FullyQualifiedName!~${class_name}."
     done
   else

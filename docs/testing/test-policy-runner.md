@@ -46,6 +46,9 @@ on their existing runner until their migration tickets land.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
 typecheck, persistent canonical-read critical Chromium gate, and the remaining legacy critical gate.
+The direct `Backend/scripts/test-backend pre-pr` delegate retains its non-scratch Backend coverage but
+excludes runner-owned empty-scratch rehearsals because it has no affected-scope inputs; invoke this
+repository-root coordinator with a feature or concern when that scope requires those rehearsals.
 Add only the affected pipeline/contract scope:
 
 ```bash
@@ -64,9 +67,20 @@ The empty-scratch partition is executable rather than plan-only. For each exact 
 `scripts/test` holds the TestRuntime global exclusive lock, removes only receipt-verified crash leftovers,
 creates a runner-owned PostgreSQL 18 database from `template0`, supplies its receipt-validated context to
 the selected test process, and performs verified cleanup before releasing the lock. Migration-path,
-Permission catalogue reconciliation, and schema-drift classes are the initial migrated empty-scratch
-coverage. They remain cheap pre-PR candidates when Access or Schema scope selects them; the partition does
-not authorize or select any unrelated full canonical pipeline.
+Permission catalogue reconciliation, schema-drift, foundation import/rebuild, and navigation import
+classes use this path. Foundation and navigation source, manifest, path, write-isolation, and validation
+rules that need no PostgreSQL remain independently selectable `FastNoDb` classes. Their empty-scratch
+rehearsals stay outside ordinary pre-PR execution unless the affected feature, authorized source, Schema
+State, produced/consumed contract, or safety-critical scope selects them; the partition does not authorize
+or select an unrelated full-data pipeline.
+
+After each empty-scratch command, the runner emits one `empty-scratch-test-execution` JSON record that
+binds the selected feature, concerns, exact class or method, run ID, subtype, lifecycle step statuses, test
+outcome, per-phase and total timings, sanitized failure/violation codes, and verified cleanup result.
+Missing, malformed, mismatched, or unsuccessful lifecycle evidence fails the command even if its child
+process exits zero. The aggregate copies only allowlisted scratch identity and status fields from
+lower-level reports; connection strings, credentials, diagnostic messages, database rows, dumps, and
+other payloads are never retained.
 
 Morphology and enriched-morphology imports, display-word rebuilds, simple i'rab generation, and full i'rab
 imports also use the empty-scratch partition. Their database-writing classes apply committed migrations

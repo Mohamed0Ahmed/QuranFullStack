@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   EXECUTION_GROUPS,
+  assessScratchLifecycleResult,
+  createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
@@ -339,8 +342,246 @@ assert.throws(
   /unknown affected Backend feature/i,
 );
 
+const repositoryCatalog = parseBackendPolicyCatalog(readFileSync(
+  new URL('../Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv', import.meta.url),
+  'utf8',
+));
+const repositoryResources = parseBackendResourceCatalog(readFileSync(
+  new URL('../Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-resources.tsv', import.meta.url),
+  'utf8',
+));
+const foundationClasses = repositoryCatalog
+  .filter(({ feature }) => feature === 'FoundationImport')
+  .map(({ className }) => className)
+  .sort();
+const navigationClasses = repositoryCatalog
+  .filter(({ feature }) => feature === 'Navigation')
+  .map(({ className }) => className)
+  .sort();
+
+const focusedFoundationRebuild = planFocusedSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  backendClasses: ['QuranDashboard.Tests.Quran.Import.ForceReloadTests'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+});
+assert.equal(focusedFoundationRebuild.commands.length, 1);
+assert.equal(focusedFoundationRebuild.commands[0].group, 'EmptyScratchDestructiveRehearsal');
+assert.equal(focusedFoundationRebuild.commands[0].scratchSubtype, 'canonical-rebuild');
+
+const focusedNavigationRule = planFocusedSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  backendClasses: ['QuranDashboard.Tests.Quran.Navigation.NavigationValidationRuleTests'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+});
+assert.equal(focusedNavigationRule.commands.length, 1);
+assert.equal(focusedNavigationRule.commands[0].group, 'FastNoDb');
+
+const ordinaryRepositoryPrePr = planPrePrSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  affectedFeatures: [],
+  affectedConcerns: [],
+  authorizeFullData: false,
+});
+assert.ok(!ordinaryRepositoryPrePr.partitions
+  .flatMap(({ selections }) => selections)
+  .some(({ className, group }) =>
+    group === 'EmptyScratchDestructiveRehearsal'
+    && (foundationClasses.includes(className) || navigationClasses.includes(className))));
+
+for (const [feature, expectedClasses] of [
+  ['FoundationImport', foundationClasses],
+  ['Navigation', navigationClasses],
+]) {
+  const affected = planPrePrSelection({
+    backendCatalog: repositoryCatalog,
+    backendResources: repositoryResources,
+    affectedFeatures: [feature],
+    affectedConcerns: [],
+    authorizeFullData: false,
+  });
+  const selectedFeatureClasses = affected.partitions
+    .flatMap(({ selections }) => selections)
+    .filter(({ className }) => expectedClasses.includes(className))
+    .map(({ className }) => className)
+    .sort();
+
+  assert.deepEqual(selectedFeatureClasses, expectedClasses);
+  assert.deepEqual(affected.authorizationRequired, []);
+}
+
+const expectedScratchClasses = [...foundationClasses, ...navigationClasses]
+  .filter((className) => repositoryCatalog.find(
+    (entry) => entry.className === className,
+  ).policy?.backendPolicy === 'DestructiveRehearsal');
+for (const concern of ['Source', 'Schema', 'Contract', 'Safety']) {
+  const concernPrePr = planPrePrSelection({
+    backendCatalog: repositoryCatalog,
+    backendResources: repositoryResources,
+    affectedFeatures: [],
+    affectedConcerns: [concern],
+    authorizeFullData: false,
+  });
+  const scratchClasses = concernPrePr.partitions
+    .flatMap(({ selections }) => selections)
+    .filter(({ group }) => group === 'EmptyScratchDestructiveRehearsal')
+    .map(({ className }) => className);
+  assert.ok(expectedScratchClasses.every((className) => scratchClasses.includes(className)));
+}
+
+const credentialSentinel = 'do-not-retain-this-password';
+const scratchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  keeperDurationMilliseconds: 11,
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  testDurationMilliseconds: 31,
+  cleanup: lifecycleResult('cleanup', true),
+  totalDurationMilliseconds: 73,
+  finalStatus: 0,
+});
+assert.equal(scratchEvidence.evidenceType, 'empty-scratch-test-execution');
+assert.equal(scratchEvidence.scope.className, 'QuranDashboard.Tests.Quran.Import.ForceReloadTests');
+assert.equal(scratchEvidence.scratch.runId, '0123456789abcdef0123456789abcdef');
+assert.equal(scratchEvidence.scratch.subtype, 'canonical-rebuild');
+assert.equal(scratchEvidence.lifecycle.test.status, 0);
+assert.equal(scratchEvidence.lifecycle.cleanup.removed, true);
+assert.equal(scratchEvidence.lifecycle.cleanup.dumpFilesRetained, 0);
+assert.equal(scratchEvidence.timings.totalMilliseconds, 73);
+assert.equal(scratchEvidence.lifecycle.create.durationMilliseconds, 10);
+assert.equal(scratchEvidence.succeeded, true);
+assert.ok(!JSON.stringify(scratchEvidence).includes(credentialSentinel));
+
+const missingLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'create',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
+  processStatus: 0,
+  report: null,
+  durationMilliseconds: 4,
+});
+assert.equal(missingLifecycleEvidence.status, 1);
+assert.equal(missingLifecycleEvidence.evidenceValid, false);
+assert.equal(missingLifecycleEvidence.failureCategory, 'missing-evidence');
+
+const failedLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'cleanup',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
+  processStatus: 0,
+  durationMilliseconds: 12,
+  report: {
+    succeeded: false,
+    failureType: 'scratch-cleanup-failed',
+    connectionString: `Password=${credentialSentinel}`,
+    violations: [{
+      code: 'scratch.receipt.mismatch',
+      message: credentialSentinel,
+    }],
+    scratch: {
+      mode: 'cleanup',
+      database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+      runId: '0123456789abcdef0123456789abcdef',
+      subtype: 'canonical-rebuild',
+      receiptRecorded: true,
+      validated: true,
+      removed: false,
+      dumpFilesRetained: 0,
+    },
+  },
+});
+assert.equal(failedLifecycleEvidence.status, 1);
+assert.equal(failedLifecycleEvidence.evidenceValid, true);
+assert.equal(failedLifecycleEvidence.failureCategory, 'lifecycle-failed');
+
+const mismatchedLifecycleReport = lifecycleResult('create', false).report;
+mismatchedLifecycleReport.scratch.runId = 'fedcba9876543210fedcba9876543210';
+const mismatchedLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'create',
+  runId: '0123456789abcdef0123456789abcdef',
+  subtype: 'canonical-rebuild',
+  processStatus: 0,
+  durationMilliseconds: 5,
+  report: mismatchedLifecycleReport,
+});
+assert.equal(mismatchedLifecycleEvidence.status, 1);
+assert.equal(mismatchedLifecycleEvidence.evidenceValid, false);
+assert.equal(mismatchedLifecycleEvidence.failureCategory, 'identity-mismatch');
+
+const mismatchedCleanup = lifecycleResult('cleanup', true);
+mismatchedCleanup.report.scratch.runId = 'fedcba9876543210fedcba9876543210';
+mismatchedCleanup.report.scratch.database =
+  'quran_test_scratch_fedcba9876543210fedcba9876543210';
+const crossPhaseMismatchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  cleanup: mismatchedCleanup,
+  finalStatus: 0,
+});
+assert.equal(crossPhaseMismatchEvidence.succeeded, false);
+
+const failedScratchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  cleanup: failedLifecycleEvidence,
+  finalStatus: 0,
+});
+assert.equal(failedScratchEvidence.succeeded, false);
+assert.equal(failedScratchEvidence.lifecycle.cleanup.failureType, 'scratch-cleanup-failed');
+assert.deepEqual(
+  failedScratchEvidence.lifecycle.cleanup.violationCodes,
+  ['scratch.receipt.mismatch'],
+);
+assert.ok(!JSON.stringify(failedScratchEvidence).includes(credentialSentinel));
+
 console.log('Repository test policy runner contract passed.');
 
 function row(...columns) {
   return columns.join('\t');
+}
+
+function lifecycleResult(mode, removed) {
+  return {
+    status: 0,
+    evidenceValid: true,
+    failureCategory: null,
+    durationMilliseconds: 10,
+    report: {
+      succeeded: true,
+      failureType: null,
+      violations: [],
+      connectionString: `Password=${credentialSentinel}`,
+      scratch: {
+        mode,
+        database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+        runId: '0123456789abcdef0123456789abcdef',
+        subtype: mode === 'reap' ? null : 'canonical-rebuild',
+        receiptRecorded: mode !== 'reap',
+        validated: true,
+        removed,
+        dumpFilesRetained: 0,
+        payload: credentialSentinel,
+      },
+    },
+  };
 }

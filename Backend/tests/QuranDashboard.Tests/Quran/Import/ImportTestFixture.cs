@@ -1,6 +1,6 @@
 using QuranDashboard.Application.Quran.DataPipelines.Foundation;
+using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
-using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Import;
 
@@ -8,7 +8,6 @@ public sealed class ImportTestFixture : IAsyncLifetime
 {
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
     private ServiceProvider? rootProvider;
 
     public string SourceRoot => FoundationImportSourceGate.SourceRoot;
@@ -20,11 +19,15 @@ public sealed class ImportTestFixture : IAsyncLifetime
             return;
         }
 
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(ImportTestFixture));
-
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
+                QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath);
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratch.ConnectionString));
+
+            await using var scope = CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+            await dbContext.Database.MigrateAsync();
         }
         catch
         {
@@ -37,12 +40,6 @@ public sealed class ImportTestFixture : IAsyncLifetime
     {
         rootProvider = null;
         await ownedProviders.DisposeAsync();
-
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
     }
 
     public AsyncServiceScope CreateScope()
@@ -71,7 +68,7 @@ public sealed class ImportTestFixture : IAsyncLifetime
 
     private ServiceProvider InitializedRootProvider =>
         rootProvider ?? throw new InvalidOperationException(
-            $"{nameof(ImportTestFixture)} holds no database. Use it as a collection fixture, and mark every case "
+            $"{nameof(ImportTestFixture)} holds no runner-owned empty-scratch database. Use it as a collection fixture, and mark every case "
             + $"that reaches the database with [{nameof(FoundationImportSourceFactAttribute)}] so it skips when "
             + $"{FoundationImportSourceGate.SourceRoot} is absent.");
 

@@ -202,6 +202,7 @@ public sealed class TestPolicyContractTests
     }
 
     [Fact]
+<<<<<<< HEAD
     public void MorphologyDisplayAndI3rabPipelines_UseBoundedScratchRehearsals()
     {
         string[] scratchCollections =
@@ -256,6 +257,46 @@ public sealed class TestPolicyContractTests
                 DestructiveRehearsalSubtype.CanonicalGeneration,
             }.Contains(entry.Policy.DestructiveSubtype));
         fastEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(fastClasses);
+=======
+    public void FoundationAndNavigationPipelines_UseScopeSelectedEmptyScratchRehearsals()
+    {
+        var canonicalImports = new[]
+        {
+            "QuranDashboard.Tests.Quran.Import.ImlaeiCleanKeyImportTests",
+            "QuranDashboard.Tests.Quran.Import.ImportCountsTests",
+            "QuranDashboard.Tests.Quran.Import.ImportReconstructionTests",
+            "QuranDashboard.Tests.Quran.Import.ReRunGuardTests",
+            "QuranDashboard.Tests.Quran.Import.ValidationFailureTests",
+            "QuranDashboard.Tests.Quran.Import.ValidationReportTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationImportTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests",
+        };
+        var canonicalRebuilds = new[]
+        {
+            "QuranDashboard.Tests.Quran.Import.ForceReloadTests",
+        };
+        var fastRules = new[]
+        {
+            "QuranDashboard.Tests.Quran.Import.JsonWordSourceReaderTests",
+            "QuranDashboard.Tests.Quran.Import.ManifestChecksumTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationDatasetReaderTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationDefaultPathTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationManifestReaderTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationMetadataWriteIsolationTests",
+            "QuranDashboard.Tests.Quran.Navigation.NavigationValidationRuleTests",
+        };
+
+        AssertEmptyScratchClasses(canonicalImports, DestructiveRehearsalSubtype.CanonicalImport);
+        AssertEmptyScratchClasses(canonicalRebuilds, DestructiveRehearsalSubtype.CanonicalRebuild);
+
+        var fastEntries = TestGateCatalog.GateEntries
+            .Where(entry => fastRules.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+        fastEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(fastRules);
+>>>>>>> codex-issue-162-from-149
         fastEntries.Should().OnlyContain(entry =>
             entry.MigrationState == TestPolicyMigrationState.Migrated
             && entry.Policy != null
@@ -263,6 +304,7 @@ public sealed class TestPolicyContractTests
             && entry.Policy.Reads.Count == 0
             && entry.Policy.Writes.Count == 0
             && entry.Policy.Target == TestDatabaseTarget.None
+<<<<<<< HEAD
             && entry.ResourceCollection == null);
     }
 
@@ -351,5 +393,49 @@ public sealed class TestPolicyContractTests
         baseline.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
         baseline.Policy!.Policy.Should().Be(BackendTestPolicy.FastNoDb);
         baseline.ResourceCollection.Should().BeNull();
+=======
+            && entry.Policy.DestructiveSubtype == DestructiveRehearsalSubtype.None
+            && entry.ResourceCollection == null);
+
+        foreach (var collectionName in new[] { "ImportTestCollection", "NavigationImportTestCollection" })
+        {
+            var resource = TestGateCatalog.ResourceEntries.Single(entry =>
+                entry.CollectionName == collectionName);
+            resource.ParallelPolicy.Should().Be("NonParallel");
+            resource.StatePolicy.Should().Be("FreshLeasePerCase");
+            resource.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
+            resource.Policy.Should().NotBeNull();
+            resource.Policy!.SetupWrites.Should().BeEquivalentTo([
+                TestDataClass.SystemCatalogue,
+                TestDataClass.MutableApplicationState,
+                TestDataClass.SchemaState,
+            ]);
+            resource.Policy.ResetBehavior.Should().Be(TestResetBehavior.None);
+            resource.Policy.Target.Should().Be(TestDatabaseTarget.EmptyScratch);
+            resource.Policy.StartupEffects.Should().BeEmpty();
+        }
+    }
+
+    private static void AssertEmptyScratchClasses(
+        IReadOnlyCollection<string> classNames,
+        DestructiveRehearsalSubtype subtype)
+    {
+        var canonicalData = new HashSet<TestDataClass> { TestDataClass.CanonicalQuranData };
+        var entries = TestGateCatalog.GateEntries
+            .Where(entry => classNames.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+
+        entries.Select(entry => entry.ClassName).Should().BeEquivalentTo(classNames);
+        entries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.DestructiveRehearsal
+            && entry.Policy.Reads.SetEquals(canonicalData)
+            && entry.Policy.Writes.SetEquals(canonicalData)
+            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
+            && entry.Policy.DestructiveSubtype == subtype
+            && (entry.ResourceCollection == "ImportTestCollection"
+                || entry.ResourceCollection == "NavigationImportTestCollection"));
+>>>>>>> codex-issue-162-from-149
     }
 }
