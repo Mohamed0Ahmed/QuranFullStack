@@ -175,48 +175,11 @@ public sealed class TestGateCatalogTests
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
     }
 
-    // The shards below select by class name. Keep every class whose fixture owns an exclusive PostgreSQL
-    // server out of the shared-runtime process.
     [Fact]
-    public void ExclusivePostgreSqlClasses_AreDiscoveredAndUseNonParallelResources()
+    public void CanonicalKind_IncludesSmokeDataReads()
     {
-        TestGateCatalog.DiscoverTestClasses()
-            .Should()
-            .Contain(TestGateCatalog.ExclusivePostgreSqlClasses);
-
         TestGateCatalog.SelectKind("Canonical")
             .Should()
             .Contain("QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests");
-
-        var collected = TestGateCatalog.DiscoverCollectedTestClasses()
-            .ToDictionary(testClass => testClass.ClassName, StringComparer.Ordinal);
-        foreach (var className in TestGateCatalog.ExclusivePostgreSqlClasses)
-        {
-            var collectionName = collected[className].CollectionName;
-            TestGateCatalog.ResourceEntries.Single(resource => resource.CollectionName == collectionName)
-                .ParallelPolicy.Should().Be("NonParallel");
-        }
-    }
-
-    // The two invocations Backend/scripts/test-backend runs for a lane that would otherwise start
-    // postgres:16-alpine and postgres:18-alpine in one process. Losing a class between them would silently
-    // drop coverage; sharing one would put both servers back in the same process.
-    [Theory]
-    [InlineData("canonical-data")]
-    [InlineData("pre-pr")]
-    public void PostgreSqlOwnershipShards_PartitionTheLaneTheyReplace(string lane)
-    {
-        var laneClasses = lane == "canonical-data"
-            ? TestGateCatalog.SelectKind("Canonical")
-            : TestGateCatalog.SelectFullBackend()
-                .Where(className => TestGateCatalog.GateEntries.Single(entry => entry.ClassName == className).Kind != "Release");
-
-        var shards = TestGateCatalog.ShardByPostgreSqlOwnership(laneClasses);
-
-        shards.SharedRuntime.Should().NotIntersectWith(shards.ExclusiveServer);
-        shards.SharedRuntime.Concat(shards.ExclusiveServer).Should().BeEquivalentTo(laneClasses);
-        shards.ExclusiveServer.Should().BeEquivalentTo(
-            laneClasses.Intersect(TestGateCatalog.ExclusivePostgreSqlClasses, StringComparer.Ordinal));
-        shards.SharedRuntime.Should().NotBeEmpty();
     }
 }

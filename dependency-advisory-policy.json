@@ -45,7 +45,7 @@
         ],
         "development": [
           "Backend/tests/QuranDashboard.Tests/QuranDashboard.Tests.csproj",
-          "Backend/tools/QuranDashboard.TestArtifacts/QuranDashboard.TestArtifacts.csproj"
+          "Backend/tools/QuranDashboard.TestRuntime/QuranDashboard.TestRuntime.csproj"
         ]
       }
     },

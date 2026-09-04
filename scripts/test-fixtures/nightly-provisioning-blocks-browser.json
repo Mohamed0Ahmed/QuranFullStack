@@ -4,12 +4,49 @@
   "title": "Provisioning retry eligibility probe",
   "providerNeutral": true,
   "timeoutSeconds": 10,
-  "inputContract": { "artifactRoot": "probe", "resultsDirectory": "probe", "executionKind": "scheduled" },
-  "evidenceRetention": { "failedDiagnosticsDays": 14, "aggregateTimingDays": 30, "externalUploadConfigured": false },
-  "excludedWork": ["dependency-advisory-evaluation"],
-  "requiredBrowserJourneys": ["mobile.probe"],
+  "inputContract": {
+    "resultsDirectory": "probe",
+    "executionKind": "scheduled"
+  },
+  "evidenceRetention": {
+    "failedDiagnosticsDays": 14,
+    "aggregateTimingDays": 30,
+    "externalUploadConfigured": false
+  },
+  "excludedWork": [
+    "dependency-advisory-evaluation"
+  ],
+  "requiredBrowserJourneys": [
+    "mobile.probe"
+  ],
   "commands": [
-    { "id": "provision", "phase": "preparation", "timeoutSeconds": 2, "cwd": ".", "executable": "node", "arguments": ["scripts/test-fixtures/nightly-provisioning-failure-probe.mjs"] },
-    { "id": "browser", "phase": "browser-execution", "timeoutSeconds": 2, "cwd": ".", "executable": "node", "arguments": ["scripts/test-fixtures/nightly-browser-lifecycle-probe.mjs", "failed"], "approvedReporterArtifacts": true, "diagnosticRetry": true, "runtimeCleanup": true, "runtimeCleanupScript": "scripts/test-fixtures/nightly-cleanup-probe.mjs", "dependsOn": ["provision"] }
+    {
+      "id": "provision",
+      "phase": "preparation",
+      "timeoutSeconds": 2,
+      "cwd": ".",
+      "executable": "node",
+      "arguments": [
+        "scripts/test-fixtures/nightly-provisioning-failure-probe.mjs"
+      ]
+    },
+    {
+      "id": "browser",
+      "phase": "browser-execution",
+      "timeoutSeconds": 2,
+      "cwd": ".",
+      "executable": "node",
+      "arguments": [
+        "scripts/test-fixtures/nightly-browser-lifecycle-probe.mjs",
+        "failed"
+      ],
+      "approvedReporterArtifacts": true,
+      "diagnosticRetry": true,
+      "runtimeCleanup": true,
+      "runtimeCleanupScript": "scripts/test-fixtures/nightly-cleanup-probe.mjs",
+      "dependsOn": [
+        "provision"
+      ]
+    }
   ]
 }

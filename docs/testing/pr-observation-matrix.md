@@ -2,7 +2,10 @@
 
 `pr-observation-matrix.json` is the provider-neutral source of truth for four independent pre-merge
 jobs. Local operators invoke the repository commands directly; no CI provider, remote runner, or cloud
-resource is required for the adopted Local-first scope:
+resource is required for the adopted Local-first scope. The Backend job runs the thin
+`test-backend pre-pr` delegate, which execs repository-root `scripts/test pre-pr` against the
+persistent `quran_dashboard_test` capability. There is no compact-fixture or full-canonical dump
+candidate.
 
 ```bash
 node scripts/run-pr-observation-job.mjs --job backend-pr
@@ -20,10 +23,10 @@ node scripts/verify-pr-observation-matrix.mjs
 ```
 
 The runner starts its clock immediately before the first provisioning command. Its one outer 12-minute
-deadline therefore includes locked dependency and artifact
+deadline therefore includes locked dependency
 provisioning, database preparation, application startup, and test execution, but excludes provider
-queue time. It writes `job-result.json` under `.pr-observation/` by default. Callers may pass an
-artifact directory with `--results-dir`; Backend TRX and sealed Playwright evidence remain below that
+queue time. It writes `job-result.json` under `.pr-observation/` by default. Callers may pass a
+results directory with `--results-dir`; Backend TRX and sealed Playwright evidence remain below that
 job directory or in their existing harness evidence directory.
 
 All four jobs have exactly one attempt. The Backend, contract/model, and Frontend policy/build jobs are
@@ -56,7 +59,7 @@ The accepted #102 window covered 20 full-catalogue first-attempt passes at commi
 roots. Every job completed below 12 minutes; nearest-rank p95 was 544,813 ms and the maximum was 560,318
 ms. The two Quran journeys passed 40/40, with group p95 7,783 ms and maximum 8,400 ms. The repository has
 no remote artifact-fetch cache, so the five cold observations are accurately retained as fresh isolated
-dependency/browser provisioning and committed-artifact verification runs. The earlier failed candidate
+dependency/browser provisioning runs. The earlier failed candidate
 windows remain recorded on #102 and are not relabeled as qualifying evidence.
 
 #103 reuses that same owner-approved 20-run full-catalogue window rather than claiming duplicate runs.

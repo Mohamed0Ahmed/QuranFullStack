@@ -14,37 +14,12 @@ TEST_RUNTIME_OUTPUT="${BACKEND_ROOT}/tools/QuranDashboard.TestRuntime/bin/Debug/
 ROOT_TEST_RUNNER="${REPO_ROOT}/scripts/test"
 CALLER_DIR="$(pwd -P)"
 
-# Test classes whose fixtures own an exclusive postgres:18-alpine server instead of a database leased from
-# the shared postgres:16-alpine runtime. A lane that selects one together with shared-runtime classes runs
-# as two sequential invocations so the servers never exist at once.
-EXCLUSIVE_POSTGRES_CLASSES=(
-  "QuranDashboard.Tests.Api.Testing.DatabaseActivityProfileIntegrationTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests"
-  "QuranDashboard.Tests.TestRuntime.TestRuntimeScratchTests"
-)
-POSTGRES_CONTAINER_FILTERS=(
-  --filter "label=com.qurandashboard.test.owner=backend-tests"
-  --filter "label=com.qurandashboard.test.repository=quran-dashboard"
-  --filter "label=com.qurandashboard.test.kind=postgresql"
-)
-SHARD_HANDOVER_TIMEOUT_SECONDS=30
-
 usage() {
   cat <<'EOF'
 Usage:
-  Backend/scripts/test-backend fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal
-    --build|--no-build [--test FULL_METHOD_NAME] [--list-tests] [--results-dir PATH]
-  Backend/scripts/test-backend feature FEATURE_KEY --build|--no-build
-    [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature --class FULL_CLASS_NAME --build|--no-build
     [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend feature --test FULL_METHOD_NAME --build|--no-build
-    [--list-tests] [--results-dir PATH]
-  Backend/scripts/test-backend pipeline [--feature FEATURE_KEY] --build|--no-build
     [--list-tests] [--results-dir PATH]
   Backend/scripts/test-backend pre-pr [--results-dir PATH]
   Backend/scripts/test-backend pre-pr --list-tests --no-build [--results-dir PATH]
@@ -79,31 +54,18 @@ lane="$1"
 shift
 
 case "${lane}" in
-  fast|access|access-db|migration|process|smoke|tier-b|gate-contract|canonical-data|full-canonical|full-canonical-recovery|previous-release-upgrade|phrase-index-rehearsal|feature|pipeline|pre-pr)
+  feature|pre-pr)
     ;;
   *)
-    fail_usage "Unknown lane: ${lane}"
+    fail_usage "Unknown lane: ${lane}. Use feature or pre-pr; scripts/test is the authoritative selector."
     ;;
 esac
 
-artifact_execution="${QURAN_DASHBOARD_ARTIFACT_EXECUTION:-local}"
-if [[ "${artifact_execution}" != "local" \
-  && "${artifact_execution}" != "scheduled" \
-  && "${artifact_execution}" != "release" ]]; then
-  fail_usage "QURAN_DASHBOARD_ARTIFACT_EXECUTION must be local, scheduled, or release."
-fi
-
-feature_selector=""
 class_selector=""
 test_selector=""
 build_mode=""
 list_tests=false
 results_dir=""
-
-if [[ "${lane}" == "feature" && $# -gt 0 && "$1" != --* ]]; then
-  feature_selector="$1"
-  shift
-fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -126,13 +88,6 @@ while [[ $# -gt 0 ]]; do
       results_dir="$2"
       shift 2
       ;;
-    --feature)
-      require_value "$1" "${2:-}"
-      [[ "${lane}" == "pipeline" ]] || fail_usage "--feature is valid only for the pipeline lane."
-      [[ -z "${feature_selector}" ]] || fail_usage "Only one feature selector is allowed."
-      feature_selector="$2"
-      shift 2
-      ;;
     --class)
       require_value "$1" "${2:-}"
       [[ "${lane}" == "feature" ]] || fail_usage "--class is valid only for the feature lane."
@@ -142,12 +97,7 @@ while [[ $# -gt 0 ]]; do
       ;;
     --test)
       require_value "$1" "${2:-}"
-      if [[ "${lane}" != "feature" \
-        && "${lane}" != "full-canonical-recovery" \
-        && "${lane}" != "previous-release-upgrade" \
-        && "${lane}" != "phrase-index-rehearsal" ]]; then
-        fail_usage "--test is valid only for feature or an explicit release rehearsal lane."
-      fi
+      [[ "${lane}" == "feature" ]] || fail_usage "--test is valid only for the feature lane."
       [[ -z "${test_selector}" ]] || fail_usage "Only one test selector is allowed."
       test_selector="$2"
       shift 2
@@ -166,30 +116,19 @@ if [[ "${lane}" == "pre-pr" ]]; then
   if [[ "${list_tests}" == true ]]; then
     [[ "${build_mode}" == "no-build" ]] \
       || fail_usage "pre-pr discovery requires --list-tests --no-build."
-  else
-    [[ -z "${build_mode}" || "${build_mode}" == "build" ]] \
-      || fail_usage "Executing pre-pr always builds once."
-    build_mode="build"
+    exec node "${ROOT_TEST_RUNNER}" pre-pr --dry-run
   fi
-else
-  [[ -n "${build_mode}" ]] || fail_usage "Focused lanes require --build or --no-build."
+  [[ -z "${build_mode}" || "${build_mode}" == "build" ]] \
+    || fail_usage "Executing pre-pr always builds once through scripts/test."
+  exec node "${ROOT_TEST_RUNNER}" pre-pr
 fi
 
-if [[ "${lane}" == "feature" ]]; then
-  selector_count=0
-  [[ -n "${feature_selector}" ]] && selector_count=$((selector_count + 1))
-  [[ -n "${class_selector}" ]] && selector_count=$((selector_count + 1))
-  [[ -n "${test_selector}" ]] && selector_count=$((selector_count + 1))
-  [[ "${selector_count}" -eq 1 ]] \
-    || fail_usage "feature requires exactly one FEATURE_KEY, --class, or --test selector."
-elif [[ -n "${class_selector}" ]]; then
-  fail_usage "Class selectors are valid only for the feature lane."
-elif [[ -n "${test_selector}" \
-  && "${lane}" != "full-canonical-recovery" \
-  && "${lane}" != "previous-release-upgrade" \
-  && "${lane}" != "phrase-index-rehearsal" ]]; then
-  fail_usage "Method selectors are valid only for feature or an explicit release rehearsal lane."
-fi
+[[ -n "${build_mode}" ]] || fail_usage "Focused lanes require --build or --no-build."
+selector_count=0
+[[ -n "${class_selector}" ]] && selector_count=$((selector_count + 1))
+[[ -n "${test_selector}" ]] && selector_count=$((selector_count + 1))
+[[ "${selector_count}" -eq 1 ]] \
+  || fail_usage "feature requires exactly one --class or --test selector."
 
 if [[ ! -f "${CATALOG}" ]]; then
   echo "ERROR: Backend test catalog is missing: ${CATALOG}" >&2
@@ -203,160 +142,47 @@ if [[ "${catalog_header}" != "${expected_header}" ]]; then
   exit 1
 fi
 
-declare -a selected_classes=()
-declare -a selected_features=()
-declare -a selected_kinds=()
-declare -a selected_gates=()
-declare -a selected_concerns=()
-declare -a release_classes=()
-
-add_selected_row() {
-  selected_classes+=("$1")
-  selected_features+=("$2")
-  selected_kinds+=("$3")
-  selected_gates+=("$4")
-  selected_concerns+=("$5")
-}
-
-feature_exists=false
-pipeline_feature_exists=false
+class_name=""
+feature=""
+kind=""
+gate=""
+concerns=""
+backend_policy=""
 class_exists=false
 test_class_exists=false
-declare -A exclusive_class_cataloged=()
-is_exclusive_postgres_class() {
-  local candidate="$1"
-  local exclusive_class
-  for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
-    [[ "${candidate}" == "${exclusive_class}" ]] && return 0
-  done
-  return 1
-}
 
-while IFS=$'\t' read -r class_name feature kind gate concerns; do
-  [[ -n "${class_name}" ]] || continue
+lookup_class=""
+if [[ -n "${class_selector}" ]]; then
+  lookup_class="${class_selector}"
+elif [[ -n "${test_selector}" ]]; then
+  lookup_class="$(awk -F '\t' -v method="${test_selector}" '
+    NR > 1 && index(method, $1 ".") == 1 { print $1; exit }
+  ' "${CATALOG}")"
+fi
 
-  if is_exclusive_postgres_class "${class_name}"; then
-    exclusive_class_cataloged["${class_name}"]=true
-  fi
-  [[ "${kind}" == "Release" ]] && release_classes+=("${class_name}")
+if [[ -n "${lookup_class}" ]]; then
+  catalog_line="$(awk -F '\t' -v class_name="${lookup_class}" '$1 == class_name { print; exit }' "${CATALOG}")"
+fi
 
-  if [[ -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
-    feature_exists=true
-    [[ "${gate}" == "Pipeline" ]] && pipeline_feature_exists=true
-  fi
-  [[ -n "${class_selector}" && "${class_name}" == "${class_selector}" ]] && class_exists=true
+if [[ -n "${catalog_line:-}" ]]; then
+  class_exists=true
+  class_name="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $1 }')"
+  feature="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $2 }')"
+  kind="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $3 }')"
+  gate="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $4 }')"
+  concerns="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $5 }')"
+  backend_policy="$(printf '%s\n' "${catalog_line}" | awk -F '\t' '{ print $6 }')"
   if [[ -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
     test_class_exists=true
   fi
-
-  selected=false
-  case "${lane}" in
-    fast)
-      [[ "${kind}" == "Fast" ]] && selected=true
-      ;;
-    access)
-      [[ "${feature}" == "Access" ]] && selected=true
-      ;;
-    access-db)
-      if [[ "${feature}" == "Access" ]] \
-        && { [[ "${kind}" == "Database" ]] || [[ ",${concerns}," == *",Schema,"* ]]; }; then
-        selected=true
-      fi
-      ;;
-    migration)
-      [[ "${kind}" == "Migration" ]] && selected=true
-      ;;
-    process)
-      [[ "${kind}" == "Process" ]] && selected=true
-      ;;
-    smoke)
-      [[ "${gate}" == "Smoke" && "${kind}" != "Canonical" ]] && selected=true
-      ;;
-    tier-b)
-      [[ "${gate}" == "TierB" && -z "${concerns}" ]] && selected=true
-      ;;
-    gate-contract)
-      [[ "${kind}" != "Release" && -n "${concerns}" ]] && selected=true
-      ;;
-    canonical-data)
-      [[ "${kind}" == "Canonical" ]] && selected=true
-      ;;
-    full-canonical)
-      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalArtifactProvisioningTests ]] && selected=true
-      ;;
-    full-canonical-recovery)
-      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests ]] && selected=true
-      ;;
-    previous-release-upgrade)
-      [[ "${class_name}" == QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests ]] && selected=true
-      ;;
-    phrase-index-rehearsal)
-      [[ "${class_name}" == QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests ]] && selected=true
-      ;;
-    feature)
-      if [[ "${kind}" != "Release" && -n "${feature_selector}" && "${feature}" == "${feature_selector}" ]]; then
-        selected=true
-      elif [[ "${kind}" != "Release" && -n "${class_selector}" && "${class_name}" == "${class_selector}" ]]; then
-        selected=true
-      elif [[ "${kind}" != "Release" && -n "${test_selector}" && "${test_selector}" == "${class_name}".* ]]; then
-        selected=true
-      fi
-      ;;
-    pipeline)
-      if [[ "${gate}" == "Pipeline" && "${kind}" != "Canonical" ]] \
-        && { [[ -z "${feature_selector}" ]] || [[ "${feature}" == "${feature_selector}" ]]; }; then
-        selected=true
-      fi
-      ;;
-    pre-pr)
-      [[ "${kind}" != "Release" ]] && selected=true
-      ;;
-  esac
-
-  if [[ "${selected}" == true ]]; then
-    add_selected_row "${class_name}" "${feature}" "${kind}" "${gate}" "${concerns}"
-  fi
-done < <(tail -n +2 "${CATALOG}" | cut -f1-5)
-
-if [[ -n "${feature_selector}" && "${feature_exists}" != true ]]; then
-  fail_usage "Unknown feature key: ${feature_selector}"
 fi
-if [[ "${lane}" == "pipeline" && -n "${feature_selector}" && "${pipeline_feature_exists}" != true ]]; then
-  fail_usage "Feature is not a Pipeline feature: ${feature_selector}"
-fi
+
 if [[ -n "${class_selector}" && "${class_exists}" != true ]]; then
   fail_usage "Unknown test class: ${class_selector}"
 fi
 if [[ -n "${test_selector}" && "${test_class_exists}" != true ]]; then
   fail_usage "The method does not belong to a cataloged test class: ${test_selector}"
 fi
-if [[ -n "${test_selector}" && "${lane}" != "feature" ]]; then
-  release_test_belongs=false
-  for class_name in "${selected_classes[@]}"; do
-    [[ "${test_selector}" == "${class_name}".* ]] && release_test_belongs=true
-  done
-  [[ "${release_test_belongs}" == true ]] \
-    || fail_usage "The method does not belong to the selected release rehearsal lane: ${test_selector}"
-fi
-if [[ "${#selected_classes[@]}" -eq 0 ]]; then
-  fail_usage "The selector resolved to no catalog rows."
-fi
-
-reader_selected=false
-for class_name in "${selected_classes[@]}"; do
-  backend_policy="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $6 }' "${CATALOG}")"
-  if [[ "${backend_policy}" == "CanonicalReader" || "${backend_policy}" == "GuardedReader" ]]; then
-    reader_selected=true
-  fi
-done
-
-for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
-  if [[ "${exclusive_class_cataloged[${exclusive_class}]:-}" != true ]]; then
-    echo "ERROR: an exclusive-PostgreSQL test class is missing from the catalog: ${exclusive_class}" >&2
-    echo "       Update this script and TestGateCatalog.ExclusivePostgreSqlClasses together." >&2
-    exit 1
-  fi
-done
 
 if [[ "${build_mode}" == "build" ]]; then
   dotnet build "${SOLUTION}" \
@@ -368,40 +194,28 @@ fi
 
 if [[ "${build_mode}" == "no-build" ]]; then
   missing_output=false
-  for output in "${TEST_OUTPUT}"; do
-    if [[ ! -f "${output}" ]]; then
-      echo "ERROR: --no-build requires existing output: ${output}" >&2
-      missing_output=true
-    fi
-  done
-
-  requires_access_admin=false
-  requires_data_importer=false
-  for index in "${!selected_kinds[@]}"; do
-    feature="${selected_features[$index]}"
-    kind="${selected_kinds[$index]}"
-    gate="${selected_gates[$index]}"
-    [[ "${feature}" == "Access" && ( "${kind}" == "Migration" || "${kind}" == "Process" ) ]] && requires_access_admin=true
-    [[ "${gate}" == "Pipeline" || "${kind}" == "Canonical" ]] && requires_data_importer=true
-    [[ "${feature}" == "Abwab" && "${kind}" == "Process" ]] && requires_data_importer=true
-  done
-
-  if [[ "${requires_access_admin}" == true && ! -f "${ACCESS_ADMIN_OUTPUT}" ]]; then
+  if [[ ! -f "${TEST_OUTPUT}" ]]; then
+    echo "ERROR: --no-build requires existing output: ${TEST_OUTPUT}" >&2
+    missing_output=true
+  fi
+  if [[ "${feature}" == "Access" && ( "${kind}" == "Migration" || "${kind}" == "Process" ) && ! -f "${ACCESS_ADMIN_OUTPUT}" ]]; then
     echo "ERROR: --no-build requires existing AccessAdmin output: ${ACCESS_ADMIN_OUTPUT}" >&2
     missing_output=true
   fi
-  if [[ "${requires_data_importer}" == true && ! -f "${DATA_IMPORTER_OUTPUT}" ]]; then
+  if { [[ "${gate}" == "Pipeline" || "${kind}" == "Canonical" ]] || [[ "${feature}" == "Abwab" && "${kind}" == "Process" ]]; } \
+    && [[ ! -f "${DATA_IMPORTER_OUTPUT}" ]]; then
     echo "ERROR: --no-build requires existing DataImporter output: ${DATA_IMPORTER_OUTPUT}" >&2
     missing_output=true
   fi
-  if [[ "${reader_selected}" == true && ! -f "${TEST_RUNTIME_OUTPUT}" ]]; then
+  if [[ "${backend_policy}" == "CanonicalReader" || "${backend_policy}" == "GuardedReader" ]] \
+    && [[ ! -f "${TEST_RUNTIME_OUTPUT}" ]]; then
     echo "ERROR: --no-build requires existing TestRuntime output: ${TEST_RUNTIME_OUTPUT}" >&2
     missing_output=true
   fi
   [[ "${missing_output}" == false ]] || exit 1
 fi
 
-if [[ "${list_tests}" == false && "${reader_selected}" == true ]]; then
+if [[ "${list_tests}" == false && ( "${backend_policy}" == "CanonicalReader" || "${backend_policy}" == "GuardedReader" ) ]]; then
   if [[ -z "${ConnectionStrings__QuranDashboardTest:-}" ]]; then
     echo "ERROR: persistent readers require ConnectionStrings__QuranDashboardTest." >&2
     exit 1
@@ -411,54 +225,6 @@ if [[ "${list_tests}" == false && "${reader_selected}" == true ]]; then
     exit 1
   fi
   export QURAN_DASHBOARD_TEST_RUNTIME_READER_CONTEXT=verified-v1
-fi
-
-# Migrated EmptyScratch classes are owned by the repository runner. Focused legacy Backend lanes delegate
-# exact selections, while ordinary Backend pre-pr excludes scope-owned rehearsals; `scripts/test pre-pr`
-# adds only affected scope. A child carrying receipt-validated scratch context never recurses.
-declare -a delegated_scratch_classes=()
-if [[ "${list_tests}" == false && -z "${QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE:-}" ]]; then
-  declare -a retained_classes=()
-  declare -a retained_features=()
-  declare -a retained_kinds=()
-  declare -a retained_gates=()
-  declare -a retained_concerns=()
-  delegated_scratch=0
-  for index in "${!selected_classes[@]}"; do
-    class_name="${selected_classes[$index]}"
-    database_target="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $9 }' "${CATALOG}")"
-    migration_state="$(awk -F '\t' -v class_name="${class_name}" '$1 == class_name { print $12 }' "${CATALOG}")"
-    if [[ "${database_target}" == "EmptyScratch" && "${migration_state}" == "Migrated" ]]; then
-      if [[ "${lane}" == "pre-pr" ]]; then
-        echo "excluding scope-owned EmptyScratch class from ordinary pre-pr: ${class_name}"
-      else
-        echo "delegating EmptyScratch class through scripts/test: ${class_name}"
-        if [[ -n "${test_selector}" ]]; then
-          node "${ROOT_TEST_RUNNER}" focused --backend-test "${test_selector}" --no-build
-        else
-          node "${ROOT_TEST_RUNNER}" focused --backend-class "${class_name}" --no-build
-        fi
-      fi
-      delegated_scratch_classes+=("${class_name}")
-      delegated_scratch=$((delegated_scratch + 1))
-      continue
-    fi
-
-    retained_classes+=("${class_name}")
-    retained_features+=("${selected_features[$index]}")
-    retained_kinds+=("${selected_kinds[$index]}")
-    retained_gates+=("${selected_gates[$index]}")
-    retained_concerns+=("${selected_concerns[$index]}")
-  done
-
-  selected_classes=("${retained_classes[@]}")
-  selected_features=("${retained_features[@]}")
-  selected_kinds=("${retained_kinds[@]}")
-  selected_gates=("${retained_gates[@]}")
-  selected_concerns=("${retained_concerns[@]}")
-  if [[ "${delegated_scratch}" -gt 0 && "${#selected_classes[@]}" -eq 0 ]]; then
-    exit 0
-  fi
 fi
 
 if [[ -n "${test_selector}" ]]; then
@@ -501,274 +267,79 @@ if [[ -n "${results_dir}" ]]; then
   mkdir -p "${results_dir}"
 fi
 
-filter=""
 if [[ -n "${test_selector}" ]]; then
   filter="FullyQualifiedName=${test_selector}"
-elif [[ "${lane}" == "pre-pr" ]]; then
-  for class_name in "${release_classes[@]}"; do
-    filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
-  done
-  for class_name in "${delegated_scratch_classes[@]}"; do
-    filter="${filter:+${filter}&}FullyQualifiedName!~${class_name}."
-  done
-elif [[ "${lane}" != "pre-pr" ]]; then
-  for class_name in "${selected_classes[@]}"; do
-    term="(FullyQualifiedName~${class_name}.)"
-    filter="${filter:+${filter}|}${term}"
-  done
-fi
-
-exclusive_selected=false
-for class_name in "${selected_classes[@]}"; do
-  is_exclusive_postgres_class "${class_name}" && exclusive_selected=true
-done
-
-declare -a shard_labels=()
-declare -a shard_filters=()
-
-# Discovery starts no container, so it stays one invocation and keeps the catalog/discovery parity check
-# below comparing one filter against the whole selected row set.
-if [[ "${list_tests}" == false && "${exclusive_selected}" == true && "${#selected_classes[@]}" -gt 1 ]]; then
-  shared_filter=""
-  if [[ "${lane}" == "pre-pr" ]]; then
-    # Negative terms retain the Full Backend gate's discovery of uncataloged non-release classes while
-    # ensuring a cataloged scheduled/release-only class cannot enter the ordinary PR execution path.
-    for exclusive_class in "${EXCLUSIVE_POSTGRES_CLASSES[@]}"; do
-      shared_filter="${shared_filter:+${shared_filter}&}FullyQualifiedName!~${exclusive_class}."
-    done
-    for class_name in "${release_classes[@]}"; do
-      shared_filter+="&FullyQualifiedName!~${class_name}."
-    done
-    for class_name in "${delegated_scratch_classes[@]}"; do
-      shared_filter+="&FullyQualifiedName!~${class_name}."
-    done
-  else
-    for class_name in "${selected_classes[@]}"; do
-      is_exclusive_postgres_class "${class_name}" && continue
-      shared_filter="${shared_filter:+${shared_filter}|}(FullyQualifiedName~${class_name}.)"
-    done
-  fi
-
-  shard_labels+=("1/2 shared postgres:16-alpine runtime")
-  shard_filters+=("${shared_filter}")
-  shard_labels+=("2/2 exclusive postgres:18-alpine server")
-  exclusive_filter=""
-  for class_name in "${selected_classes[@]}"; do
-    is_exclusive_postgres_class "${class_name}" || continue
-    exclusive_filter="${exclusive_filter:+${exclusive_filter}|}(FullyQualifiedName~${class_name}.)"
-  done
-  shard_filters+=("${exclusive_filter}")
 else
-  shard_labels+=("1/1")
-  shard_filters+=("${filter}")
+  filter="FullyQualifiedName~${class_name}."
 fi
 
 echo "lane: ${lane}"
 echo "catalog: ${CATALOG}"
 echo "selected catalog rows:"
-for index in "${!selected_classes[@]}"; do
-  printf '  %s\t%s\t%s\t%s\t%s\n' \
-    "${selected_classes[$index]}" \
-    "${selected_features[$index]}" \
-    "${selected_kinds[$index]}" \
-    "${selected_gates[$index]}" \
-    "${selected_concerns[$index]}"
-done
+printf '  %s\t%s\t%s\t%s\t%s\n' "${class_name}" "${feature}" "${kind}" "${gate}" "${concerns}"
+echo "expanded filter: ${filter}"
 
-if [[ "${#shard_filters[@]}" -eq 1 ]]; then
-  echo "expanded filter: ${shard_filters[0]:-<unfiltered>}"
-else
-  echo "postgres ownership: selected classes own an exclusive server, so this lane runs as two"
-  echo "  sequential invocations and never holds two database servers at once."
-  for index in "${!shard_filters[@]}"; do
-    echo "expanded filter (${shard_labels[$index]}): ${shard_filters[$index]:-<unfiltered>}"
-  done
-fi
-
-declare -A resource_kinds=()
-all_fast=true
-canonical_selected=false
-for index in "${!selected_kinds[@]}"; do
-  kind="${selected_kinds[$index]}"
-  [[ "${kind}" == "Fast" ]] || all_fast=false
-  [[ "${kind}" == "Canonical" ]] && canonical_selected=true
-  [[ "${kind}" != "Fast" ]] && resource_kinds["${kind}"]=1
-done
-
-if [[ "${#resource_kinds[@]}" -eq 0 ]]; then
-  echo "resource needs: none"
-else
-  resource_summary=""
-  for kind in Database Migration Process Canonical Release; do
-    if [[ -n "${resource_kinds[${kind}]:-}" ]]; then
-      resource_summary="${resource_summary:+${resource_summary},}${kind}"
+if [[ "${kind}" == "Canonical" ]]; then
+  missing=false
+  if [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* \
+    || "${class_name}" == QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests ]]; then
+    if [[ ! -d "${REPO_ROOT}/resources/import-sources/quran-foundation" ]]; then
+      echo "ERROR: canonical foundation source is missing." >&2
+      missing=true
     fi
-  done
-  echo "resource needs: ${resource_summary}"
-fi
-
-run_id="${QURAN_DASHBOARD_TEST_RUN_ID:-$(tr -d '-' < /proc/sys/kernel/random/uuid)}"
-if [[ ! "${run_id}" =~ ^[0-9a-f]{32}$ ]]; then
-  echo "ERROR: QURAN_DASHBOARD_TEST_RUN_ID must be 32 lowercase hexadecimal characters." >&2
-  exit 1
-fi
-export QURAN_DASHBOARD_TEST_RUN_ID="${run_id}"
-export QURAN_DASHBOARD_TEST_DB_PARALLELISM=4
-echo "cleanup run ID: ${QURAN_DASHBOARD_TEST_RUN_ID}"
-
-clean_up_run() {
-  local exit_status=$?
-  trap - EXIT
-  "${SCRIPT_DIR}/cleanup-test-runtime" --run-id "${QURAN_DASHBOARD_TEST_RUN_ID}" || true
-  exit "${exit_status}"
-}
-
-trap clean_up_run EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
-
-canonical_preflight() {
-  local missing=false
-  local require_foundation=false
-  local require_enriched=false
-
-  for class_name in "${selected_classes[@]}"; do
-    [[ "${class_name}" == QuranDashboard.Tests.Quran.Import.* ]] && require_foundation=true
-    [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsRealImportIdentityLinksTests ]] \
-      && require_foundation=true
-    [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests ]] \
-      && require_enriched=true
-  done
-
-  if [[ "${require_foundation}" == true \
-    && ! -d "${REPO_ROOT}/resources/import-sources/quran-foundation" ]]; then
-    echo "ERROR: canonical foundation source is missing." >&2
-    missing=true
+    if [[ ! -f "${REPO_ROOT}/resources/import-sources/masaq-corpus-aligned/masaq-search-words.dashboard-ready.json" ]]; then
+      echo "ERROR: canonical MASAQ search words source is missing." >&2
+      missing=true
+    fi
   fi
-  if [[ "${require_foundation}" == true \
-    && ! -f "${REPO_ROOT}/resources/import-sources/masaq-corpus-aligned/masaq-search-words.dashboard-ready.json" ]]; then
-    echo "ERROR: canonical MASAQ search words source is missing." >&2
-    missing=true
-  fi
-  if [[ "${require_enriched}" == true \
+  if [[ "${class_name}" == QuranDashboard.Tests.Quran.WordsMorphologyEnriched.EnrichedMorphologyArtifactTests \
     && ! -f "${REPO_ROOT}/resources/import-sources/quran-enriched-morphology/corpus-based-enriched-morphology.dashboard-ready.json" ]]; then
-    echo "ERROR: canonical enriched morphology artifact is missing." >&2
+    echo "ERROR: canonical enriched morphology source is missing." >&2
     missing=true
   fi
-  [[ "${missing}" == false ]]
-}
-
-if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
-  if ! canonical_preflight; then
+  if [[ "${list_tests}" == false && "${missing}" == true ]]; then
     echo "canonical data tier: failed preflight" >&2
     exit 1
   fi
-elif [[ "${list_tests}" == true && "${canonical_selected}" == true ]]; then
-  echo "canonical data tier: discovery only"
+  if [[ "${list_tests}" == true ]]; then
+    echo "canonical data tier: discovery only"
+  elif [[ "${missing}" == false ]]; then
+    echo "canonical data tier: selected"
+  fi
 else
   echo "canonical data tier: not selected"
 fi
 
-if [[ "${lane}" == "previous-release-upgrade" || "${lane}" == "full-canonical-recovery" ]] && [[ "${list_tests}" == false ]]; then
-  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
-    echo "ERROR: ${lane} requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
-    exit 1
-  fi
-  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
-    echo "ERROR: ${lane} requires QURAN_TEST_ARTIFACT_ROOT." >&2
-    exit 1
-  fi
-  if [[ "${lane}" == "full-canonical-recovery" && "${QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP:-}" != "yes" ]]; then
-    echo "ERROR: full-canonical-recovery requires QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes." >&2
-    exit 1
-  fi
-  if [[ "${lane}" == "previous-release-upgrade" ]]; then
-    export QURAN_DASHBOARD_PREVIOUS_RELEASE_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-previous-release-upgrade-evidence}"
-  else
-    export QURAN_DASHBOARD_FULL_CANONICAL_RECOVERY_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-full-canonical-recovery-evidence}"
-  fi
-fi
-
-if [[ "${lane}" == "phrase-index-rehearsal" && "${list_tests}" == false ]]; then
-  if [[ "${artifact_execution}" != "scheduled" && "${artifact_execution}" != "release" ]]; then
-    echo "ERROR: phrase-index-rehearsal requires QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled or release." >&2
-    exit 1
-  fi
-  if [[ -z "${QURAN_TEST_ARTIFACT_ROOT:-}" ]]; then
-    echo "ERROR: phrase-index-rehearsal requires QURAN_TEST_ARTIFACT_ROOT." >&2
-    exit 1
-  fi
-  export QURAN_DASHBOARD_PHRASE_INDEX_REHEARSAL_EVIDENCE_DIR="${results_dir:-${TMPDIR:-/tmp}/quran-dashboard-phrase-index-rehearsal-evidence}"
-fi
-
 verbosity="normal"
 hang_timeout="20m"
-if [[ "${lane}" == "phrase-index-rehearsal" || "${lane}" == "full-canonical-recovery" ]]; then
-  hang_timeout="45m"
-fi
-if [[ "${all_fast}" == true ]]; then
+if [[ "${kind}" == "Fast" ]]; then
   verbosity="minimal"
   hang_timeout="5m"
 fi
 
-build_test_args() {
-  local shard_filter="${1:-}"
+test_args=(
+  test
+  "${TEST_PROJECT}"
+  --no-build
+  --no-restore
+  --disable-build-servers
+  -m:1
+  -p:BuildInParallel=false
+  --blame-hang
+  --blame-hang-dump-type
+  none
+  --blame-hang-timeout
+  "${hang_timeout}"
+  -v
+  "${verbosity}"
+  --filter
+  "${filter}"
+)
 
-  test_args=(
-    test
-    "${TEST_PROJECT}"
-    --no-build
-    --no-restore
-    --disable-build-servers
-    -m:1
-    -p:BuildInParallel=false
-    --blame-hang
-    --blame-hang-dump-type
-    none
-    --blame-hang-timeout
-    "${hang_timeout}"
-    -v
-    "${verbosity}"
-  )
-
-  [[ -n "${shard_filter}" ]] && test_args+=(--filter "${shard_filter}")
-  [[ "${list_tests}" == true ]] && test_args+=(--list-tests)
-  if [[ -n "${results_dir}" ]]; then
-    test_args+=(--results-directory "${results_dir}" --logger "trx;LogFileName=backend-tests.trx")
-  fi
-  return 0
-}
-
-# The previous shard's test host has exited, but Docker removes its container asynchronously. Waiting for
-# zero running project PostgreSQL containers is what makes "two servers never overlap" an observed fact
-# rather than an assumption; the reaper carries Testcontainers labels, not these, so it is never counted.
-await_free_postgres_runtime() {
-  command -v docker >/dev/null 2>&1 || return 0
-  docker info >/dev/null 2>&1 || return 0
-
-  local waited=0
-  local running
-  while true; do
-    running="$(docker ps -q "${POSTGRES_CONTAINER_FILTERS[@]}" 2>/dev/null || true)"
-    if [[ -z "${running}" ]]; then
-      echo "postgres runtime before next shard: free after ${waited}s"
-      return 0
-    fi
-    if [[ "${waited}" -ge "${SHARD_HANDOVER_TIMEOUT_SECONDS}" ]]; then
-      break
-    fi
-    sleep 1
-    waited=$((waited + 1))
-  done
-
-  echo "ERROR: a project PostgreSQL container was still running ${waited}s after the previous shard exited." >&2
-  echo "       The next shard would start a second database server, so the lane stops here." >&2
-  docker ps --no-trunc --format '  {{.ID}}  {{.Image}}  {{.Status}}  {{.Names}}' \
-    "${POSTGRES_CONTAINER_FILTERS[@]}" >&2
-  return 1
-}
-
-build_test_args "${shard_filters[0]}"
+[[ "${list_tests}" == true ]] && test_args+=(--list-tests)
+if [[ -n "${results_dir}" ]]; then
+  test_args+=(--results-directory "${results_dir}" --logger "trx;LogFileName=backend-tests.trx")
+fi
 
 if [[ "${list_tests}" == true ]]; then
   set +e
@@ -782,12 +353,7 @@ if [[ "${list_tests}" == true ]]; then
     exit 1
   fi
 
-  declare -A selected_class_set=()
   declare -A discovered_class_set=()
-  for class_name in "${selected_classes[@]}"; do
-    selected_class_set["${class_name}"]=1
-  done
-
   while IFS= read -r discovered_test; do
     discovered_test="${discovered_test#"${discovered_test%%[![:space:]]*}"}"
     [[ "${discovered_test}" == QuranDashboard.Tests.* ]] || continue
@@ -796,120 +362,29 @@ if [[ "${list_tests}" == true ]]; then
     discovered_class_set["${discovered_class}"]=1
   done <<< "${discovery_output}"
 
-  discovery_valid=true
-  for class_name in "${selected_classes[@]}"; do
-    if [[ -z "${discovered_class_set[${class_name}]:-}" ]]; then
-      echo "ERROR: selected catalog class discovered no tests: ${class_name}" >&2
-      discovery_valid=false
+  if [[ -z "${discovered_class_set[${class_name}]:-}" ]]; then
+    echo "ERROR: selected catalog class discovered no tests: ${class_name}" >&2
+    exit 1
+  fi
+  for discovered_class in "${!discovered_class_set[@]}"; do
+    if [[ "${discovered_class}" != "${class_name}" ]]; then
+      echo "ERROR: filter discovered a class outside the selected catalog rows: ${discovered_class}" >&2
+      exit 1
     fi
   done
-  for class_name in "${!discovered_class_set[@]}"; do
-    if [[ -z "${selected_class_set[${class_name}]:-}" ]]; then
-      echo "ERROR: filter discovered a class outside the selected catalog rows: ${class_name}" >&2
-      discovery_valid=false
-    fi
-  done
-
-  [[ "${discovery_valid}" == true ]] || exit 1
   exit 0
 fi
 
-# The shard split above is by class: one shard runs everything, or shard 2 runs exclusive-PostgreSQL
-# classes and shard 1 runs the rest. That is what makes per-shard canonical attribution possible.
-shard_runs_class() {
-  local shard_index="$1"
-  local class_name="$2"
+set +e
+dotnet "${test_args[@]}"
+test_status=$?
+set -e
 
-  if [[ "${#shard_filters[@]}" -eq 1 ]]; then
-    return 0
-  fi
-  if [[ "${shard_index}" -eq 1 ]]; then
-    is_exclusive_postgres_class "${class_name}"
-  else
-    ! is_exclusive_postgres_class "${class_name}"
-  fi
-}
-
-shard_carries_canonical() {
-  local shard_index="$1"
-  local index
-
-  for index in "${!selected_classes[@]}"; do
-    [[ "${selected_kinds[$index]}" == "Canonical" ]] || continue
-    if shard_runs_class "${shard_index}" "${selected_classes[$index]}"; then
-      return 0
-    fi
-  done
-
-  return 1
-}
-
-test_status=0
-declare -a shard_statuses=()
-declare -a shard_executed=()
-for index in "${!shard_filters[@]}"; do
-  shard_statuses[$index]=0
-  shard_executed[$index]=false
-done
-
-for index in "${!shard_filters[@]}"; do
-  if [[ "${index}" -gt 0 ]]; then
-    if ! await_free_postgres_runtime; then
-      test_status=1
-      break
-    fi
-  fi
-
-  if [[ "${#shard_filters[@]}" -gt 1 ]]; then
-    echo "running shard ${shard_labels[$index]}"
-  fi
-
-  build_test_args "${shard_filters[$index]}"
-  set +e
-  dotnet "${test_args[@]}"
-  shard_status=$?
-  set -e
-
-  shard_executed[$index]=true
-  shard_statuses[$index]="${shard_status}"
-
-  if [[ "${#shard_filters[@]}" -gt 1 ]]; then
-    echo "shard ${shard_labels[$index]}: exit ${shard_status}"
-  fi
-  if [[ "${shard_status}" -ne 0 && "${test_status}" -eq 0 ]]; then
-    test_status="${shard_status}"
-  fi
-done
-
-# This line is the canonical tier's skip accounting (tests/QuranDashboard.Tests/README.md), scoped to the shards that
-# actually carry Kind=Canonical classes: canonical classes are not confined to the exclusive shard - every
-# Quran.Import class is one, and they run on the shared runtime. "ran" therefore requires every
-# canonical-bearing shard to have both started AND exited zero; a shard that never started or came back
-# non-zero prints "failed", because an agent quoting "canonical data tier: ran" as its canonical evidence
-# must never be quoting a run whose canonical shard failed. The per-shard line below is the attribution the
-# combined status could not give: it names each canonical-bearing shard and its own exit code.
-if [[ "${list_tests}" == false && "${canonical_selected}" == true ]]; then
-  canonical_shard_summary=""
-  canonical_ran=true
-  for index in "${!shard_filters[@]}"; do
-    shard_carries_canonical "${index}" || continue
-
-    if [[ "${shard_executed[$index]}" == true ]]; then
-      shard_report="${shard_labels[$index]} exit ${shard_statuses[$index]}"
-      [[ "${shard_statuses[$index]}" -eq 0 ]] || canonical_ran=false
-    else
-      shard_report="${shard_labels[$index]} did not run"
-      canonical_ran=false
-    fi
-    canonical_shard_summary="${canonical_shard_summary:+${canonical_shard_summary}; }${shard_report}"
-  done
-
-  if [[ "${canonical_ran}" == true ]]; then
+if [[ "${kind}" == "Canonical" ]]; then
+  if [[ "${test_status}" -eq 0 ]]; then
     echo "canonical data tier: ran"
-    echo "canonical shard status: ${canonical_shard_summary}"
   else
     echo "canonical data tier: failed" >&2
-    echo "canonical shard status: ${canonical_shard_summary}" >&2
   fi
 fi
 

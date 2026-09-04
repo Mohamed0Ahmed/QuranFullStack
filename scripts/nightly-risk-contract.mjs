@@ -5,7 +5,6 @@ const PHASES = new Set([
   'preparation',
   'browser-provisioning',
   'browser-execution',
-  'artifact-verification',
   'operational-risk',
 ]);
 const RESULTS_PLACEHOLDER = '{NIGHTLY_RESULTS_DIR}';
@@ -22,10 +21,9 @@ const REQUIRED_BROWSER_JOURNEYS = [
 const REQUIRED_COMMANDS = new Map([
   ['controlled-browser-provisioning', { executable: 'npm', arguments: ['run', 'e2e:provision'] }],
   ['full-chromium-suite', { executable: 'npm', arguments: ['run', 'e2e'] }],
-  ['verify-full-canonical-artifact', { executable: 'Backend/scripts/test-artifacts', arguments: ['verify-content-addressed', '--artifact', 'quran-canonical'] }],
-  ['phrase-index-build-activation', { executable: 'Backend/scripts/test-backend', arguments: ['phrase-index-rehearsal', '--no-build', '--results-dir', '{NIGHTLY_RESULTS_DIR}/phrase-index-rehearsal'] }],
-  ['abwab-snapshot-protections', { executable: 'Backend/scripts/test-backend', arguments: ['feature', '--class', 'QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests', '--no-build', '--results-dir', '{NIGHTLY_RESULTS_DIR}/abwab-snapshot'] }],
-  ['quran-topics-import-protections', { executable: 'Backend/scripts/test-backend', arguments: ['feature', '--class', 'QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests', '--no-build', '--results-dir', '{NIGHTLY_RESULTS_DIR}/quran-topics'] }],
+  ['phrase-index-build-activation', { executable: 'node', arguments: ['scripts/test', 'focused', '--backend-class', 'QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests', '--no-build', '--authorize-full-data'] }],
+  ['abwab-snapshot-protections', { executable: 'node', arguments: ['scripts/test', 'focused', '--backend-class', 'QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests', '--no-build'] }],
+  ['quran-topics-import-protections', { executable: 'node', arguments: ['scripts/test', 'focused', '--backend-class', 'QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests', '--no-build'] }],
 ]);
 
 export function loadNightlyRiskManifest(path, repositoryRoot) {
@@ -46,7 +44,7 @@ export function validateNightlyRiskManifest(manifest, repositoryRoot) {
   requireCondition(manifest.providerNeutral === true, 'providerNeutral must be true.');
   requirePositiveInteger(manifest.timeoutSeconds, 'timeoutSeconds');
   requireCondition(manifest.inputContract && typeof manifest.inputContract === 'object', 'inputContract is required.');
-  for (const input of ['artifactRoot', 'resultsDirectory', 'executionKind']) {
+  for (const input of ['resultsDirectory', 'executionKind']) {
     requireNonEmptyString(manifest.inputContract[input], `inputContract.${input}`);
   }
   requireCondition(
@@ -141,10 +139,12 @@ function validateRequiredNightlyCommands(manifest, commandIds) {
   );
   for (const command of manifest.commands.filter((command) => command.phase === 'operational-risk')) {
     requireCondition(
-      command.testEvidence?.lane === command.arguments[0]
-        && typeof command.testEvidence.class === 'string'
-        && command.testEvidence.class.startsWith('QuranDashboard.Tests.'),
-      `${command.id} must declare its expected lane and test class.`,
+      command.executable === 'node'
+        && command.arguments[0] === 'scripts/test'
+        && command.arguments[1] === 'focused'
+        && command.arguments.includes('--backend-class')
+        && command.arguments.includes('--no-build'),
+      `${command.id} must invoke scripts/test focused --backend-class.`,
     );
     requireCondition(
       Array.isArray(command.dependsOn) && command.dependsOn.includes('controlled-browser-provisioning'),

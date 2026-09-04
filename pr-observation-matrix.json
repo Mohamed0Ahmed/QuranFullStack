@@ -20,10 +20,8 @@
         "queueTimeIncluded": false
       },
       "inputContract": {
-        "candidate": "full-canonical",
-        "lane": "Backend/scripts/test-backend pre-pr",
-        "compactFixtureException": null,
-        "exceptionNamingRequirement": "Any future compact-fixture exception must name the omitted full-canonical classes and preserve them in a scheduled or release lane; it must not be relabeled as the full pre-pr lane."
+        "candidate": "quran_dashboard_test",
+        "lane": "Backend/scripts/test-backend pre-pr"
       },
       "commands": [
         {

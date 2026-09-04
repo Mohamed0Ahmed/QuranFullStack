@@ -19,11 +19,8 @@ public sealed class TestRuntimeAdministrationFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        var serverAdministratorPassword = $"server-administrator-{Guid.NewGuid():N}";
         server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
-            nameof(TestRuntimeAdministrationFixture),
-            "postgres:18-alpine",
-            builder => builder.WithPassword(serverAdministratorPassword));
+            nameof(TestRuntimeAdministrationFixture));
         var containerConnection = new NpgsqlConnectionStringBuilder(server.ConnectionString)
         {
             Pooling = false,

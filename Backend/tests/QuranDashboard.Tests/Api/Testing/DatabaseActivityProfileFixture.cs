@@ -28,8 +28,7 @@ public sealed class DatabaseActivityProfileFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
-            nameof(DatabaseActivityProfileFixture),
-            "postgres:18-alpine");
+            nameof(DatabaseActivityProfileFixture));
         var containerConnection = new NpgsqlConnectionStringBuilder(server.ConnectionString)
         {
             Pooling = false,
@@ -107,7 +106,7 @@ public sealed class DatabaseActivityProfileFixture : IAsyncLifetime
                 "--login",
                 login,
                 "--run-id",
-                PostgreSqlResourceLabels.RunId,
+                "profile-fixture",
             ],
             output,
             error,

@@ -397,8 +397,7 @@ public sealed class TestRuntimeScratchFixture : IAsyncLifetime
     {
         server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
             nameof(TestRuntimeScratchFixture),
-            "postgres:18-alpine",
-            builder => builder.WithPassword(CredentialSentinel));
+            CredentialSentinel);
         var containerConnection = new NpgsqlConnectionStringBuilder(server.ConnectionString)
         {
             Database = "postgres",

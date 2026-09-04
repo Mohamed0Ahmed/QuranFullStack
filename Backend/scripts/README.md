@@ -12,14 +12,8 @@ Short commands to build/run the backend API and Angular dev server from any dire
 | `export-swagger` | Builds the API (Release) without build servers, defaults the Swagger host to `Development` for startup-option validation, and writes the OpenAPI spec to `Frontend/quran-dashboard-ui/openapi/swagger.json` via the Swashbuckle CLI (`Backend/dotnet-tools.json` manifest); no running server or database needed |
 | `check-api-contract` | Runs `export-swagger`, regenerates the frontend API models (`npm run generate:api`), then fails with `git diff --exit-code` if either committed output is stale. It checks the spec and the generated client — the two things a caller breaks against — and deliberately not the browsable Redoc bundle, which is untracked and therefore invisible to `git diff` |
 | `check-pending-model --build\|--no-build` | Reports whether the EF Core model has pending changes. Never adds and never applies a migration |
-| `create-smoke-dump` | Legacy scheduled/release helper for the still-unmigrated PhraseSearch rehearsal dump; ordinary canonical smoke reads use `quran_dashboard_test` and never restore it |
-| `test-artifacts status\|verify [--lane LANE\|--artifact ID]` | Read-only inspection of the tracked test-artifact lock; `verify` adds hashes and strict external-manifest checks |
-| `test-artifacts provision-full-canonical\|verify-full-canonical ...` | Local-first scheduled/release full-canonical provision-once and sealed shared-state verification; `provision` requires `QURAN_TEST_ARTIFACT_ROOT` |
-| `test-artifacts previous-release-upgrade` | Read-only fail-closed verification of the adopted previous-release declaration, local Git inventories, and locked representative artifact; it never opens or mutates a database |
-| `test-backend full-canonical --build` | Runs the local-first full-canonical trust, provision-once, and shared-state contract tests |
-| `test-backend full-canonical-recovery --build` | Scheduled/release-only isolated PostgreSQL 18 source-to-target Quran backup/restore rehearsal; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release`, `QURAN_TEST_ARTIFACT_ROOT`, and `QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP=yes` |
-| `test-backend previous-release-upgrade --build` | Scheduled/release-only private PostgreSQL 18 rehearsal of the supplemental five-to-six upgrade; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release` and `QURAN_TEST_ARTIFACT_ROOT` |
-| `test-backend phrase-index-rehearsal --build` | Scheduled/release-only disposable PostgreSQL 18 full-catalogue PhraseSearch build rehearsal; requires `QURAN_DASHBOARD_ARTIFACT_EXECUTION=scheduled|release` and `QURAN_TEST_ARTIFACT_ROOT` |
+| `test-backend feature --class\|--test --build\|--no-build` | Thin VSTest delegate invoked by repository-root `scripts/test` |
+| `test-backend pre-pr` | Delegates to repository-root `scripts/test pre-pr` |
 | `wipe-abwab` | Empties the literal Abwab and Abwab-owned Linking reset closure on a local database, leaving canonical `quran_*`, access, and linking-workspace data intact |
 | `add-mig <Name>` | `dotnet ef migrations add <Name>` against `Infrastructure` with `Api` as startup project |
 | `update-db` | `dotnet ef database update` — applies pending migrations to the configured database |
@@ -46,29 +40,14 @@ against it.
 a full reset; prefer `wipe-abwab` when the goal is only to clear Abwab rows. A full reset also
 discards canonical `quran_*` data, which then has to be re-imported.
 
-## Verifying locked test artifacts
+## Verifying locked NuGet restore
 
 Backend projects opt into NuGet lock files through `Directory.Build.props`. Controlled test
 provisioning uses `dotnet restore QuranDashboard.sln --locked-mode`; dependency changes therefore
 require reviewed `packages.lock.json` updates before sealed execution.
 
-The repository-root `test-artifacts.lock.json` and the schemas under `docs/testing/` are the tracked
-trust contract. These commands are read-only: they do not fetch, extract, restore, refresh, publish,
-or connect to PostgreSQL.
-
-```bash
-./scripts/test-artifacts status
-./scripts/test-artifacts status --lane critical
-./scripts/test-artifacts verify --artifact compact-cross-stack-base
-```
-
-`status` checks strict lock shape, required selection, staged presence and size, and repository
-migration freshness. `verify` additionally checks every SHA-256, strictly parses the hashed external
-manifest, validates PostgreSQL table identifiers, and compares manifest identity, migration,
-producer, table scope, provenance, sentinels, and PhraseSearch expectations with the lock. An explicit
-lane or artifact that has no lock entry fails closed. The initial lock intentionally has no entries;
-the compact-fixture implementation adds its reviewed artifact rather than predeclaring invented
-hashes or Quran sentinels.
+Ordinary Backend and Playwright database tests use `quran_dashboard_test` through TestRuntime. There
+is no dump restore, compact fixture, or PostgreSQL container fallback.
 
 ## Exporting the current Railway Abwab snapshot
 
@@ -218,7 +197,7 @@ stops the run; the evidence and recovery marker remain, and the report never cla
 ## Rebuilding the local database from nothing
 
 The reset → migrate → seed runbook. It lived under `Backend/report/` until 2026-08-04, where it
-went stale and cost one confusing `create-smoke-dump` failure; it is here now, next to the
+went stale and cost one confusing dump-generation failure; it is here now, next to the
 commands it drives.
 
 **Provide the connection string via the `ConnectionStrings__QuranDashboardDb` environment
@@ -239,7 +218,7 @@ at migration head. Run `clean-local-build` first if stale sandbox assets are in 
 is whatever is in `infrastructure/QuranDashboard.Infrastructure/Migrations/`, ordered by its
 timestamp prefix; `dotnet ef database update` applies them in exactly that order. A written list
 is what went stale before — it claimed 15 migrations long after the tree held more, and
-`create-smoke-dump` refuses to run when the applied count and the file count disagree, so the
+TestRuntime inspect refuses to treat a drifted database as the persistent Test Database, so the
 document sent an operator hunting for a database problem that did not exist. That guard is the
 enforcement; read the directory for the list.
 
@@ -272,11 +251,10 @@ Verify the dependency claim rather than trusting this list: each importer's reso
 hard checks that enforce it are in the matching
 `Persistence/DataPipelines/Quran/<pipeline>/` validator.
 
-### 3. Refresh the smoke dump
+### 3. Refresh the persistent Test Database
 
-After a reseed, regenerate the canonical dump the backend smoke data tier restores — see
-`create-smoke-dump` below. Its migration-count and baseline-row guards are what tell you the
-reseed actually landed.
+After a Development Database reseed, refresh `quran_dashboard_test` with the explicit TestRuntime
+`refresh` command. Ordinary tests never rebuild it as a side effect of a test run.
 
 **What is not verified here.** No end-to-end reset → full reseed of the whole chain has ever been
 captured in one run. The reset → migrate → `import-foundation` → `rebuild-words` head of the chain
@@ -333,65 +311,6 @@ Never paste the resolved connection or a raw remote storage proof into a report.
 formula and measured deployment guidance live in
 [`Backend/README.md` §PhraseSearch build capacity](../README.md#phrasesearch-build-capacity).
 
-### `create-smoke-dump`
-
-```bash
-./scripts/create-smoke-dump --yes [--allow-remote]
-```
-
-| Flag | Effect |
-|------|--------|
-| `--yes` | Required. Without it the script prints the dump and manifest it would replace, plus the source database, and exits non-zero |
-| `--allow-remote` | Required to target any host other than `localhost` / `127.0.0.1`. Without it a non-local host is refused outright, so a deployed database cannot be dumped by accident |
-
-Guards, each of which exits non-zero and dumps nothing:
-
-- the applied `__EFMigrationsHistory` count must equal the number of migration files in
-  `infrastructure/QuranDashboard.Infrastructure/Migrations/` — a database behind or ahead of
-  the tree produces data that does not fit the schema the tier migrates to;
-- the five baseline tables must match the canonical counts the script pins
-  (`quran_roots`, `quran_lemmas`, `quran_stems`, `quran_word_morphology`,
-  `quran_word_morphology_segments`). Restore the canonical data rather than relaxing a
-  baseline.
-
-The dump is written to a temp file in the destination directory and renamed into place, so an
-interrupted run never leaves a truncated archive where the tests expect a complete one. The
-manifest records the migration head, the dump's sha256, the `pg_dump` version, and the row count
-of every dumped non-PhraseSearch `quran_*` table; the smoke data tier verifies the first two before
-it starts a container.
-
-`create-smoke-dump` deliberately excludes **DATA** for every `public.quran_phrase_*` table from
-both the archive and manifest while migrations continue to own the schema. A fresh migrated
-restore therefore keeps the seeded singleton `quran_phrase_index_state` row and no active,
-previous, build, occurrence, or other derived PhraseSearch rows. This is an unavailable index,
-not an empty successful index: every catalogued PhraseSearch route must answer `503` until an
-operator runs `build-phrase-index`. The exclusion is implemented in
-[`create-smoke-dump:161`](create-smoke-dump#L161) and asserted across the restored tables and all
-ten routes by [`SmokeDataReadTests.cs:28`](../tests/QuranDashboard.Tests/Smoke/Data/SmokeDataReadTests.cs#L28)
-and [`SmokeRouteCatalog.cs:137`](../tests/QuranDashboard.Tests/Smoke/SmokeRouteCatalog.cs#L137).
-
-Before replacing an existing canonical artifact, copy both the dump and manifest to a recoverable
-operator backup, regenerate only from a source at the repository migration head, and compare every
-non-PhraseSearch manifest table count with the prior artifact. The five built-in baseline counts
-are necessary but do not prove that unrelated canonical families survived. The 2026-08-26 artifact
-repair restored the prior artifact into a disposable database, migrated it to current head, and
-preserved all 32 non-PhraseSearch manifest counts before regenerating with the PhraseSearch
-exclusion; its tafsir source, entry, and ayah-entry counts remained 84, 382,704, and 523,824.
-That is repair provenance for the external operator artifact, not a permanent promise that later
-canonical imports can never change those counts.
-
-Connection string resolution, in order: `ConnectionStrings__QuranDashboardDb`, then the
-`ConnectionStrings:QuranDashboardDb` user secret of `api/QuranDashboard.Api`.
-
-**Prerequisite: `pg_dump` 18 or newer**, matching the local PostgreSQL server. The smoke data
-fixture restores into `postgres:18-alpine` for the same reason — a pg16 `pg_restore` rejects an
-archive written by a newer `pg_dump`.
-
-`resources/` is gitignored: the artifact, its manifest, operator backups, and build reports are
-external operator products, regenerated or retained outside Git rather than committed. Do not put
-connection strings, raw remote storage proofs, temporary paths, or volatile PhraseSearch build IDs
-into tracked documentation.
-
 ### `wipe-abwab`
 
 ```bash
@@ -404,7 +323,7 @@ jobs, prepared-state tables, contributions, units, and door ayah/word projection
 workspaces, `quran_*`, users, roles, and permissions are outside the closure. A schema change that
 cannot survive existing Abwab rows therefore has a sanctioned local reset. Abwab content is
 authored curation data: preserve and restore it through the v4 Abwab snapshot workflow; the
-canonical dump covers `quran_*` only.
+canonical Quran data lives in `quran_dashboard` / `quran_dashboard_test`, not in a dump.
 
 That hazard is not hypothetical: `20260802062011_RequireAbwabDoorSection` makes
 `abwab_doors.section_id` `NOT NULL` with no backfill and no guard
@@ -423,8 +342,8 @@ restore needs the NULL rows resolved by hand first.
 
 Guards, each of which exits non-zero:
 
-- **local only.** Any host other than `localhost` / `127.0.0.1` is refused. Deliberately
-  stricter than `create-smoke-dump`: there is no `--allow-remote` escape, because a deployed
+- **local only.** Any host other than `localhost` / `127.0.0.1` is refused. There is no
+  `--allow-remote` escape, because a deployed
   database must not be wipeable by any flag this script accepts;
 - **a literal closure allowlist** — no wildcard, no catalog query. It includes every table whose
   rows are owned by an Abwab door and excludes canonical Quran, access, and linking-workspace
@@ -432,7 +351,7 @@ Guards, each of which exits non-zero:
 - **a post-wipe tripwire**: `quran_surahs` must still hold 114 rows. It does not prevent damage —
   it refuses to let damage pass silently.
 
-Connection string resolution matches `create-smoke-dump`: `ConnectionStrings__QuranDashboardDb`,
+Connection string resolution: `ConnectionStrings__QuranDashboardDb`,
 then the `ConnectionStrings:QuranDashboardDb` user secret of `api/QuranDashboard.Api`.
 
 Typical daily flow:

@@ -56,7 +56,7 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 - In `ConfigureTestServices`, override **only true boundaries** (swap external HTTP/LLM clients for fakes); keep the real pipeline and the real database.
 - Assert on the HTTP status code **plus** the deserialized `ApiResponse<T>` — `IsSuccess`, `Message`, `Data`, `Errors` — matching `Contracts/ApiResponse.cs`. Do not assert internal call chains.
 
-**Database — real PostgreSQL via Testcontainers:**
+**Database — real PostgreSQL via the persistent Test Database or runner-owned scratch:**
 
 - When a **query, migration, mapping, constraint, or persistence behavior is the subject**, run against real Postgres, applying the real EF Core migrations, seeding via fixtures, and isolating each test.
 - Mocking the `DbContext` here tests nothing (Rules 2 and 9).
@@ -64,7 +64,7 @@ Prefer integration tests where the real bugs live: the HTTP boundary and persist
 **SQLite fallback — acceptable / not acceptable:**
 
 - **Acceptable** only for **provider-independent** logic: persistence is an incidental side effect, the assertion is about your behavior (not Postgres semantics), and the queries use only portable features. The EF Core **SQLite** provider runs real SQL and migrations, so it is a reasonable lightweight option for simple, portable CRUD round-trips.
-- **Not acceptable** when behavior depends on **PostgreSQL-specific** semantics: provider-specific SQL or migrations, JSONB, full-text search, collation / case-insensitivity (this matters for Arabic text), `citext`, array columns, `ILIKE`, Postgres functions, indexing behavior, concurrency tokens, or any query semantics that differ across providers. SQLite behaves differently and gives false confidence — use Testcontainers Postgres for these.
+- **Not acceptable** when behavior depends on **PostgreSQL-specific** semantics: provider-specific SQL or migrations, JSONB, full-text search, collation / case-insensitivity (this matters for Arabic text), `citext`, array columns, `ILIKE`, Postgres functions, indexing behavior, concurrency tokens, or any query semantics that differ across providers. SQLite behaves differently and gives false confidence — use the persistent Test Database or an empty-scratch rehearsal for these.
 - **Never** use the **EF Core In-Memory provider** for query correctness: it is not a relational store, ignores constraints and SQL translation, and is explicitly not recommended for testing query behavior. At most use it for trivial non-query wiring.
 
 ## Rule 3: Data-driven variants

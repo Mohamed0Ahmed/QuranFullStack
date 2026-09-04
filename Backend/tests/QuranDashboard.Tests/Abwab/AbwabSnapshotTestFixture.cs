@@ -4,6 +4,8 @@ using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.DataImporter.Import.AbwabSnapshotExport;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
+using QuranDashboard.TestRuntime;
+using QuranDashboard.Tests.TestRuntime;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Abwab;
@@ -87,23 +89,41 @@ public sealed class AbwabSnapshotTestFixture : IAsyncLifetime
     private static string TruncateSnapshotTablesSql =>
         $"TRUNCATE TABLE public.linking_units, public.users, {string.Join(", ", AbwabSnapshotContract.Tables.Select(table => $"public.\"{table}\""))} RESTART IDENTITY CASCADE";
 
-    private PostgreSqlDatabaseLease? sourceDatabase;
-    private PostgreSqlDatabaseLease? targetDatabase;
+    private string? sourceConnectionString;
+    private string? targetConnectionString;
+    private string? targetDatabaseName;
+    private string? maintenanceConnectionString;
     private WebApplicationFactory<HealthController>? apiFactory;
     private string? temporaryDirectory;
 
-    public string SourceConnectionString => sourceDatabase?.ConnectionString
+    public string SourceConnectionString => sourceConnectionString
         ?? throw new InvalidOperationException($"{nameof(InitializeAsync)} has not run yet.");
 
-    public string TargetConnectionString => targetDatabase?.ConnectionString
+    public string TargetConnectionString => targetConnectionString
         ?? throw new InvalidOperationException($"{nameof(InitializeAsync)} has not run yet.");
 
     public async Task InitializeAsync()
     {
-        sourceDatabase = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            $"{nameof(AbwabSnapshotTestFixture)}Source");
-        targetDatabase = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            $"{nameof(AbwabSnapshotTestFixture)}Target");
+        var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(TestRuntimeTestPaths.ContractPath);
+        sourceConnectionString = scratch.ConnectionString;
+        await MigrateAsync(sourceConnectionString);
+
+        var source = new NpgsqlConnectionStringBuilder(sourceConnectionString);
+        targetDatabaseName = PostgreSqlDatabaseName.CreateForOwner($"{nameof(AbwabSnapshotTestFixture)}Target");
+        maintenanceConnectionString = new NpgsqlConnectionStringBuilder(sourceConnectionString)
+        {
+            Database = "postgres",
+            Pooling = false,
+        }.ConnectionString;
+        await ExecuteAsync(
+            maintenanceConnectionString,
+            $"CREATE DATABASE {PostgreSqlDatabaseName.Quote(targetDatabaseName)} TEMPLATE template0");
+        targetConnectionString = new NpgsqlConnectionStringBuilder(sourceConnectionString)
+        {
+            Database = targetDatabaseName,
+        }.ConnectionString;
+        await MigrateAsync(targetConnectionString);
+
         temporaryDirectory = Path.Combine(Path.GetTempPath(), $"abwab-snapshot-tests-{Guid.NewGuid():N}");
         Directory.CreateDirectory(temporaryDirectory);
         apiFactory = SmokeApiHost.Build(
@@ -123,14 +143,24 @@ public sealed class AbwabSnapshotTestFixture : IAsyncLifetime
         }
         finally
         {
-            if (sourceDatabase is not null)
+            if (targetConnectionString is not null)
             {
-                await sourceDatabase.DisposeAsync();
+                NpgsqlConnection.ClearPool(new NpgsqlConnection(targetConnectionString));
             }
 
-            if (targetDatabase is not null)
+            if (maintenanceConnectionString is not null && targetDatabaseName is not null)
             {
-                await targetDatabase.DisposeAsync();
+                await ExecuteAsync(
+                    maintenanceConnectionString,
+                    $"""
+                    SELECT pg_terminate_backend(pid)
+                    FROM pg_stat_activity
+                    WHERE datname = {PostgreSqlLiteral(targetDatabaseName)}
+                      AND pid <> pg_backend_pid()
+                    """);
+                await ExecuteAsync(
+                    maintenanceConnectionString,
+                    $"DROP DATABASE IF EXISTS {PostgreSqlDatabaseName.Quote(targetDatabaseName)}");
             }
 
             if (temporaryDirectory is not null)
@@ -283,6 +313,17 @@ public sealed class AbwabSnapshotTestFixture : IAsyncLifetime
         return await command.ExecuteScalarAsync() as string
             ?? throw new InvalidOperationException("The migrated disposable target has no migration history.");
     }
+
+    private static async Task MigrateAsync(string connectionString)
+    {
+        await using var dbContext = new QuranDashboardDbContext(
+            new DbContextOptionsBuilder<QuranDashboardDbContext>()
+                .UseNpgsql(connectionString)
+                .Options);
+        await dbContext.Database.MigrateAsync();
+    }
+
+    private static string PostgreSqlLiteral(string value) => $"'{value.Replace("'", "''")}'";
 
     private static async Task ExecuteAsync(string connectionString, string sql)
     {

@@ -105,7 +105,6 @@ try {
 
     console.log(`[nightly-risk] phase=${command.phase} command=${command.id} started`);
     const result = await runCommand(command, Math.min(remainingMs, command.timeoutSeconds * 1_000), {
-      artifactRoot: options.artifactRoot,
       attempt: 'primary',
       executionHome,
       resultsDirectory: options.resultsDirectory,
@@ -173,7 +172,6 @@ process.exitCode = result.status === 'passed' ? 0 : 1;
 
 function parseArguments(arguments_) {
   const parsed = {
-    artifactRoot: '',
     diagnosticRetry: false,
     dryRun: false,
     manifestPath: DEFAULT_MANIFEST_PATH,
@@ -181,8 +179,7 @@ function parseArguments(arguments_) {
   };
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
-    if (argument === '--artifact-root') parsed.artifactRoot = requireValue(arguments_, ++index, argument);
-    else if (argument === '--results-dir') parsed.resultsDirectory = resolve(process.cwd(), requireValue(arguments_, ++index, argument));
+    if (argument === '--results-dir') parsed.resultsDirectory = resolve(process.cwd(), requireValue(arguments_, ++index, argument));
     else if (argument === '--contract-test') {
       const fixture = requireValue(arguments_, ++index, argument);
       if (!CONTRACT_TEST_MANIFESTS.has(fixture)) throw new Error(`Unknown contract test fixture: ${fixture}`);
@@ -196,7 +193,6 @@ function parseArguments(arguments_) {
     } else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!parsed.resultsDirectory) throw new Error('--results-dir is required.');
-  if (!parsed.dryRun && !parsed.artifactRoot) throw new Error('--artifact-root is required for execution.');
   return parsed;
 }
 
@@ -207,7 +203,7 @@ function requireValue(arguments_, index, option) {
 }
 
 function printUsage() {
-  console.log('Usage: node scripts/run-nightly-risk-lane.mjs --artifact-root PATH --results-dir PATH [--diagnostic-retry] [--dry-run]');
+  console.log('Usage: node scripts/run-nightly-risk-lane.mjs --results-dir PATH [--diagnostic-retry] [--dry-run]');
 }
 
 function notRunCommand(command, reason) {
@@ -240,7 +236,6 @@ async function runDiagnosticRetry({ command, manifest: _manifest, options: optio
 
   console.log(`[nightly-risk] diagnostic command=${command.id} started`);
   const retry = await runCommand(command, Math.min(remainingMs, command.timeoutSeconds * 1_000), {
-    artifactRoot: options_.artifactRoot,
     attempt: 'diagnostic',
     executionHome: home,
     resultsDirectory: options_.resultsDirectory,
@@ -338,7 +333,7 @@ function removeUnverifiedBrowserEvidence(resultsDirectory, attempt) {
   rmSync(resolve(resultsDirectory, 'attempts', attempt), { force: true, recursive: true });
 }
 
-function createCommandEnvironment({ artifactRoot, attempt, executionHome, resultsDirectory }, command) {
+function createCommandEnvironment({ attempt, executionHome, resultsDirectory }, command) {
   const environment = {
     HOME: executionHome,
     PATH: process.env.PATH ?? '',
@@ -353,11 +348,12 @@ function createCommandEnvironment({ artifactRoot, attempt, executionHome, result
   };
   if (typeof process.env.LANG === 'string') environment.LANG = process.env.LANG;
   if (typeof process.env.LC_ALL === 'string') environment.LC_ALL = process.env.LC_ALL;
-  if (command.id === 'verify-full-canonical-artifact' || command.id === 'phrase-index-build-activation') {
-    environment.QURAN_DASHBOARD_ARTIFACT_EXECUTION = 'scheduled';
-    environment.QURAN_TEST_ARTIFACT_ROOT = artifactRoot;
+  if (typeof process.env.ConnectionStrings__QuranDashboardTest === 'string') {
+    environment.ConnectionStrings__QuranDashboardTest = process.env.ConnectionStrings__QuranDashboardTest;
   }
-  if (command.id === 'verify-full-canonical-artifact') environment.QDB_TEST_ARTIFACTS_SEALED = '1';
+  if (typeof process.env.ConnectionStrings__QuranDashboardRehearsal === 'string') {
+    environment.ConnectionStrings__QuranDashboardRehearsal = process.env.ConnectionStrings__QuranDashboardRehearsal;
+  }
   environment.QDB_NIGHTLY_ATTEMPT = attempt;
   environment.QDB_NIGHTLY_RESULTS_DIR = resultsDirectory;
   if (command.approvedReporterArtifacts) {
@@ -441,7 +437,7 @@ async function cleanupOwnedBrowserRuntime(command, resultsDirectory, attempt) {
   const executionHome = mkdtempSync(resolve(tmpdir(), 'qdb-nightly-cleanup-'));
   try {
     const cleanup = await runCommand({ id: 'controlled-browser-cleanup', phase: 'browser-cleanup', executable: process.execPath, arguments: [script, resultsDirectory, attempt], cwd: command.cwd }, 60_000, {
-      artifactRoot: '', attempt: `${attempt}-cleanup`, executionHome, ignoreCancellation: true, resultsDirectory,
+      attempt: `${attempt}-cleanup`, executionHome, ignoreCancellation: true, resultsDirectory,
     });
     return cleanup.status === 'passed'
       ? { status: 'passed', checkIds: ['owned-runtime-cleanup-verified'] }

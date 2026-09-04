@@ -22,7 +22,7 @@ provider must not hide one of the three required invocations inside nightly orch
 
 NuGet projects are classified explicitly in the policy. The API, application/domain/infrastructure,
 shared library, AccessAdmin, and DataImporter graphs are production surfaces. The xUnit project and
-TestArtifacts tool are development/test surfaces. For npm, presence in `npm audit --omit=dev` is the
+TestRuntime and the Tests project are development/test surfaces. For npm, presence in `npm audit --omit=dev` is the
 production signal; the complete audit retains build/test-only findings as notes.
 
 Every finding records:

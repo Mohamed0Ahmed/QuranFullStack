@@ -97,8 +97,6 @@ const receipt = {
   laneId: manifest.id,
   executionScope: manifest.executionScope,
   status,
-  artifactSha256: manifest.artifact.sha256,
-  previousReleaseReference: manifest.previousRelease.reference,
   candidate,
   maxAttempts: 1,
   attemptsExecuted: 1,
@@ -117,12 +115,10 @@ await activeFinalizer.finalize();
 console.log(`[release-candidate] status=${receipt.status}`);
 
 function parseArguments(arguments_) {
-  const parsed = { artifactRoot: '', candidate: '', confirmBackup: false, dryRun: false, resultsDirectory: '' };
+  const parsed = { candidate: '', dryRun: false, resultsDirectory: '' };
   for (let index = 0; index < arguments_.length; index += 1) {
     const argument = arguments_[index];
-    if (argument === '--artifact-root') parsed.artifactRoot = requireValue(arguments_, ++index, argument);
-    else if (argument === '--candidate') parsed.candidate = requireValue(arguments_, ++index, argument);
-    else if (argument === '--confirm-backup') parsed.confirmBackup = true;
+    if (argument === '--candidate') parsed.candidate = requireValue(arguments_, ++index, argument);
     else if (argument === '--results-dir') parsed.resultsDirectory = resolve(process.cwd(), requireValue(arguments_, ++index, argument));
     else if (argument === '--dry-run') parsed.dryRun = true;
     else if (argument === '--help' || argument === '-h') {
@@ -131,8 +127,6 @@ function parseArguments(arguments_) {
     } else throw new Error(`Unknown argument: ${argument}`);
   }
   if (!parsed.resultsDirectory) throw new Error('--results-dir is required.');
-  if (!parsed.dryRun && !parsed.artifactRoot) throw new Error('--artifact-root is required for execution.');
-  if (!parsed.dryRun && !parsed.confirmBackup) throw new Error('--confirm-backup is required for the isolated recovery rehearsal.');
   if (validateResultsLocation({ repositoryRoot: REPOSITORY_ROOT, resultsDirectory: parsed.resultsDirectory }).status !== 'passed') {
     throw new Error('--results-dir must be outside the repository so candidate verification remains immutable.');
   }
@@ -146,7 +140,7 @@ function requireValue(arguments_, index, option) {
 }
 
 function printUsage() {
-  console.log('Usage: node scripts/run-release-candidate-lane.mjs --artifact-root PATH --results-dir PATH --confirm-backup [--candidate SHA] [--dry-run]');
+  console.log('Usage: node scripts/run-release-candidate-lane.mjs --results-dir PATH [--candidate SHA] [--dry-run]');
 }
 
 function commandEnvironment(command, executionHome, runId) {
@@ -165,12 +159,9 @@ function commandEnvironment(command, executionHome, runId) {
   };
   if (typeof process.env.LANG === 'string') environment.LANG = process.env.LANG;
   if (typeof process.env.LC_ALL === 'string') environment.LC_ALL = process.env.LC_ALL;
-  if (command.id !== 'release-dependency-advisory') {
-    environment.QURAN_DASHBOARD_ARTIFACT_EXECUTION = 'release';
-    environment.QURAN_TEST_ARTIFACT_ROOT = options.artifactRoot;
+  if (typeof process.env.ConnectionStrings__QuranDashboardTest === 'string') {
+    environment.ConnectionStrings__QuranDashboardTest = process.env.ConnectionStrings__QuranDashboardTest;
   }
-  if (command.id === 'verify-full-canonical-artifact') environment.QDB_TEST_ARTIFACTS_SEALED = '1';
-  if (command.id === 'full-canonical-recovery' && options.confirmBackup) environment.QURAN_DASHBOARD_CONFIRM_FULL_CANONICAL_BACKUP = 'yes';
   if (runId) environment.QURAN_DASHBOARD_TEST_RUN_ID = runId;
   return environment;
 }

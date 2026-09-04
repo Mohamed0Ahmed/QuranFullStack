@@ -3,15 +3,12 @@ namespace QuranDashboard.Tests.TestSupport.Execution;
 public sealed class TestPolicyContractTests
 {
     [Fact]
-    public void EveryBackendClass_IsEitherPolicyClassifiedOrExplicitlyUnmigrated()
+    public void EveryBackendClass_IsPolicyClassified()
     {
         var entries = TestGateCatalog.GateEntries;
 
         entries.Should().OnlyContain(entry =>
-            entry.Policy == null
-                ? entry.MigrationState == TestPolicyMigrationState.Unmigrated
-                : entry.MigrationState == TestPolicyMigrationState.Migrated
-                    || entry.Policy.Target == TestDatabaseTarget.FullRehearsal);
+            entry.MigrationState == TestPolicyMigrationState.Migrated && entry.Policy != null);
         entries.Select(entry => entry.ClassName)
             .Should()
             .BeEquivalentTo(TestGateCatalog.DiscoverTestClasses());
@@ -38,13 +35,10 @@ public sealed class TestPolicyContractTests
     }
 
     [Fact]
-    public void EveryFixtureResource_IsEitherPolicyClassifiedOrExplicitlyUnmigrated()
+    public void EveryFixtureResource_IsPolicyClassified()
     {
         TestGateCatalog.ResourceEntries.Should().OnlyContain(entry =>
-            entry.Policy == null
-                ? entry.MigrationState == TestPolicyMigrationState.Unmigrated
-                : entry.MigrationState == TestPolicyMigrationState.Migrated
-                    || entry.Policy.Target == TestDatabaseTarget.FullRehearsal);
+            entry.MigrationState == TestPolicyMigrationState.Migrated && entry.Policy != null);
     }
 
     [Fact]
@@ -212,7 +206,7 @@ public sealed class TestPolicyContractTests
         var entries = TestGateCatalog.GateEntries
             .Where(entry => TestGateCatalog.PipelineClassPrefixes.Any(prefix =>
                 entry.ClassName.StartsWith(prefix, StringComparison.Ordinal)))
-            .Where(entry => entry.MigrationState == TestPolicyMigrationState.Migrated)
+            .Where(entry => entry.Policy is not { Target: TestDatabaseTarget.FullRehearsal })
             .ToArray();
         var allowedScratchSubtypes = new HashSet<DestructiveRehearsalSubtype>
         {
@@ -255,7 +249,7 @@ public sealed class TestPolicyContractTests
     }
 
     [Fact]
-    public void FullCanonicalPhraseIndex_DeclaresItsSeparateFullDataCapabilityWhileRemainingLegacy()
+    public void FullCanonicalPhraseIndex_DeclaresTheManualFullRehearsalCapability()
     {
         var entry = TestGateCatalog.GateEntries.Single(candidate =>
             candidate.ClassName ==
@@ -263,14 +257,14 @@ public sealed class TestPolicyContractTests
         var resource = TestGateCatalog.ResourceEntries.Single(candidate =>
             candidate.CollectionName == "PhraseIndexFullCanonicalRehearsalCollection");
 
-        entry.MigrationState.Should().Be(TestPolicyMigrationState.Unmigrated);
+        entry.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
         entry.Policy.Should().NotBeNull();
         entry.Policy!.Policy.Should().Be(BackendTestPolicy.DestructiveRehearsal);
         entry.Policy.Target.Should().Be(TestDatabaseTarget.FullRehearsal);
         entry.Policy.DestructiveSubtype.Should().Be(DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
         entry.ResourceCollection.Should().Be(resource.CollectionName);
 
-        resource.MigrationState.Should().Be(TestPolicyMigrationState.Unmigrated);
+        resource.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
         resource.StatePolicy.Should().Be("PersistentCapability");
         resource.Policy.Should().NotBeNull();
         resource.Policy!.Target.Should().Be(TestDatabaseTarget.FullRehearsal);

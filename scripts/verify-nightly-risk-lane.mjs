@@ -1,15 +1,11 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawn } from 'node:child_process';
-import { chmodSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadNightlyRiskManifest } from './nightly-risk-contract.mjs';
-import {
-  classifyExactDockerInspect,
-  inspectRuntimeOwnershipReceipt,
-} from '../Frontend/quran-dashboard-ui/e2e/harness/database-runtime.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const MANIFEST_PATH = resolve(REPOSITORY_ROOT, 'nightly-risk-lane.json');
@@ -27,11 +23,10 @@ assert.deepEqual(manifest.requiredBrowserJourneys, [
 assert.equal(command('full-chromium-suite').executable, 'npm');
 assert.deepEqual(command('full-chromium-suite').arguments, ['run', 'e2e']);
 assert.equal(command('full-chromium-suite').diagnosticRetry, true);
-assert.deepEqual(command('verify-full-canonical-artifact').arguments, [
-  'verify-content-addressed', '--artifact', 'quran-canonical',
-]);
-assert.deepEqual(command('phrase-index-build-activation').arguments.slice(0, 2), [
-  'phrase-index-rehearsal', '--no-build',
+assert.deepEqual(command('phrase-index-build-activation').arguments, [
+  'scripts/test', 'focused', '--backend-class',
+  'QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests',
+  '--no-build', '--authorize-full-data',
 ]);
 assert.ok(command('abwab-snapshot-protections').arguments.includes('QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests'));
 assert.ok(command('quran-topics-import-protections').arguments.includes('QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests'));
@@ -42,8 +37,6 @@ verifySkippedMobileEvidenceCannotPassTheLane();
 verifyProvisioningFailureCannotRetryBrowser();
 verifyBrowserCleanupPrecedesDiagnosticAndDatabaseWork();
 verifyUnsafeEvidenceIsRejectedAndRemoved();
-verifyRuntimeOwnershipReceiptsFailClosed();
-verifyTypeSpecificDockerInspection();
 verifyCleanupFailureBlocksDatabaseWorkAndRetry();
 verifyTimeoutEscalatesBeforeCleanup();
 verifyOrphanDescendantIsSweptBeforeCleanup();
@@ -67,7 +60,6 @@ function verifyDiagnosticRetryCannotPassTheLane() {
       execFileSync(process.execPath, [
         RUNNER_PATH,
         '--contract-test', 'diagnostic-retry',
-        '--artifact-root', resolve(temporaryRoot, 'artifacts'),
         '--results-dir', resultsDirectory,
         '--diagnostic-retry',
       ], {
@@ -90,7 +82,6 @@ function verifyDiagnosticRetryCannotPassTheLane() {
       execFileSync(process.execPath, [
         RUNNER_PATH,
         '--contract-test', 'diagnostic-retry',
-        '--artifact-root', resolve(temporaryRoot, 'artifacts'),
         '--results-dir', resultsDirectory,
       ], {
         cwd: REPOSITORY_ROOT,
@@ -114,7 +105,6 @@ function verifySkippedMobileEvidenceCannotPassTheLane() {
       execFileSync(process.execPath, [
         RUNNER_PATH,
         '--contract-test', 'skipped-mobile-evidence',
-        '--artifact-root', resolve(temporaryRoot, 'artifacts'),
         '--results-dir', resultsDirectory,
       ], {
         cwd: REPOSITORY_ROOT,
@@ -184,86 +174,6 @@ function verifyUnsafeEvidenceIsRejectedAndRemoved() {
   }
 }
 
-function verifyRuntimeOwnershipReceiptsFailClosed() {
-  const receipt = {
-    schemaVersion: 1,
-    status: 'intent',
-    containerName: 'qdb-e2e-artifact-fixture-1',
-    networkName: 'qdb-e2e-internal-fixture-1',
-    container: 'pending',
-    network: 'pending',
-  };
-  assert.deepEqual(inspectRuntimeOwnershipReceipt(undefined, () => 'absent'), {
-    status: 'failed', state: 'ownership-receipt-missing',
-  });
-  assert.deepEqual(inspectRuntimeOwnershipReceipt(receipt, () => 'present'), {
-    status: 'failed', state: 'owned-runtime-still-present',
-  });
-  assert.deepEqual(inspectRuntimeOwnershipReceipt(receipt, (arguments_) =>
-    arguments_[0] === 'container' ? 'absent' : 'present'), {
-    status: 'failed', state: 'owned-runtime-still-present',
-  });
-  const cleaned = { ...receipt, status: 'cleaned', container: 'absent', network: 'absent' };
-  assert.deepEqual(inspectRuntimeOwnershipReceipt(cleaned, () => 'absent'), {
-    status: 'passed', state: 'owned-runtime-already-cleaned',
-  });
-  assert.deepEqual(inspectRuntimeOwnershipReceipt(cleaned, () => 'absent'), {
-    status: 'passed', state: 'owned-runtime-already-cleaned',
-  });
-  assert.equal(classifyExactDockerInspect({
-    daemonReady: false, kind: 'container', name: receipt.containerName, status: 1,
-    standardError: `Error response from daemon: No such container: ${receipt.containerName}`,
-  }), 'unknown');
-  assert.equal(classifyExactDockerInspect({
-    daemonReady: true, kind: 'container', name: receipt.containerName, status: 1,
-    standardError: `Error response from daemon: No such container: ${receipt.containerName}`,
-  }), 'absent');
-  assert.equal(classifyExactDockerInspect({
-    daemonReady: true, kind: 'network', name: receipt.networkName, status: 1,
-    standardError: 'permission denied',
-  }), 'unknown');
-}
-
-function verifyTypeSpecificDockerInspection() {
-  const temporaryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-fake-docker-'));
-  const fakeDocker = resolve(REPOSITORY_ROOT, 'scripts/test-fixtures/fake-docker-inspect.mjs');
-  const cleanupProbe = resolve(REPOSITORY_ROOT, 'scripts/test-fixtures/runtime-cleanup-probe.mjs');
-  const runtimeModule = resolve(REPOSITORY_ROOT, 'Frontend/quran-dashboard-ui/e2e/harness/database-runtime.mjs');
-  try {
-    chmodSync(fakeDocker, 0o755);
-    const runtimeDirectory = resolve(temporaryRoot, '.playwright');
-    mkdirSync(runtimeDirectory);
-    writeFileSync(resolve(runtimeDirectory, 'e2e-runtime-cleanup.json'), JSON.stringify({
-      schemaVersion: 1,
-      status: 'active',
-      containerName: 'qdb-e2e-artifact-fixture-1',
-      networkName: 'qdb-e2e-internal-fixture-1',
-      container: 'created',
-      network: 'created',
-    }));
-    const log = resolve(temporaryRoot, 'fake-docker.log');
-    execFileSync(process.execPath, [cleanupProbe, runtimeModule], {
-      cwd: temporaryRoot,
-      env: {
-        ...process.env,
-        QDB_FAKE_DOCKER_LOG: log,
-        QDB_RUNTIME_CONTRACT_DOCKER: fakeDocker,
-        QDB_RUNTIME_CONTRACT_TEST: '1',
-      },
-      stdio: 'pipe',
-    });
-    assert.deepEqual(readFileSync(log, 'utf8').trim().split('\n'), [
-      'info --format {{.ServerVersion}}',
-      'rm --force qdb-e2e-artifact-fixture-1',
-      'network rm qdb-e2e-internal-fixture-1',
-      'container inspect qdb-e2e-artifact-fixture-1',
-      'network inspect qdb-e2e-internal-fixture-1',
-    ]);
-  } finally {
-    rmSync(temporaryRoot, { force: true, recursive: true });
-  }
-}
-
 function verifyCleanupFailureBlocksDatabaseWorkAndRetry() {
   const { exitCode, result, temporaryRoot } = runFixture('browser-cleanup-failure', true);
   try {
@@ -330,7 +240,6 @@ async function verifySignalCancellationCleansUp() {
     const child = spawn(process.execPath, [
       RUNNER_PATH,
       '--contract-test', 'browser-timeout',
-      '--artifact-root', resolve(temporaryRoot, 'artifacts'),
       '--results-dir', resultsDirectory,
     ], { cwd: REPOSITORY_ROOT, stdio: 'ignore' });
     await waitFor(() => existsSync(resolve(resultsDirectory, 'lifecycle-order.log')));
@@ -372,7 +281,6 @@ function runFixture(name, diagnosticRetry = false) {
     execFileSync(process.execPath, [
       RUNNER_PATH,
       '--contract-test', name,
-      '--artifact-root', resolve(temporaryRoot, 'artifacts'),
       '--results-dir', resultsDirectory,
       ...(diagnosticRetry ? ['--diagnostic-retry'] : []),
     ], { cwd: REPOSITORY_ROOT, stdio: 'pipe' });

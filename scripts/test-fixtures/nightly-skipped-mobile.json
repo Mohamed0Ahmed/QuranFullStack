@@ -4,17 +4,32 @@
   "title": "Browser evidence probe",
   "providerNeutral": true,
   "timeoutSeconds": 10,
-  "inputContract": { "artifactRoot": "probe", "resultsDirectory": "probe", "executionKind": "scheduled" },
-  "evidenceRetention": { "failedDiagnosticsDays": 14, "aggregateTimingDays": 30, "externalUploadConfigured": false },
-  "excludedWork": ["dependency-advisory-evaluation"],
-  "requiredBrowserJourneys": ["mobile.probe"],
-  "commands": [{
-    "id": "browser-probe",
-    "phase": "browser-execution",
-    "timeoutSeconds": 2,
-    "cwd": ".",
-    "executable": "node",
-    "arguments": ["scripts/test-fixtures/nightly-skipped-mobile-probe.mjs"],
-    "approvedReporterArtifacts": true
-  }]
+  "inputContract": {
+    "resultsDirectory": "probe",
+    "executionKind": "scheduled"
+  },
+  "evidenceRetention": {
+    "failedDiagnosticsDays": 14,
+    "aggregateTimingDays": 30,
+    "externalUploadConfigured": false
+  },
+  "excludedWork": [
+    "dependency-advisory-evaluation"
+  ],
+  "requiredBrowserJourneys": [
+    "mobile.probe"
+  ],
+  "commands": [
+    {
+      "id": "browser-probe",
+      "phase": "browser-execution",
+      "timeoutSeconds": 2,
+      "cwd": ".",
+      "executable": "node",
+      "arguments": [
+        "scripts/test-fixtures/nightly-skipped-mobile-probe.mjs"
+      ],
+      "approvedReporterArtifacts": true
+    }
+  ]
 }

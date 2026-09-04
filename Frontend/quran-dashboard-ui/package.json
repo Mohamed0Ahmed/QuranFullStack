@@ -14,7 +14,7 @@
     "check:canonical-playwright-runtime": "node scripts/verify-canonical-playwright-runtime.mjs",
     "check:stateful-playwright-runtime": "node scripts/verify-stateful-playwright-runtime.mjs",
     "check:independent-playwright-oracles": "node scripts/verify-independent-playwright-oracles.mjs",
-    "check:repository-test-policy": "node ../../scripts/verify-test-policy-runner.mjs",
+    "check:repository-test-policy": "node ../../scripts/verify-test-policy-runner.mjs && node ../../scripts/verify-artifact-container-contraction.mjs",
     "check:playwright-journeys": "node scripts/verify-playwright-journey-discovery.mjs && npm run e2e:discover:critical",
     "typecheck:app": "timeout --signal=TERM --kill-after=30s 10m tsc -p tsconfig.app.json --noEmit",
     "typecheck": "npm run typecheck:app",

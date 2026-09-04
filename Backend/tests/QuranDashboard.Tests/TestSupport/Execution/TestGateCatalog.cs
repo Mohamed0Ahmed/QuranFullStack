@@ -50,19 +50,6 @@ internal static class TestGateCatalog
         ["ImmutableSeed", "PersistentCapability", "ResetPerTest", "UniqueKeyIsolation", "FreshLeasePerCase"],
         StringComparer.Ordinal);
 
-    // These classes own an exclusive PostgreSQL 18 server instead of leasing a database from the shared
-    // PostgreSQL 16 runtime. The repository runner keeps them in a separate process shard.
-    internal static IReadOnlySet<string> ExclusivePostgreSqlClasses { get; } = new HashSet<string>(
-        [
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests",
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeAdvisoryLockTests",
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeMutableResetTests",
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeProtectedStateTests",
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeRefreshTests",
-            "QuranDashboard.Tests.TestRuntime.TestRuntimeScratchTests",
-        ],
-        StringComparer.Ordinal);
-
     internal static IReadOnlyList<string> PipelineClassPrefixes { get; } =
     [
         "QuranDashboard.Tests.Api.PhraseSearch.",
@@ -95,7 +82,7 @@ internal static class TestGateCatalog
         if (entry.Policy is null)
         {
             throw new InvalidDataException(
-                $"Backend test class {entry.ClassName} is explicitly unmigrated and has no executable policy.");
+                $"Backend test class {entry.ClassName} has no executable policy.");
         }
 
         TestResourcePolicyMetadata? resourcePolicy = null;
@@ -107,7 +94,7 @@ internal static class TestGateCatalog
                     $"Backend test class {entry.ClassName} references unknown resource collection {entry.ResourceCollection}.");
             resourcePolicy = resource.Policy
                 ?? throw new InvalidDataException(
-                    $"Migrated Backend test class {entry.ClassName} references unmigrated resource collection {entry.ResourceCollection}.");
+                    $"Backend test class {entry.ClassName} references a resource collection without policy metadata: {entry.ResourceCollection}.");
         }
 
         return TestPolicyContract.Combine(entry.Policy, resourcePolicy);
@@ -206,15 +193,6 @@ internal static class TestGateCatalog
             .Select(entry => entry.ClassName)
             .Order(StringComparer.Ordinal)
             .ToArray();
-    }
-
-    internal static PostgreSqlOwnershipShards ShardByPostgreSqlOwnership(IEnumerable<string> classNames)
-    {
-        var classes = classNames.Order(StringComparer.Ordinal).ToArray();
-
-        return new PostgreSqlOwnershipShards(
-            classes.Where(className => !ExclusivePostgreSqlClasses.Contains(className)).ToArray(),
-            classes.Where(ExclusivePostgreSqlClasses.Contains).ToArray());
     }
 
     private static IReadOnlyList<Type> DiscoverTestTypes()
@@ -375,10 +353,6 @@ internal static class TestGateCatalog
             .ToArray();
     }
 }
-
-internal sealed record PostgreSqlOwnershipShards(
-    IReadOnlyList<string> SharedRuntime,
-    IReadOnlyList<string> ExclusiveServer);
 
 internal sealed record TestGateEntry(
     string ClassName,

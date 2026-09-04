@@ -16,8 +16,7 @@ public sealed class TestRuntimeResetFixture : IAsyncLifetime
     public async Task InitializeAsync()
     {
         server = await PostgreSqlTestProcess.LeaseExclusiveServerAsync(
-            nameof(TestRuntimeResetFixture),
-            "postgres:18-alpine");
+            nameof(TestRuntimeResetFixture));
         var serverConnection = new NpgsqlConnectionStringBuilder(server.ConnectionString)
         {
             Pooling = false,

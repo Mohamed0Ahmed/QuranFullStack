@@ -7,8 +7,8 @@ using AccessAdminProgram = QuranDashboard.AccessAdmin.Program;
 
 namespace QuranDashboard.Tests.Api.Access;
 
-[Collection(nameof(AccessProcessGlobalCollection))]
-public sealed class AccessAdminCommandTests
+[Collection(nameof(AccessScratchRehearsalCollection))]
+public sealed class AccessAdminCommandTests(AccessMigrationTestFixture fixture)
 {
     [Fact]
     public async Task IncompleteIdentityBackfillCommand_ReturnsUsageBeforeConstructingDatabaseServices()
@@ -24,8 +24,7 @@ public sealed class AccessAdminCommandTests
     [Fact]
     public async Task OwnerValidationCommand_WithNormalizedUniqueEmails_ReportsAwaitingVerifiedSignIn()
     {
-        await using var database = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(AccessAdminCommandTests));
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         using var processState = ProcessGlobalStateScope.Enter(
             environmentVariables: new Dictionary<string, string?>
             {
@@ -62,8 +61,7 @@ public sealed class AccessAdminCommandTests
     [Fact]
     public async Task OwnerDryRun_WithAnUnprovisionedConfiguredIdentity_ReportsAwaitingVerifiedSignIn()
     {
-        await using var database = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(AccessAdminCommandTests));
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         using var processState = ProcessGlobalStateScope.Enter(
             environmentVariables: new Dictionary<string, string?>
             {
@@ -149,8 +147,7 @@ public sealed class AccessAdminCommandTests
     [Fact]
     public async Task Wrapper_RunsADocumentedCommandWithoutAnExplicitEnvironment()
     {
-        await using var database = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(AccessAdminCommandTests));
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
 
         var run = await RunWrapperAsync(database.ConnectionString, "identity", "scan");
 
@@ -174,8 +171,7 @@ public sealed class AccessAdminCommandTests
     [Fact]
     public async Task OwnerStatus_WhenTheManagementProviderIsUnavailable_ReturnsASafeOperationalFailure()
     {
-        await using var database = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(AccessAdminCommandTests));
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await using (var db = new QuranDashboardDbContext(
                          new DbContextOptionsBuilder<QuranDashboardDbContext>()
                              .UseNpgsql(database.ConnectionString)

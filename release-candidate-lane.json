@@ -5,13 +5,6 @@
   "executionScope": "local-first-pre-merge",
   "providerNeutral": true,
   "timeoutSeconds": 43200,
-  "artifact": {
-    "id": "quran-canonical",
-    "sha256": "3d4038d561a2b4b048e72c05f0cc472b2b1bcf0f2af0d09d0c054cff38e9b29d"
-  },
-  "previousRelease": {
-    "reference": "df07306b5a5ebe08ff205c0d2f6cd5a10af87f2d"
-  },
   "commands": [
     {
       "id": "locked-backend-restore",
@@ -29,30 +22,12 @@
       "dependsOn": ["locked-backend-restore"]
     },
     {
-      "id": "verify-full-canonical-artifact",
+      "id": "inspect-test-runtime",
       "timeoutSeconds": 900,
       "cwd": ".",
-      "executable": "Backend/scripts/test-artifacts",
-      "arguments": ["verify-content-addressed", "--artifact", "quran-canonical"],
+      "executable": "dotnet",
+      "arguments": ["Backend/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll", "inspect"],
       "dependsOn": ["no-restore-backend-build"]
-    },
-    {
-      "id": "previous-release-upgrade",
-      "timeoutSeconds": 7200,
-      "cwd": ".",
-      "executable": "Backend/scripts/test-backend",
-      "arguments": ["previous-release-upgrade", "--no-build", "--results-dir", "{RELEASE_RESULTS_DIR}/previous-release-upgrade"],
-      "dependsOn": ["verify-full-canonical-artifact"],
-      "databaseOwning": true
-    },
-    {
-      "id": "full-canonical-recovery",
-      "timeoutSeconds": 7200,
-      "cwd": ".",
-      "executable": "Backend/scripts/test-backend",
-      "arguments": ["full-canonical-recovery", "--no-build", "--results-dir", "{RELEASE_RESULTS_DIR}/full-canonical-recovery"],
-      "dependsOn": ["verify-full-canonical-artifact"],
-      "databaseOwning": true
     },
     {
       "id": "release-dependency-advisory",

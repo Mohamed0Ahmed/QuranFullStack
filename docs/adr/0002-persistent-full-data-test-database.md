@@ -38,5 +38,5 @@ egress, and sanitized diagnostics also remain required.
 The target architecture and its rollout boundary are specified in
 [Persistent Full-Data Test Database Architecture](../testing/persistent-test-database-architecture.md).
 That document also lists every testing document and machine-readable contract superseded by this ADR.
-The decision is accepted, but the migration is not yet implemented; current code and operational
-commands remain implementation truth until the new architecture is activated atomically.
+The decision is accepted. Ticket #169 contracted the former container and dump lifecycle; current code
+and operational commands are implementation truth for the persistent Test Database architecture.

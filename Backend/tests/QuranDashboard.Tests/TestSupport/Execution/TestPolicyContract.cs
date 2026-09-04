@@ -259,12 +259,11 @@ internal static class TestPolicyMetadataParser
         ParseClassPolicy(IReadOnlyList<string> columns, string path, int lineNumber)
     {
         var state = ParseEnum<TestPolicyMigrationState>(columns[11], path, lineNumber, "MigrationState");
-        var values = columns.Skip(5).Take(6).ToArray();
-        var hasDeclaration = values.Any(value => !string.IsNullOrWhiteSpace(value));
-        if (state == TestPolicyMigrationState.Unmigrated && !hasDeclaration)
+        if (state != TestPolicyMigrationState.Migrated)
         {
-            return (state, null);
+            throw Invalid(path, lineNumber, "unsupported MigrationState Unmigrated");
         }
+        var values = columns.Skip(5).Take(6).ToArray();
         if (values.Any(string.IsNullOrWhiteSpace))
         {
             throw Invalid(path, lineNumber, "declared class policy metadata must be complete");
@@ -281,15 +280,6 @@ internal static class TestPolicyMetadataParser
             throw Invalid(path, lineNumber, "ResourceCollection must be explicit; use None when no fixture/resource applies");
         }
         TestPolicyContract.Validate(metadata, $"class policy in {path} line {lineNumber}");
-        if (state == TestPolicyMigrationState.Unmigrated
-            && (metadata.Policy != BackendTestPolicy.DestructiveRehearsal
-                || metadata.Target != TestDatabaseTarget.FullRehearsal))
-        {
-            throw Invalid(
-                path,
-                lineNumber,
-                "only a legacy full-data rehearsal may declare policy metadata while remaining unmigrated");
-        }
         return (state, metadata);
     }
 
@@ -297,12 +287,11 @@ internal static class TestPolicyMetadataParser
         ParseResourcePolicy(IReadOnlyList<string> columns, string path, int lineNumber)
     {
         var state = ParseEnum<TestPolicyMigrationState>(columns[8], path, lineNumber, "MigrationState");
-        var values = columns.Skip(4).Take(4).ToArray();
-        var hasDeclaration = values.Any(value => !string.IsNullOrWhiteSpace(value));
-        if (state == TestPolicyMigrationState.Unmigrated && !hasDeclaration)
+        if (state != TestPolicyMigrationState.Migrated)
         {
-            return (state, null);
+            throw Invalid(path, lineNumber, "unsupported MigrationState Unmigrated");
         }
+        var values = columns.Skip(4).Take(4).ToArray();
         if (values.Any(string.IsNullOrWhiteSpace))
         {
             throw Invalid(path, lineNumber, "declared fixture/resource policy metadata must be complete");
@@ -314,14 +303,6 @@ internal static class TestPolicyMetadataParser
             ParseEnum<TestDatabaseTarget>(columns[6], path, lineNumber, "DatabaseTarget"),
             ParseSet<TestApiStartupEffect>(columns[7], path, lineNumber, "StartupEffects"));
         TestPolicyContract.Validate(metadata, $"fixture/resource policy in {path} line {lineNumber}");
-        if (state == TestPolicyMigrationState.Unmigrated
-            && metadata.Target != TestDatabaseTarget.FullRehearsal)
-        {
-            throw Invalid(
-                path,
-                lineNumber,
-                "only a legacy full-data rehearsal resource may declare policy metadata while remaining unmigrated");
-        }
         return (state, metadata);
     }
 

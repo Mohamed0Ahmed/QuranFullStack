@@ -1,6 +1,6 @@
 # Persistent Full-Data Test Database Architecture
 
-**Status:** Accepted target architecture; not yet implemented
+**Status:** Accepted architecture; artifact/container lifecycle contracted
 
 **Decision date:** 2026-09-03
 
@@ -392,7 +392,7 @@ validated and aggregated into one sanitized run report.
 
 ## Repository runner and lanes
 
-Repository-root `scripts/test` becomes the supported orchestration entry point. Existing
+Repository-root `scripts/test` is the supported orchestration entry point. Existing
 `Backend/scripts/test-backend` and Frontend npm commands remain only as thin delegates.
 
 After one build, mixed selections are partitioned and executed deterministically:
@@ -518,9 +518,8 @@ to the old container/artifact lifecycle.
 
 ## Superseded documentation register
 
-ADR 0002 is the target-architecture authority now. Current operational documents continue to describe
-the not-yet-migrated implementation until the atomic cutover. At cutover, the following documents and
-contracts must be removed or rewritten together.
+ADR 0002 is the architecture authority now. Ticket #169 removed the container and dump lifecycle. The
+documents and contracts below were rewritten or removed with that contraction.
 
 | Document or contract | Superseded scope | Required disposition |
 | --- | --- | --- |

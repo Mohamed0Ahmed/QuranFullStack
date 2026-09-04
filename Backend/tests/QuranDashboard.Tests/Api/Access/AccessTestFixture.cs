@@ -5,6 +5,8 @@ using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
+using QuranDashboard.TestRuntime;
+using QuranDashboard.Tests.TestRuntime;
 using QuranDashboard.Tests.TestSupport.Access;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
@@ -13,7 +15,6 @@ namespace QuranDashboard.Tests.Api.Access;
 public sealed class LegacyAccessTestFixture : IAsyncLifetime
 {
     private readonly object _apiFactoryLock = new();
-    private PostgreSqlDatabaseLease? _databaseLease;
     private WebApplicationFactory<AccessController>? _apiFactory;
     private ServiceProvider? _queryProvider;
 
@@ -33,8 +34,14 @@ public sealed class LegacyAccessTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        _databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(LegacyAccessTestFixture));
-        ConnectionString = _databaseLease.ConnectionString;
+        var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
+            QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath);
+        ConnectionString = scratch.ConnectionString;
+        await using var dbContext = new QuranDashboardDbContext(
+            new DbContextOptionsBuilder<QuranDashboardDbContext>()
+                .UseNpgsql(ConnectionString)
+                .Options);
+        await dbContext.Database.MigrateAsync();
 
         _queryProvider = BuildQueryProvider();
     }
@@ -51,12 +58,6 @@ public sealed class LegacyAccessTestFixture : IAsyncLifetime
         {
             await _queryProvider.DisposeAsync();
             _queryProvider = null;
-        }
-
-        if (_databaseLease is not null)
-        {
-            await _databaseLease.DisposeAsync();
-            _databaseLease = null;
         }
     }
 

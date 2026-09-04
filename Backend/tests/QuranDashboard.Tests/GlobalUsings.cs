@@ -16,5 +16,4 @@ global using System.Data;
 global using System.Net;
 global using System.Security.Cryptography;
 global using System.Text.Json;
-global using Testcontainers.PostgreSql;
 global using Xunit;

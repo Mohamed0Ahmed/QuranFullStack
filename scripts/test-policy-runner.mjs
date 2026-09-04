@@ -73,7 +73,7 @@ export const EXECUTION_GROUPS = Object.freeze([
   'EmptyScratchDestructiveRehearsal',
   'FullDataDestructiveRehearsal',
 ]);
-const ALL_GROUPS = [...EXECUTION_GROUPS, 'LegacyUnmigrated'];
+const ALL_GROUPS = [...EXECUTION_GROUPS];
 
 export function assessScratchLifecycleResult({
   action,
@@ -305,7 +305,6 @@ export function parseBackendPolicyCatalog(source) {
       migrationState,
     ] = columns;
     const policyValues = columns.slice(5, 11);
-    const hasPolicyDeclaration = policyValues.some((value) => value.length > 0);
     if (migrationState === 'Migrated') {
       if (policyValues.some((value) => value.length === 0)) {
         throw invalidRow(lineNumber, 'migrated classes require complete policy metadata');
@@ -314,22 +313,6 @@ export function parseBackendPolicyCatalog(source) {
         { backendPolicy, dataReads, dataWrites, databaseTarget, destructiveSubtype },
         lineNumber,
       );
-    } else if (migrationState === 'Unmigrated') {
-      if (hasPolicyDeclaration && policyValues.some((value) => value.length === 0)) {
-        throw invalidRow(lineNumber, 'declared unmigrated classes require complete policy metadata');
-      }
-      if (hasPolicyDeclaration) {
-        validateMigratedPolicy(
-          { backendPolicy, dataReads, dataWrites, databaseTarget, destructiveSubtype },
-          lineNumber,
-        );
-        if (backendPolicy !== 'DestructiveRehearsal' || databaseTarget !== 'FullRehearsal') {
-          throw invalidRow(
-            lineNumber,
-            'only a legacy full-data rehearsal may declare policy metadata while remaining unmigrated',
-          );
-        }
-      }
     } else {
       throw invalidRow(lineNumber, `unsupported MigrationState ${migrationState}`);
     }
@@ -340,19 +323,14 @@ export function parseBackendPolicyCatalog(source) {
       kind,
       gate,
       concerns: splitSet(concerns),
-      policy: migrationState === 'Migrated' || hasPolicyDeclaration
-        ? {
+      policy: {
             backendPolicy,
             dataReads: splitSet(dataReads),
             dataWrites: splitSet(dataWrites),
             databaseTarget,
             destructiveSubtype,
-          }
-        : null,
-      resourceCollection: (migrationState === 'Migrated' || hasPolicyDeclaration)
-          && resourceCollection !== 'None'
-        ? resourceCollection
-        : null,
+          },
+      resourceCollection: resourceCollection !== 'None' ? resourceCollection : null,
       migrationState,
     };
   });
@@ -399,7 +377,6 @@ export function parseBackendResourceCatalog(source) {
       migrationState,
     ] = columns;
     const policyValues = columns.slice(4, 8);
-    const hasPolicyDeclaration = policyValues.some((value) => value.length > 0);
     if (migrationState === 'Migrated') {
       if (policyValues.some((value) => value.length === 0)) {
         throw invalidResourceRow(lineNumber, 'migrated resources require complete policy metadata');
@@ -408,25 +385,6 @@ export function parseBackendResourceCatalog(source) {
         { setupWrites, resetBehavior, databaseTarget, startupEffects },
         lineNumber,
       );
-    } else if (migrationState === 'Unmigrated') {
-      if (hasPolicyDeclaration && policyValues.some((value) => value.length === 0)) {
-        throw invalidResourceRow(
-          lineNumber,
-          'declared unmigrated resources require complete policy metadata',
-        );
-      }
-      if (hasPolicyDeclaration) {
-        validateResourcePolicy(
-          { setupWrites, resetBehavior, databaseTarget, startupEffects },
-          lineNumber,
-        );
-        if (databaseTarget !== 'FullRehearsal') {
-          throw invalidResourceRow(
-            lineNumber,
-            'only a legacy full-data rehearsal resource may declare policy metadata while remaining unmigrated',
-          );
-        }
-      }
     } else {
       throw invalidResourceRow(lineNumber, `unsupported MigrationState ${migrationState}`);
     }
@@ -436,14 +394,12 @@ export function parseBackendResourceCatalog(source) {
       resourceClassName,
       parallelPolicy,
       statePolicy,
-      policy: migrationState === 'Migrated' || hasPolicyDeclaration
-        ? {
+      policy: {
             setupWrites: parseExplicitSet(setupWrites, DATA_CLASSES, lineNumber, 'SetupWrites'),
             resetBehavior,
             databaseTarget,
             startupEffects: parseExplicitSet(startupEffects, STARTUP_EFFECTS, lineNumber, 'StartupEffects'),
-          }
-        : null,
+          },
       migrationState,
     };
   });
@@ -622,9 +578,6 @@ export function planPrePrSelection({
 }
 
 function isFullDataEntry(entry, resourceCatalog) {
-  if (entry.migrationState === 'Unmigrated') {
-    return entry.kind === 'Canonical' || entry.kind === 'Release';
-  }
   return effectiveBackendPolicy(entry, resourceCatalog).target === 'FullRehearsal';
 }
 
@@ -671,19 +624,10 @@ function backendSelection(entry, resourceCatalog, selectorType, selector) {
     concerns: [...entry.concerns].sort(),
     group: backendExecutionGroup(entry, resourceCatalog),
     destructiveSubtype: entry.policy?.destructiveSubtype ?? null,
-    legacyLane: entry.migrationState === 'Unmigrated'
-      ? legacyReleaseLane(entry.className)
-      : null,
   };
 }
 
 function backendExecutionGroup(entry, resourceCatalog) {
-  if (entry.migrationState === 'Unmigrated') {
-    return entry.kind === 'Canonical' || entry.kind === 'Release'
-      ? 'FullDataDestructiveRehearsal'
-      : 'LegacyUnmigrated';
-  }
-
   const effective = effectiveBackendPolicy(entry, resourceCatalog);
   if (effective.policy !== 'DestructiveRehearsal') {
     return effective.policy;
@@ -767,22 +711,6 @@ function selectionCommand(selection) {
     );
   }
 
-  if (selection.legacyLane) {
-    const arguments_ = [selection.legacyLane];
-    if (selection.selectorType === 'method') {
-      arguments_.push('--test', selection.selector);
-    }
-    arguments_.push('--no-build');
-    return command(
-      `backend-${selection.selectorType}-${selection.selector}`,
-      '.',
-      'Backend/scripts/test-backend',
-      arguments_,
-      selection.group,
-      { selection: backendSelectionEvidence(selection) },
-    );
-  }
-
   const option = selection.selectorType === 'method' ? '--test' : '--class';
   const executionMetadata = {
     selection: backendSelectionEvidence(selection),
@@ -819,24 +747,6 @@ function toScratchSubtype(subtype) {
   return subtype.replace(/[A-Z]/g, (letter, offset) =>
     `${offset === 0 ? '' : '-'}${letter.toLowerCase()}`,
   );
-}
-
-function legacyReleaseLane(className) {
-  const lanes = new Map([
-    [
-      'QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests',
-      'phrase-index-rehearsal',
-    ],
-    [
-      'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests',
-      'full-canonical-recovery',
-    ],
-    [
-      'QuranDashboard.Tests.TestSupport.Artifacts.PreviousReleaseMigrationUpgradeRehearsalTests',
-      'previous-release-upgrade',
-    ],
-  ]);
-  return lanes.get(className) ?? null;
 }
 
 function backendBuildCommand() {

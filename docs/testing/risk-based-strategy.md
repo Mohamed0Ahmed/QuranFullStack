@@ -15,8 +15,9 @@ requirements. This declaration becomes project-wide when the implementing branch
 `dev`.
 
 The Frontend testing decision is recorded separately in
-[ADR 0001](../adr/0001-playwright-only-frontend-testing.md). Artifact acquisition, trust, and reset
-rules live in [Test Artifacts](./test-artifacts.md).
+[ADR 0001](../adr/0001-playwright-only-frontend-testing.md). Database lifecycle, reset, and rehearsal
+rules live in [ADR 0002](../adr/0002-persistent-full-data-test-database.md) and the
+[Persistent Full-Data Test Database Architecture](./persistent-test-database-architecture.md).
 
 ## Outcomes and non-goals
 
@@ -58,7 +59,7 @@ remain implementation truth as the suite changes.
 ### Backend
 
 The Backend has one .NET 10 xUnit project, `QuranDashboard.Tests`, using FluentAssertions,
-`WebApplicationFactory`, and Testcontainers PostgreSQL. Its enforced catalogue currently contains:
+`WebApplicationFactory`, and the persistent PostgreSQL 18 Test Database. Its enforced catalogue currently contains:
 
 - 123 test classes and 612 declared test methods; parameterized cases make the runtime count higher.
 - 31 Fast, 80 Database, 1 Migration, 1 Process, and 10 Canonical classes.
@@ -72,7 +73,7 @@ Protection is strongest around:
 - Foundation, navigation, tafsir, translation, morphology, display-word, i'rab, and mutashabihat
   imports, including rollback, source validation, idempotency, and canonical counts.
 - API route and access-metadata parity for all 126 registered routes.
-- Canonical Quran dump restore and selected read payloads.
+- Canonical Quran reads against `quran_dashboard_test` and selected read payloads.
 - Rate limiting and shared HTTP-pipeline behavior.
 
 Important limits remain:
@@ -86,8 +87,8 @@ Important limits remain:
 - Abwab snapshot import/export, topics import, and several template/relation semantics are weak or
   absent.
 
-The supported runner already offers risk-shaped selectors such as `fast`, `tier-b`, `gate-contract`,
-`smoke`, `pipeline`, `canonical-data`, `feature`, and `pre-pr`. The existing Backend catalogue remains
+The supported coordinator is repository-root `scripts/test`. `Backend/scripts/test-backend` remains a
+thin `feature`/`pre-pr` delegate. The existing Backend catalogue remains
 the executable source of truth; new Linking and PhraseSearch classes must be added there rather than to
 a second catalogue.
 
@@ -109,12 +110,12 @@ Important limits remain:
 - There is no successful Linking, PhraseSearch, access-administration, or Abwab mutation journey.
 - Authentication setup injects local OIDC state and does not prove the real redirect/callback boundary.
 - Most unannotated Quran assertions remain visibility or non-empty checks; the first critical
-  artifact-backed sentinel now compares page 1 with its locked independent oracle.
-- The current harness defaults to the verified compact artifact; arbitrary local data is available
-  only through explicit, loopback-only, non-canonical `clone-local` mode.
+  independent oracle now compares page 1 with its locked independent oracle.
+- Ordinary Playwright database journeys use TestRuntime against `quran_dashboard_test`. There is no
+  compact-artifact or `clone-local` fallback.
 - `test:pre-pr` does not include Playwright or `e2e:typecheck`.
-- Controlled `e2e:provision` now locks and preloads dependencies, Chromium, the PostgreSQL image,
-  compact artifacts, ephemeral certificates, and build outputs. Canonical `e2e`/`e2e:critical`
+- Controlled `e2e:provision` now locks and preloads dependencies, Chromium, ephemeral certificates, and
+  build outputs. Canonical `e2e`/`e2e:critical`
   consume the receipt under credential-free network sealing; explicit `*:local` commands retain the
   developer path.
 
@@ -158,7 +159,7 @@ Use one owning layer and a thin cross-stack sentinel:
 | Behavior | Primary protection |
 | --- | --- |
 | Pure rule or calculation | Fast xUnit |
-| Persistence, transaction, concurrency, import, or projection invariant | xUnit with Testcontainers |
+| Persistence, transaction, concurrency, import, or projection invariant | xUnit against `quran_dashboard_test` or empty scratch |
 | HTTP contract, cookie, CSRF, authorization, rate limit, or error envelope | `WebApplicationFactory` |
 | User-visible wiring, routing, URL state, browser behavior, and Backend-Frontend integration | Playwright |
 
@@ -221,12 +222,13 @@ This is a human risk map, not a duplicate executable test catalogue. Backend cla
   restart recovery, lease/inclusion-sync failure handling, and zero partial writes.
 - **Authoritative oracle:** Canonical source verse keys, the prepared-preflight token/summary, durable
   confirmation outcome, door-link snapshot, and Mushaf ayah-to-door projection.
-- **Owning test layer:** Backend application/persistence xUnit tests with Testcontainers, including the
+- **Owning test layer:** Backend application/persistence xUnit tests against the persistent Test
+  Database, including the
   real API-hosted background processors and HTTP response variants.
 - **Cross-stack sentinel:** Chromium Playwright performs the Owner configuration, preflight, and
   confirmation through the real UI, then independently rereads the durable outcome and projection.
-- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
-  cross-stack base fixture; run desktop and the approved Linking mobile variant, and reset only small
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey against
+  `quran_dashboard_test`; run desktop and the approved Linking mobile variant, and reset only small
   Linking workspace/job/outcome, Abwab, and related projection state.
 
 ### 4. PhraseSearch
@@ -262,12 +264,12 @@ This is a human risk map, not a duplicate executable test catalogue. Backend cla
   transaction rollback with no partial state, and revoke/disable behavior.
 - **Authoritative oracle:** The public Abwab tree, door/tree versions, relevant ETag/detail response,
   relation/inclusion/link counts, and Mushaf projection where applicable.
-- **Owning test layer:** Backend Abwab application/persistence xUnit tests with Testcontainers plus HTTP
+- **Owning test layer:** Backend Abwab application/persistence xUnit tests against empty scratch plus HTTP
   Permission and concurrency protection.
 - **Cross-stack sentinel:** Chromium Playwright performs the real mutation and verifies it after a fresh
   read/browser context through the consuming UI and independent API seam.
-- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey using the compact
-  cross-stack base fixture; reset only small Abwab, Access, and related projection scenario tables.
+- **Lane and state/resource policy:** Required PR `critical`, `mutating` journey against
+  `quran_dashboard_test`; reset only small Abwab, Access, and related projection scenario tables.
 
 ### Playwright selection metadata
 
@@ -276,7 +278,7 @@ Each target Playwright suite records these annotations in the specification that
 - `critical`.
 - `mobile` when the approved mobile variant applies.
 - Exactly one of `mutating` or `read-only`.
-- The required artifact or compact-fixture identifier.
+- The required TestRuntime capability or rehearsal identifier.
 - The risk/journey identifier.
 
 Lane selection consumes these annotations and validates them through Playwright discovery output. The
@@ -376,18 +378,13 @@ canonical or PhraseSearch database.
   isolation mechanism.
 - A measured copy-on-write mechanism is allowed when it satisfies the timing and cost constraints.
 - Repeated physical copies or restores of the multi-gigabyte full-canonical/PhraseSearch state per
-  scenario, test, or journey group are prohibited. Exact artifact sizes belong in the tracked lock.
-- Large canonical and phrase-ready artifacts are provisioned once per applicable scheduled or release
-  run.
-- Full-canonical acquisition is Local-first on the current trusted solo-developer runner: a scheduled or
-  release provisioner resolves only the lock-pinned payload beneath `QURAN_TEST_ARTIFACT_ROOT`, then
-  shares its immutable restored state. It never falls back to an ambient developer, shared, staging, or
-  production database. External storage is deferred until remote CI, a second machine, or another
-  developer requires it.
+  scenario, test, or journey group are prohibited.
+- Ordinary readers use the persistent `quran_dashboard_test` capability. Full-data destructive
+  rehearsals use an explicitly provisioned rehearsal database after `--authorize-full-data`.
 
-Tests must pass independently and in random order. PhraseSearch read scenarios use a provisioned
-immutable ready fixture; the one-shot build/activation test receives separate eligible state. See
-[Test Artifacts](./test-artifacts.md) for the complete contract.
+Tests must pass independently and in random order. PhraseSearch read scenarios use the persistent
+capability; the one-shot build/activation test receives a separately authorized full rehearsal. See
+[ADR 0002](../adr/0002-persistent-full-data-test-database.md) for the complete contract.
 
 ## Target gate matrix
 
@@ -455,12 +452,12 @@ seven-day maximum expiry below remain mandatory.
 
 | Lane | Distinct evidence |
 | --- | --- |
-| Nightly | Full Chromium Playwright suite, designated mobile variants, PhraseSearch build/activation, destructive importer/restore tests, artifact verification, accessibility scans, and non-blocking browser timing |
+| Nightly | Full Chromium Playwright suite, designated mobile variants, PhraseSearch build/activation, destructive importer/scratch tests, accessibility scans, and non-blocking browser timing |
 | Weekly and lockfile changes | Risk-based NuGet/npm advisory evaluation |
-| Local pre-merge verification | Locked Backend restore/build, complete artifact verification, previous-release upgrade, backup/restore recovery, and release advisory evaluation |
+| Local pre-merge verification | Locked Backend restore/build, TestRuntime inspect, and release advisory evaluation |
 
-Do not repeat work merely to fill a lane. A scheduled or release run provisions each required large
-artifact once and shares its immutable state; it never recopies that state per test.
+Do not repeat work merely to fill a lane. A scheduled or release run uses the persistent Test Database
+capability; it never recopies that state per test.
 
 Automated deployment and Production verification are deferred by owner decision. Repository test
 commands must not contact Production, create staging or cloud resources, or use live Logto. Any future
@@ -471,70 +468,59 @@ The provider-neutral nightly contract is now implemented in
 [`nightly-risk-lane.json`](../../nightly-risk-lane.json) and
 [`Nightly risk lane`](./nightly-risk-lane.md). It composes the sealed full Chromium command (including
 the designated Mushaf and Linking mobile variants), the isolated PhraseSearch build/activation
-rehearsal, Abwab snapshot protections, Quran topics import protections, and full-canonical artifact
-verification. It retains structured browser timing as non-blocking evidence and rejects dependency
-advisory commands. No nightly schedule, remote runner, or artifact upload is configured or required for
+rehearsal, Abwab snapshot protections, and Quran topics import protections. It retains structured
+browser timing as non-blocking evidence and rejects dependency
+advisory commands. No nightly schedule, remote runner, or evidence upload is configured or required for
 Local-first adoption.
 
 The Local-first pre-merge contract is implemented in
 [`release-candidate-lane.json`](../../release-candidate-lane.json) and
-[`Local-first pre-merge verification`](./release-candidate-lane.md). It runs the six existing local
-restore, build, artifact, migration, recovery, and advisory gates against one immutable candidate. It
+[`Local-first pre-merge verification`](./release-candidate-lane.md). It runs the four existing local
+restore, build, TestRuntime inspect, and advisory gates against one immutable candidate. It
 accepts no staging, live-Logto, deployment, Production, or manual-attestation input.
 
 ## Hermeticity and reproducible inputs
 
 Required PR jobs have two phases:
 
-1. **Controlled provisioning:** locked dependency restore, the exact Chromium revision, digest-pinned
-   PostgreSQL images, verified compact artifact retrieval, ephemeral HTTPS certificates, and build.
-2. **Sealed execution:** no external egress, preloaded dependencies/images, local OIDC/JWKS and Logto
+1. **Controlled provisioning:** locked dependency restore, the exact Chromium revision, ephemeral HTTPS
+   certificates, and build.
+2. **Sealed execution:** no external egress, preloaded dependencies, local OIDC/JWKS and Logto
    Management API stubs, verified fixtures, and `--no-build`/`--no-restore` execution where supported.
 
-Retain the browser request-leak detector and also enforce process/container egress denial. Artifact
-credentials exist only during provisioning. No Local-first execution command receives an external
-identity-provider allowlist.
+Retain the browser request-leak detector and also enforce process egress denial. No Local-first
+execution command receives an external identity-provider allowlist.
 
 The implemented provider-neutral harness uses a preloaded system-call guard for the browser,
-Frontend server, API, and child processes. It admits only loopback plus the exact private PostgreSQL
-address; the database container remains on a Docker internal network. A stale provisioning receipt,
-missing output, missing browser/image, or credential-bearing child environment fails closed.
+Frontend server, API, and child processes. It admits only loopback plus the persistent Test Database
+address. A stale provisioning receipt, missing output, missing browser, or credential-bearing child
+environment fails closed.
 
-Required infrastructure inputs are immutable and reviewed: PostgreSQL images are pinned by digest,
-NuGet uses locked restore, npm uses the committed lockfile, and the Playwright browser revision is part
-of cache identity. CI generates ephemeral HTTPS certificates; secure-cookie journeys never downgrade
-to HTTP.
+Required infrastructure inputs are immutable and reviewed: NuGet uses locked restore, npm uses the
+committed lockfile, and the Playwright browser revision is part of cache identity. CI generates
+ephemeral HTTPS certificates; secure-cookie journeys never downgrade to HTTP.
 
-The target harness must expose explicit local database modes:
+Ordinary database tests use `quran_dashboard_test`. Destructive rehearsals use runner-owned empty
+scratch databases or an explicitly authorized full rehearsal. There is no compact-artifact or
+`clone-local` mode.
 
-- `artifact`: deterministic default for critical/full commands and the only acceptable target CI mode.
-- `clone-local`: opt-in loopback-only developer convenience; it is non-canonical and cannot serve as
-  release evidence.
-
-The implemented harness must never infer clone mode from user secrets, and no test lane may point at
-production or a shared staging database.
+The implemented harness must never infer a Development Database from user secrets, and no test lane may
+point at production or a shared staging database.
 
 ## Migrations, destructive operations, and dependencies
 
 The operational P0 track runs in parallel with the journey roadmap:
 
-- Artifact trust, verification, and reproducible restore.
+- Persistent Test Database inspect, reset, and explicit capability refresh.
 - PhraseSearch one-shot build safety and post-build capability proof.
 - Abwab snapshot export/import and topics import checksum, rollback, and exact-result protection.
-- Previous-release database upgrade testing.
-- Verified backup/restore rehearsal.
+- Explicit empty-scratch schema and import rehearsals.
+- Authorized full-data index/recovery rehearsals; they are not ordinary pre-PR or release-candidate
+  commands.
 
-A schema release verifies the authoritative previous-release declaration and local Git inventory before
-any target is selected. The current authoritative reference has the same six-migration head as this branch,
-so its forward delta is recorded as empty. The active supplemental five-to-six rehearsal creates a private
-PostgreSQL 18 target, applies the actual historical five-migration chain, restores the lock-pinned
-Quran-only data-only artifact, applies migration six, boots the application, and reruns canonical and
-critical sentinels. The supplemental historical reference is never relabeled as the previous release.
-Forward-only recovery is proven through verified backup/restore rather than requiring a potentially unsafe
-`Down` implementation. The active recovery lane accepts only the lock-pinned local artifact and two
-separate digest-pinned disposable PostgreSQL 18 instances. Before backup it transactionally reconciles
-only lock-declared owned sequences in the disposable source, retaining original and reconciled high-water
-evidence; the isolated target must reproduce all counts, critical reads, and safe next-sequence values.
+A schema release verifies committed migrations and TestRuntime capability state before ordinary
+readers run. Full-data destructive rehearsals remain separately authorized. Forward-only recovery is
+proven through explicit rehearsal capability rather than dump restore into disposable containers.
 
 Dependency advisories run when lockfiles change, on schedule, and before release. Confirmed high or
 critical production exposure blocks. An unreachable or development-only advisory requires analysis

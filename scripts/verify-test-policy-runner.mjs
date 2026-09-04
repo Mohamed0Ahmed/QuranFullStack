@@ -39,9 +39,8 @@ const catalog = parseBackendPolicyCatalog(`${header}\n${[
   row('Tests.OtherFullImport', 'Tafsirs', 'Canonical', 'Pipeline', 'Cli,Source', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
   row('Tests.FullIndex', 'PhraseSearch', 'Release', 'Release', 'Cli,Execution', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'PhraseSearchIndexBuild', 'None', 'Migrated'),
   row('Tests.FullRecovery', 'ApiBehavior', 'Release', 'Release', 'Cli,Execution,Schema', 'DestructiveRehearsal', 'CanonicalQuranData,SchemaState', 'CanonicalQuranData,SchemaState', 'FullRehearsal', 'Recovery', 'None', 'Migrated'),
-  row('Tests.LegacyFull', 'Smoke', 'Canonical', 'Smoke', '', '', '', '', '', '', '', 'Unmigrated'),
-  row('QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests', 'ApiBehavior', 'Release', 'Release', 'Safety', '', '', '', '', '', '', 'Unmigrated'),
-  row('Tests.Legacy', 'Linking', 'Database', 'TierB', '', '', '', '', '', '', '', 'Unmigrated'),
+  row('Tests.LegacyFull', 'Smoke', 'Canonical', 'Smoke', 'Cli', 'DestructiveRehearsal', 'CanonicalQuranData', 'CanonicalQuranData', 'FullRehearsal', 'CanonicalImport', 'None', 'Migrated'),
+  row('Tests.FastUnclassified', 'Linking', 'Fast', 'TierB', '', 'FastNoDb', 'None', 'None', 'None', 'None', 'None', 'Migrated'),
 ].join('\n')}\n`);
 const resourceCatalog = parseBackendResourceCatalog(`${[
   'CollectionName\tResourceClassName\tParallelPolicy\tStatePolicy\tSetupWrites\tResetBehavior\tDatabaseTarget\tStartupEffects\tMigrationState',
@@ -61,7 +60,7 @@ assert.deepEqual(EXECUTION_GROUPS, [
 const focused = planFocusedSelection({
   backendCatalog: catalog,
   backendResources: resourceCatalog,
-  backendClasses: ['Tests.Reader', 'Tests.FixtureUpgraded', 'Tests.Legacy'],
+  backendClasses: ['Tests.Reader', 'Tests.FixtureUpgraded', 'Tests.FastUnclassified'],
   backendMethods: ['Tests.Fast.Contract_case'],
   buildMode: 'build',
   playwrightSelections: [
@@ -73,17 +72,17 @@ const focused = planFocusedSelection({
 
 assert.deepEqual(
   focused.partitions.map(({ group }) => group),
-  ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],
+  ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter'],
 );
 assert.deepEqual(
   focused.partitions.flatMap(({ selections }) => selections.map(({ selector }) => selector)),
   [
     'Tests.Fast.Contract_case',
+    'Tests.FastUnclassified',
     'Tests.Reader',
     'e2e/mushaf-reader.e2e.ts:42',
     'e2e/guarded.e2e.ts:41',
     'Tests.FixtureUpgraded',
-    'Tests.Legacy',
   ],
 );
 assert.equal(focused.commands[0].id, 'backend-build');
@@ -164,8 +163,7 @@ const blockedLegacyFullData = planFocusedSelection({
 });
 assert.deepEqual(blockedLegacyFullData.authorizationRequired, ['Tests.LegacyFull']);
 
-const focusedReleaseMethodName =
-  'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests.Recovery_case';
+const focusedReleaseMethodName = 'Tests.FullRecovery.Recovery_case';
 const focusedReleaseMethod = planFocusedSelection({
   backendCatalog: catalog,
   backendResources: resourceCatalog,
@@ -176,11 +174,12 @@ const focusedReleaseMethod = planFocusedSelection({
   authorizeFullData: true,
 });
 assert.deepEqual(focusedReleaseMethod.commands[0].arguments, [
-  'full-canonical-recovery',
+  'feature',
   '--test',
   focusedReleaseMethodName,
   '--no-build',
 ]);
+assert.equal(focusedReleaseMethod.commands[0].rehearsalSubtype, 'recovery');
 
 const ordinaryPrePr = planPrePrSelection({
   backendCatalog: catalog,
@@ -192,7 +191,7 @@ const ordinaryPrePr = planPrePrSelection({
 assert.deepEqual(ordinaryPrePr.authorizationRequired, []);
 assert.deepEqual(ordinaryPrePr.requiredGates, ['backend-risk', 'frontend-policy-build', 'playwright-critical']);
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Fast'));
-assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.Legacy'));
+assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'backend-class-Tests.FastUnclassified'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'frontend-pre-pr'));
 assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-canonical-critical'));
 assert.deepEqual(
@@ -206,7 +205,7 @@ assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyCanonicalGe
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyOtherGenerator')));
 assert.deepEqual(
   ordinaryPrePr.partitions.map(({ group }) => group),
-  ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter', 'LegacyUnmigrated'],
+  ['FastNoDb', 'CanonicalReader', 'GuardedReader', 'MutableWriter'],
 );
 
 const affectedPipeline = planPrePrSelection({
@@ -295,7 +294,6 @@ assert.ok(scheduledWithoutAuthorization.commands.some(({ id }) =>
 assert.ok(scheduledWithoutAuthorization.commands.some(({ id }) =>
   id.includes('EmptyOtherGenerator')));
 assert.deepEqual(scheduledWithoutAuthorization.authorizationRequired, [
-  'QuranDashboard.Tests.TestSupport.Artifacts.FullCanonicalRecoveryRehearsalTests',
   'Tests.FullImport',
   'Tests.FullIndex',
   'Tests.FullRecovery',
@@ -311,9 +309,15 @@ const authorizedRelease = planPrePrSelection({
   explicitPolicy: 'release',
 });
 const releaseCommand = authorizedRelease.commands.find(({ id }) =>
-  id.includes('FullCanonicalRecoveryRehearsalTests'),
+  id.includes('Tests.FullRecovery'),
 );
-assert.deepEqual(releaseCommand.arguments, ['full-canonical-recovery', '--no-build']);
+assert.deepEqual(releaseCommand.arguments, [
+  'feature',
+  '--class',
+  'Tests.FullRecovery',
+  '--no-build',
+]);
+assert.equal(releaseCommand.rehearsalSubtype, 'recovery');
 
 assert.throws(
   () => parseBackendPolicyCatalog(`${header}\n${row('Tests.Bad', 'ApiBehavior', 'Fast', 'TierB', '', '', '', '', '', '', '', 'Migrated')}\n`),
@@ -321,7 +325,7 @@ assert.throws(
 );
 assert.throws(
   () => parseBackendPolicyCatalog(`${header}\n${row('Tests.Bad', 'ApiBehavior', 'Fast', 'TierB', '', 'FastNoDb', 'None', 'None', 'None', 'None', 'None', 'Unmigrated')}\n`),
-  /only a legacy full-data rehearsal.*unmigrated/i,
+  /unsupported MigrationState Unmigrated/i,
 );
 assert.throws(
   () => parseBackendPolicyCatalog(`${header}\n${row('Tests.BadReader', 'ApiBehavior', 'Database', 'TierB', '', 'CanonicalReader', 'CanonicalQuranData', 'MutableApplicationState', 'TestDatabase', 'None', 'None', 'Migrated')}\n`),
@@ -357,10 +361,10 @@ const declaredLegacyPhraseIndex = repositoryCatalog.find(({ className }) =>
   className === 'QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests');
 const declaredLegacyPhraseIndexResource = repositoryResources.find(({ collectionName }) =>
   collectionName === 'PhraseIndexFullCanonicalRehearsalCollection');
-assert.equal(declaredLegacyPhraseIndex.migrationState, 'Unmigrated');
+assert.equal(declaredLegacyPhraseIndex.migrationState, 'Migrated');
 assert.equal(declaredLegacyPhraseIndex.policy.databaseTarget, 'FullRehearsal');
 assert.equal(declaredLegacyPhraseIndex.policy.destructiveSubtype, 'PhraseSearchIndexBuild');
-assert.equal(declaredLegacyPhraseIndexResource.migrationState, 'Unmigrated');
+assert.equal(declaredLegacyPhraseIndexResource.migrationState, 'Migrated');
 assert.equal(declaredLegacyPhraseIndexResource.policy.databaseTarget, 'FullRehearsal');
 
 const authorizedLegacyPhraseIndex = planFocusedSelection({
@@ -374,8 +378,9 @@ const authorizedLegacyPhraseIndex = planFocusedSelection({
 });
 assert.deepEqual(
   authorizedLegacyPhraseIndex.commands[0].arguments,
-  ['phrase-index-rehearsal', '--no-build'],
+  ['feature', '--class', declaredLegacyPhraseIndex.className, '--no-build'],
 );
+assert.equal(authorizedLegacyPhraseIndex.commands[0].rehearsalSubtype, 'phrase-search-index-build');
 const foundationClasses = repositoryCatalog
   .filter(({ feature }) => feature === 'FoundationImport')
   .map(({ className }) => className)

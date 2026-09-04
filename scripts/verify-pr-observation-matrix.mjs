@@ -68,16 +68,17 @@ if (errors.length === 0) {
 
   const backend = findJob(matrix, 'backend-pr');
   check(
-    backend?.inputContract?.candidate === 'full-canonical',
-    'The Backend candidate must remain explicitly full-canonical.',
+    backend?.inputContract?.candidate === 'quran_dashboard_test',
+    'The Backend candidate must remain the persistent Test Database capability.',
   );
   check(
-    backend?.inputContract?.compactFixtureException === null,
-    'The Backend candidate must not silently claim a compact-fixture exception.',
+    backend?.inputContract?.compactFixtureException === undefined,
+    'The Backend candidate must not declare a compact-fixture exception.',
   );
   check(
-    hasCommand(backend, 'Backend/scripts/test-backend', ['pre-pr']),
-    'The Backend job must execute the supported full pre-pr lane.',
+    hasCommand(backend, 'Backend/scripts/test-backend', ['pre-pr'])
+      || hasCommand(backend, 'node', ['scripts/test', 'pre-pr']),
+    'The Backend job must execute the supported pre-pr lane.',
   );
 
   const contract = findJob(matrix, 'api-contract-model');

@@ -1,18 +1,14 @@
 # Executable test policy and repository runner
 
-Repository-root `scripts/test` is the additive policy-aware coordinator for the Test Database
-Capability migration. Backend entries explicitly marked `Unmigrated` retain their staged operational
-implementation until the atomic cutover ticket lands. Playwright state-policy execution is migrated;
-absence of policy metadata is never treated as an execution default.
+Repository-root `scripts/test` is the policy-aware coordinator for Backend and Playwright execution.
+Every Backend catalog row is `Migrated`. Playwright state-policy execution is classified; absence of
+policy metadata is never treated as an execution default.
 
 Backend classes are catalogued in
 `Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv`. A migrated row declares one
 of `FastNoDb`, `CanonicalReader`, `GuardedReader`, `MutableWriter`, or `DestructiveRehearsal`, its data
-reads and writes, database target, and destructive subtype. An unmigrated row normally leaves all policy
-fields blank and explicitly says `Unmigrated`; a legacy full-data rehearsal may remain operationally
-unmigrated while declaring a complete `DestructiveRehearsal`/`FullRehearsal` capability so authorization
-is still explicit. Fixture/resource effects are independently catalogued in `test-resources.tsv`;
-migrated resources and legacy full-data rehearsal resources declare setup writes, reset behavior, target,
+reads and writes, database target, and destructive subtype. Fixture/resource effects are independently
+catalogued in `test-resources.tsv`; every resource declares setup writes, reset behavior, target,
 and API startup effects. The effective Backend policy is the strictest valid combination.
 
 Playwright uses `canonical-read`, `guarded-read`, or `mutating` plus one `fixture-policy` annotation.
@@ -50,9 +46,8 @@ Playwright output.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
 typecheck, persistent canonical-read critical Chromium gate, and the stateful critical gate.
-The direct `Backend/scripts/test-backend pre-pr` delegate retains its non-scratch Backend coverage but
-excludes runner-owned empty-scratch rehearsals because it has no affected-scope inputs; invoke this
-repository-root coordinator with a feature or concern when that scope requires those rehearsals.
+The direct `Backend/scripts/test-backend pre-pr` delegate execs this coordinator. Empty-scratch
+rehearsals stay out of ordinary pre-PR unless an affected feature or concern selects them.
 Add only the affected pipeline/contract scope:
 
 ```bash
@@ -62,8 +57,7 @@ scripts/test pre-pr --policy scheduled --dry-run
 ```
 
 The plan partitions selections in this order: FastNoDb, CanonicalReader, GuardedReader, MutableWriter,
-empty-scratch DestructiveRehearsal, and full-data DestructiveRehearsal. Legacy entries are shown in a
-separate temporary partition. In both focused and pre-PR modes, full-data work is omitted and reported
+empty-scratch DestructiveRehearsal, and full-data DestructiveRehearsal. In both focused and pre-PR modes, full-data work is omitted and reported
 in `authorizationRequired` unless the operator reviews the dry run and repeats the command with
 `--authorize-full-data`. Merely having a canonical pipeline in the repository never selects it.
 

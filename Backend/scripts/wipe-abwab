@@ -109,7 +109,7 @@ export PGHOST PGPORT="${PGPORT:-5432}" PGDATABASE PGUSER PGPASSWORD
 
 [[ -n "${PGHOST}" && -n "${PGDATABASE}" ]] || fail "connection string is missing a host or a database name."
 
-# Deliberately stricter than create-smoke-dump's equivalent guard: there is no --allow-remote escape,
+# Local-only. There is no --allow-remote escape,
 # because a deployed database must not be wipeable by any flag this script accepts. Curation data is
 # authored, not derived — nothing restores it.
 case "${PGHOST}" in

@@ -4,17 +4,32 @@
   "title": "Diagnostic probe",
   "providerNeutral": true,
   "timeoutSeconds": 10,
-  "inputContract": { "artifactRoot": "probe", "resultsDirectory": "probe", "executionKind": "scheduled" },
-  "evidenceRetention": { "failedDiagnosticsDays": 14, "aggregateTimingDays": 30, "externalUploadConfigured": false },
-  "excludedWork": ["dependency-advisory-evaluation"],
-  "requiredBrowserJourneys": ["mobile.probe"],
-  "commands": [{
-    "id": "retryable-probe",
-    "phase": "preparation",
-    "timeoutSeconds": 2,
-    "cwd": ".",
-    "executable": "node",
-    "arguments": ["scripts/test-fixtures/nightly-diagnostic-probe.mjs"],
-    "diagnosticRetry": true
-  }]
+  "inputContract": {
+    "resultsDirectory": "probe",
+    "executionKind": "scheduled"
+  },
+  "evidenceRetention": {
+    "failedDiagnosticsDays": 14,
+    "aggregateTimingDays": 30,
+    "externalUploadConfigured": false
+  },
+  "excludedWork": [
+    "dependency-advisory-evaluation"
+  ],
+  "requiredBrowserJourneys": [
+    "mobile.probe"
+  ],
+  "commands": [
+    {
+      "id": "retryable-probe",
+      "phase": "preparation",
+      "timeoutSeconds": 2,
+      "cwd": ".",
+      "executable": "node",
+      "arguments": [
+        "scripts/test-fixtures/nightly-diagnostic-probe.mjs"
+      ],
+      "diagnosticRetry": true
+    }
+  ]
 }

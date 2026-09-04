@@ -32,7 +32,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task MigratedDatabase_CarriesNoPermissionRowsBeforeAnyHostBoots()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
 
         (await ReadPersistedCodesAsync(database.ConnectionString)).Should().BeEmpty();
     }
@@ -40,7 +40,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task StartupSync_OnAMigrationsOnlyDatabase_ServesTheCanonicalCatalogueAsAssignable()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         (await ReadPersistedCodesAsync(database.ConnectionString)).Should().BeEmpty();
         await SeedActiveOwnerAsync(database.ConnectionString);
         await using var factory = BuildFactory(database.ConnectionString, startupSyncEnabled: true);
@@ -58,7 +58,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task StartupSync_RepeatedOnASecondHostBoot_LeavesTheCatalogueUnchanged()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await SeedActiveOwnerAsync(database.ConnectionString);
         await using (var firstFactory = BuildFactory(database.ConnectionString, startupSyncEnabled: true))
         {
@@ -81,7 +81,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task StartupSync_WithAnUnknownDatabaseCode_KeepsItAndStaysAssignable()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await SeedActiveOwnerAsync(database.ConnectionString);
         await AddPermissionAsync(database.ConnectionString, "future.example");
         await using var factory = BuildFactory(database.ConnectionString, startupSyncEnabled: true);
@@ -99,7 +99,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task DisabledStartupSync_OnAnEmptyTable_ServesTheCanonicalCatalogueAsNotAssignable()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await SeedActiveOwnerAsync(database.ConnectionString);
         await using var factory = BuildFactory(database.ConnectionString, startupSyncEnabled: false);
         using var client = CreateOwnerClient(factory);
@@ -116,7 +116,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task Health_WithoutPersistedPermissions_IsDegradedAndStillAnswers200()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await using var factory = BuildFactory(database.ConnectionString, startupSyncEnabled: false);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -136,7 +136,7 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
     [Fact]
     public async Task Health_AfterStartupSync_IsHealthy()
     {
-        await using var database = await LeaseMigratedDatabaseAsync();
+        await using var database = await fixture.CreateMigratedDatabaseAsync();
         await using var factory = BuildFactory(database.ConnectionString, startupSyncEnabled: true);
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
@@ -171,11 +171,6 @@ public sealed class PermissionCatalogueStartupSyncTests(AccessMigrationTestFixtu
 
     private static IReadOnlyList<string> CanonicalCodes =>
         AbwabPermissionCatalogue.All.Select(permission => permission.Code).ToArray();
-
-    private Task<AccessMigrationDatabase> LeaseMigratedDatabaseAsync()
-    {
-        return fixture.CreateMigratedDatabaseAsync();
-    }
 
     private static IReadOnlyList<string> ReadItemCodes(JsonElement data)
     {
