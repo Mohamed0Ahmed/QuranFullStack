@@ -4,9 +4,11 @@ import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
+import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 
 import {
+  assessScratchLifecycleResult,
   createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
@@ -125,13 +127,18 @@ async function executeEmptyScratch(command) {
     return 2;
   }
 
+  const totalStartedAt = performance.now();
   const runId = createScratchRunId();
+  const keeperStartedAt = performance.now();
   const keeper = await startScratchKeeper(runId);
+  const keeperDurationMilliseconds = performance.now() - keeperStartedAt;
   if (!keeper) {
     console.log(JSON.stringify(createEmptyScratchExecutionEvidence({
       command,
       runId,
       keeperStatus: 'failed',
+      keeperDurationMilliseconds,
+      totalDurationMilliseconds: performance.now() - totalStartedAt,
       finalStatus: 3,
     })));
     return 3;
@@ -140,6 +147,7 @@ async function executeEmptyScratch(command) {
   let created = false;
   let executionStatus = 1;
   let testStatus = null;
+  let testDurationMilliseconds = null;
   let reap = null;
   let creation = null;
   let cleanup = null;
@@ -161,7 +169,9 @@ async function executeEmptyScratch(command) {
           QURAN_DASHBOARD_TEST_LOCK_COMMAND: SCRATCH_LOCK_COMMAND,
           QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE: command.scratchSubtype,
         };
+        const testStartedAt = performance.now();
         testStatus = executeCommand(command, environment);
+        testDurationMilliseconds = performance.now() - testStartedAt;
         executionStatus = testStatus;
       }
     }
@@ -173,18 +183,24 @@ async function executeEmptyScratch(command) {
     keeperExitStatus = await waitForExit(keeper);
   }
 
-  const finalStatus = cleanup !== null && cleanup.status !== 0
+  let finalStatus = cleanup !== null && cleanup.status !== 0
     ? cleanup.status
     : executionStatus;
+  if (keeperExitStatus !== 0 && finalStatus === 0) {
+    finalStatus = keeperExitStatus ?? 1;
+  }
   console.log(JSON.stringify(createEmptyScratchExecutionEvidence({
     command,
     runId,
     keeperStatus: 'acquired',
     keeperExitStatus,
+    keeperDurationMilliseconds,
     reap,
     create: creation,
     testStatus,
+    testDurationMilliseconds,
     cleanup,
+    totalDurationMilliseconds: performance.now() - totalStartedAt,
     finalStatus,
   })));
   return finalStatus;
@@ -223,6 +239,7 @@ async function executeFullRehearsal(command) {
 }
 
 function runScratchLifecycle(action, runId, subtype = null) {
+  const startedAt = performance.now();
   const arguments_ = [
     TEST_RUNTIME_ASSEMBLY,
     'scratch',
@@ -248,15 +265,32 @@ function runScratchLifecycle(action, runId, subtype = null) {
   }
   if (result.error) {
     console.error(`[scripts/test] scratch ${action} could not start: ${result.error.message}`);
-    return { status: 1, report: null };
+    return assessScratchLifecycleResult({
+      action,
+      processStatus: result.status,
+      report: null,
+      durationMilliseconds: performance.now() - startedAt,
+      processError: true,
+    });
   }
   let report = null;
+  let parseError = false;
   try {
     report = result.stdout ? JSON.parse(result.stdout) : null;
   } catch {
+    parseError = true;
     console.error(`[scripts/test] scratch ${action} returned invalid JSON evidence.`);
   }
-  return { status: result.status ?? 1, report };
+  if (!result.stdout) {
+    console.error(`[scripts/test] scratch ${action} returned no JSON evidence.`);
+  }
+  return assessScratchLifecycleResult({
+    action,
+    processStatus: result.status,
+    report,
+    durationMilliseconds: performance.now() - startedAt,
+    parseError,
+  });
 }
 
 async function startScratchKeeper(runId) {

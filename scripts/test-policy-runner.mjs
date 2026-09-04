@@ -75,19 +75,86 @@ export const EXECUTION_GROUPS = Object.freeze([
 ]);
 const ALL_GROUPS = [...EXECUTION_GROUPS, 'LegacyUnmigrated'];
 
+export function assessScratchLifecycleResult({
+  action,
+  processStatus,
+  report,
+  durationMilliseconds,
+  processError = false,
+  parseError = false,
+}) {
+  const reportObject = report !== null && typeof report === 'object' ? report : null;
+  const evidenceValid = reportObject !== null
+    && typeof reportObject.succeeded === 'boolean'
+    && Array.isArray(reportObject.violations)
+    && reportObject.scratch !== null
+    && typeof reportObject.scratch === 'object'
+    && reportObject.scratch.mode === action
+    && sanitizeDatabaseIdentity(reportObject.scratch.database) !== null
+    && typeof reportObject.scratch.validated === 'boolean'
+    && typeof reportObject.scratch.removed === 'boolean'
+    && Number.isInteger(reportObject.scratch.dumpFilesRetained)
+    && reportObject.scratch.dumpFilesRetained >= 0;
+  const successfulEvidence = evidenceValid
+    && reportObject.scratch.validated === true
+    && reportObject.scratch.dumpFilesRetained === 0
+    && (action !== 'create' || reportObject.scratch.receiptRecorded === true)
+    && (action !== 'cleanup' || reportObject.scratch.removed === true);
+  const failureCategory = processError
+    ? 'process-start-failed'
+    : parseError
+      ? 'invalid-json-evidence'
+      : reportObject === null
+        ? 'missing-evidence'
+        : !evidenceValid
+          ? 'invalid-evidence'
+          : reportObject.succeeded !== true
+            ? 'lifecycle-failed'
+            : !successfulEvidence
+              ? 'invalid-evidence'
+              : null;
+  const reportedStatus = Number.isInteger(processStatus) ? processStatus : 1;
+
+  return {
+    status: reportedStatus === 0 && failureCategory !== null ? 1 : reportedStatus,
+    report: reportObject,
+    evidenceValid,
+    failureCategory,
+    durationMilliseconds: normalizeDuration(durationMilliseconds),
+  };
+}
+
 export function createEmptyScratchExecutionEvidence({
   command,
   runId,
   keeperStatus,
   keeperExitStatus = null,
+  keeperDurationMilliseconds = null,
   reap = null,
   create = null,
   testStatus = null,
+  testDurationMilliseconds = null,
   cleanup = null,
+  totalDurationMilliseconds = null,
   finalStatus,
 }) {
   const createScratch = create?.report?.scratch;
   const cleanupScratch = cleanup?.report?.scratch;
+  const succeeded = keeperStatus === 'acquired'
+    && keeperExitStatus === 0
+    && reap?.status === 0
+    && reap?.evidenceValid === true
+    && reap?.report?.succeeded === true
+    && create?.status === 0
+    && create?.evidenceValid === true
+    && create?.report?.succeeded === true
+    && testStatus === 0
+    && cleanup?.status === 0
+    && cleanup?.evidenceValid === true
+    && cleanup?.report?.succeeded === true
+    && cleanupScratch?.removed === true
+    && cleanupScratch?.dumpFilesRetained === 0
+    && finalStatus === 0;
 
   return {
     evidenceVersion: 1,
@@ -98,22 +165,36 @@ export function createEmptyScratchExecutionEvidence({
     scratch: {
       runId,
       subtype: command.scratchSubtype ?? null,
-      database: createScratch?.database ?? cleanupScratch?.database ?? null,
+      database: sanitizeDatabaseIdentity(createScratch?.database)
+        ?? sanitizeDatabaseIdentity(cleanupScratch?.database),
     },
     lifecycle: {
       keeper: {
         status: keeperStatus,
         exitStatus: keeperExitStatus,
+        durationMilliseconds: normalizeDuration(keeperDurationMilliseconds),
       },
       reap: summarizeScratchLifecycleResult(reap),
       create: summarizeScratchLifecycleResult(create),
       test: testStatus === null
         ? null
-        : { status: testStatus, succeeded: testStatus === 0 },
+        : {
+            status: testStatus,
+            succeeded: testStatus === 0,
+            durationMilliseconds: normalizeDuration(testDurationMilliseconds),
+          },
       cleanup: summarizeScratchLifecycleResult(cleanup),
     },
+    timings: {
+      keeperMilliseconds: normalizeDuration(keeperDurationMilliseconds),
+      reapMilliseconds: reap?.durationMilliseconds ?? null,
+      createMilliseconds: create?.durationMilliseconds ?? null,
+      testMilliseconds: normalizeDuration(testDurationMilliseconds),
+      cleanupMilliseconds: cleanup?.durationMilliseconds ?? null,
+      totalMilliseconds: normalizeDuration(totalDurationMilliseconds),
+    },
     finalStatus,
-    succeeded: finalStatus === 0,
+    succeeded,
   };
 }
 
@@ -126,13 +207,46 @@ function summarizeScratchLifecycleResult(result) {
   return {
     status: result.status,
     succeeded: result.report?.succeeded === true,
-    mode: scratch?.mode ?? null,
-    database: scratch?.database ?? null,
-    receiptRecorded: scratch?.receiptRecorded ?? null,
-    validated: scratch?.validated ?? null,
-    removed: scratch?.removed ?? null,
-    dumpFilesRetained: scratch?.dumpFilesRetained ?? null,
+    evidenceValid: result.evidenceValid === true,
+    failureCategory: sanitizeEvidenceCode(result.failureCategory),
+    failureType: sanitizeEvidenceCode(result.report?.failureType),
+    violationCodes: Array.isArray(result.report?.violations)
+      ? [...new Set(result.report.violations
+          .map(({ code }) => sanitizeEvidenceCode(code))
+          .filter((code) => code !== null))].sort()
+      : [],
+    durationMilliseconds: normalizeDuration(result.durationMilliseconds),
+    mode: sanitizeEvidenceCode(scratch?.mode),
+    database: sanitizeDatabaseIdentity(scratch?.database),
+    receiptRecorded: normalizeBoolean(scratch?.receiptRecorded),
+    validated: normalizeBoolean(scratch?.validated),
+    removed: normalizeBoolean(scratch?.removed),
+    dumpFilesRetained: normalizeNonnegativeInteger(scratch?.dumpFilesRetained),
   };
+}
+
+function sanitizeEvidenceCode(value) {
+  return typeof value === 'string' && /^[a-z0-9][a-z0-9._-]{0,127}$/i.test(value)
+    ? value
+    : null;
+}
+
+function sanitizeDatabaseIdentity(value) {
+  return typeof value === 'string' && /^[a-z_][a-z0-9_]{0,62}$/.test(value)
+    ? value
+    : null;
+}
+
+function normalizeBoolean(value) {
+  return typeof value === 'boolean' ? value : null;
+}
+
+function normalizeNonnegativeInteger(value) {
+  return Number.isInteger(value) && value >= 0 ? value : null;
+}
+
+function normalizeDuration(value) {
+  return Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
 }
 
 export function parseBackendPolicyCatalog(source) {

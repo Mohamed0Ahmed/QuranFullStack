@@ -73,8 +73,11 @@ or select an unrelated full-data pipeline.
 
 After each empty-scratch command, the runner emits one `empty-scratch-test-execution` JSON record that
 binds the selected feature, concerns, exact class or method, run ID, subtype, lifecycle step statuses, test
-outcome, and verified cleanup result. It copies only scratch identities and booleans from lower-level
-reports; connection strings, credentials, database rows, dumps, and other payloads are never retained.
+outcome, per-phase and total timings, sanitized failure/violation codes, and verified cleanup result.
+Missing, malformed, mismatched, or unsuccessful lifecycle evidence fails the command even if its child
+process exits zero. The aggregate copies only allowlisted scratch identity and status fields from
+lower-level reports; connection strings, credentials, diagnostic messages, database rows, dumps, and
+other payloads are never retained.
 
 Migrated full-data PhraseSearch index and recovery selections use the manual full Rehearsal Database
 capability only after `--authorize-full-data`. The root runner asks TestRuntime to validate the dedicated

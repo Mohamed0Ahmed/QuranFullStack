@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   EXECUTION_GROUPS,
+  assessScratchLifecycleResult,
   createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
@@ -416,10 +417,14 @@ const scratchEvidence = createEmptyScratchExecutionEvidence({
   command: focusedFoundationRebuild.commands[0],
   runId: '0123456789abcdef0123456789abcdef',
   keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  keeperDurationMilliseconds: 11,
   reap: lifecycleResult('reap', false),
   create: lifecycleResult('create', false),
   testStatus: 0,
+  testDurationMilliseconds: 31,
   cleanup: lifecycleResult('cleanup', true),
+  totalDurationMilliseconds: 73,
   finalStatus: 0,
 });
 assert.equal(scratchEvidence.evidenceType, 'empty-scratch-test-execution');
@@ -429,8 +434,65 @@ assert.equal(scratchEvidence.scratch.subtype, 'canonical-rebuild');
 assert.equal(scratchEvidence.lifecycle.test.status, 0);
 assert.equal(scratchEvidence.lifecycle.cleanup.removed, true);
 assert.equal(scratchEvidence.lifecycle.cleanup.dumpFilesRetained, 0);
+assert.equal(scratchEvidence.timings.totalMilliseconds, 73);
+assert.equal(scratchEvidence.lifecycle.create.durationMilliseconds, 10);
 assert.equal(scratchEvidence.succeeded, true);
 assert.ok(!JSON.stringify(scratchEvidence).includes(credentialSentinel));
+
+const missingLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'create',
+  processStatus: 0,
+  report: null,
+  durationMilliseconds: 4,
+});
+assert.equal(missingLifecycleEvidence.status, 1);
+assert.equal(missingLifecycleEvidence.evidenceValid, false);
+assert.equal(missingLifecycleEvidence.failureCategory, 'missing-evidence');
+
+const failedLifecycleEvidence = assessScratchLifecycleResult({
+  action: 'cleanup',
+  processStatus: 0,
+  durationMilliseconds: 12,
+  report: {
+    succeeded: false,
+    failureType: 'scratch-cleanup-failed',
+    connectionString: `Password=${credentialSentinel}`,
+    violations: [{
+      code: 'scratch.receipt.mismatch',
+      message: credentialSentinel,
+    }],
+    scratch: {
+      mode: 'cleanup',
+      database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+      receiptRecorded: true,
+      validated: true,
+      removed: false,
+      dumpFilesRetained: 0,
+    },
+  },
+});
+assert.equal(failedLifecycleEvidence.status, 1);
+assert.equal(failedLifecycleEvidence.evidenceValid, true);
+assert.equal(failedLifecycleEvidence.failureCategory, 'lifecycle-failed');
+
+const failedScratchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  keeperExitStatus: 0,
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  cleanup: failedLifecycleEvidence,
+  finalStatus: 0,
+});
+assert.equal(failedScratchEvidence.succeeded, false);
+assert.equal(failedScratchEvidence.lifecycle.cleanup.failureType, 'scratch-cleanup-failed');
+assert.deepEqual(
+  failedScratchEvidence.lifecycle.cleanup.violationCodes,
+  ['scratch.receipt.mismatch'],
+);
+assert.ok(!JSON.stringify(failedScratchEvidence).includes(credentialSentinel));
 
 console.log('Repository test policy runner contract passed.');
 
@@ -441,12 +503,18 @@ function row(...columns) {
 function lifecycleResult(mode, removed) {
   return {
     status: 0,
+    evidenceValid: true,
+    failureCategory: null,
+    durationMilliseconds: 10,
     report: {
       succeeded: true,
+      failureType: null,
+      violations: [],
       connectionString: `Password=${credentialSentinel}`,
       scratch: {
         mode,
         database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+        receiptRecorded: mode !== 'reap',
         validated: true,
         removed,
         dumpFilesRetained: 0,
