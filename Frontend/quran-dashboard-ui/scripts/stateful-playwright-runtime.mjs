@@ -192,8 +192,10 @@ function statefulScenarios(entries) {
     validateScenario(scenario);
     const serialized = JSON.stringify(scenario);
     const previous = scenarios.get(scenario.selector);
-    if (previous && previous !== serialized) {
-      throw new Error(`Playwright selector has contradictory stateful policies: ${scenario.selector}`);
+    if (previous) {
+      throw new Error(
+        `Stateful Playwright requires exactly one scenario per file:line: ${scenario.selector}`,
+      );
     }
     scenarios.set(scenario.selector, serialized);
   }

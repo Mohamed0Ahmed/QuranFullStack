@@ -67,8 +67,16 @@ const aggregate = {
   completedAt: null,
   scenarios: [],
 };
+let activePlaywrightChild = null;
+let interruptionSignal = null;
+process.on('SIGINT', () => requestShutdown('SIGINT'));
+process.on('SIGTERM', () => requestShutdown('SIGTERM'));
 
 for (const [index, scenario] of scenarios.entries()) {
+  if (interruptionSignal) {
+    aggregate.status = 'failed';
+    break;
+  }
   const result = await runScenario(scenario, index);
   aggregate.scenarios.push(result);
   writeAggregate();
@@ -108,6 +116,7 @@ async function runScenario(scenario, index) {
   let fingerprint;
   let childAttempted = false;
   let apiIdentityVerified = false;
+  let initialResetCompleted = false;
 
   try {
     environment = buildStatefulPlaywrightEnvironment(process.env, scenario, {
@@ -119,31 +128,30 @@ async function runScenario(scenario, index) {
     });
     keeper = await startKeeper(scenario.policy === 'mutating' ? 'exclusive' : 'shared', runId);
     if (scenario.policy === 'mutating') {
-      fingerprint = protectedFingerprint(runJson(['fingerprint'], environment));
-      runJson(buildMutableResetArguments({
+      fingerprint = protectedFingerprint(runTestRuntimeJson(['fingerprint'], environment));
+      runTestRuntimeJson(buildMutableResetArguments({
         apiProcessId: null,
         expectedFingerprint: fingerprint,
         phase: 'initial',
         runId,
       }), environment);
+      initialResetCompleted = true;
     }
 
+    if (interruptionSignal) {
+      throw new Error(`Stateful Playwright was interrupted by ${interruptionSignal}.`);
+    }
     childAttempted = true;
     const playwrightArguments = ['test', scenario.selector, '--workers=1'];
     if (interactiveMode === '--headed') playwrightArguments.push('--headed');
     if (interactiveMode === '--ui') playwrightArguments.push('--ui');
-    const child = spawnSync(playwright, playwrightArguments, {
-      cwd: frontendRoot,
-      env: environment,
-      stdio: 'inherit',
-    });
-    if (child.error) throw child.error;
+    const child = await runPlaywrightChild(playwrightArguments, environment, keeper);
 
     const receipt = readApiReceipt(apiProcessReceipt);
     const apiProcessId = validateApiProcessReceipt(receipt, STATEFUL_API_PORT);
     apiIdentityVerified = true;
     if (scenario.policy === 'mutating') {
-      runJson(buildMutableResetArguments({
+      runTestRuntimeJson(buildMutableResetArguments({
         apiProcessId,
         expectedFingerprint: fingerprint,
         phase: 'final',
@@ -154,9 +162,16 @@ async function runScenario(scenario, index) {
       await assertApiStopped(apiProcessId, STATEFUL_API_PORT);
     }
 
+    if (child.keeperLost) {
+      throw new Error('TestRuntime keeper exited while the Playwright child was still running.');
+    }
+    if (interruptionSignal) {
+      throw new Error(`Stateful Playwright was interrupted by ${interruptionSignal}.`);
+    }
+
     const playwrightResult = readPlaywrightResult(evidenceDirectory);
-    if (child.status !== 0 || playwrightResult.status !== 'passed') {
-      throw new Error(`Playwright child failed with status ${child.status ?? 1}.`);
+    if (child.exitCode !== 0 || playwrightResult.status !== 'passed') {
+      throw new Error(`Playwright child failed with status ${child.exitCode}.`);
     }
     if (playwrightResult.declaredTestCount !== 1) {
       throw new Error(
@@ -168,12 +183,14 @@ async function runScenario(scenario, index) {
     result.error = error instanceof Error ? error.message : 'Stateful Playwright scenario failed.';
     if (scenario.policy === 'mutating' && childAttempted && result.cleanup === 'pending') {
       result.cleanup = apiIdentityVerified ? 'failed' : 'refused-unverified-api';
+    } else if (scenario.policy === 'mutating' && initialResetCompleted && result.cleanup === 'pending') {
+      result.cleanup = 'passed-no-api-started';
     }
     console.error(`[e2e] ${scenario.selector}: ${result.error}`);
   } finally {
     rmSync(playwrightOutputDirectory, { recursive: true, force: true });
     if (keeper) {
-      keeper.stdin.end();
+      if (!keeper.stdin.destroyed) keeper.stdin.end();
       const keeperStatus = await waitForExit(keeper);
       if (keeperStatus !== 0 && result.status === 'passed') {
         result.status = 'failed';
@@ -202,7 +219,7 @@ function discover(reporter) {
   }
 }
 
-function runJson(arguments_, environment) {
+function runTestRuntimeJson(arguments_, environment) {
   const result = spawnSync('dotnet', [testRuntime, ...arguments_], {
     cwd: repositoryRoot,
     encoding: 'utf8',
@@ -221,6 +238,54 @@ function runJson(arguments_, environment) {
     throw new Error(`TestRuntime ${arguments_[0]} failed with status ${result.status ?? 1}.`);
   }
   return report;
+}
+
+function runPlaywrightChild(arguments_, environment, keeper) {
+  return new Promise((resolveChild, rejectChild) => {
+    let keeperLost = false;
+    let settled = false;
+    const child = spawn(playwright, arguments_, {
+      cwd: frontendRoot,
+      detached: true,
+      env: environment,
+      stdio: 'inherit',
+    });
+    activePlaywrightChild = child;
+
+    const finish = (callback) => {
+      if (settled) return;
+      settled = true;
+      activePlaywrightChild = null;
+      keeper.off('close', onKeeperClose);
+      callback();
+    };
+    const onKeeperClose = () => {
+      keeperLost = true;
+      terminatePlaywrightTree(child, 'SIGTERM');
+    };
+    keeper.once('close', onKeeperClose);
+    if (keeper.exitCode !== null || keeper.signalCode !== null) onKeeperClose();
+
+    child.once('error', (error) => finish(() => rejectChild(error)));
+    child.once('close', (code, signal) => finish(() => resolveChild({
+      exitCode: code ?? (signal ? 1 : 0),
+      keeperLost,
+    })));
+  });
+}
+
+function requestShutdown(signal) {
+  interruptionSignal ??= signal;
+  if (activePlaywrightChild) terminatePlaywrightTree(activePlaywrightChild, 'SIGTERM');
+}
+
+function terminatePlaywrightTree(child, signal) {
+  if (child.exitCode !== null || child.signalCode !== null || !child.pid) return;
+  try {
+    process.kill(-child.pid, signal);
+  } catch (error) {
+    if (error?.code !== 'ESRCH') child.kill(signal);
+  }
 }
 
 function protectedFingerprint(report) {

@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import {
   buildMutableResetArguments,
@@ -72,6 +74,10 @@ assert.deepEqual(
 assert.throws(
   () => selectStatefulPlaywrightTests(discovered, 'e2e/mushaf-reader.e2e.ts:42'),
   /not stateful/i,
+);
+assert.throws(
+  () => selectStatefulPlaywrightTests([discovered[1], discovered[1]]),
+  /exactly one.*file:line/i,
 );
 
 assert.deepEqual(
@@ -263,5 +269,15 @@ assert.throws(
   ),
   /does not match.*mutating/i,
 );
+
+const statefulRunnerSource = readFileSync(
+  resolve(process.cwd(), 'scripts/run-stateful-playwright.mjs'),
+  'utf8',
+);
+assert.match(statefulRunnerSource, /process\.on\('SIGINT'/);
+assert.match(statefulRunnerSource, /process\.on\('SIGTERM'/);
+assert.match(statefulRunnerSource, /keeper\.once\('close'/);
+assert.match(statefulRunnerSource, /await runPlaywrightChild/);
+assert.doesNotMatch(statefulRunnerSource, /spawnSync\(playwright/);
 
 console.log('Stateful Playwright runtime contract passed.');
