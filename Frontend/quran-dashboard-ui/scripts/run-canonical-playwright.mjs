@@ -135,7 +135,12 @@ try {
   report.status = 'passed';
 } catch (error) {
   report.error = sanitizeError(error, secretValues);
-  appendMissingChildFailurePhases(report.phases);
+  appendMissingChildFailurePhases(report.phases, [
+    'capabilityInspection',
+    'applicationStartup',
+    'testExecution',
+    'applicationShutdown',
+  ]);
   appendFileSync(applicationLog, `${report.error}\n`, { encoding: 'utf8', mode: 0o600 });
   console.error(report.error);
 } finally {

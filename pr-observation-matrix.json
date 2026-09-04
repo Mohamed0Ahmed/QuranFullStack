@@ -149,7 +149,8 @@
             "blocking": true,
             "journeys": [
               "quran-fidelity.mushaf-font-rendering",
-              "quran-fidelity.mushaf-mobile"
+              "quran-fidelity.mushaf-mobile",
+              "quran-location.sanitization"
             ]
           },
           {
@@ -173,6 +174,7 @@
             "blocking": true,
             "journeys": [
               "phrase-search.available-add-to-workspace",
+              "phrase-search.canonical-read",
               "phrase-search.unavailable-stale"
             ]
           },
@@ -180,7 +182,16 @@
             "id": "abwab-projection",
             "blocking": true,
             "journeys": [
-              "abwab.inclusion-projection"
+              "abwab.inclusion-conflict-evidence",
+              "abwab.inclusion-projection",
+              "abwab.inclusion-revoked-permission"
+            ]
+          },
+          {
+            "id": "word-explorer",
+            "blocking": true,
+            "journeys": [
+              "word-explorer.canonical-read"
             ]
           }
         ]

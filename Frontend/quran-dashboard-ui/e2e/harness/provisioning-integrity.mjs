@@ -73,6 +73,7 @@ export function controlledHarnessSourceFiles(frontendRoot) {
     resolve(frontendRoot, 'package.json'),
     resolve(frontendRoot, 'playwright.config.ts'),
     resolve(frontendRoot, 'scripts/canonical-playwright-runtime.mjs'),
+    resolve(frontendRoot, 'scripts/cleanup-controlled-playwright-runtime.mjs'),
     resolve(frontendRoot, 'scripts/controlled-playwright-runtime.mjs'),
     resolve(frontendRoot, 'scripts/discover-playwright-journeys.mjs'),
     resolve(frontendRoot, 'scripts/discover-playwright-policies.mjs'),
@@ -84,6 +85,7 @@ export function controlledHarnessSourceFiles(frontendRoot) {
     resolve(frontendRoot, 'scripts/run-stateful-playwright.mjs'),
     resolve(frontendRoot, 'scripts/stateful-playwright-runtime.mjs'),
     resolve(frontendRoot, 'scripts/structured-playwright-reporter.mjs'),
+    resolve(frontendRoot, 'scripts/validate-controlled-playwright-report.mjs'),
     resolve(frontendRoot, 'scripts/verify-egress-guard-runtime.mjs'),
   ].sort();
 }

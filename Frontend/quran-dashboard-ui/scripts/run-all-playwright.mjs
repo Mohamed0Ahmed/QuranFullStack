@@ -2,7 +2,10 @@ import { spawnSync } from 'node:child_process';
 import { chmodSync, mkdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { writeJson } from './controlled-playwright-runtime.mjs';
+import {
+  loadControlledProvisioningReceipt,
+  writeJson,
+} from './controlled-playwright-runtime.mjs';
 
 const [mode = '--full', ...extraArguments] = process.argv.slice(2);
 if (!['--critical', '--full'].includes(mode) || extraArguments.length > 0) {
@@ -10,6 +13,8 @@ if (!['--critical', '--full'].includes(mode) || extraArguments.length > 0) {
 }
 
 const frontendRoot = resolve(import.meta.dirname, '..');
+const repositoryRoot = resolve(frontendRoot, '../..');
+const provisioningReceipt = loadControlledProvisioningReceipt(frontendRoot, repositoryRoot);
 const runId = `playwright-${Date.now()}-${process.pid}`;
 const observationDirectory = process.env.QDB_PR_OBSERVATION_RESULT_DIR?.trim();
 const evidenceRoot = observationDirectory
@@ -27,6 +32,10 @@ const report = {
   startedAt: new Date().toISOString(),
   completedAt: null,
   durationMs: null,
+  provisioningPhases: provisioningReceipt.phases,
+  declaredTestCount: 0,
+  counts: {},
+  tests: [],
   children: [],
 };
 
@@ -44,9 +53,11 @@ for (const child of [
     stdio: 'inherit',
   });
   let childReport;
+  let childTests;
   try {
     if (result.error) throw result.error;
     childReport = readChildReport(resolve(aggregateDirectory, child.report), child.kind);
+    childTests = readChildTests(childReport, child.kind);
   } catch (error) {
     report.status = 'failed';
     report.failure = {
@@ -61,6 +72,7 @@ for (const child of [
     ...childReport,
     report: child.report,
   });
+  report.tests.push(...childTests);
   if (result.status !== 0 || childReport.status !== 'passed') {
     report.status = 'failed';
     report.failure = {
@@ -74,6 +86,11 @@ for (const child of [
 
 report.completedAt = new Date().toISOString();
 report.durationMs = Date.now() - startedAt;
+report.declaredTestCount = report.tests.length;
+report.counts = report.tests.reduce((counts, test) => ({
+  ...counts,
+  [test.status]: (counts[test.status] ?? 0) + 1,
+}), {});
 writeJson(resolve(aggregateDirectory, 'playwright-run.json'), report);
 console.log(
   `[e2e] controlled complete status=${report.status} children=${report.children.length} evidence=${aggregateDirectory}`,
@@ -96,4 +113,30 @@ function readChildReport(path, kind) {
     throw new Error(`Controlled ${kind} execution returned an invalid aggregate report.`);
   }
   return child;
+}
+
+function readChildTests(child, kind) {
+  const evidence = kind === 'canonical-read'
+    ? [{ runId: child.runId, path: resolve(aggregateDirectory, 'canonical', child.evidence) }]
+    : child.scenarios?.map((scenario) => ({
+      runId: scenario.runId,
+      path: resolve(aggregateDirectory, 'stateful', scenario.evidence),
+    })) ?? [];
+  return evidence.flatMap(({ runId: childRunId, path }) => {
+    let childEvidence;
+    try {
+      childEvidence = JSON.parse(readFileSync(path, 'utf8'));
+    } catch {
+      throw new Error(`Controlled ${kind} execution returned no sanitized child evidence.`);
+    }
+    if (
+      childEvidence?.schemaVersion !== 1
+      || childEvidence.runId !== childRunId
+      || !Array.isArray(childEvidence.tests)
+      || childEvidence.declaredTestCount !== childEvidence.tests.length
+    ) {
+      throw new Error(`Controlled ${kind} execution returned invalid sanitized child evidence.`);
+    }
+    return childEvidence.tests;
+  });
 }

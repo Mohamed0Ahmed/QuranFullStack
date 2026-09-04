@@ -31,6 +31,13 @@ import {
   validateRetainedDiagnostic,
 } from './structured-playwright-reporter.mjs';
 
+export const CONTROLLED_RUNTIME_MARKER = '.qdb-controlled-runtime-owner.json';
+export const CONTROLLED_RUNTIME_PREFIXES = Object.freeze([
+  'qdb-controlled-playwright-discovery-',
+  'qdb-controlled-playwright-home-',
+  'qdb-controlled-playwright-output-',
+]);
+
 export function loadControlledProvisioningReceipt(frontendRoot, repositoryRoot) {
   const receiptPath = resolve(frontendRoot, '.playwright/provisioning/controlled-receipt.json');
   let receipt;
@@ -96,7 +103,7 @@ export function createControlledPlaywrightEnvironment(source, receipt, paths) {
   });
 }
 
-export function createPrivatePlaywrightRuntime(evidenceDirectory) {
+export function createPrivatePlaywrightRuntime(evidenceDirectory, cleanupOwner = evidenceDirectory) {
   let homeDirectory;
   let playwrightOutputDirectory;
   try {
@@ -109,6 +116,8 @@ export function createPrivatePlaywrightRuntime(evidenceDirectory) {
     homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
     chmodSync(playwrightOutputDirectory, 0o700);
     chmodSync(homeDirectory, 0o700);
+    writeRuntimeOwner(playwrightOutputDirectory, cleanupOwner);
+    writeRuntimeOwner(homeDirectory, cleanupOwner);
   } catch (error) {
     if (playwrightOutputDirectory) {
       rmSync(playwrightOutputDirectory, { recursive: true, force: true });
@@ -131,7 +140,11 @@ export function discoverControlledPlaywright(frontendRoot, receipt, reporter, so
   const discoveryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-discovery-'));
   let runtime;
   try {
-    runtime = createPrivatePlaywrightRuntime(resolve(discoveryRoot, 'evidence'));
+    const cleanupOwner = sourceEnvironment.QDB_PR_OBSERVATION_RESULT_DIR
+      ? resolve(sourceEnvironment.QDB_PR_OBSERVATION_RESULT_DIR, 'playwright-evidence')
+      : discoveryRoot;
+    writeRuntimeOwner(discoveryRoot, cleanupOwner);
+    runtime = createPrivatePlaywrightRuntime(resolve(discoveryRoot, 'evidence'), cleanupOwner);
     const environment = createControlledPlaywrightEnvironment(
       sourceEnvironment,
       receipt,
@@ -166,6 +179,14 @@ export function discoverControlledPlaywright(frontendRoot, receipt, reporter, so
     runtime?.cleanup();
     rmSync(discoveryRoot, { recursive: true, force: true });
   }
+}
+
+function writeRuntimeOwner(directory, cleanupOwner) {
+  writeFileSync(
+    resolve(directory, CONTROLLED_RUNTIME_MARKER),
+    `${JSON.stringify({ schemaVersion: 1, cleanupOwner: resolve(cleanupOwner) })}\n`,
+    { encoding: 'utf8', mode: 0o600 },
+  );
 }
 
 export function runWithSanitizedOutput(
@@ -220,8 +241,11 @@ export function appendApplicationShutdownPhase(phases, childResult, childComplet
   });
 }
 
-export function appendMissingChildFailurePhases(phases) {
-  for (const name of ['applicationStartup', 'testExecution', 'applicationShutdown']) {
+export function appendMissingChildFailurePhases(
+  phases,
+  names = ['applicationStartup', 'testExecution', 'applicationShutdown'],
+) {
+  for (const name of names) {
     if (!phases.some((phase) => phase.name === name)) {
       phases.push({ name, status: 'failed', durationMs: 0 });
     }

@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -7,6 +7,7 @@ import {
   loadObservationMatrix,
   materializeCommand,
 } from './pr-observation-contract.mjs';
+import { validateControlledPlaywrightRun } from '../Frontend/quran-dashboard-ui/scripts/validate-controlled-playwright-report.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_MATRIX_PATH = resolve(REPOSITORY_ROOT, 'pr-observation-matrix.json');
@@ -269,7 +270,7 @@ function evaluateJourneyGroups(job, jobResultsDirectory, finalStatus) {
   const declaredJourneys = new Map(
     configuredGroups.flatMap((group) => group.journeys.map((journey) => [journey, group.id])),
   );
-  const evidence = readPlaywrightEvidence(jobResultsDirectory);
+  const evidence = readPlaywrightEvidence(jobResultsDirectory, finalStatus);
   const testsByJourney = new Map();
   const contractErrors = [...evidence.errors];
   if (evidence.declaredTestCount !== declaredJourneys.size) {
@@ -325,8 +326,8 @@ function evaluateJourneyGroups(job, jobResultsDirectory, finalStatus) {
     contractErrors.push(...group.missingJourneys.map((journey) => `missing-journey:${journey}`));
     contractErrors.push(...group.duplicateJourneys.map((journey) => `duplicate-journey:${journey}`));
   }
-  if (finalStatus === 'failed' && evidence.sealedStatus === 'passed') {
-    contractErrors.push('command-failed-after-passing-sealed-run');
+  if (finalStatus === 'failed' && evidence.runStatus === 'passed') {
+    contractErrors.push('command-failed-after-passing-controlled-run');
   }
 
   const blockingGroupsPassed = journeyGroups
@@ -357,7 +358,7 @@ function isValidJourneyTestEvidence(test) {
     && test.retry >= 0;
 }
 
-function readPlaywrightEvidence(jobResultsDirectory) {
+function readPlaywrightEvidence(jobResultsDirectory, commandStatus) {
   const root = resolve(jobResultsDirectory, 'playwright-evidence');
   let runDirectories = [];
   try {
@@ -375,122 +376,17 @@ function readPlaywrightEvidence(jobResultsDirectory) {
     };
   }
 
-  const runId = runDirectories[0];
-  const runDirectory = resolve(root, runId);
-  const path = resolve(runDirectory, 'playwright-results.json');
-  const errors = [];
-  const playwright = readJsonEvidence(path, 'playwright-results-invalid', errors);
-  const structured = readJsonEvidence(
-    resolve(runDirectory, 'structured-results.json'),
-    'structured-results-invalid',
-    errors,
+  const evidence = validateControlledPlaywrightRun(
+    resolve(root, runDirectories[0]),
+    commandStatus === 'passed' ? 'passed' : 'failed',
   );
-  const manifest = readJsonEvidence(
-    resolve(runDirectory, 'evidence-manifest.json'),
-    'evidence-manifest-invalid',
-    errors,
-  );
-
-  if (playwright?.schemaVersion !== 1 || !Array.isArray(playwright?.tests)) {
-    errors.push('playwright-tests-missing');
-  }
-  if (!Number.isInteger(playwright?.declaredTestCount) || playwright.declaredTestCount < 1) {
-    errors.push('playwright-declared-test-count-invalid');
-  }
-  validateStructuredEvidence(structured, runId, playwright, errors);
-  validateEvidenceManifest(manifest, runId, structured, errors);
   return {
-    errors,
-    path,
-    tests: Array.isArray(playwright?.tests) ? playwright.tests : [],
-    declaredTestCount: playwright?.declaredTestCount,
-    sealedStatus: structured?.status,
+    errors: evidence.checkIds,
+    path: evidence.path,
+    tests: evidence.tests,
+    declaredTestCount: evidence.declaredTestCount,
+    runStatus: evidence.runStatus,
   };
-}
-
-function readJsonEvidence(path, errorCode, errors) {
-  try {
-    return JSON.parse(readFileSync(path, 'utf8'));
-  } catch {
-    errors.push(errorCode);
-    return null;
-  }
-}
-
-function validateStructuredEvidence(structured, runId, playwright, errors) {
-  if (
-    structured?.schemaVersion !== 1
-    || structured.runId !== runId
-    || !['passed', 'failed'].includes(structured.status)
-    || !Array.isArray(structured.phases)
-  ) {
-    errors.push('structured-results-contract-invalid');
-    return;
-  }
-
-  const requiredPhases = [
-    ['artifactProvisioning', true],
-    ['databasePreparation', true],
-    ['applicationStartup', true],
-    ['testExecution', false],
-  ];
-  for (const [name, mustPass] of requiredPhases) {
-    const matches = structured.phases.filter((phase) => phase?.name === name);
-    if (
-      matches.length !== 1
-      || !Number.isFinite(matches[0].durationMs)
-      || matches[0].durationMs < 0
-      || (mustPass && matches[0].status !== 'passed')
-      || (!mustPass && !['passed', 'failed'].includes(matches[0].status))
-    ) {
-      errors.push(`sealed-phase-invalid:${name}`);
-    }
-  }
-
-  const hasTestFailure = Array.isArray(playwright?.tests)
-    && playwright.tests.some((test) => test?.status !== 'passed');
-  const expectedStatus = hasTestFailure ? 'failed' : 'passed';
-  if (playwright?.status !== expectedStatus || structured.status !== expectedStatus) {
-    errors.push('sealed-run-status-mismatch');
-  }
-  const testExecution = structured.phases.find((phase) => phase?.name === 'testExecution');
-  if (testExecution?.status !== playwright?.status) {
-    errors.push('sealed-test-execution-status-mismatch');
-  }
-}
-
-function validateEvidenceManifest(manifest, runId, structured, errors) {
-  if (
-    manifest?.schemaVersion !== 1
-    || manifest.runId !== runId
-    || manifest.status !== structured?.status
-    || manifest.containsDatabaseDump !== false
-    || manifest.capturesRequestHeaders !== false
-    || manifest.capturesRequestBodies !== false
-    || manifest.traceFormat !== 'sanitized-step-events-v1'
-    || manifest.screenshotPolicy !== 'text-media-masked-v1'
-    || !Array.isArray(manifest.files)
-  ) {
-    errors.push('evidence-manifest-contract-invalid');
-    return;
-  }
-  for (const file of [
-    'evidence-manifest.json',
-    'playwright-results.json',
-    'structured-results.json',
-  ]) {
-    if (!manifest.files.includes(file)) {
-      errors.push(`evidence-manifest-file-missing:${file}`);
-    }
-  }
-  if (
-    manifest.inspection?.status !== 'passed'
-    || manifest.inspection.unsafeScreenshot !== false
-    || !Array.isArray(manifest.inspection.invalidDiagnosticFiles)
-    || manifest.inspection.invalidDiagnosticFiles.length > 0
-  ) {
-    errors.push('evidence-inspection-failed');
-  }
 }
 
 function terminateProcessTree(child, signal) {

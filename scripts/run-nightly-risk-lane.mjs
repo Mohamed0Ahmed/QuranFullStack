@@ -13,13 +13,10 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, relative, resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import {
-  APPROVED_DIAGNOSTIC_FILES,
-  validateRetainedDiagnostic,
-} from '../Frontend/quran-dashboard-ui/scripts/structured-playwright-reporter.mjs';
+import { validateControlledPlaywrightRun } from '../Frontend/quran-dashboard-ui/scripts/validate-controlled-playwright-report.mjs';
 
 import {
   loadNightlyRiskManifest,
@@ -381,109 +378,18 @@ function validateBrowserEvidence(resultsDirectory, attempt, requiredJourneys, ex
   } catch {
     return { status: 'failed', checkIds: ['playwright-evidence-missing'] };
   }
-  try {
-    const directory = resolve(root, runDirectory);
-    const evidence = JSON.parse(readFileSync(resolve(directory, 'playwright-results.json'), 'utf8'));
-    const structured = JSON.parse(readFileSync(resolve(directory, 'structured-results.json'), 'utf8'));
-    const evidenceManifest = JSON.parse(readFileSync(resolve(directory, 'evidence-manifest.json'), 'utf8'));
-    const checkIds = [];
-    for (const journey of requiredJourneys) {
-      const matches = evidence.tests?.filter((test) => test?.journey === journey) ?? [];
-      if (matches.length !== 1) checkIds.push('designated-mobile-journey-count-invalid');
-      else if (expectedStatus === 'passed' && (matches[0].status !== 'passed' || matches[0].retry !== 0)) {
-        checkIds.push('designated-mobile-journey-not-first-attempt-passed');
-      }
-    }
-    const inventory = listEvidenceFiles(directory);
-    const actualFiles = inventory.files.map((file) => relative(directory, file)).sort();
-    const expectedFiles = evidenceManifest?.files?.slice().sort();
-    const runId = runDirectory;
-    const validDiagnostics = actualFiles.every((file) => validEvidenceFile(file, directory));
-    const statusCounts = evidence?.tests?.reduce((counts, test) => ({
-      ...counts,
-      [test?.status]: (counts[test?.status] ?? 0) + 1,
-    }), {});
-    if (evidence?.schemaVersion !== 1 || !Array.isArray(evidence.tests) || !Number.isInteger(evidence.declaredTestCount)
-      || evidence.declaredTestCount < 1 || evidence.tests.some((test) => typeof test?.id !== 'string' || test.id.length === 0)
-      || new Set(evidence.tests.map((test) => test.id)).size !== evidence.declaredTestCount
-      || JSON.stringify(evidence.counts) !== JSON.stringify(statusCounts)
-      || evidence.runId !== runId || structured?.runId !== runId || evidenceManifest?.runId !== runId
-      || evidence.status !== expectedStatus || structured?.schemaVersion !== 1 || structured.status !== expectedStatus
-      || !['artifactProvisioning', 'databasePreparation', 'applicationStartup'].every(
-        (name) => structured.phases?.filter((phase) => phase?.name === name && phase.status === 'passed').length === 1,
-       ) || structured.phases?.filter((phase) => phase?.name === 'testExecution' && phase.status === expectedStatus).length !== 1
-      || !Array.isArray(structured.phases) || structured.phases.length !== 4
-      || !structured.phases.every((phase) => Number.isInteger(phase?.durationMs) && phase.durationMs >= 0)) {
-      checkIds.push('sealed-structured-results-invalid');
-    }
-    if (!['passed', 'failed'].includes(expectedStatus)) {
-      checkIds.push('sealed-status-invalid');
-    }
-    if (evidenceManifest?.schemaVersion !== 1 || evidenceManifest.status !== expectedStatus
-      || evidenceManifest.containsDatabaseDump !== false
-      || evidenceManifest.capturesRequestHeaders !== false
-      || evidenceManifest.capturesRequestBodies !== false
-      || evidenceManifest.traceFormat !== 'sanitized-step-events-v1'
-      || evidenceManifest.screenshotPolicy !== 'text-media-masked-v1'
-      || evidenceManifest.inspection?.status !== 'passed'
-      || evidenceManifest.inspection?.unsafeScreenshot !== false
-      || !Array.isArray(evidenceManifest.inspection?.invalidDiagnosticFiles)
-      || evidenceManifest.inspection.invalidDiagnosticFiles.length !== 0
-      || !Array.isArray(expectedFiles)
-      || JSON.stringify(expectedFiles) !== JSON.stringify(actualFiles)
-      || !validDiagnostics || inventory.safe !== true) {
-      checkIds.push('sealed-evidence-manifest-invalid');
-    }
-    return checkIds.length === 0
-      ? { status: 'passed', checkIds: ['designated-mobile-journeys-first-attempt-passed', 'sealed-evidence-validated'] }
-      : { status: 'failed', checkIds: [...new Set(checkIds)] };
-  } catch {
-    return { status: 'failed', checkIds: ['playwright-evidence-invalid'] };
-  }
-}
-
-function listEvidenceFiles(path) {
-  const files = [];
-  try {
-    for (const entry of readdirSync(path, { withFileTypes: true })) {
-      const child = resolve(path, entry.name);
-      const details = lstatSync(child);
-      if (details.isDirectory()) {
-        const nested = listEvidenceFiles(child);
-        if (!nested.safe) return { files: [], safe: false };
-        files.push(...nested.files);
-      } else if (details.isFile()) {
-        files.push(child);
-      } else {
-        return { files: [], safe: false };
-      }
-    }
-    return { files, safe: true };
-  } catch {
-    return { files: [], safe: false };
-  }
-}
-
-function validEvidenceFile(file, directory) {
-  if (['evidence-manifest.json', 'playwright-results.json', 'structured-results.json', 'provisioning-receipt.json', 'application.log', 'container.log', 'sanitized-trace.json'].includes(file)) {
-    if (file !== 'sanitized-trace.json') return true;
-    try {
-      const trace = JSON.parse(readFileSync(resolve(directory, file), 'utf8'));
-      return trace.schemaVersion === 1 && trace.containsNetworkHeaders === false
-        && trace.containsRequestBodies === false && trace.containsResponseBodies === false && Array.isArray(trace.events);
-    } catch {
-      return false;
+  const evidence = validateControlledPlaywrightRun(resolve(root, runDirectory), expectedStatus);
+  const checkIds = [...evidence.checkIds];
+  for (const journey of requiredJourneys) {
+    const matches = evidence.tests.filter((test) => test?.journey === journey);
+    if (matches.length !== 1) checkIds.push('designated-mobile-journey-count-invalid');
+    else if (expectedStatus === 'passed' && (matches[0].status !== 'passed' || matches[0].retry !== 0)) {
+      checkIds.push('designated-mobile-journey-not-first-attempt-passed');
     }
   }
-  const parts = file.split('/');
-  if (parts.length !== 3 || parts[0] !== 'diagnostics' || !/^[A-Za-z0-9._-]+$/.test(parts[1])
-    || !APPROVED_DIAGNOSTIC_FILES.includes(parts[2])) return false;
-  try {
-    validateRetainedDiagnostic(parts[2], readFileSync(resolve(directory, file)));
-    return true;
-  } catch {
-    return false;
-  }
+  return checkIds.length === 0
+    ? { status: 'passed', checkIds: ['designated-mobile-journeys-first-attempt-passed', 'controlled-evidence-validated'] }
+    : { status: 'failed', checkIds: [...new Set(checkIds)] };
 }
 
 function validateOperationalEvidence(command) {

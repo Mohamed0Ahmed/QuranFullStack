@@ -20,9 +20,11 @@ import {
   appendApplicationShutdownPhase,
   appendChildExecutionPhases,
   appendMissingChildFailurePhases,
+  createPrivatePlaywrightRuntime,
   inspectRetainedEvidence,
   validatePlaywrightChildResult,
 } from './controlled-playwright-runtime.mjs';
+import { cleanupControlledPlaywrightRuntime } from './cleanup-controlled-playwright-runtime.mjs';
 
 const outputNames = [
   'backendOutput',
@@ -83,6 +85,10 @@ const controlled = createControlledEnvironment(
     AWS_SECRET_ACCESS_KEY: 'aws-secret',
     ConnectionStrings__QuranDashboardDb: 'Password=development-secret',
     ConnectionStrings__QuranDashboardTest: connectionString,
+    DISPLAY: ':1',
+    WAYLAND_DISPLAY: 'wayland-0',
+    XAUTHORITY: '/run/user/1000/xauthority',
+    XDG_RUNTIME_DIR: '/run/user/1000',
     DOCKER_AUTH_CONFIG: '{"auths":{"registry.test":{"auth":"private"}}}',
     NPM_TOKEN: 'npm-secret',
     RANDOM_PASSWORD: 'another-secret',
@@ -123,6 +129,10 @@ assert.equal(controlled.AWS_SECRET_ACCESS_KEY, undefined);
 assert.equal(controlled.NPM_TOKEN, undefined);
 assert.equal(controlled.RANDOM_PASSWORD, undefined);
 assert.equal(controlled.DOCKER_AUTH_CONFIG, undefined);
+assert.equal(controlled.DISPLAY, ':1');
+assert.equal(controlled.WAYLAND_DISPLAY, 'wayland-0');
+assert.equal(controlled.XAUTHORITY, '/run/user/1000/xauthority');
+assert.equal(controlled.XDG_RUNTIME_DIR, '/run/user/1000');
 
 assert.deepEqual(
   buildControlledBackendArguments('/workspace/QuranDashboard.Api.dll', '/workspace/api.csproj', true),
@@ -279,6 +289,18 @@ try {
   );
 } finally {
   rmSync(evidenceDirectory, { recursive: true, force: true });
+}
+
+const cleanupResults = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-cleanup-contract-'));
+const cleanupOwner = resolve(cleanupResults, 'attempts/primary/playwright-evidence/run/evidence');
+const orphanedRuntime = createPrivatePlaywrightRuntime(cleanupOwner);
+try {
+  assert.equal(cleanupControlledPlaywrightRuntime(cleanupResults, 'primary'), 2);
+  assert.equal(existsSync(orphanedRuntime.homeDirectory), false);
+  assert.equal(existsSync(orphanedRuntime.playwrightOutputDirectory), false);
+} finally {
+  orphanedRuntime.cleanup();
+  rmSync(cleanupResults, { recursive: true, force: true });
 }
 
 const canonicalRunner = readFileSync(resolve(frontendRoot, 'scripts/run-canonical-playwright.mjs'), 'utf8');

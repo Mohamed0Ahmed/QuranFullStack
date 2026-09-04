@@ -121,6 +121,7 @@ if (errors.length === 0) {
         journeys: [
           'quran-fidelity.mushaf-font-rendering',
           'quran-fidelity.mushaf-mobile',
+          'quran-location.sanitization',
         ],
       },
       {
@@ -138,13 +139,23 @@ if (errors.length === 0) {
         blocking: true,
         journeys: [
           'phrase-search.available-add-to-workspace',
+          'phrase-search.canonical-read',
           'phrase-search.unavailable-stale',
         ],
       },
       {
         id: 'abwab-projection',
         blocking: true,
-        journeys: ['abwab.inclusion-projection'],
+        journeys: [
+          'abwab.inclusion-conflict-evidence',
+          'abwab.inclusion-projection',
+          'abwab.inclusion-revoked-permission',
+        ],
+      },
+      {
+        id: 'word-explorer',
+        blocking: true,
+        journeys: ['word-explorer.canonical-read'],
       },
     ]),
     'All five critical journey groups must be blocking after pilot #106.',
@@ -331,7 +342,8 @@ import { resolve } from 'node:path';
 const scenario = process.argv[2];
 const evidence = resolve(process.env.QDB_PR_OBSERVATION_RESULT_DIR, 'playwright-evidence', 'probe');
 if (scenario === 'missing-evidence') process.exit(7);
-mkdirSync(evidence, { recursive: true });
+const childEvidence = resolve(evidence, 'canonical', 'evidence');
+mkdirSync(childEvidence, { recursive: true });
 const quranStatus = scenario === 'blocking-failure' ? 'failed' : 'passed';
 const quranRetry = scenario === 'retried-blocker' ? 1 : 0;
 const sessionRetry = scenario === 'retried-observation' ? 1 : 0;
@@ -341,38 +353,63 @@ const tests = [
     ? []
     : [{ id: 'session', journey: 'device-session.lifecycle', status: 'failed', durationMs: 7, retry: sessionRetry }]),
 ];
-writeFileSync(resolve(evidence, 'playwright-results.json'), JSON.stringify({
+const counts = tests.reduce((result, test) => ({
+  ...result,
+  [test.status]: (result[test.status] ?? 0) + 1,
+}), {});
+writeFileSync(resolve(childEvidence, 'playwright-results.json'), JSON.stringify({
   schemaVersion: 1,
+  runId: 'child-run',
   status: 'failed',
   declaredTestCount: 2,
+  counts,
   tests,
 }));
-writeFileSync(resolve(evidence, 'structured-results.json'), JSON.stringify({
+const inspection = {
+  status: scenario === 'failed-inspection' ? 'failed' : 'passed',
+  invalidDiagnosticFiles: scenario === 'failed-inspection' ? ['unsafe.txt'] : [],
+  removedRawFiles: [],
+  rewrittenTextFiles: [],
+  symlinks: [],
+  unexpectedFiles: [],
+  unsafeScreenshot: false,
+};
+const child = {
   schemaVersion: 1,
-  runId: 'probe',
+  kind: 'canonical-read',
+  runId: 'child-run',
   status: 'failed',
+  startedAt: '2026-01-01T00:00:00.000Z',
+  completedAt: '2026-01-01T00:00:00.004Z',
+  durationMs: 4,
+  evidence: 'evidence/playwright-results.json',
   phases: [
-    { name: 'artifactProvisioning', status: 'passed', durationMs: 1 },
-    { name: 'databasePreparation', status: 'passed', durationMs: 1 },
+    { name: 'capabilityInspection', status: 'passed', durationMs: 1 },
     { name: 'applicationStartup', status: 'passed', durationMs: 1 },
     { name: 'testExecution', status: 'failed', durationMs: 1 },
+    { name: 'applicationShutdown', status: 'passed', durationMs: 1 },
   ],
-}));
-writeFileSync(resolve(evidence, 'evidence-manifest.json'), JSON.stringify({
+  inspection,
+};
+writeFileSync(resolve(evidence, 'canonical', 'canonical-results.json'), JSON.stringify(child));
+writeFileSync(resolve(evidence, 'playwright-run.json'), JSON.stringify({
   schemaVersion: 1,
+  kind: 'complete-playwright',
   runId: 'probe',
   status: 'failed',
-  containsDatabaseDump: false,
-  capturesRequestHeaders: false,
-  capturesRequestBodies: false,
-  traceFormat: 'sanitized-step-events-v1',
-  screenshotPolicy: 'text-media-masked-v1',
-  inspection: {
-    status: scenario === 'failed-inspection' ? 'failed' : 'passed',
-    invalidDiagnosticFiles: scenario === 'failed-inspection' ? ['unsafe.txt'] : [],
-    unsafeScreenshot: false,
-  },
-  files: ['evidence-manifest.json', 'playwright-results.json', 'structured-results.json'],
+  startedAt: '2026-01-01T00:00:00.000Z',
+  completedAt: '2026-01-01T00:00:00.005Z',
+  durationMs: 5,
+  provisioningPhases: [
+    'dependencyProvisioning',
+    'chromiumProvisioning',
+    'certificateProvisioning',
+    'buildProvisioning',
+  ].map((name) => ({ name, status: 'passed', durationMs: 1 })),
+  declaredTestCount: 2,
+  counts,
+  tests,
+  children: [{ ...child, report: 'canonical/canonical-results.json' }],
 }));
 process.exit(7);
 `;
@@ -440,8 +477,8 @@ process.exit(7);
       );
       if (scenario === 'failed-inspection') {
         check(
-          result.journeyContractErrors?.includes('evidence-inspection-failed'),
-          'A failed sealed-evidence inspection must be retained as the blocking reason.',
+          result.journeyContractErrors?.includes('controlled-evidence-inspection-invalid'),
+          'A failed controlled-evidence inspection must be retained as the blocking reason.',
         );
       }
     }

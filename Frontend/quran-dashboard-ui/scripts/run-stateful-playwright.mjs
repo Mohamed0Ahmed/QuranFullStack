@@ -271,6 +271,14 @@ async function runScenario(scenario, index) {
         result.error = `TestRuntime keeper exited with status ${keeperStatus}.`;
       }
     }
+    appendMissingChildFailurePhases(result.phases, [
+      'lockAcquisition',
+      ...(scenario.policy === 'mutating' ? ['initialReset', 'finalReset'] : []),
+      'applicationStartup',
+      'testExecution',
+      'applicationShutdown',
+      'lockRelease',
+    ]);
     result.inspection = inspectRetainedEvidence(evidenceDirectory, secretValues);
     if (result.inspection.status !== 'passed') result.status = 'failed';
     if (result.status === 'passed') rmSync(applicationLog, { force: true });

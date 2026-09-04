@@ -35,6 +35,8 @@ const SENSITIVE_ENVIRONMENT_NAMES = [
 
 const SAFE_ENVIRONMENT_NAMES = new Set([
   'COLORTERM',
+  'DBUS_SESSION_BUS_ADDRESS',
+  'DISPLAY',
   'DOTNET_CLI_HOME',
   'DOTNET_NOLOGO',
   'DOTNET_ROOT',
@@ -57,6 +59,10 @@ const SAFE_ENVIRONMENT_NAMES = new Set([
   'TMPDIR',
   'TZ',
   'USER',
+  'WAYLAND_DISPLAY',
+  'XAUTHORITY',
+  'XDG_RUNTIME_DIR',
+  'XDG_SESSION_TYPE',
 ]);
 
 export function validateControlledProvisioningReceipt(receipt) {
