@@ -155,7 +155,7 @@ function validatePhases(phases, required, errors) {
     const matches = phases.filter((phase) => phase?.name === name);
     if (
       matches.length !== 1
-      || !['passed', 'failed'].includes(matches[0].status)
+      || !['passed', 'failed', 'timedout', 'interrupted'].includes(matches[0].status)
       || !Number.isFinite(matches[0].durationMs)
       || matches[0].durationMs < 0
     ) {

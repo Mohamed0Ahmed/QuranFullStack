@@ -7,6 +7,7 @@ import {
   loadObservationMatrix,
   materializeCommand,
 } from './pr-observation-contract.mjs';
+import { cleanupControlledPlaywrightOwner } from '../Frontend/quran-dashboard-ui/scripts/cleanup-controlled-playwright-runtime.mjs';
 import { validateControlledPlaywrightRun } from '../Frontend/quran-dashboard-ui/scripts/validate-controlled-playwright-report.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -73,6 +74,7 @@ const startedAtMs = startedAt.getTime();
 const deadlineMs = startedAtMs + job.policy.timeoutSeconds * 1_000;
 const commandResults = [];
 let finalStatus = 'passed';
+let runtimeCleanup = null;
 
 for (let index = 0; index < commands.length; index += 1) {
   const command = commands[index];
@@ -97,6 +99,21 @@ for (let index = 0; index < commands.length; index += 1) {
   }
 }
 
+if (job.policy.journeyGroups) {
+  try {
+    const removedDirectories = cleanupControlledPlaywrightOwner(
+      resolve(jobResultsDirectory, 'playwright-evidence'),
+    );
+    runtimeCleanup = { status: 'passed', removedDirectories };
+  } catch (error) {
+    finalStatus = 'failed';
+    runtimeCleanup = {
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Controlled runtime cleanup failed.',
+    };
+  }
+}
+
 const completedAt = new Date();
 const journeyDecision = evaluateJourneyGroups(job, jobResultsDirectory, finalStatus);
 const result = {
@@ -118,6 +135,7 @@ const result = {
   attemptsExecuted: 1,
   inputContract: job.inputContract ?? null,
   commands: commandResults,
+  ...(runtimeCleanup ? { runtimeCleanup } : {}),
   ...(journeyDecision ?? {}),
 };
 writeJsonAtomically(resolve(jobResultsDirectory, 'job-result.json'), result);

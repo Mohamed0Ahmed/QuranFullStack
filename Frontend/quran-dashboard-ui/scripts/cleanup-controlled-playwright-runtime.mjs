@@ -21,10 +21,17 @@ export function cleanupControlledPlaywrightRuntime(resultsDirectory, attempt) {
   if (!resultsDirectory || !attempt || !/^[A-Za-z0-9._-]+$/.test(attempt)) {
     throw new Error('Controlled cleanup requires one results directory and one attempt identifier.');
   }
-  const cleanupRoot = resolve(resultsDirectory, 'attempts', attempt, 'playwright-evidence');
-  const candidates = ownedRuntimeDirectories(cleanupRoot);
+  return cleanupControlledPlaywrightOwner(
+    resolve(resultsDirectory, 'attempts', attempt, 'playwright-evidence'),
+  );
+}
+
+export function cleanupControlledPlaywrightOwner(cleanupRoot) {
+  if (!cleanupRoot) throw new Error('Controlled cleanup requires an ownership root.');
+  const ownerRoot = resolve(cleanupRoot);
+  const candidates = ownedRuntimeDirectories(ownerRoot);
   for (const candidate of candidates) rmSync(candidate, { force: true, recursive: true });
-  const remaining = ownedRuntimeDirectories(cleanupRoot);
+  const remaining = ownedRuntimeDirectories(ownerRoot);
   if (remaining.length > 0) {
     throw new Error(`Controlled cleanup could not remove ${remaining.length} owned runtime directories.`);
   }

@@ -337,10 +337,17 @@ function verifyJourneyGroupEnforcementContract() {
     ],
   };
   const probe = `
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 const scenario = process.argv[2];
 const evidence = resolve(process.env.QDB_PR_OBSERVATION_RESULT_DIR, 'playwright-evidence', 'probe');
+const ownedRuntime = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-output-'));
+writeFileSync(resolve(ownedRuntime, '.qdb-controlled-runtime-owner.json'), JSON.stringify({
+  schemaVersion: 1,
+  cleanupOwner: evidence,
+}));
+writeFileSync(resolve(process.env.QDB_PR_OBSERVATION_RESULT_DIR, 'owned-runtime-path.txt'), ownedRuntime);
 if (scenario === 'missing-evidence') process.exit(7);
 const childEvidence = resolve(evidence, 'canonical', 'evidence');
 mkdirSync(childEvidence, { recursive: true });
@@ -449,8 +456,13 @@ process.exit(7);
       }
 
       const result = JSON.parse(readFileSync(resolve(resultsDirectory, 'job-result.json'), 'utf8'));
+      const ownedRuntime = readFileSync(resolve(resultsDirectory, 'owned-runtime-path.txt'), 'utf8');
       const shouldBlock = scenario !== 'observation-failure';
       check(result.status === 'failed', `${scenario} must retain the failed full-catalogue status.`);
+      check(
+        result.runtimeCleanup?.status === 'passed' && !existsSync(ownedRuntime),
+        `${scenario} must verify cleanup of its controlled private runtime.`,
+      );
       check(
         result.enforcementStatus === (shouldBlock ? 'failed' : 'passed'),
         `${scenario} must report the blocking journey decision separately.`,
