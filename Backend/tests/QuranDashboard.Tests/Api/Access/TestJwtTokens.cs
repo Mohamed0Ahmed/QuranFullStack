@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.JsonWebTokens;
+using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using QuranDashboard.Api.Authentication;
@@ -35,10 +36,13 @@ internal static class TestJwtTokens
     {
         services.PostConfigure<JwtBearerOptions>(scheme, options =>
         {
-            // Make token validation fully offline: seed the trusted signing key + issuer directly.
-            // Setting Configuration short-circuits the metadata fetch to the (fake) authority.
-            options.Configuration = new OpenIdConnectConfiguration { Issuer = TestIssuer };
-            options.Configuration.SigningKeys.Add(SigningKey);
+            // Keep test authentication fully offline by replacing the authority-backed configuration
+            // manager with the static issuer and signing key trusted by these tests.
+            var configuration = new OpenIdConnectConfiguration { Issuer = TestIssuer };
+            configuration.SigningKeys.Add(SigningKey);
+            options.Configuration = configuration;
+            options.ConfigurationManager = new StaticConfigurationManager<OpenIdConnectConfiguration>(
+                configuration);
             options.TokenValidationParameters.ValidIssuer = TestIssuer;
             options.TokenValidationParameters.IssuerSigningKey = SigningKey;
             // Pin the audience here rather than via in-memory config: production
