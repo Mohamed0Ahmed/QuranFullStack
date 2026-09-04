@@ -66,32 +66,29 @@ npm run e2e:headed -- --read-only e2e/abwab-permissions.e2e.ts:11
 npm run e2e:ui -- --mutating e2e/linking-success.e2e.ts:82
 ```
 
-## Legacy sealed provisioning
-
-The artifact-backed provisioning and sealed-execution implementation remains temporarily present for
-its separate retirement work, but supported Playwright suite, focused, headed, and UI commands no
-longer select it.
+## Controlled browser execution
 
 Required critical and full evidence uses two explicit phases. Controlled provisioning may use the
-network and any short-lived artifact/dependency credentials available to the job:
+network and short-lived package credentials available to the job:
 
 ```bash
 npm run e2e:provision
 ```
 
-This runs `npm ci`, locked NuGet restore, exact Playwright Chromium installation, digest-pinned
-PostgreSQL image acquisition, verification of the compact base and PhraseSearch-ready overlay,
-ephemeral localhost certificate
-generation, and Backend/Frontend builds. It writes a credential-free receipt under
-`.playwright/provisioning/`; the receipt is rejected after any npm, NuGet, artifact-lock, browser, or
-image drift.
+This runs `npm ci`, locked NuGet restore, exact Playwright Chromium installation, ephemeral localhost
+certificate generation, the loopback egress-guard build, and Backend/Frontend builds. It writes a
+credential-free schema-v2 receipt under `.playwright/provisioning/`; execution rejects the receipt
+after npm, NuGet, harness-source, Chromium, certificate, guard, TestRuntime, API, or Frontend output
+drift. Provisioning does not acquire a PostgreSQL image, verify a database artifact, create a Docker
+network or container, or restore a dump.
 
-The retained sealed runner strips artifact/dependency/application credentials, verifies the fixture without
-restore or build, restores PostgreSQL once with pulling disabled, and starts the compiled API plus the
-prebuilt Angular output. A preloaded system-call guard permits only loopback and the exact private
-PostgreSQL address for the UI, API, browser, and their child processes. PostgreSQL remains on a Docker
-`--internal` network, so unexpected process and container egress fail closed. Local OIDC/JWKS and
-Logto Management API behavior remain stubbed.
+The controlled canonical and stateful runners strip package, artifact, development-database, and
+ambient application credentials before starting their children. They pass only the explicitly
+required Test Database connection, use the receipt's exact Chromium and prebuilt outputs, and give
+each child an isolated process home, Playwright output directory, and structured-evidence directory.
+A preloaded system-call guard permits only native or IPv4-mapped loopback traffic, including local
+PostgreSQL, and rejects external request leaks. Local OIDC/JWKS and Logto Management API behavior
+remain stubbed.
 
 The supported local aliases use the same policy-aware persistent-capability orchestration:
 
@@ -100,29 +97,20 @@ npm run e2e:critical:local
 npm run e2e:local
 ```
 
-Each sealed run writes structured durations for artifact provisioning, database preparation,
-application startup, and test execution under `.playwright/evidence/<run-id>/`. Failed runs also keep
-sanitized application/container logs, step-event traces, text/media-masked screenshots, browser console errors, and
-request method/origin/path/status metadata. Request/response headers and bodies, database dumps,
-credentials, cookies, tokens, signed query strings, and private keys are never captured. The manifest
-declares the required 14-day failed-diagnostic and 30-day aggregate-timing retention contracts for the
-provider-neutral observation jobs.
+Each complete run writes one `playwright-run.json` containing the validated canonical and stateful
+partition reports. Stateful reports include every exact scenario child, its sanitized outcome,
+startup/test/shutdown timing, lock and reset phases, cleanup status, and approved diagnostics.
+Playwright's unfiltered working output and isolated process home are always private temporary
+directories and are deleted on success or failure.
 
-Sealed evidence never enables Playwright's raw trace or HTML reporter because those formats can embed
-headers and bodies. The structured reporter retains only sanitized step events; the failure fixture
-masks all text, background images, and rendered media before taking its diagnostic screenshot. Each
-run places Playwright's unfiltered working output in a separate private temporary directory that is
-deleted before evidence inspection. It copies and hashes its immutable provisioning receipt, then
-validates retained diagnostic filenames, MIME contracts, JSON schemas, PNG signatures, and text
-redaction before declaring the evidence safe.
-
-Artifact execution restores `compact-cross-stack-base` and composes the verified
-`compact-phrase-search-ready` data-only overlay with foreign-key constraints active. It then validates
-the runtime active build, source fingerprint, non-stale state, succeeded status, and exact/similarity
-readiness against the verified manifest. Ordinary execution never runs the PhraseSearch builder.
-
-Legacy sealed resets remain governed by their sealed-execution contract. Supported mutating execution
-uses only the centralized TestRuntime reset contract and introduces no test-only HTTP reset endpoint.
+Controlled evidence never enables Playwright's raw trace or HTML reporter because those formats can
+embed headers and bodies. Failed runs may retain only sanitized application output, step-event traces,
+text/media-masked screenshots, browser-console errors, accessibility observations, and request
+method/origin/path/status metadata. Evidence inspection removes raw archives, traces, dumps, keys, and
+certificates; validates retained filenames, MIME contracts, JSON schemas, and PNG signatures; rejects
+symlinks; and redacts known credentials. Request/response headers and bodies, database dumps,
+credentials, cookies, tokens, signed query strings, private keys, and unmasked browser output are not
+retained.
 
 Critical execution discovers annotated journeys from the specifications, then runs the selected
 file/line locations. It does not maintain a second journey catalogue.

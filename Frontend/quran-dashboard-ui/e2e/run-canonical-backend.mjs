@@ -25,11 +25,15 @@ if (
 }
 
 const backendAssembly = process.env.E2E_BACKEND_ASSEMBLY;
+const backendArguments = backendAssembly
+  ? [backendAssembly]
+  : ['run', '--project', API_PROJECT, '--no-build', '--no-restore', '--no-launch-profile'];
+if (process.env.E2E_CONTROLLED_EXECUTION === '1') {
+  backendArguments.push('--Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command=Warning');
+}
 const backendProcess = spawn(
   'dotnet',
-  backendAssembly
-    ? [backendAssembly]
-    : ['run', '--project', API_PROJECT, '--no-build', '--no-restore', '--no-launch-profile'],
+  backendArguments,
   {
     cwd: backendAssembly ? dirname(backendAssembly) : process.cwd(),
     env: {

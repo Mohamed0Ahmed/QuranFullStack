@@ -4,7 +4,7 @@ import { basename, relative, resolve } from 'node:path';
 import {
   redactDiagnosticText,
   sensitiveEnvironmentValues,
-} from '../e2e/harness/sealed-execution-contract.mjs';
+} from '../e2e/harness/controlled-execution-contract.mjs';
 
 export default class StructuredPlaywrightReporter {
   constructor() {
@@ -116,7 +116,7 @@ export default class StructuredPlaywrightReporter {
     const applicationsReadyAt = this.applicationsReadyAt ?? completedAt;
     const output = {
       schemaVersion: 1,
-      runId: basename(this.evidenceDirectory),
+      runId: process.env.QURAN_DASHBOARD_TEST_RUN_ID?.trim() || basename(this.evidenceDirectory),
       status: result.status,
       applicationsReadyAt,
       completedAt,

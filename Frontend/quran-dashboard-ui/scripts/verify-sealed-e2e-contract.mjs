@@ -132,7 +132,7 @@ assert.equal(
   packageManifest.scripts['e2e:focused'],
   'node scripts/run-focused-playwright.mjs',
 );
-assert.equal(
+assert.notEqual(
   packageManifest.scripts['e2e:provision'],
   'node scripts/provision-sealed-playwright.mjs',
 );

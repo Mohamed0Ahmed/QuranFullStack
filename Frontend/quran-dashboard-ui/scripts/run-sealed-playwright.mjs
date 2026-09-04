@@ -74,6 +74,7 @@ if (process.env.E2E_ORCHESTRATOR_GUARDED !== '1') {
   const sealedHome = mkdtempSync(resolve(FRONTEND_ROOT, '.playwright/sealed-home-'));
   Object.assign(guardedEnvironment, {
     CI: '1',
+    E2E_CONTROLLED_EXECUTION: '1',
     E2E_DATABASE_MODE: 'artifact',
     E2E_ORCHESTRATOR_GUARDED: '1',
     E2E_SEALED_EXECUTION: '1',

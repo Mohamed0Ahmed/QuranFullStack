@@ -1,19 +1,30 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import {
+  appendFileSync,
   chmodSync,
-  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
   rmSync,
-  writeFileSync,
 } from 'node:fs';
 import { createConnection } from 'node:net';
-import { dirname, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import {
+  redactDiagnosticText,
+  sensitiveEnvironmentValues,
+} from '../e2e/harness/controlled-execution-contract.mjs';
+import {
+  createControlledPlaywrightEnvironment,
+  inspectRetainedEvidence,
+  loadControlledProvisioningReceipt,
+  sanitizeError,
+  validatePlaywrightChildResult,
+  writeJson,
+} from './controlled-playwright-runtime.mjs';
 import {
   STATEFUL_API_PORT,
   STATEFUL_LOCK_COMMAND,
@@ -27,24 +38,12 @@ import {
 const frontendRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repositoryRoot = resolve(frontendRoot, '../..');
 const playwright = resolve(frontendRoot, 'node_modules/.bin/playwright');
-const testRuntime = resolve(
-  repositoryRoot,
-  'Backend/tools/QuranDashboard.TestRuntime/bin/Debug/net10.0/QuranDashboard.TestRuntime.dll',
-);
-const backendAssembly = resolve(
-  repositoryRoot,
-  'Backend/api/QuranDashboard.Api/bin/Debug/net10.0/QuranDashboard.Api.dll',
-);
 const [mode = '--full', selector, interactiveMode, ...extraArguments] = process.argv.slice(2);
 
 validateArguments(mode, selector, interactiveMode, extraArguments);
-if (!existsSync(testRuntime)) {
-  throw new Error(`Stateful Playwright execution requires built TestRuntime output: ${testRuntime}`);
-}
-if (!existsSync(backendAssembly)) {
-  throw new Error(`Stateful Playwright execution requires built Backend output: ${backendAssembly}`);
-}
-
+const provisioningReceipt = loadControlledProvisioningReceipt(frontendRoot, repositoryRoot);
+requireTestDatabaseConnection();
+const secretValues = sensitiveEnvironmentValues(process.env);
 const scenarios = mode === '--critical'
   ? selectStatefulCriticalJourneys(discover('./scripts/discover-playwright-journeys.mjs'))
   : selectStatefulPlaywrightTests(
@@ -56,15 +55,19 @@ if (scenarios.length === 0) {
 }
 
 const aggregateRunId = `stateful-${Date.now()}-${process.pid}`;
-const aggregateRoot = resolve(frontendRoot, '.playwright/evidence', aggregateRunId);
+const aggregateRoot = resolveAggregateRoot(aggregateRunId);
 mkdirSync(aggregateRoot, { recursive: true, mode: 0o700 });
 chmodSync(aggregateRoot, 0o700);
+const aggregateStartedAt = Date.now();
 const aggregate = {
   schemaVersion: 1,
+  kind: 'stateful',
   runId: aggregateRunId,
   status: 'passed',
   startedAt: new Date().toISOString(),
   completedAt: null,
+  durationMs: null,
+  provisioningPhases: provisioningReceipt.phases,
   scenarios: [],
 };
 let activePlaywrightChild = null;
@@ -79,63 +82,97 @@ for (const [index, scenario] of scenarios.entries()) {
   }
   const result = await runScenario(scenario, index);
   aggregate.scenarios.push(result);
+  if (result.status !== 'passed') aggregate.status = 'failed';
   writeAggregate();
-  if (result.status !== 'passed') {
-    aggregate.status = 'failed';
-    break;
-  }
+  if (result.status !== 'passed') break;
 }
 aggregate.completedAt = new Date().toISOString();
+aggregate.durationMs = Date.now() - aggregateStartedAt;
 writeAggregate();
 console.log(
-  `[e2e] stateful execution status=${aggregate.status} scenarios=${aggregate.scenarios.length} evidence=${aggregateRoot}`,
+  `[e2e] controlled stateful status=${aggregate.status} scenarios=${aggregate.scenarios.length} evidence=${aggregateRoot}`,
 );
 process.exit(aggregate.status === 'passed' ? 0 : 1);
 
 async function runScenario(scenario, index) {
+  const startedAt = Date.now();
   const runId = randomBytes(16).toString('hex');
-  const scenarioDirectory = resolve(aggregateRoot, `child-${String(index + 1).padStart(3, '0')}`);
+  const childName = `child-${String(index + 1).padStart(3, '0')}`;
+  const scenarioDirectory = resolve(aggregateRoot, childName);
   const evidenceDirectory = resolve(scenarioDirectory, 'evidence');
+  const applicationLog = resolve(evidenceDirectory, 'application.log');
   const apiProcessReceipt = resolve(scenarioDirectory, 'api-process.json');
-  const playwrightOutputDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-stateful-playwright-'));
+  const playwrightOutputDirectory = mkdtempSync(
+    resolve(tmpdir(), 'qdb-controlled-playwright-output-'),
+  );
+  const homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
   mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
   chmodSync(scenarioDirectory, 0o700);
   chmodSync(evidenceDirectory, 0o700);
   chmodSync(playwrightOutputDirectory, 0o700);
+  chmodSync(homeDirectory, 0o700);
+
+  const controlledEnvironment = createControlledPlaywrightEnvironment(
+    process.env,
+    provisioningReceipt,
+    { evidenceDirectory, homeDirectory, playwrightOutputDirectory },
+  );
+  const environment = buildStatefulPlaywrightEnvironment(controlledEnvironment, scenario, {
+    apiProcessReceipt,
+    backendAssembly: controlledEnvironment.E2E_BACKEND_ASSEMBLY,
+    evidenceDirectory,
+    playwrightOutputDirectory,
+    runId,
+  });
   const result = {
+    runId,
     selector: scenario.selector,
     policy: scenario.policy,
     fixtureProfile: scenario.fixtureProfile,
     backgroundActivities: scenario.backgroundActivities,
-    evidence: `child-${String(index + 1).padStart(3, '0')}/evidence/playwright-results.json`,
+    evidence: `${childName}/evidence/playwright-results.json`,
     status: 'failed',
+    startedAt: new Date(startedAt).toISOString(),
+    completedAt: null,
+    durationMs: null,
+    phases: [],
     cleanup: scenario.policy === 'mutating' ? 'pending' : 'not-required',
+    inspection: null,
   };
   let keeper;
-  let environment;
   let fingerprint;
   let childAttempted = false;
   let apiIdentityVerified = false;
   let initialResetCompleted = false;
 
   try {
-    environment = buildStatefulPlaywrightEnvironment(process.env, scenario, {
-      apiProcessReceipt,
-      backendAssembly,
-      evidenceDirectory,
-      playwrightOutputDirectory,
+    const lockStartedAt = Date.now();
+    keeper = await startKeeper(
+      scenario.policy === 'mutating' ? 'exclusive' : 'shared',
       runId,
+      environment,
+      applicationLog,
+    );
+    result.phases.push({
+      name: 'lockAcquisition',
+      status: 'passed',
+      durationMs: Date.now() - lockStartedAt,
     });
-    keeper = await startKeeper(scenario.policy === 'mutating' ? 'exclusive' : 'shared', runId);
     if (scenario.policy === 'mutating') {
-      fingerprint = protectedFingerprint(runTestRuntimeJson(['fingerprint'], environment));
+      const resetStartedAt = Date.now();
+      fingerprint = protectedFingerprint(runTestRuntimeJson(['fingerprint'], environment, applicationLog));
       runTestRuntimeJson(buildMutableResetArguments({
         apiProcessId: null,
         expectedFingerprint: fingerprint,
         phase: 'initial',
         runId,
-      }), environment);
+      }), environment, applicationLog);
       initialResetCompleted = true;
+      result.phases.push({
+        name: 'initialReset',
+        status: 'passed',
+        durationMs: Date.now() - resetStartedAt,
+      });
     }
 
     if (interruptionSignal) {
@@ -145,19 +182,44 @@ async function runScenario(scenario, index) {
     const playwrightArguments = ['test', scenario.selector, '--workers=1'];
     if (interactiveMode === '--headed') playwrightArguments.push('--headed');
     if (interactiveMode === '--ui') playwrightArguments.push('--ui');
-    const child = await runPlaywrightChild(playwrightArguments, environment, keeper);
+    const childStartedAt = Date.now();
+    const child = await runPlaywrightChild(
+      playwrightArguments,
+      environment,
+      keeper,
+      applicationLog,
+    );
+    const childCompletedAt = Date.now();
+    let playwrightResult;
+    let playwrightEvidenceError;
+    try {
+      playwrightResult = validatePlaywrightChildResult(readPlaywrightResult(evidenceDirectory), {
+        declaredTestCount: 1,
+        runId,
+      });
+      appendChildPhases(result.phases, playwrightResult, childStartedAt, childCompletedAt);
+    } catch (error) {
+      playwrightEvidenceError = error;
+      appendMissingChildFailurePhases(result.phases);
+    }
 
-    const receipt = readApiReceipt(apiProcessReceipt);
-    const apiProcessId = validateApiProcessReceipt(receipt, STATEFUL_API_PORT);
+    const apiReceipt = readApiReceipt(apiProcessReceipt);
+    const apiProcessId = validateApiProcessReceipt(apiReceipt, STATEFUL_API_PORT);
     apiIdentityVerified = true;
     if (scenario.policy === 'mutating') {
+      const resetStartedAt = Date.now();
       runTestRuntimeJson(buildMutableResetArguments({
         apiProcessId,
         expectedFingerprint: fingerprint,
         phase: 'final',
         runId,
-      }), environment);
+      }), environment, applicationLog);
       result.cleanup = 'passed';
+      result.phases.push({
+        name: 'finalReset',
+        status: 'passed',
+        durationMs: Date.now() - resetStartedAt,
+      });
     } else {
       await assertApiStopped(apiProcessId, STATEFUL_API_PORT);
     }
@@ -169,18 +231,15 @@ async function runScenario(scenario, index) {
       throw new Error(`Stateful Playwright was interrupted by ${interruptionSignal}.`);
     }
 
-    const playwrightResult = readPlaywrightResult(evidenceDirectory);
+    if (playwrightEvidenceError) throw playwrightEvidenceError;
     if (child.exitCode !== 0 || playwrightResult.status !== 'passed') {
       throw new Error(`Playwright child failed with status ${child.exitCode}.`);
     }
-    if (playwrightResult.declaredTestCount !== 1) {
-      throw new Error(
-        `Exact Playwright child ${scenario.selector} declared ${playwrightResult.declaredTestCount} tests.`,
-      );
-    }
     result.status = 'passed';
   } catch (error) {
-    result.error = error instanceof Error ? error.message : 'Stateful Playwright scenario failed.';
+    result.error = sanitizeError(error, secretValues);
+    appendMissingChildFailurePhases(result.phases);
+    appendFileSync(applicationLog, `${result.error}\n`, { encoding: 'utf8', mode: 0o600 });
     if (scenario.policy === 'mutating' && childAttempted && result.cleanup === 'pending') {
       result.cleanup = apiIdentityVerified ? 'failed' : 'refused-unverified-api';
     } else if (scenario.policy === 'mutating' && initialResetCompleted && result.cleanup === 'pending') {
@@ -189,14 +248,27 @@ async function runScenario(scenario, index) {
     console.error(`[e2e] ${scenario.selector}: ${result.error}`);
   } finally {
     rmSync(playwrightOutputDirectory, { recursive: true, force: true });
+    rmSync(homeDirectory, { recursive: true, force: true });
+    rmSync(apiProcessReceipt, { force: true });
     if (keeper) {
+      const releaseStartedAt = Date.now();
       if (!keeper.stdin.destroyed) keeper.stdin.end();
       const keeperStatus = await waitForExit(keeper);
+      result.phases.push({
+        name: 'lockRelease',
+        status: keeperStatus === 0 ? 'passed' : 'failed',
+        durationMs: Date.now() - releaseStartedAt,
+      });
       if (keeperStatus !== 0 && result.status === 'passed') {
         result.status = 'failed';
         result.error = `TestRuntime keeper exited with status ${keeperStatus}.`;
       }
     }
+    result.inspection = inspectRetainedEvidence(evidenceDirectory, secretValues);
+    if (result.inspection.status !== 'passed') result.status = 'failed';
+    if (result.status === 'passed') rmSync(applicationLog, { force: true });
+    result.completedAt = new Date().toISOString();
+    result.durationMs = Date.now() - startedAt;
   }
   return result;
 }
@@ -205,12 +277,16 @@ function discover(reporter) {
   const result = spawnSync(
     playwright,
     ['test', '--list', `--reporter=${reporter}`],
-    { cwd: frontendRoot, encoding: 'utf8', env: process.env, maxBuffer: 10 * 1024 * 1024 },
+    {
+      cwd: frontendRoot,
+      encoding: 'utf8',
+      env: process.env,
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
   if (result.error) throw result.error;
   if (result.status !== 0) {
-    process.stderr.write(result.stderr ?? '');
-    process.exit(result.status ?? 1);
+    throw new Error(redactDiagnosticText(result.stderr ?? 'Playwright discovery failed.', secretValues));
   }
   try {
     return JSON.parse(result.stdout);
@@ -219,14 +295,14 @@ function discover(reporter) {
   }
 }
 
-function runTestRuntimeJson(arguments_, environment) {
-  const result = spawnSync('dotnet', [testRuntime, ...arguments_], {
+function runTestRuntimeJson(arguments_, environment, logPath) {
+  const result = spawnSync('dotnet', [environment.E2E_TEST_RUNTIME_ASSEMBLY, ...arguments_], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     env: environment,
   });
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
+  recordSanitizedText(result.stdout, logPath);
+  recordSanitizedText(result.stderr, logPath);
   if (result.error) throw result.error;
   let report;
   try {
@@ -240,7 +316,7 @@ function runTestRuntimeJson(arguments_, environment) {
   return report;
 }
 
-function runPlaywrightChild(arguments_, environment, keeper) {
+function runPlaywrightChild(arguments_, environment, keeper, logPath) {
   return new Promise((resolveChild, rejectChild) => {
     let keeperLost = false;
     let settled = false;
@@ -248,9 +324,11 @@ function runPlaywrightChild(arguments_, environment, keeper) {
       cwd: frontendRoot,
       detached: true,
       env: environment,
-      stdio: 'inherit',
+      stdio: ['ignore', 'pipe', 'pipe'],
     });
     activePlaywrightChild = child;
+    captureSanitizedStream(child.stdout, logPath);
+    captureSanitizedStream(child.stderr, logPath);
 
     const finish = (callback) => {
       if (settled) return;
@@ -296,9 +374,9 @@ function protectedFingerprint(report) {
   return fingerprint;
 }
 
-async function startKeeper(lockMode, runId) {
+async function startKeeper(lockMode, runId, environment, logPath) {
   const keeper = spawn('dotnet', [
-    testRuntime,
+    environment.E2E_TEST_RUNTIME_ASSEMBLY,
     'lock',
     'hold',
     '--mode',
@@ -311,16 +389,16 @@ async function startKeeper(lockMode, runId) {
   ], {
     cwd: repositoryRoot,
     detached: true,
-    env: process.env,
+    env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  keeper.stderr.pipe(process.stderr);
+  captureSanitizedStream(keeper.stderr, logPath);
   const firstLine = await readFirstLine(keeper.stdout, keeper);
   if (firstLine === null) {
     await waitForExit(keeper);
     throw new Error('TestRuntime keeper returned no acquisition evidence.');
   }
-  process.stdout.write(`${firstLine}\n`);
+  recordSanitizedText(firstLine, logPath);
   let report;
   try {
     report = JSON.parse(firstLine);
@@ -334,7 +412,7 @@ async function startKeeper(lockMode, runId) {
     await waitForExit(keeper);
     throw new Error(`TestRuntime ${lockMode} keeper did not acquire its lock.`);
   }
-  keeper.stdout.pipe(process.stdout);
+  captureSanitizedStream(keeper.stdout, logPath);
   return keeper;
 }
 
@@ -409,12 +487,75 @@ async function assertApiStopped(processId, port) {
   });
 }
 
+function appendChildPhases(phases, childResult, childStartedAt, childCompletedAt) {
+  const applicationsReadyAt = Date.parse(childResult.applicationsReadyAt);
+  const testsCompletedAt = Date.parse(childResult.completedAt);
+  phases.push({
+    name: 'applicationStartup',
+    status: Number.isFinite(applicationsReadyAt) ? 'passed' : 'failed',
+    durationMs: Number.isFinite(applicationsReadyAt)
+      ? Math.max(0, applicationsReadyAt - childStartedAt)
+      : Math.max(0, childCompletedAt - childStartedAt),
+  });
+  phases.push({
+    name: 'testExecution',
+    status: childResult.status,
+    durationMs: Number.isFinite(applicationsReadyAt) && Number.isFinite(testsCompletedAt)
+      ? Math.max(0, testsCompletedAt - applicationsReadyAt)
+      : 0,
+  });
+  phases.push({
+    name: 'applicationShutdown',
+    status: 'passed',
+    durationMs: Number.isFinite(testsCompletedAt)
+      ? Math.max(0, childCompletedAt - testsCompletedAt)
+      : 0,
+  });
+}
+
+function appendMissingChildFailurePhases(phases) {
+  for (const name of ['applicationStartup', 'testExecution', 'applicationShutdown']) {
+    if (!phases.some((phase) => phase.name === name)) {
+      phases.push({ name, status: 'failed', durationMs: 0 });
+    }
+  }
+}
+
+function captureSanitizedStream(stream, logPath) {
+  let pending = '';
+  stream.setEncoding('utf8');
+  stream.on('data', (chunk) => {
+    const lines = `${pending}${chunk}`.split('\n');
+    pending = lines.pop() ?? '';
+    for (const line of lines) recordSanitizedText(line, logPath);
+  });
+  stream.on('end', () => {
+    if (pending) recordSanitizedText(pending, logPath);
+  });
+}
+
+function recordSanitizedText(value, logPath) {
+  if (!value) return;
+  const sanitized = redactDiagnosticText(value, secretValues);
+  appendFileSync(logPath, sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`, {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+  process.stdout.write(sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`);
+}
+
 function writeAggregate() {
-  writeFileSync(
-    resolve(aggregateRoot, 'stateful-results.json'),
-    `${JSON.stringify(aggregate, null, 2)}\n`,
-    { encoding: 'utf8', mode: 0o600 },
-  );
+  writeJson(resolve(aggregateRoot, 'stateful-results.json'), aggregate);
+}
+
+function resolveAggregateRoot(runId) {
+  const aggregateDirectory = process.env.QDB_PLAYWRIGHT_AGGREGATE_DIRECTORY?.trim();
+  if (aggregateDirectory) return resolve(aggregateDirectory, 'stateful');
+  const observationDirectory = process.env.QDB_PR_OBSERVATION_RESULT_DIR?.trim();
+  const evidenceRoot = observationDirectory
+    ? resolve(observationDirectory, 'playwright-evidence')
+    : resolve(frontendRoot, '.playwright/evidence');
+  return resolve(evidenceRoot, runId);
 }
 
 function validateArguments(selectedMode, selectedSelector, selectedInteractiveMode, extras) {
@@ -430,5 +571,13 @@ function validateArguments(selectedMode, selectedSelector, selectedInteractiveMo
     }
   } else if (selectedSelector !== undefined || selectedInteractiveMode !== undefined || extras.length > 0) {
     throw new Error(`${selectedMode} does not accept a Playwright selector or interactive mode.`);
+  }
+}
+
+function requireTestDatabaseConnection() {
+  if (!process.env.ConnectionStrings__QuranDashboardTest?.trim()) {
+    throw new Error(
+      'Controlled stateful Playwright execution requires ConnectionStrings__QuranDashboardTest.',
+    );
   }
 }

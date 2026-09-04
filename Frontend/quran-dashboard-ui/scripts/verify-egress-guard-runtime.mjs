@@ -16,18 +16,18 @@ try {
   await assert.rejects(
     connect('192.0.2.1', 443),
     (error) => error?.code === 'EPERM',
-    'the sealed egress guard must reject non-allowlisted IPv4 connections with EPERM',
+    'the controlled egress guard must reject external IPv4 connections with EPERM',
   );
   await assert.rejects(
     connect('::ffff:192.0.2.1', 443),
     (error) => error?.code === 'EPERM',
-    'the sealed egress guard must reject non-allowlisted IPv4-mapped connections with EPERM',
+    'the controlled egress guard must reject external IPv4-mapped connections with EPERM',
   );
 } finally {
   await new Promise((resolvePromise) => server.close(resolvePromise));
 }
 
-console.log('Sealed E2E egress guard allows native/mapped loopback and rejects external IPv4.');
+console.log('Controlled E2E egress guard allows native/mapped loopback and rejects external IPv4.');
 
 function connect(host, port) {
   return new Promise((resolvePromise, rejectPromise) => {

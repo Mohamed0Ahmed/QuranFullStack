@@ -12,7 +12,7 @@ import {
 const UI_ORIGIN = 'https://localhost:4200';
 const API_HEALTH_URL = 'https://localhost:5015/api/health';
 const evidenceDirectory = process.env['E2E_EVIDENCE_DIRECTORY'];
-const sealedExecution = process.env['E2E_SEALED_EXECUTION'] === '1';
+const controlledExecution = process.env['E2E_CONTROLLED_EXECUTION'] === '1';
 const playwrightOutputDirectory = process.env['E2E_PLAYWRIGHT_OUTPUT_DIRECTORY'];
 const tlsCertificate = process.env['E2E_TLS_CERTIFICATE'];
 const tlsPrivateKey = process.env['E2E_TLS_PRIVATE_KEY'];
@@ -20,12 +20,12 @@ const chromiumExecutable = process.env['E2E_CHROMIUM_EXECUTABLE'];
 const canonicalReadExecution = process.env['E2E_DATABASE_MODE'] === 'persistent-read-only';
 const statefulExecution = process.env['E2E_DATABASE_MODE'] === 'persistent-stateful';
 const databaseActivityProfile = resolveDatabaseActivityProfile();
-const frontendCommand = sealedExecution ? 'node e2e/run-frontend.mjs' : 'npm run start:https';
+const frontendCommand = controlledExecution ? 'node e2e/run-frontend.mjs' : 'npm run start:https';
 const backendCommand = canonicalReadExecution
   ? 'node e2e/run-canonical-backend.mjs'
   : 'node e2e/run-backend.mjs';
-if (sealedExecution && !playwrightOutputDirectory) {
-  throw new Error('Sealed execution requires a private Playwright output directory.');
+if (controlledExecution && !playwrightOutputDirectory) {
+  throw new Error('Controlled execution requires a private Playwright output directory.');
 }
 const reporters: ReporterDescription[] = evidenceDirectory
   ? [
@@ -58,10 +58,10 @@ export default defineConfig({
   use: {
     baseURL: UI_ORIGIN,
     ignoreHTTPSErrors: true,
-    trace: sealedExecution ? 'off' : 'retain-on-failure',
-    screenshot: sealedExecution ? 'off' : 'only-on-failure',
+    trace: controlledExecution ? 'off' : 'retain-on-failure',
+    screenshot: controlledExecution ? 'off' : 'only-on-failure',
     video: 'off',
-    ...(sealedExecution && chromiumExecutable
+    ...(controlledExecution && chromiumExecutable
       ? { launchOptions: { executablePath: chromiumExecutable } }
       : {}),
   },

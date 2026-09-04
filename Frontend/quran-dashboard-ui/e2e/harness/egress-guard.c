@@ -12,15 +12,7 @@
 
 static int ipv4_is_allowed(const struct in_addr *address)
 {
-    if ((ntohl(address->s_addr) & 0xff000000U) == 0x7f000000U) {
-        return 1;
-    }
-
-    const char *allowed_value = getenv("QDB_E2E_ALLOWED_IPV4");
-    struct in_addr allowed;
-    return allowed_value != NULL
-        && inet_pton(AF_INET, allowed_value, &allowed) == 1
-        && allowed.s_addr == address->s_addr;
+    return (ntohl(address->s_addr) & 0xff000000U) == 0x7f000000U;
 }
 
 static int address_is_allowed(const struct sockaddr *address, socklen_t length)
