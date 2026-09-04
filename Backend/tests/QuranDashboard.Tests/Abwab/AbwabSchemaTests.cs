@@ -1,9 +1,10 @@
 using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Abwab;
 
-[Collection(nameof(AbwabSchemaTestCollection))]
-public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AbwabSchemaTests(AccessTestFixture fixture) : AbwabMutableWriterTest(fixture)
 {
     private const string ColumnsOfTableSql = """
         SELECT column_name
@@ -121,7 +122,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         // Exact-set, not a subset check: T105's proof is the ABSENCE of a concurrency-token
         // column (Version/xmin is never a real column — see AbwabSectionConfiguration), and a
         // subset assertion would not fail if one leaked in.
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_sections");
@@ -131,7 +132,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Doors_table_has_exactly_the_expected_columns()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_doors");
@@ -141,7 +142,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Door_aliases_table_has_exactly_the_expected_columns()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var columns = await QueryColumnsAsync(connection, "abwab_door_aliases");
@@ -151,7 +152,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Abwab_persistence_tables_have_the_required_schema_contract()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await AssertIndexAsync(connection, "abwab_doors", "IX_abwab_doors_section_id_parent_id_order_value",
@@ -255,7 +256,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         // Without this, deleting .HasFilter(...) from AbwabDoorConfiguration would still pass
         // Doors_table_has_the_five_required_indexes — that test checks name/uniqueness/columns,
         // never the predicate the index exists to enforce.
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await using var command = new NpgsqlCommand(IndexFilterSql, connection);
@@ -272,7 +273,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         // Positive assertion (plan §6): a Postgres unique index is checked per statement, so
         // 1..N global resequencing (one UPDATE per row) would transiently violate one and die
         // mid-transaction. This trips if a later "hardening" PR adds one back.
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         var indexes = await QueryIndexesOnColumnAsync(connection, "abwab_doors", "global_order_value");
@@ -286,7 +287,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         // The mandatory NULLS NOT DISTINCT proof (plan §T102): a naive UNIQUE(parent_id, name)
         // would let two NULL-parent (root) doors share a name, since Postgres NULLs never
         // collide in a unique index by default.
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -317,7 +318,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Soft_deleted_door_does_not_block_a_new_door_with_the_same_name()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -355,7 +356,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     {
         // Not in T102's index list, but required by phase 2b's "409 duplicate name" outcome for
         // sections — added here since sections have no parent to scope siblings by.
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -383,7 +384,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Archived_section_does_not_block_a_new_section_with_the_same_name()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -416,7 +417,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Stale_door_version_token_raises_concurrency_exception_on_update()
     {
-        await using var writerScope = fixture.Services.CreateAsyncScope();
+        await using var writerScope = Fixture.Services.CreateAsyncScope();
         var writerContext = writerScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -431,7 +432,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         writerContext.AbwabDoors.Add(door);
         await writerContext.SaveChangesAsync();
 
-        await using var staleScope = fixture.Services.CreateAsyncScope();
+        await using var staleScope = Fixture.Services.CreateAsyncScope();
         var staleContext = staleScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var staleDoor = await staleContext.AbwabDoors.SingleAsync(d => d.Id == door.Id);
 
@@ -449,7 +450,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Stale_section_version_token_raises_concurrency_exception_on_update()
     {
-        await using var writerScope = fixture.Services.CreateAsyncScope();
+        await using var writerScope = Fixture.Services.CreateAsyncScope();
         var writerContext = writerScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
@@ -463,7 +464,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
         writerContext.AbwabSections.Add(section);
         await writerContext.SaveChangesAsync();
 
-        await using var staleScope = fixture.Services.CreateAsyncScope();
+        await using var staleScope = Fixture.Services.CreateAsyncScope();
         var staleContext = staleScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var staleSection = await staleContext.AbwabSections.SingleAsync(s => s.Id == section.Id);
 
@@ -483,7 +484,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Doors_section_id_is_not_null()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await using var command = new NpgsqlCommand(ColumnNullabilitySql, connection);
@@ -498,7 +499,7 @@ public sealed class AbwabSchemaTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task Doors_insert_with_null_section_is_rejected_by_postgres()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var connection = await OpenConnectionAsync(scope.ServiceProvider);
 
         await using var command = new NpgsqlCommand(

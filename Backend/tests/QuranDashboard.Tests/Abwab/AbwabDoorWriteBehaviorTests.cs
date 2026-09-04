@@ -1,20 +1,19 @@
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Abwab;
 
 // T215: the write rules proved directly against IAbwabDoorsWriter/IAbwabSectionsWriter, independent of
 // HTTP — SmokeAbwabWriteTests already proves the same rules end-to-end through the controllers; these
 // assert the writer's own contract (the exact exception type), which a status-code assertion cannot.
-// No reset between tests: each test uses its own uniquely-named rows, the same discipline
-// AbwabSchemaTests already relies on against this shared, non-truncated fixture.
-[Collection(nameof(AbwabSchemaTestCollection))]
-public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AbwabDoorWriteBehaviorTests(AccessTestFixture fixture) : AbwabMutableWriterTest(fixture)
 {
     [Fact]
     public async Task MoveAsync_IntoOwnDescendant_ThrowsCycleException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الدورة");
 
@@ -29,7 +28,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_IntoSelf_ThrowsCycleException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم النقل الذاتي");
 
@@ -43,7 +42,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task CreateAsync_DuplicateNameAtRoot_ThrowsDuplicateNameException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الاسم المكرر");
 
@@ -56,7 +55,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task EditAsync_WithStaleVersion_ThrowsStaleVersionException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم التعديل القديم");
 
@@ -71,7 +70,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task DeleteAsync_ArchivesDescendants_EditOnDescendantThenReturnsNotFound()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الأرشفة المباشرة");
 
@@ -90,7 +89,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_WhileParentStillArchived_ThrowsParentStillArchivedException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الأب المؤرشف");
 
@@ -106,7 +105,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task ReorderAsync_ProducesContiguousOrderValues()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -136,7 +135,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task ReorderAsync_WithSectionScope_LeavesGlobalOrderValueUntouched()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -153,7 +152,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task ReorderAsync_WithGlobalScope_LeavesOrderValueUntouched()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -183,7 +182,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_RootToRootAcrossSections_LeavesGlobalOrderValueUnchanged()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -203,7 +202,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_NestedToRoot_AppendsToEndOfGlobalSequence()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الانتقال إلى الجذر");
@@ -224,7 +223,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_RootToNested_NullsGlobalOrderValueAndShiftsLaterRootsDown()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -246,7 +245,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task DeleteAsync_ArchivesRoot_NullsGlobalOrderValueAndShiftsLaterRootsDown()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -268,7 +267,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_OfArchivedRoot_AppendsToEndOfGlobalSequence()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الاستعادة آخر التسلسل");
@@ -289,7 +288,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task CreateAsync_AtRootWithoutSection_ThrowsSectionRequiredException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         var act = async () => await writer.CreateAsync(null, null, "سلوك: جذر بلا قسم مرفوض", null, null, [], CancellationToken.None);
@@ -302,7 +301,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task CreateAsync_RootsInDifferentSections_ShareOneGlobalSequence()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         var first = await NewSectionAsync(scope, "سلوك: قسم أول للتسلسل العام المشترك");
@@ -318,7 +317,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_ToRootWithoutSection_ThrowsSectionRequiredException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم نقل بلا وجهة");
 
@@ -334,7 +333,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task BulkMoveAsync_ToRootWithoutSection_ThrowsSectionRequiredException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم نقل جماعي بلا وجهة");
 
@@ -356,7 +355,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task BulkMoveAsync_WhenDestinationEqualsSourceScope_StaysContiguous()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -389,7 +388,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_WhenDestinationEqualsCurrentScope_StaysContiguous()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -410,7 +409,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_AfterArchive_LeavesSiblingOrderContiguous()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -433,7 +432,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_DoesNotResurrectIndependentlyArchivedDescendant()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الاستعادة الانتقائية");
 
@@ -459,7 +458,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_RootWhoseSectionRetired_WithoutDestination_Throws()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -481,7 +480,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_WithDestination_ResectionsTheRestoredSubtree()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -507,7 +506,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_RootKeepsStoredLiveSection_WhenBodyNull()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -526,7 +525,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_Child_DerivesLiveParentsSection_WhenBodyNull()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم اشتقاق الابن عند الاستعادة");
 
@@ -546,7 +545,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_Child_WithConflictingSection_Throws()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         var parentSection = await NewSectionAsync(scope, "سلوك: قسم الأب لتعارض الاستعادة");
@@ -569,7 +568,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_RootIntoDifferentSection_ResectionsSeparatelyArchivedDescendants()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لتتالي الاسترجاع");
@@ -603,7 +602,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_ChildRestoredAfterAncestorResection_DerivesParentsCurrentSection()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
@@ -637,7 +636,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_LiveRoot_WithStatedSection_ChangesNeitherSectionNorEitherScopesOrder()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         var origin = await NewSectionAsync(scope, "سلوك: قسم أصل لباب حي لا يُعاد تقسيمه");
@@ -668,7 +667,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_LiveRoot_LeavesTheGlobalSequenceIntact()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
 
@@ -694,7 +693,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task MoveAsync_AcrossSections_CarriesEveryDescendantIncludingArchivedOnes()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -717,7 +716,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task BulkMoveAsync_AcrossSections_CarriesEachMovedDoorsSubtree()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -740,7 +739,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task CreateAsync_UnderAParent_DerivesTheSectionWhenNoneIsStated()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -755,7 +754,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task CreateAsync_UnderAParentInAnotherSection_ThrowsSectionParentMismatchException()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
 
@@ -772,7 +771,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task BulkArchiveAsync_WithOneStaleVersion_LeavesBothDoorsLive()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الأرشفة الجماعية القديمة");
 
@@ -789,7 +788,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
         // holding the rejected in-memory edits, same as a real request would never reuse a DbContext
         // across two separate HTTP calls — reusing the poisoned one here would fail this check for a
         // reason unrelated to what it verifies.
-        await using var verifyScope = fixture.Services.CreateAsyncScope();
+        await using var verifyScope = Fixture.Services.CreateAsyncScope();
         var verifyWriter = verifyScope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
 
         // All-or-nothing: even the door whose supplied version was correct must still be live.
@@ -800,7 +799,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task RestoreAsync_WithThePreArchiveVersion_LeavesTheDoorArchived()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم استعادة بإصدار قديم");
         var door = await writer.CreateAsync(
@@ -813,7 +812,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
 
         await act.Should().ThrowAsync<AbwabStaleVersionException>();
 
-        await using var verifyScope = fixture.Services.CreateAsyncScope();
+        await using var verifyScope = Fixture.Services.CreateAsyncScope();
         var persisted = await ReloadAsync(verifyScope, door.Id);
         persisted.DeletedAtUtc.Should().NotBeNull("a stale restore must not resurrect the archived door");
     }
@@ -824,7 +823,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task BulkArchiveAsync_WhenBatchContainsBothAParentAndItsChild_ReportsEachIdOnce()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الدفعة التي تحوي أبًا وابنه");
 
@@ -845,7 +844,7 @@ public sealed class AbwabDoorWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task EditAsync_ReplacingAliases_SoftDeletesTheDroppedOnes()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var writer = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         var section = await NewSectionAsync(scope, "سلوك: قسم الأسماء البديلة");

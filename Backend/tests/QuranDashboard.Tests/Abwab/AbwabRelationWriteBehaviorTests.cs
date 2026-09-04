@@ -1,5 +1,6 @@
 using QuranDashboard.Application.Abstractions.Abwab;
 using QuranDashboard.Domain.Abwab;
+using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Abwab;
 
@@ -7,13 +8,13 @@ namespace QuranDashboard.Tests.Abwab;
 // whose direction is null must be refused at the seam, never silently stored as "target is broader".
 // The handler's own 400 for the same input is pinned by AddDoorRelationsHandlerTests; this asserts
 // the writer does not depend on that validation two layers up.
-[Collection(nameof(AbwabSchemaTestCollection))]
-public sealed class AbwabRelationWriteBehaviorTests(AbwabSchemaFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AbwabRelationWriteBehaviorTests(AccessTestFixture fixture) : AbwabMutableWriterTest(fixture)
 {
     [Fact]
     public async Task AddAsync_ComprehensivenessWithNullDirection_ThrowsRatherThanDefaulting()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var relations = scope.ServiceProvider.GetRequiredService<IAbwabRelationsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
@@ -33,7 +34,7 @@ public sealed class AbwabRelationWriteBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task AddAsync_WhenOneOfMultipleTargetsAlreadyHasTheRelation_LeavesTheOtherTargetUnrelated()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var relations = scope.ServiceProvider.GetRequiredService<IAbwabRelationsWriter>();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();

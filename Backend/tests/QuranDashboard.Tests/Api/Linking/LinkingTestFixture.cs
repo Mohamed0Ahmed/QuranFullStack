@@ -14,7 +14,7 @@ using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Linking;
 
-public sealed class LinkingTestFixture : IAsyncLifetime
+public sealed class LinkingTestFixture : IAsyncLifetime, ILinkingDataPoller
 {
     private const string SeedResourceSuffix = "mushaf-reader-seed.sql";
     private static readonly DatabaseBackgroundActivity[] LinkingProcessors =
@@ -29,6 +29,7 @@ public sealed class LinkingTestFixture : IAsyncLifetime
     private WebApplicationFactory<HealthController>? standardFactory;
     private WebApplicationFactory<HealthController>? pausedConfirmationFactory;
     private WebApplicationFactory<HealthController>? pausedWorkersFactory;
+    private ILinkingDataPoller? dataPoller;
 
     public string ConnectionString { get; private set; } = string.Empty;
 
@@ -188,34 +189,20 @@ public sealed class LinkingTestFixture : IAsyncLifetime
         (await command.ExecuteNonQueryAsync()).Should().Be(1);
     }
 
-    public async Task<JsonElement> PollDataAsync(
+    public Task<JsonElement> PollDataAsync(
         HttpClient client,
         string path,
         string resourceKind,
         string resourceId,
         Func<JsonElement, bool> completed,
-        TimeSpan? timeout = null)
-    {
-        var deadline = DateTimeOffset.UtcNow + (timeout ?? TimeSpan.FromSeconds(15));
-        JsonElement last = default;
-        while (DateTimeOffset.UtcNow < deadline)
-        {
-            using var response = await client.GetAsync(path);
-            response.StatusCode.Should().Be(HttpStatusCode.OK);
-            last = await ApiEnvelope.ReadDataAsync(response);
-            if (completed(last))
-            {
-                return last;
-            }
-
-            await Task.Delay(50);
-        }
-
-        var sanitizedLogs = string.Join(" | ", SanitizedCommandTail());
-        throw new TimeoutException(
-            $"Timed out waiting for resourceKind={resourceKind}; resourceId={resourceId}; "
-            + $"lastBusinessState={DescribeBusinessState(last)}; sanitizedSqlTail={sanitizedLogs}");
-    }
+        TimeSpan? timeout = null) =>
+        (dataPoller ??= new LinkingDataPoller(SanitizedCommandTail)).PollDataAsync(
+            client,
+            path,
+            resourceKind,
+            resourceId,
+            completed,
+            timeout);
 
     public async Task ResetAsync()
     {
@@ -338,26 +325,6 @@ public sealed class LinkingTestFixture : IAsyncLifetime
         {
             throw new InvalidOperationException("The paused host did not find a queued confirmation job.");
         }
-    }
-
-    private static string DescribeBusinessState(JsonElement data)
-    {
-        if (data.ValueKind != JsonValueKind.Object)
-        {
-            return "not-observed";
-        }
-
-        var status = data.TryGetProperty("status", out var statusValue)
-            ? statusValue.GetString() ?? "unknown"
-            : "unknown";
-        var stage = data.TryGetProperty("stage", out var stageValue)
-            ? stageValue.GetString() ?? "unknown"
-            : "unknown";
-        var failureCode = data.TryGetProperty("failureCode", out var failureValue)
-            && failureValue.ValueKind == JsonValueKind.String
-                ? failureValue.GetString() ?? "unknown"
-                : "none";
-        return $"status:{status},stage:{stage},failureCode:{failureCode}";
     }
 
     private async Task SeedMushafSliceAsync()

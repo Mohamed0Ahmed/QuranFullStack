@@ -2,6 +2,7 @@ using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using Microsoft.Extensions.DependencyInjection;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
+using QuranDashboard.Tests.Abwab;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Api.Linking;
 using QuranDashboard.Tests.Smoke;
@@ -9,15 +10,19 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Abwab;
 
-[Collection(nameof(LinkingCollection))]
-public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AbwabInclusionProjectionTests(AccessTestFixture fixture)
+    : AbwabMutableWriterTest(fixture, enableLinkingProcessors: true)
 {
+    private const int FirstAyahId = 1;
+    private const int SecondAyahId = 2;
+    private static readonly ILinkingDataPoller LinkingPoller = new LinkingDataPoller();
+
     [Fact]
     public async Task AddInclusion_PersistsPublicTreeDetailVersionAndMushafProjection()
     {
-        await fixture.ResetAsync();
-        using var ownerClient = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, ownerClient);
+        using var ownerClient = Fixture.CreateApiClient();
+        var scenario = CreateScenario(ownerClient);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
 
@@ -33,7 +38,7 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         await scenario.PollConfirmationAsync(jobId, status => status == "succeeded");
 
         var targetDoorId = await scenario.CreateTargetDoorAsync("inclusion-projection-target");
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var before = await ReadPublicTreeAsync(publicClient);
         var targetBefore = FindDoor(before.Tree, targetDoorId);
         targetBefore.GetProperty("inclusionSourceCount").GetInt32().Should().Be(0);
@@ -95,22 +100,21 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task RecursiveReplacementAndDetach_PreserveContinuityDerivedStateVersionsAndPublicProjections()
     {
-        await fixture.ResetAsync();
-        using var owner = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, owner);
+        using var owner = Fixture.CreateApiClient();
+        var scenario = CreateScenario(owner);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var a = await scenario.CreateTargetDoorAsync("recursive-replacement-a");
         var b = await scenario.CreateTargetDoorAsync("recursive-replacement-b");
         var c = await scenario.CreateTargetDoorAsync("recursive-replacement-c");
-        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [12]);
-        using var publicClient = fixture.CreateClient();
+        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [SecondAyahId]);
+        using var publicClient = Fixture.CreateApiClient();
         var ab = await AddInclusionAndReadIdAsync(owner, publicClient, b, a);
         var bc = await AddInclusionAndReadIdAsync(owner, publicClient, c, b);
         var before = await ReadDoorProjectionsAsync(publicClient, a, b, c);
         before.SelectMany(state => state.VerseKeys).Should().Equal("1:1", "1:1", "1:1");
 
-        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [11]);
+        await ConfirmTwoAyahSourceAsync(scenario, owner, a, [FirstAyahId]);
 
         var replaced = await ReadDoorProjectionsAsync(publicClient, a, b, c);
         for (var index = 0; index < replaced.Length; index++)
@@ -163,15 +167,14 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task OverrideSuppressionAndLaterUpstreamChanges_CorrectSurvivingDirectContributionMetadata()
     {
-        await fixture.ResetAsync();
-        using var owner = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, owner);
+        using var owner = Fixture.CreateApiClient();
+        var scenario = CreateScenario(owner);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var source = await scenario.CreateTargetDoorAsync("override-suppression-source");
         var target = await scenario.CreateTargetDoorAsync("override-suppression-target");
         await ConfirmTwoAyahSourceAsync(scenario, owner, source, []);
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var inclusion = await AddInclusionAndReadIdAsync(owner, publicClient, target, source);
         var initial = await ReadDoorProjectionsAsync(publicClient, source, target);
         var sourceUnits = initial[0].UnitsByAyah;
@@ -179,17 +182,17 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         var words = initial[1].SelectableWordIds.Take(2).ToArray();
         words.Should().HaveCount(2);
 
-        var targetVersion = await ReplaceWordsAsync(owner, target, targetUnits[11], initial[1].Version, 11, words[0]);
-        targetVersion = await DeleteUnitsAsync(owner, target, targetVersion, targetUnits[12]);
+        var targetVersion = await ReplaceWordsAsync(owner, target, targetUnits[FirstAyahId], initial[1].Version, FirstAyahId, words[0]);
+        targetVersion = await DeleteUnitsAsync(owner, target, targetVersion, targetUnits[SecondAyahId]);
         var directStates = await ReadSyncsAsync(inclusion);
         directStates.Should().BeEquivalentTo(
         [
-            new InclusionSync(inclusion, sourceUnits[11], targetUnits[11], "overridden"),
-            new InclusionSync(inclusion, sourceUnits[12], null, "suppressed"),
+            new InclusionSync(inclusion, sourceUnits[FirstAyahId], targetUnits[FirstAyahId], "overridden"),
+            new InclusionSync(inclusion, sourceUnits[SecondAyahId], null, "suppressed"),
         ]);
         (await ReadContributionAsync(inclusion)).Should().Be(new ContributionState(1, false, 1));
 
-        var sourceVersion = await ReplaceWordsAsync(owner, source, sourceUnits[11], initial[0].Version, 11, words[1]);
+        var sourceVersion = await ReplaceWordsAsync(owner, source, sourceUnits[FirstAyahId], initial[0].Version, FirstAyahId, words[1]);
         var afterUpstreamEdit = (await ReadDoorProjectionsAsync(publicClient, target))[0];
         afterUpstreamEdit.Version.Should().Be(targetVersion);
         afterUpstreamEdit.VerseKeys.Should().Equal("1:1");
@@ -198,14 +201,14 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
 
         var beforeDeletion = await ReadDirectContributionAsync(source);
         beforeDeletion.State.Should().Be(new ContributionState(2, false, 2));
-        await DeleteUnitsAsync(owner, source, sourceVersion, sourceUnits[12]);
+        await DeleteUnitsAsync(owner, source, sourceVersion, sourceUnits[SecondAyahId]);
         var afterDeletion = await ReadDirectContributionAsync(source);
         afterDeletion.State.ResolvedAyahCount.Should().Be(1);
         afterDeletion.State.Deleted.Should().BeFalse();
         afterDeletion.State.UnitCount.Should().Be(1);
         afterDeletion.ResolvedAtUtc.Should().BeAfter(beforeDeletion.ResolvedAtUtc);
         (await ReadSyncsAsync(inclusion)).Should().BeEquivalentTo(
-            [new InclusionSync(inclusion, sourceUnits[11], targetUnits[11], "overridden")]);
+            [new InclusionSync(inclusion, sourceUnits[FirstAyahId], targetUnits[FirstAyahId], "overridden")]);
 
         var final = await ReadDoorProjectionsAsync(publicClient, source, target);
         final.SelectMany(state => state.VerseKeys).Should().Equal("1:1", "1:1");
@@ -218,26 +221,25 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task ValidInclusion_AnonymousUnderprivilegedRevokedAndDisabledActorsRemainDeniedWithoutPublicStateDrift()
     {
-        await fixture.ResetAsync();
-        using var ownerClient = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, ownerClient);
+        using var ownerClient = Fixture.CreateApiClient();
+        var scenario = CreateScenario(ownerClient);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var sourceDoorId = await CreateLinkedSourceDoorAsync(scenario, ownerClient);
         var grantedTargetDoorId = await scenario.CreateTargetDoorAsync("inclusion-granted-target");
         var targetDoorId = await scenario.CreateTargetDoorAsync("inclusion-denial-target");
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var initial = await ReadPublicStateAsync(publicClient, targetDoorId);
         var targetVersion = FindDoor(initial.Tree, targetDoorId).GetProperty("version").GetUInt32();
 
-        using (var anonymousClient = fixture.CreateClient())
+        using (var anonymousClient = Fixture.CreateApiClient())
         using (var response = await AddInclusionAsync(anonymousClient, targetDoorId, targetVersion, sourceDoorId))
         {
             await ApiEnvelope.AssertFailureEnvelopeAsync(response, HttpStatusCode.Unauthorized, ApiMessages.Unauthorized);
         }
 
         const string actorSub = "abwab-inclusion-lifecycle-actor";
-        var actor = await fixture.CreateActiveNonOwnerAsync(actorSub);
+        var actor = await Fixture.CreateActiveNonOwnerAsync(actorSub);
         using var actorClient = CreateAuthenticatedClient(actorSub);
         using (var response = await AddInclusionAsync(actorClient, targetDoorId, targetVersion, sourceDoorId))
         {
@@ -285,14 +287,13 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task AddInclusion_WithStaleTargetVersion_ReturnsConflictWithoutTopologyOrProjectionDrift()
     {
-        await fixture.ResetAsync();
-        using var ownerClient = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, ownerClient);
+        using var ownerClient = Fixture.CreateApiClient();
+        var scenario = CreateScenario(ownerClient);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var sourceDoorId = await CreateLinkedSourceDoorAsync(scenario, ownerClient);
         var targetDoorId = await scenario.CreateTargetDoorAsync("inclusion-stale-target");
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var original = await ReadPublicStateAsync(publicClient, targetDoorId);
         var staleVersion = FindDoor(original.Tree, targetDoorId).GetProperty("version").GetUInt32();
 
@@ -323,17 +324,16 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task ConcurrentAddInclusion_OneCommitAndOneConflictLeaveOneConsistentPublicProjection()
     {
-        await fixture.ResetAsync();
-        using var ownerClient = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, ownerClient);
+        using var ownerClient = Fixture.CreateApiClient();
+        var scenario = CreateScenario(ownerClient);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var sourceDoorId = await CreateLinkedSourceDoorAsync(scenario, ownerClient);
         var targetDoorId = await scenario.CreateTargetDoorAsync("inclusion-concurrent-target");
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var before = await ReadPublicStateAsync(publicClient, targetDoorId);
         var targetVersion = FindDoor(before.Tree, targetDoorId).GetProperty("version").GetUInt32();
-        await using var gateConnection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var gateConnection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await gateConnection.OpenAsync();
         await using var gateTransaction = await gateConnection.BeginTransactionAsync();
         await using (var gateCommand = new NpgsqlCommand(
@@ -390,13 +390,12 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
     [Fact]
     public async Task RestoreDoor_WithStaleVersion_ReturnsConflictWithoutArchivedReadOrProjectionDrift()
     {
-        await fixture.ResetAsync();
-        using var ownerClient = fixture.CreateClient();
-        var scenario = new LinkingTestScenario(fixture, ownerClient);
+        using var ownerClient = Fixture.CreateApiClient();
+        var scenario = CreateScenario(ownerClient);
         scenario.ConfigureOwner();
         await scenario.ProvisionOwnerAsync();
         var doorId = await CreateLinkedSourceDoorAsync(scenario, ownerClient);
-        using var publicClient = fixture.CreateClient();
+        using var publicClient = Fixture.CreateApiClient();
         var versionBeforeArchive = FindDoor((await ReadPublicTreeAsync(publicClient)).Tree, doorId)
             .GetProperty("version").GetUInt32();
 
@@ -609,7 +608,7 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
 
     private async Task<InclusionSync[]> ReadSyncsAsync(params int[] inclusionIds)
     {
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """
@@ -636,7 +635,7 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
 
     private async Task<ContributionState> ReadContributionAsync(int inclusionId)
     {
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """
@@ -658,7 +657,7 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
 
     private async Task<DirectContributionState> ReadDirectContributionAsync(int doorId)
     {
-        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
         await connection.OpenAsync();
         await using var command = new NpgsqlCommand(
             """
@@ -697,6 +696,9 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         .EnumerateArray()
         .Single(door => door.GetProperty("id").GetInt32() == doorId);
 
+    private static LinkingTestScenario CreateScenario(HttpClient client) =>
+        new(LinkingPoller, client, AccessTestFixture.OwnerSub);
+
     private async Task<int> CreateLinkedSourceDoorAsync(LinkingTestScenario scenario, HttpClient ownerClient)
     {
         var sourceDoorId = await scenario.CreateTargetDoorAsync($"inclusion-source-{Guid.NewGuid():N}");
@@ -714,7 +716,7 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
 
     private HttpClient CreateAuthenticatedClient(string sub)
     {
-        var client = fixture.CreateClient();
+        var client = Fixture.CreateApiClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TestJwtTokens.Mint(sub));
         return client;
     }
@@ -762,10 +764,15 @@ public sealed class AbwabInclusionProjectionTests(LinkingTestFixture fixture)
         var observed = 0;
         while (DateTimeOffset.UtcNow < deadline)
         {
-            await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+            await using var connection = new NpgsqlConnection(Fixture.ApplicationConnectionString);
             await connection.OpenAsync();
             await using var command = new NpgsqlCommand(
-                "SELECT COUNT(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = 'Lock';",
+                """
+                SELECT count(DISTINCT waiting.pid)::integer
+                FROM pg_catalog.pg_locks AS waiting
+                WHERE NOT waiting.granted
+                  AND waiting.pid <> pg_backend_pid()
+                """,
                 connection);
             observed = Convert.ToInt32(await command.ExecuteScalarAsync());
             if (observed >= minimumWaiters)
