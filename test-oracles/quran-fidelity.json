@@ -2,9 +2,9 @@
     "contractVersion": 1,
     "pageNumber": 1,
     "review": {
-        "reviewedOn": "2026-08-31",
+        "reviewedOn": "2026-09-05",
         "authority": "source-review",
-        "method": "Exact Unicode, relationship, and study-source review against the locked Quran Foundation, translation, and tafsir source identities; this oracle is not generated from the runtime database."
+        "method": "Exact Unicode, relationship, and study-source review against the locked Quran Foundation, translation, and tafsir source identities; this oracle is not generated from the runtime database. Corrected 2026-09-05: study.tafsir.isGroupLeader changed from true to false. IsGroupLeader is true only when an entry covers more than one ayah (TafsirAssembler sets it as valueKind == leader, i.e. coveredKeys.Length > 1). The canonical source entry ar-muyassar 1:1 carries only a text field with no ayahKeys, so it covers itself alone; that source has exactly 625 entries carrying ayahKeys and the imported data has exactly 625 group leaders. The previous true value also contradicted this oracle own sourceValueKind flat, coveredAyahCount 1, and coveredAyahKeys [1:1]."
     },
     "sourceIdentities": [
         {
@@ -87,7 +87,7 @@
             "tafsirKind": "brief",
             "sourceValueKind": "flat",
             "sourceLeaderVerseKey": "1:1",
-            "isGroupLeader": true,
+            "isGroupLeader": false,
             "coveredAyahCount": 1,
             "coveredAyahKeys": ["1:1"],
             "text": "<div class=ar lang=ar><h3>تسمية السورة</h3><p>• سميت الفاتحة؛ لأنها وقعت أول القرآن الكريم، فيفتتح بها المصحف كتابةً وقراءةً في الصلوات وغيرها.</p><h3>من مقاصد السورة</h3><p>• الثناءُ على الله بجميع المَحامِد، وتوحيدُه تعالى بالربوبية، وإفرادُه بالإلهية والعبادةِ بأنواعها، والإيمانُ بأسماء اللهِ - سبحانه وتعالى - وصفاتِه، وإثباتُ البعث والجزاء.</p><p>• التَّوجُّهُ إلى الله تعالى بطلبِ الهدايةِ إلى الدين الحق والصراط المستقيم، والتوفيقِ والتثبيتِ على الإيمانِ ونَهْجِ سبيل الصالحين، وتجنُّبِ طريق المغضوب عليهم والضالين.</p><h3>[التفسير]</h3><p>أبتدئ قراءة القرآن باسم الله مستعينًا به، <span class=\"qpc-hafs\">﴿ ٱللَّهِ﴾</span> علم على الرب -تبارك وتعالى- المعبود بحق دون سواه، وهو أخص أسماء الله تعالى، ولا يسمى به غيره سبحانه. <span class=\"qpc-hafs\">﴿ٱلرَّحۡمَٰنِ﴾</span> ذي الرحمة العامة الذي وسعت رحمته جميع الخلق، <span class=\"qpc-hafs\">﴿ٱلرَّحِيمِ﴾</span> بالمؤمنين، وهما اسمان من أسمائه تعالى، يتضمنان إثبات صفة الرحمة لله تعالى، كما يليق بجلاله.</p></div>"
