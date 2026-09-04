@@ -10,13 +10,13 @@ DatabaseActivityProfileCollection	QuranDashboard.Tests.Api.Testing.DatabaseActiv
 FullI3rabImportTestCollection	QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTestFixture	Parallel	ResetPerTest					Unmigrated
 FullI3rabSchemaTestCollection	QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSchemaFixture	Parallel	ImmutableSeed					Unmigrated
 I3rabGenerationTestCollection	QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabGenerationTestFixture	Parallel	ResetPerTest					Unmigrated
-ImportTestCollection	QuranDashboard.Tests.Quran.Import.ImportTestFixture	Parallel	ResetPerTest					Unmigrated
+ImportTestCollection	QuranDashboard.Tests.Quran.Import.ImportTestFixture	NonParallel	FreshLeasePerCase	SchemaState	None	EmptyScratch	None	Migrated
 LinkingCollection	QuranDashboard.Tests.Api.Linking.LinkingTestFixture	Parallel	ResetPerTest					Unmigrated
 MorphologyExplorersCollection	QuranDashboard.Tests.Quran.WordsMorphologyExplorers.MorphologyExplorersTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	None	Migrated
 MorphologyImportTestCollection	QuranDashboard.Tests.Quran.WordsMorphology.MorphologyImportTestFixture	Parallel	ResetPerTest					Unmigrated
 MushafReaderCollection	QuranDashboard.Tests.Quran.MushafReader.MushafReaderTestFixture	Parallel	PersistentCapability	None	None	TestDatabase	ReadOnlyApi	Migrated
 MutashabihatImportTestCollection	QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTestFixture	Parallel	ResetPerTest					Unmigrated
-NavigationImportTestCollection	QuranDashboard.Tests.Quran.Navigation.NavigationImportTestFixture	Parallel	ResetPerTest					Unmigrated
+NavigationImportTestCollection	QuranDashboard.Tests.Quran.Navigation.NavigationImportTestFixture	NonParallel	FreshLeasePerCase	SchemaState	None	EmptyScratch	None	Migrated
 QuranTopicsBookImportTestCollection	QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTestFixture	NonParallel	FreshLeasePerCase					Unmigrated
 PostgreSqlDatabaseSlotCollection	QuranDashboard.Tests.TestSupport.PostgreSql.PostgreSqlDatabaseSlotFixture	NonParallel	FreshLeasePerCase					Unmigrated
 PhraseSearchApiCollection	QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateFixture	Parallel	ResetPerTest					Unmigrated

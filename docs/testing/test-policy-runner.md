@@ -64,9 +64,12 @@ The empty-scratch partition is executable rather than plan-only. For each exact 
 `scripts/test` holds the TestRuntime global exclusive lock, removes only receipt-verified crash leftovers,
 creates a runner-owned PostgreSQL 18 database from `template0`, supplies its receipt-validated context to
 the selected test process, and performs verified cleanup before releasing the lock. Migration-path,
-Permission catalogue reconciliation, and schema-drift classes are the initial migrated empty-scratch
-coverage. They remain cheap pre-PR candidates when Access or Schema scope selects them; the partition does
-not authorize or select any unrelated full canonical pipeline.
+Permission catalogue reconciliation, schema-drift, foundation import/rebuild, and navigation import
+classes use this path. Foundation and navigation source, manifest, path, write-isolation, and validation
+rules that need no PostgreSQL remain independently selectable `FastNoDb` classes. Their empty-scratch
+rehearsals stay outside ordinary pre-PR execution unless the affected feature, authorized source, Schema
+State, produced/consumed contract, or safety-critical scope selects them; the partition does not authorize
+or select an unrelated full-data pipeline.
 
 Migrated full-data PhraseSearch index and recovery selections use the manual full Rehearsal Database
 capability only after `--authorize-full-data`. The root runner asks TestRuntime to validate the dedicated

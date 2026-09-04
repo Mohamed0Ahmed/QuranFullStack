@@ -11,8 +11,8 @@ using QuranDashboard.Domain.Quran.Translations;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Navigation;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.Navigation;
+using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
-using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Navigation;
 
@@ -23,17 +23,21 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
     private readonly List<string> tempDirs = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? connectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(NavigationImportTestFixture));
-
         try
         {
+            var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
+                QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath);
+            connectionString = scratch.ConnectionString;
             rootProvider = ownedProviders.Own(BuildServiceProvider(configure: null));
+
+            await using var scope = CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+            await dbContext.Database.MigrateAsync();
         }
         catch
         {
@@ -46,12 +50,7 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
     {
         rootProvider = null;
         await ownedProviders.DisposeAsync();
-
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        connectionString = null;
 
         DeleteTempDirs();
     }
@@ -86,15 +85,15 @@ public sealed class NavigationImportTestFixture : IAsyncLifetime
 
     private ServiceProvider BuildServiceProvider(Action<IServiceCollection>? configure)
     {
-        var connectionString = databaseLease?.ConnectionString
+        var initializedConnectionString = connectionString
             ?? throw new InvalidOperationException(
-                $"{nameof(NavigationImportTestFixture)} holds no database lease. Use it as a collection fixture "
+                $"{nameof(NavigationImportTestFixture)} holds no runner-owned empty-scratch database. Use it as a collection fixture "
                 + $"through [Collection(nameof({nameof(NavigationImportTestCollection)}))].");
 
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:QuranDashboardDb"] = connectionString
+                ["ConnectionStrings:QuranDashboardDb"] = initializedConnectionString
             })
             .Build();
 
@@ -677,5 +676,5 @@ internal static class NavigationSyntheticSeed
     };
 }
 
-[CollectionDefinition(nameof(NavigationImportTestCollection))]
+[CollectionDefinition(nameof(NavigationImportTestCollection), DisableParallelization = true)]
 public sealed class NavigationImportTestCollection : ICollectionFixture<NavigationImportTestFixture>;

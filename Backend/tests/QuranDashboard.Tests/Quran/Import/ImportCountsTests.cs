@@ -45,5 +45,5 @@ public sealed class ImportCountsTests
     }
 }
 
-[CollectionDefinition(nameof(ImportTestCollection))]
+[CollectionDefinition(nameof(ImportTestCollection), DisableParallelization = true)]
 public sealed class ImportTestCollection : ICollectionFixture<ImportTestFixture>;

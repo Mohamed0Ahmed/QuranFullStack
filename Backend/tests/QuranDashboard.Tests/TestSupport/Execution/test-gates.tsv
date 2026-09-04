@@ -50,15 +50,15 @@ QuranDashboard.Tests.Quran.FullI3rab.FullI3rabForceRebuildTests	FullI3rab	Databa
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabImportTests	FullI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabManifestReaderTests	FullI3rab	Fast	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.FullI3rab.FullI3rabSchemaShapeTests	FullI3rab	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ForceReloadTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ImlaeiCleanKeyImportTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ImportCountsTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ImportReconstructionTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.JsonWordSourceReaderTests	FoundationImport	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ManifestChecksumTests	FoundationImport	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline								Unmigrated
+QuranDashboard.Tests.Quran.Import.ForceReloadTests	FoundationImport	Canonical	Pipeline	Execution,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.ImlaeiCleanKeyImportTests	FoundationImport	Canonical	Pipeline	Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.ImportCountsTests	FoundationImport	Canonical	Pipeline	Contract,Schema	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.ImportReconstructionTests	FoundationImport	Canonical	Pipeline	Contract,Schema	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.JsonWordSourceReaderTests	FoundationImport	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Import.ManifestChecksumTests	FoundationImport	Fast	Pipeline	Safety,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Import.ReRunGuardTests	FoundationImport	Canonical	Pipeline	Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.ValidationFailureTests	FoundationImport	Canonical	Pipeline	Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Import.ValidationReportTests	FoundationImport	Canonical	Pipeline	Contract,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	ImportTestCollection	Migrated
 QuranDashboard.Tests.Quran.MushafReader.AyahStudyCorruptCoveredAyahKeysTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleContractTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB		CanonicalReader	CanonicalQuranData	None	TestDatabase	None	MushafReaderCollection	Migrated
@@ -68,14 +68,16 @@ QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Dat
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB								Unmigrated
 QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatValidationFailureTests	Mutashabihat	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationDatasetReaderTests	Navigation	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationImportTests	Navigation	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationManifestReaderTests	Navigation	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationMetadataWriteIsolationTests	Navigation	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests	Navigation	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline								Unmigrated
+QuranDashboard.Tests.Quran.Navigation.NavigationDatasetReaderTests	Navigation	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationDefaultPathTests	Navigation	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationImportTests	Navigation	Database	Pipeline	Contract,Execution,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationManifestReaderTests	Navigation	Fast	Pipeline	Contract,Safety,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationMetadataWriteIsolationTests	Navigation	Fast	TierB	Safety	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationRollbackTests	Navigation	Database	Pipeline	Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Database	Pipeline	Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline	Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Navigation.NavigationValidationRuleTests	Navigation	Fast	Pipeline	Contract,Safety,Source	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests	QuranTopicsBook	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB								Unmigrated

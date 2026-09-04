@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   EXECUTION_GROUPS,
@@ -315,6 +316,98 @@ assert.throws(
   }),
   /unknown affected Backend feature/i,
 );
+
+const repositoryCatalog = parseBackendPolicyCatalog(readFileSync(
+  new URL('../Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-gates.tsv', import.meta.url),
+  'utf8',
+));
+const repositoryResources = parseBackendResourceCatalog(readFileSync(
+  new URL('../Backend/tests/QuranDashboard.Tests/TestSupport/Execution/test-resources.tsv', import.meta.url),
+  'utf8',
+));
+const foundationClasses = repositoryCatalog
+  .filter(({ feature }) => feature === 'FoundationImport')
+  .map(({ className }) => className)
+  .sort();
+const navigationClasses = repositoryCatalog
+  .filter(({ feature }) => feature === 'Navigation')
+  .map(({ className }) => className)
+  .sort();
+
+const focusedFoundationRebuild = planFocusedSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  backendClasses: ['QuranDashboard.Tests.Quran.Import.ForceReloadTests'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+});
+assert.equal(focusedFoundationRebuild.commands.length, 1);
+assert.equal(focusedFoundationRebuild.commands[0].group, 'EmptyScratchDestructiveRehearsal');
+assert.equal(focusedFoundationRebuild.commands[0].scratchSubtype, 'canonical-rebuild');
+
+const focusedNavigationRule = planFocusedSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  backendClasses: ['QuranDashboard.Tests.Quran.Navigation.NavigationValidationRuleTests'],
+  backendMethods: [],
+  buildMode: 'no-build',
+  playwrightSelections: [],
+});
+assert.equal(focusedNavigationRule.commands.length, 1);
+assert.equal(focusedNavigationRule.commands[0].group, 'FastNoDb');
+
+const ordinaryRepositoryPrePr = planPrePrSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  affectedFeatures: [],
+  affectedConcerns: [],
+  authorizeFullData: false,
+});
+assert.ok(!ordinaryRepositoryPrePr.partitions
+  .flatMap(({ selections }) => selections)
+  .some(({ className, group }) =>
+    group === 'EmptyScratchDestructiveRehearsal'
+    && (foundationClasses.includes(className) || navigationClasses.includes(className))));
+
+for (const [feature, expectedClasses] of [
+  ['FoundationImport', foundationClasses],
+  ['Navigation', navigationClasses],
+]) {
+  const affected = planPrePrSelection({
+    backendCatalog: repositoryCatalog,
+    backendResources: repositoryResources,
+    affectedFeatures: [feature],
+    affectedConcerns: [],
+    authorizeFullData: false,
+  });
+  const selectedFeatureClasses = affected.partitions
+    .flatMap(({ selections }) => selections)
+    .filter(({ className }) => expectedClasses.includes(className))
+    .map(({ className }) => className)
+    .sort();
+
+  assert.deepEqual(selectedFeatureClasses, expectedClasses);
+  assert.deepEqual(affected.authorizationRequired, []);
+}
+
+const schemaRepositoryPrePr = planPrePrSelection({
+  backendCatalog: repositoryCatalog,
+  backendResources: repositoryResources,
+  affectedFeatures: [],
+  affectedConcerns: ['Schema'],
+  authorizeFullData: false,
+});
+const schemaScratchClasses = schemaRepositoryPrePr.partitions
+  .flatMap(({ selections }) => selections)
+  .filter(({ group }) => group === 'EmptyScratchDestructiveRehearsal')
+  .map(({ className }) => className);
+assert.ok(foundationClasses
+  .filter((className) => repositoryCatalog.find((entry) => entry.className === className).policy?.backendPolicy === 'DestructiveRehearsal')
+  .every((className) => schemaScratchClasses.includes(className)));
+assert.ok(navigationClasses
+  .filter((className) => repositoryCatalog.find((entry) => entry.className === className).policy?.backendPolicy === 'DestructiveRehearsal')
+  .every((className) => schemaScratchClasses.includes(className)));
 
 console.log('Repository test policy runner contract passed.');
 
