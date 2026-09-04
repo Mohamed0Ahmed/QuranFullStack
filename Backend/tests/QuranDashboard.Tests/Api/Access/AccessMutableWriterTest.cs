@@ -10,6 +10,7 @@ using QuranDashboard.Infrastructure.Access;
 using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestRuntime;
+using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.Access;
 
 namespace QuranDashboard.Tests.Api.Access;
@@ -41,9 +42,13 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public FakeExternalUserProfileSource ProfileSource { get; } = new();
 
+    internal SmokeSqlCommandCapture CommandCapture { get; } = new();
+
     private string targetConnectionString = string.Empty;
 
     public string ApplicationConnectionString => applicationConnectionString;
+
+    public string TargetConnectionString => targetConnectionString;
 
     public const string OwnerSub = "logto-owner";
 
@@ -191,6 +196,19 @@ public sealed class AccessTestFixture : IAsyncLifetime
         var backgroundActivities = scenarioBackgroundActivities;
         await EndScenarioAsync();
         await BeginScenarioAsync(backgroundActivities);
+    }
+
+    public async Task RestartScenarioApiAsync()
+    {
+        if (!scenarioActive)
+        {
+            throw new InvalidOperationException("A MutableWriter scenario is not active.");
+        }
+
+        await StopScenarioApiAsync();
+        queryProvider = BuildQueryProvider();
+        apiFactory = BuildApiFactory(scenarioBackgroundActivities);
+        _ = apiFactory.Services;
     }
 
     public HttpClient CreateApiClient() => CreateApiClient(Factory);
@@ -374,6 +392,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         ["Auth:InteractiveClientId"] = TestJwtTokens.TestClientId,
                         ["OwnerBootstrap:Emails:0"] = OwnerEmail,
                         ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
+                        ["OwnerBootstrap:Emails:2"] = FakeExternalUserProfileSource.EmailFor(
+                            SmokePersonas.OwnerSub),
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                         ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
                     };
@@ -389,6 +409,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
                 builder.ConfigureTestServices(services =>
                 {
+                    services.AddDbContext<QuranDashboardDbContext>(options =>
+                        options.AddInterceptors(CommandCapture));
                     services.RemoveAll<IExternalUserProfileSource>();
                     services.AddSingleton<IExternalUserProfileSource>(ProfileSource);
                     TestJwtTokens.ConfigureOfflineValidation(services);
@@ -419,6 +441,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
 
         NpgsqlConnection.ClearAllPools();
+        CommandCapture.Reset();
     }
 
     private async Task ResetAfterApiStoppedAsync(string phase)

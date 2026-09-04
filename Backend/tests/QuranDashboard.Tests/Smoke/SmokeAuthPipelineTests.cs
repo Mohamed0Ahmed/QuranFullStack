@@ -6,18 +6,19 @@ using QuranDashboard.Tests.TestSupport.Http;
 namespace QuranDashboard.Tests.Smoke;
 
 // The Api/Access suite covers this route too, but against a default-environment host. What is added here
-// is the composition itself: SmokeApiFixture boots under UseEnvironment("Testing"), so base
+// is the composition itself: SmokeMutableWriterTest boots under UseEnvironment("Testing"), so base
 // appsettings.json is the only configuration file loaded and Swagger is never registered — the route
 // table and services a deployed build actually assembles.
-[Collection(nameof(SmokeCollection))]
-public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class SmokeAuthPipelineTests(AccessTestFixture fixture)
+    : SmokeMutableWriterTest(fixture)
 {
     private const string MePath = "/api/access/me";
 
     [Fact]
     public async Task AnonymousRequest_Returns401_CarryingTheFailureEnvelope()
     {
-        using var client = fixture.CreateClientFor(SmokePersona.Anonymous);
+        using var client = CreateClientFor(SmokePersona.Anonymous);
 
         using var response = await client.GetAsync(MePath);
 
@@ -30,8 +31,7 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
     [Fact]
     public async Task UnknownSub_IsProvisionedPending_AndPersisted()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateClientFor(SmokePersona.AuthenticatedUnknown);
+        using var client = CreateClientFor(SmokePersona.AuthenticatedUnknown);
 
         using var response = await client.GetAsync(MePath);
 
@@ -39,19 +39,18 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
         var data = await ApiEnvelope.ReadDataAsync(response);
         data.GetProperty("status").GetString().Should().Be("pending");
 
-        var persisted = await fixture.GetUserBySubAsync(SmokePersonas.UnknownSub);
+        var persisted = await Fixture.GetUserBySubAsync(SmokePersonas.UnknownSub);
         persisted.Should().NotBeNull();
         persisted!.Status.Should().Be(UserStatus.Pending);
         persisted.RoleId.Should().BeNull();
         // Provisioning read the identity through the replaced boundary, so no test reaches real Logto.
-        fixture.ProfileSource.CallsFor(SmokePersonas.UnknownSub).Should().Be(1);
+        ProfileSource.CallsFor(SmokePersonas.UnknownSub).Should().Be(1);
     }
 
     [Fact]
     public async Task OwnerSub_IsBootstrappedActiveOwner()
     {
-        await fixture.ResetAsync();
-        using var client = fixture.CreateClientFor(SmokePersona.Owner);
+        using var client = CreateClientFor(SmokePersona.Owner);
 
         using var response = await client.GetAsync(MePath);
 
@@ -75,7 +74,7 @@ public sealed class SmokeAuthPipelineTests(SmokeApiFixture fixture)
 
     private async Task AssertTokenRejectedAsync(string token)
     {
-        using var client = fixture.CreateClient();
+        using var client = CreateClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, MePath);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 

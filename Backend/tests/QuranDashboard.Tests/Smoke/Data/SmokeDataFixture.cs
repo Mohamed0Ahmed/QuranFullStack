@@ -40,6 +40,11 @@ public sealed class SmokeDataFixture : IAsyncLifetime
         ?? throw new InvalidOperationException(
             $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture."));
 
+    internal IServiceProvider ApiServices => (apiFactory
+        ?? throw new InvalidOperationException(
+            $"{nameof(SmokeDataFixture)} has not been initialized. Ensure it is used as an ICollectionFixture."))
+        .Services;
+
     internal QuranFidelityOracle Oracle { get; } = QuranFidelityOracleDocument.ReadOracle();
 
     internal async Task<IReadOnlyDictionary<string, int>> CountRowsAsync(IEnumerable<string> tables)

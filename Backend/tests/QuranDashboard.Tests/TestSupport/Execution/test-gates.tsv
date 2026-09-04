@@ -36,8 +36,10 @@ QuranDashboard.Tests.Api.Access.OwnerReconciliationProtectedStateRehearsalTests	
 QuranDashboard.Tests.Api.Access.UnsafeEndpointMetadataValidatorTests	Access	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.UserProvisioningServiceTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Middleware.GlobalExceptionHandlerTests	Middleware	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests	Linking	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests	Linking	Database	TierB								Unmigrated
+QuranDashboard.Tests.Api.Linking.LinkingCollectionResetContractTests	Linking	Database	TierB	Execution	MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState,SchemaState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Linking.LinkingConfirmationIdempotencyTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests	PhraseSearch	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests	PhraseSearch	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateTests	PhraseSearch	Database	TierB								Unmigrated
@@ -129,13 +131,13 @@ QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabSourceSafetyTests	WordsSimpleI3
 QuranDashboard.Tests.Quran.WordsSimpleI3rab.I3rabValidationFailureTests	WordsSimpleI3rab	Database	Pipeline								Unmigrated
 QuranDashboard.Tests.Quran.WordsWordTypes.WordTypesChildCatalogueDriftTests	WordsWordTypes	Fast	TierB	Schema	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests	Smoke	Canonical	Smoke		GuardedReader	CanonicalQuranData,MutableApplicationState	None	TestDatabase	None	SmokeDataCollection	Migrated
-QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeBootGuardTests	Smoke	Database	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke								Unmigrated
-QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke								Unmigrated
+QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests	Smoke	Database	Smoke	Authorization	MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests	Smoke	Database	Smoke	Authorization	MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests	Smoke	Database	Smoke	Authorization	MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Smoke.SmokeBootGuardTests	Smoke	Database	Smoke	Startup	MutableWriter	SystemCatalogue,SchemaState	None	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Smoke.SmokeCoverageParityTests	Smoke	Database	Smoke	Contract	GuardedReader	None	None	TestDatabase	None	SmokeDataCollection	Migrated
+QuranDashboard.Tests.Smoke.SmokeRouteBaselineTests	Smoke	Fast	Smoke	Contract	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests	Smoke	Database	Smoke	Contract	GuardedReader	CanonicalQuranData,SystemCatalogue,MutableApplicationState,SchemaState	None	TestDatabase	None	SmokeDataCollection	Migrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeCommandTests	ApiBehavior	Fast	TierB	Cli,Schema							Unmigrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeFullRehearsalTests	ApiBehavior	Fast	TierB	Cli,Execution,Schema	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.TestRuntime.TestRuntimeAdministrationTests	ApiBehavior	Database	TierB	Cli,Execution,Schema							Unmigrated

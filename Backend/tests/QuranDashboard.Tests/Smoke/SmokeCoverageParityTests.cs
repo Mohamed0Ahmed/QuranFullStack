@@ -4,13 +4,14 @@ using Microsoft.AspNetCore.Routing;
 using QuranDashboard.Api.Authorization.Metadata;
 using QuranDashboard.Api.Authorization.Validation;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
+using QuranDashboard.Tests.Smoke.Data;
 
 namespace QuranDashboard.Tests.Smoke;
 
 // The lock between SmokeRouteCatalog and the route table the API actually composes. Both directions are
 // asserted, so neither adding an endpoint without a catalog entry nor deleting an entry can pass.
-[Collection(nameof(SmokeCollection))]
-public sealed class SmokeCoverageParityTests(SmokeApiFixture fixture)
+[Collection(nameof(SmokeDataCollection))]
+public sealed class SmokeCoverageParityTests(SmokeDataFixture fixture)
 {
     private static readonly IReadOnlyList<AbwabWritePermission> AbwabWriteMatrix =
     [
