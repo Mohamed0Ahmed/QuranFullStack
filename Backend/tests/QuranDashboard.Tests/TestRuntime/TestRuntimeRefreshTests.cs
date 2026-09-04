@@ -63,12 +63,26 @@ public sealed class TestRuntimeRefreshTests(TestRuntimeRefreshFixture fixture)
 
         result.ExitCode.Should().Be(3, result.Output);
         var violations = result.Report.RootElement.GetProperty("violations").EnumerateArray()
-            .Select(item => item.GetProperty("code").GetString())
+            .Select(item => (
+                Code: item.GetProperty("code").GetString(),
+                Subject: item.TryGetProperty("subject", out var subject) ? subject.GetString() : null))
             .ToArray();
-        violations.Should().Contain("refresh.validation.canonical-count");
-        violations.Should().Contain("refresh.validation.canonical-empty");
-        violations.Should().Contain("refresh.validation.quran-oracle-mismatch");
-        violations.Should().Contain("refresh.validation.phrase-search-invariant");
+        violations.Select(violation => violation.Code).Should().Contain("refresh.validation.canonical-count");
+        violations.Select(violation => violation.Code).Should().Contain("refresh.validation.canonical-empty");
+        violations.Select(violation => violation.Code).Should().Contain("refresh.validation.quran-oracle-mismatch");
+        violations.Select(violation => violation.Code).Should().Contain("refresh.validation.phrase-search-invariant");
+        violations.Should().Contain(violation =>
+            violation.Code == "refresh.validation.canonical-count"
+            && violation.Subject == "quran_words_unique_tashkeel:0");
+        violations.Should().Contain(violation =>
+            violation.Code == "refresh.validation.canonical-count"
+            && violation.Subject == "quran_words_unique_simple:0");
+        violations.Should().NotContain(violation =>
+            violation.Code == "refresh.validation.canonical-empty"
+            && violation.Subject == "quran_words_unique_tashkeel");
+        violations.Should().NotContain(violation =>
+            violation.Code == "refresh.validation.canonical-empty"
+            && violation.Subject == "quran_words_unique_simple");
     }
 
     [Fact]

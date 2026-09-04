@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Npgsql;
 using NpgsqlTypes;
+using QuranDashboard.Application.Abstractions.Quran.DataPipelines.Words.DisplayRebuilding;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 
 namespace QuranDashboard.TestRuntime;
@@ -48,6 +49,8 @@ internal sealed class CapabilityRefreshValidator : ICapabilityRefreshValidator
             ["quran_words"] = 83668,
             ["quran_words_ordered_tashkeel"] = 77432,
             ["quran_words_ordered_simple"] = 77432,
+            ["quran_words_unique_tashkeel"] = DisplayWordsInvariants.CanonicalUniqueTashkeel,
+            ["quran_words_unique_simple"] = DisplayWordsInvariants.CanonicalUniqueSimple,
             ["quran_word_morphology"] = 77432,
             ["quran_word_morphology_segments"] = 128219,
             ["quran_roots"] = 1642,
@@ -277,7 +280,6 @@ internal sealed class CapabilityRefreshValidator : ICapabilityRefreshValidator
 
         foreach (var table in new[]
                  {
-                     "quran_words_unique_tashkeel", "quran_words_unique_simple",
                      "quran_tafsir_entries", "quran_tafsir_ayah_entries",
                      "quran_translation_ayah_entries", "quran_phrase_search_tokens",
                      "quran_phrase_variants", "quran_phrase_occurrences",

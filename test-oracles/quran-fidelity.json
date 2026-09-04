@@ -69,12 +69,12 @@
         "quran_roots": 1642,
         "quran_lemmas": 4817,
         "quran_stems": 11843,
-        "quran_words_unique_tashkeel": 21294
+        "quran_words_unique_tashkeel": 19016
     },
     "rowCountsReview": {
-        "reviewedOn": "2026-09-03",
+        "reviewedOn": "2026-09-04",
         "authority": "source-review",
-        "method": "Exact canonical pipeline counts reviewed from the repository-authorized Quran foundation and morphology outputs; these expectations are independent of runtime database identity and dump storage."
+        "method": "Exact canonical pipeline counts reviewed from the repository-authorized Quran foundation and morphology outputs; the unique tashkeel count applies the committed display-word ignored-mark normalization and is independent of runtime database identity and dump storage."
     },
     "study": {
         "verseKey": "1:1",
