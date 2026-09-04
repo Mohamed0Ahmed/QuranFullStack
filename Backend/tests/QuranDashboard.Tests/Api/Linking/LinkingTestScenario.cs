@@ -6,18 +6,21 @@ using QuranDashboard.Tests.TestSupport.Http;
 
 namespace QuranDashboard.Tests.Api.Linking;
 
-internal sealed class LinkingTestScenario(LinkingTestFixture fixture, HttpClient client)
+internal sealed class LinkingTestScenario(
+    ILinkingDataPoller fixture,
+    HttpClient client,
+    string ownerSub = SmokePersonas.OwnerSub)
 {
     public void ConfigureOwner()
     {
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             "Bearer",
-            TestJwtTokens.Mint(SmokePersonas.OwnerSub));
+            TestJwtTokens.Mint(ownerSub));
         client.DefaultRequestHeaders.Add(
             "X-Interactive-Identity-Evidence",
             TestJwtTokens.MintIdentityToken(
-                SmokePersonas.OwnerSub,
-                FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub),
+                ownerSub,
+                FakeExternalUserProfileSource.EmailFor(ownerSub),
                 true));
     }
 

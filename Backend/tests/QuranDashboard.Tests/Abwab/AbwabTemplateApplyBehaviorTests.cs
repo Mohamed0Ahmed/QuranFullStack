@@ -1,11 +1,12 @@
 using QuranDashboard.Application.Abstractions.Abwab;
+using QuranDashboard.Tests.Api.Access;
 
 namespace QuranDashboard.Tests.Abwab;
 
 // The apply writer copies a template subtree into live doors. These tests protect section inheritance
 // and target-set atomicity; offsets and aliases remain the responsibility of their dedicated writers.
-[Collection(nameof(AbwabSchemaTestCollection))]
-public sealed class AbwabTemplateApplyBehaviorTests(AbwabSchemaFixture fixture)
+[Collection(nameof(MutableDatabaseCollection))]
+public sealed class AbwabTemplateApplyBehaviorTests(AccessTestFixture fixture) : AbwabMutableWriterTest(fixture)
 {
     // The `int` plumbing makes a section-LESS copy impossible to express, but not a copy carrying the
     // WRONG section: level ≥ 2 relays the value through CopiedNode rather than re-reading the target, so
@@ -14,7 +15,7 @@ public sealed class AbwabTemplateApplyBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task ApplyAsync_CopiesCarryTheTargetsSectionAtEveryDepth()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var templates = scope.ServiceProvider.GetRequiredService<IAbwabTemplatesWriter>();
@@ -49,7 +50,7 @@ public sealed class AbwabTemplateApplyBehaviorTests(AbwabSchemaFixture fixture)
     [Fact]
     public async Task ApplyAsync_WhenOneTargetCollides_LeavesEveryTargetWithoutNewTemplateChildren()
     {
-        await using var scope = fixture.Services.CreateAsyncScope();
+        await using var scope = Fixture.Services.CreateAsyncScope();
         var sections = scope.ServiceProvider.GetRequiredService<IAbwabSectionsWriter>();
         var doors = scope.ServiceProvider.GetRequiredService<IAbwabDoorsWriter>();
         var templates = scope.ServiceProvider.GetRequiredService<IAbwabTemplatesWriter>();
@@ -71,7 +72,7 @@ public sealed class AbwabTemplateApplyBehaviorTests(AbwabSchemaFixture fixture)
             template.Id, [firstTarget.Id, collidingTarget.Id], CancellationToken.None);
 
         await act.Should().ThrowAsync<AbwabTemplateApplyCollisionException>();
-        await using var verifyScope = fixture.Services.CreateAsyncScope();
+        await using var verifyScope = Fixture.Services.CreateAsyncScope();
         var verifyContext = verifyScope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
         (await verifyContext.AbwabDoors.CountAsync(door =>
             door.ParentId == firstTarget.Id && door.DeletedAtUtc == null))

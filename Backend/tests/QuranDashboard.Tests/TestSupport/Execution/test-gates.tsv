@@ -1,10 +1,11 @@
 FullyQualifiedClassName	Feature	Kind	Gate	Concerns	BackendPolicy	DataReads	DataWrites	DatabaseTarget	DestructiveSubtype	ResourceCollection	MigrationState
-QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests	Abwab	Database	TierB								Unmigrated
-QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB								Unmigrated
-QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB	Schema							Unmigrated
+QuranDashboard.Tests.Abwab.AbwabCollectionResetContractTests	Abwab	Database	TierB	Execution	MutableWriter	SystemCatalogue,MutableApplicationState,SchemaState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests	Abwab	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests	Abwab	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Abwab.AbwabSchemaTests	Abwab	Database	TierB	Schema	MutableWriter	SystemCatalogue,MutableApplicationState,SchemaState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Abwab.AbwabSnapshotWorkflowTests	Abwab	Process	TierB	Cli,Schema							Unmigrated
-QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB								Unmigrated
-QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests	Abwab	Database	TierB								Unmigrated
+QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests	Abwab	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
+QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests	Abwab	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState,CanonicalQuranData	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Access.AbwabPermissionCatalogueTests	Access	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.AccessAdminCommandTests	Access	Process	TierB								Unmigrated
 QuranDashboard.Tests.Api.Access.AccessAdministrationEndpointTests	Access	Database	TierB		MutableWriter	SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated

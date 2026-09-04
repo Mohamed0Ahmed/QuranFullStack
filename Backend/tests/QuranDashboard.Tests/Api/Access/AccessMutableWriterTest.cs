@@ -7,6 +7,7 @@ using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Api.Controllers.Access;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Infrastructure.Access;
+using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestRuntime;
 using QuranDashboard.Tests.TestSupport.Access;
@@ -34,6 +35,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
     private ServiceProvider? queryProvider;
     private string controlConnectionString = string.Empty;
     private string applicationConnectionString = string.Empty;
+    private IReadOnlyCollection<DatabaseBackgroundActivity> scenarioBackgroundActivities = [];
     private ProtectedStateFingerprintReport? verifiedBoundaryFingerprint;
     private bool scenarioActive;
 
@@ -145,7 +147,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
         }
     }
 
-    public async Task BeginScenarioAsync()
+    public async Task BeginScenarioAsync(
+        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null)
     {
         if (scenarioActive)
         {
@@ -156,9 +159,10 @@ public sealed class AccessTestFixture : IAsyncLifetime
         await ResetAfterApiStoppedAsync("initial");
         try
         {
+            scenarioBackgroundActivities = backgroundActivities?.ToArray() ?? [];
             ProfileSource.Reset();
             queryProvider = BuildQueryProvider();
-            apiFactory = BuildApiFactory();
+            apiFactory = BuildApiFactory(scenarioBackgroundActivities);
             _ = apiFactory.Services;
             scenarioActive = true;
         }
@@ -184,8 +188,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public async Task RestartScenarioAsync()
     {
+        var backgroundActivities = scenarioBackgroundActivities;
         await EndScenarioAsync();
-        await BeginScenarioAsync();
+        await BeginScenarioAsync(backgroundActivities);
     }
 
     public HttpClient CreateApiClient() => CreateApiClient(Factory);
@@ -220,7 +225,29 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public IServiceProvider ApiServices => Factory.Services;
 
+    // The centralized MutableWriter fixture serves feature tests outside Access as well.
+    public IServiceProvider Services => ApiServices;
+
     public IServiceProvider QueryServices => QueryProvider;
+
+    public async Task<(int UserId, uint Version)> CreateActiveNonOwnerAsync(string logtoSub)
+    {
+        await using var scope = QueryServices.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>();
+        var email = $"{logtoSub}@example.test";
+        var user = new User
+        {
+            LogtoSub = logtoSub,
+            Email = email,
+            NormalizedEmail = email.ToUpperInvariant(),
+            Status = UserStatus.Active,
+            CreatedAtUtc = DateTimeOffset.UtcNow,
+            UpdatedAtUtc = DateTimeOffset.UtcNow,
+        };
+        db.AccessUsers.Add(user);
+        await db.SaveChangesAsync();
+        return (user.Id, user.Version);
+    }
 
     public async Task<IReadOnlyList<User>> GetUsersAsync()
     {
@@ -319,7 +346,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
         ?? throw new InvalidOperationException(
             "The Access MutableWriter query provider is stopped outside an active scenario.");
 
-    private WebApplicationFactory<AccessController> BuildApiFactory()
+    private WebApplicationFactory<AccessController> BuildApiFactory(
+        IReadOnlyCollection<DatabaseBackgroundActivity> backgroundActivities)
     {
         return new WebApplicationFactory<AccessController>()
             .WithWebHostBuilder(builder =>
@@ -327,8 +355,17 @@ public sealed class AccessTestFixture : IAsyncLifetime
                 builder.UseEnvironment("Testing");
                 builder.UseSetting("ConnectionStrings:QuranDashboardDb", targetConnectionString);
                 builder.UseSetting("Testing:DatabaseActivity:Profile", "Mutable");
+                var activityIndex = 0;
+                foreach (var activity in backgroundActivities)
+                {
+                    builder.UseSetting(
+                        $"Testing:DatabaseActivity:EnabledBackgroundActivities:{activityIndex++}",
+                        activity.ToString());
+                }
+
                 builder.ConfigureAppConfiguration((_, configuration) =>
-                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    var settings = new Dictionary<string, string?>
                     {
                         ["ConnectionStrings:QuranDashboardDb"] = targetConnectionString,
                         ["Testing:DatabaseActivity:Profile"] = "Mutable",
@@ -339,7 +376,16 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                         ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
-                    }));
+                    };
+                    activityIndex = 0;
+                    foreach (var activity in backgroundActivities)
+                    {
+                        settings[$"Testing:DatabaseActivity:EnabledBackgroundActivities:{activityIndex++}"] =
+                            activity.ToString();
+                    }
+
+                    configuration.AddInMemoryCollection(settings);
+                });
 
                 builder.ConfigureTestServices(services =>
                 {

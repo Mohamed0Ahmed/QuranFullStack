@@ -153,4 +153,51 @@ public sealed class TestPolicyContractTests
         resource.Policy.Target.Should().Be(TestDatabaseTarget.TestDatabase);
         resource.Policy.StartupEffects.Should().BeEquivalentTo([TestApiStartupEffect.MutableApi]);
     }
+
+    [Fact]
+    public void AbwabMutableWriters_UseTheSinglePersistentMutableDatabaseResource()
+    {
+        string[] expectedClasses =
+        [
+            "QuranDashboard.Tests.Abwab.AbwabCollectionResetContractTests",
+            "QuranDashboard.Tests.Abwab.AbwabDoorWriteBehaviorTests",
+            "QuranDashboard.Tests.Abwab.AbwabRelationWriteBehaviorTests",
+            "QuranDashboard.Tests.Abwab.AbwabSchemaTests",
+            "QuranDashboard.Tests.Abwab.AbwabTemplateApplyBehaviorTests",
+            "QuranDashboard.Tests.Api.Abwab.AbwabInclusionProjectionTests",
+        ];
+
+        var entries = TestGateCatalog.GateEntries
+            .Where(entry => expectedClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+        var expectedReads = new HashSet<TestDataClass>
+        {
+            TestDataClass.SystemCatalogue,
+            TestDataClass.MutableApplicationState,
+        };
+        var expectedWrites = new HashSet<TestDataClass> { TestDataClass.MutableApplicationState };
+
+        entries.Select(entry => entry.ClassName).Should().BeEquivalentTo(expectedClasses);
+        entries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.MutableWriter
+            && entry.Policy.Reads.IsSupersetOf(expectedReads)
+            && entry.Policy.Writes.SetEquals(expectedWrites)
+            && entry.Policy.Target == TestDatabaseTarget.TestDatabase
+            && entry.Policy.DestructiveSubtype == DestructiveRehearsalSubtype.None
+            && entry.ResourceCollection == "MutableDatabaseCollection");
+        entries.Single(entry => entry.ClassName.EndsWith(
+                ".AbwabCollectionResetContractTests",
+                StringComparison.Ordinal))
+            .Policy!.Reads.Should().Contain(TestDataClass.SchemaState);
+        entries.Single(entry => entry.ClassName.EndsWith(
+                ".AbwabSchemaTests",
+                StringComparison.Ordinal))
+            .Policy!.Reads.Should().Contain(TestDataClass.SchemaState);
+        entries.Single(entry => entry.ClassName.EndsWith(
+                ".AbwabInclusionProjectionTests",
+                StringComparison.Ordinal))
+            .Policy!.Reads.Should().Contain(TestDataClass.CanonicalQuranData);
+    }
 }
