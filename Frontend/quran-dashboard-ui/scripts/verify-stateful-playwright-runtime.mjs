@@ -278,6 +278,10 @@ assert.match(statefulRunnerSource, /process\.on\('SIGINT'/);
 assert.match(statefulRunnerSource, /process\.on\('SIGTERM'/);
 assert.match(statefulRunnerSource, /keeper\.once\('close'/);
 assert.match(statefulRunnerSource, /await runPlaywrightChild/);
+assert.match(
+  statefulRunnerSource,
+  /const keeper = spawn\('dotnet',[\s\S]*?detached: true,[\s\S]*?stdio: \['pipe', 'pipe', 'pipe'\]/,
+);
 assert.doesNotMatch(statefulRunnerSource, /spawnSync\(playwright/);
 
 console.log('Stateful Playwright runtime contract passed.');

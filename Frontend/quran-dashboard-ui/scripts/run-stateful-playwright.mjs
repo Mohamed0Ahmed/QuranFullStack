@@ -310,6 +310,7 @@ async function startKeeper(lockMode, runId) {
     '--release-on-stdin-close',
   ], {
     cwd: repositoryRoot,
+    detached: true,
     env: process.env,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
