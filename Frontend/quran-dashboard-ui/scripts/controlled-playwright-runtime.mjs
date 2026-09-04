@@ -1,18 +1,23 @@
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import {
   appendFileSync,
+  chmodSync,
   lstatSync,
+  mkdirSync,
+  mkdtempSync,
   readFileSync,
   readdirSync,
   rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve } from 'node:path';
 
 import {
   createControlledEnvironment,
   redactDiagnosticText,
+  sensitiveEnvironmentValues,
   validateControlledProvisioningReceipt,
 } from '../e2e/harness/controlled-execution-contract.mjs';
 import {
@@ -91,6 +96,78 @@ export function createControlledPlaywrightEnvironment(source, receipt, paths) {
   });
 }
 
+export function createPrivatePlaywrightRuntime(evidenceDirectory) {
+  let homeDirectory;
+  let playwrightOutputDirectory;
+  try {
+    mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
+    chmodSync(dirname(evidenceDirectory), 0o700);
+    chmodSync(evidenceDirectory, 0o700);
+    playwrightOutputDirectory = mkdtempSync(
+      resolve(tmpdir(), 'qdb-controlled-playwright-output-'),
+    );
+    homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
+    chmodSync(playwrightOutputDirectory, 0o700);
+    chmodSync(homeDirectory, 0o700);
+  } catch (error) {
+    if (playwrightOutputDirectory) {
+      rmSync(playwrightOutputDirectory, { recursive: true, force: true });
+    }
+    if (homeDirectory) rmSync(homeDirectory, { recursive: true, force: true });
+    throw error;
+  }
+  return {
+    evidenceDirectory,
+    homeDirectory,
+    playwrightOutputDirectory,
+    cleanup() {
+      rmSync(playwrightOutputDirectory, { recursive: true, force: true });
+      rmSync(homeDirectory, { recursive: true, force: true });
+    },
+  };
+}
+
+export function discoverControlledPlaywright(frontendRoot, receipt, reporter, sourceEnvironment) {
+  const discoveryRoot = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-discovery-'));
+  let runtime;
+  try {
+    runtime = createPrivatePlaywrightRuntime(resolve(discoveryRoot, 'evidence'));
+    const environment = createControlledPlaywrightEnvironment(
+      sourceEnvironment,
+      receipt,
+      runtime,
+    );
+    const playwright = resolve(frontendRoot, 'node_modules/.bin/playwright');
+    const result = spawnSync(
+      playwright,
+      ['test', '--list', `--reporter=${reporter}`],
+      {
+        cwd: frontendRoot,
+        encoding: 'utf8',
+        env: environment,
+        maxBuffer: 10 * 1024 * 1024,
+      },
+    );
+    if (result.error) throw result.error;
+    if (result.status !== 0) {
+      throw new Error(
+        redactDiagnosticText(
+          result.stderr ?? 'Controlled Playwright discovery failed.',
+          sensitiveEnvironmentValues(sourceEnvironment),
+        ),
+      );
+    }
+    try {
+      return JSON.parse(result.stdout);
+    } catch (error) {
+      throw new Error(`Controlled Playwright discovery returned invalid JSON: ${error.message}`);
+    }
+  } finally {
+    runtime?.cleanup();
+    rmSync(discoveryRoot, { recursive: true, force: true });
+  }
+}
+
 export function runWithSanitizedOutput(
   command,
   arguments_,
@@ -104,23 +181,74 @@ export function runWithSanitizedOutput(
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     onSpawn?.(child);
-    const buffers = new Map([[child.stdout, ''], [child.stderr, '']]);
-    for (const stream of buffers.keys()) {
-      stream.setEncoding('utf8');
-      stream.on('data', (chunk) => {
-        const lines = `${buffers.get(stream)}${chunk}`.split('\n');
-        buffers.set(stream, lines.pop() ?? '');
-        for (const line of lines) recordSanitizedLine(line, logPath, secretValues);
-      });
-    }
+    captureSanitizedStream(child.stdout, { logPath, secretValues });
+    captureSanitizedStream(child.stderr, { logPath, secretValues });
     child.once('error', rejectRun);
     child.once('close', (code, signal) => {
-      for (const pending of buffers.values()) {
-        if (pending) recordSanitizedLine(pending, logPath, secretValues);
-      }
       resolveRun({ child, exitCode: code ?? (signal ? 1 : 0) });
     });
   });
+}
+
+export function appendChildExecutionPhases(phases, childResult, childStartedAt, childCompletedAt) {
+  const applicationsReadyAt = Date.parse(childResult.applicationsReadyAt);
+  const testsCompletedAt = Date.parse(childResult.completedAt);
+  phases.push({
+    name: 'applicationStartup',
+    status: Number.isFinite(applicationsReadyAt) ? 'passed' : 'failed',
+    durationMs: Number.isFinite(applicationsReadyAt)
+      ? Math.max(0, applicationsReadyAt - childStartedAt)
+      : Math.max(0, childCompletedAt - childStartedAt),
+  });
+  phases.push({
+    name: 'testExecution',
+    status: childResult.status,
+    durationMs: Number.isFinite(applicationsReadyAt) && Number.isFinite(testsCompletedAt)
+      ? Math.max(0, testsCompletedAt - applicationsReadyAt)
+      : 0,
+  });
+}
+
+export function appendApplicationShutdownPhase(phases, childResult, childCompletedAt, status) {
+  const testsCompletedAt = Date.parse(childResult.completedAt);
+  phases.push({
+    name: 'applicationShutdown',
+    status,
+    durationMs: Number.isFinite(testsCompletedAt)
+      ? Math.max(0, childCompletedAt - testsCompletedAt)
+      : 0,
+  });
+}
+
+export function appendMissingChildFailurePhases(phases) {
+  for (const name of ['applicationStartup', 'testExecution', 'applicationShutdown']) {
+    if (!phases.some((phase) => phase.name === name)) {
+      phases.push({ name, status: 'failed', durationMs: 0 });
+    }
+  }
+}
+
+export function captureSanitizedStream(stream, { logPath, secretValues }) {
+  let pending = '';
+  stream.setEncoding('utf8');
+  stream.on('data', (chunk) => {
+    const lines = `${pending}${chunk}`.split('\n');
+    pending = lines.pop() ?? '';
+    for (const line of lines) recordSanitizedText(line, logPath, secretValues);
+  });
+  stream.on('end', () => {
+    if (pending) recordSanitizedText(pending, logPath, secretValues);
+  });
+}
+
+export function recordSanitizedText(value, logPath, secretValues) {
+  if (!value) return;
+  const sanitized = redactDiagnosticText(value, secretValues);
+  appendFileSync(logPath, sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`, {
+    encoding: 'utf8',
+    mode: 0o600,
+  });
+  process.stdout.write(sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`);
 }
 
 export function validatePlaywrightChildResult(result, expected) {
@@ -249,12 +377,6 @@ export function sanitizeError(error, secretValues) {
     error instanceof Error ? error.stack ?? error.message : 'Controlled Playwright execution failed.',
     secretValues,
   );
-}
-
-function recordSanitizedLine(line, logPath, secretValues) {
-  const sanitized = redactDiagnosticText(line, secretValues);
-  appendFileSync(logPath, `${sanitized}\n`, { encoding: 'utf8', mode: 0o600 });
-  process.stdout.write(`${sanitized}\n`);
 }
 
 function listEvidence(directory, root = directory) {

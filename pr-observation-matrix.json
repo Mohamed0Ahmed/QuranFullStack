@@ -187,14 +187,14 @@
       },
       "commands": [
         {
-          "id": "sealed-e2e-provisioning",
+          "id": "controlled-e2e-provisioning",
           "phase": "provisioning",
           "cwd": "Frontend/quran-dashboard-ui",
           "executable": "npm",
           "arguments": ["run", "e2e:provision"]
         },
         {
-          "id": "sealed-critical-journeys",
+          "id": "controlled-critical-journeys",
           "phase": "execution",
           "cwd": "Frontend/quran-dashboard-ui",
           "executable": "npm",

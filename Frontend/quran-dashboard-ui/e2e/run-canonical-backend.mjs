@@ -1,6 +1,8 @@
 import { spawn } from 'node:child_process';
 import { dirname, resolve } from 'node:path';
 
+import { buildControlledBackendArguments } from './harness/controlled-execution-contract.mjs';
+
 const API_PROJECT = resolve(
   process.cwd(),
   '../../Backend/api/QuranDashboard.Api/QuranDashboard.Api.csproj',
@@ -25,12 +27,11 @@ if (
 }
 
 const backendAssembly = process.env.E2E_BACKEND_ASSEMBLY;
-const backendArguments = backendAssembly
-  ? [backendAssembly]
-  : ['run', '--project', API_PROJECT, '--no-build', '--no-restore', '--no-launch-profile'];
-if (process.env.E2E_CONTROLLED_EXECUTION === '1') {
-  backendArguments.push('--Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command=Warning');
-}
+const backendArguments = buildControlledBackendArguments(
+  backendAssembly,
+  API_PROJECT,
+  process.env.E2E_CONTROLLED_EXECUTION === '1',
+);
 const backendProcess = spawn(
   'dotnet',
   backendArguments,

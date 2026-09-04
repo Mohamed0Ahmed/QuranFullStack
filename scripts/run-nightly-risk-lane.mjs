@@ -530,11 +530,11 @@ async function cleanupOwnedBrowserRuntime(command, resultsDirectory, attempt) {
   if (command.runtimeCleanup !== true) return { status: 'failed', checkIds: ['runtime-cleanup-contract-missing'] };
   const script = resolve(
     REPOSITORY_ROOT,
-    command.runtimeCleanupScript ?? 'Frontend/quran-dashboard-ui/scripts/cleanup-sealed-playwright-runtime.mjs',
+    command.runtimeCleanupScript ?? 'Frontend/quran-dashboard-ui/scripts/cleanup-controlled-playwright-runtime.mjs',
   );
   const executionHome = mkdtempSync(resolve(tmpdir(), 'qdb-nightly-cleanup-'));
   try {
-    const cleanup = await runCommand({ id: 'sealed-browser-cleanup', phase: 'browser-cleanup', executable: process.execPath, arguments: [script, resultsDirectory, attempt], cwd: command.cwd }, 60_000, {
+    const cleanup = await runCommand({ id: 'controlled-browser-cleanup', phase: 'browser-cleanup', executable: process.execPath, arguments: [script, resultsDirectory, attempt], cwd: command.cwd }, 60_000, {
       artifactRoot: '', attempt: `${attempt}-cleanup`, executionHome, ignoreCancellation: true, resultsDirectory,
     });
     return cleanup.status === 'passed'

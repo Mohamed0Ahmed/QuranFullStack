@@ -4,13 +4,7 @@ import { writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, isAbsolute, resolve } from 'node:path';
 
-import { COMPACT_ARTIFACT_IDS } from './harness/artifact-contract.mjs';
-import {
-  provisionDatabaseRuntime,
-  readPreparedDatabaseRuntime,
-  removeDatabaseRuntimeState,
-  writeDatabaseRuntimeState,
-} from './harness/database-runtime.mjs';
+import { buildControlledBackendArguments } from './harness/controlled-execution-contract.mjs';
 
 const API_PROJECT = resolve(
   process.cwd(),
@@ -20,6 +14,9 @@ const managementClientId = 'e2e-management-client';
 const managementClientSecret = randomBytes(24).toString('base64url');
 const managementAccessToken = randomBytes(24).toString('base64url');
 const statefulExecution = process.env.E2E_DATABASE_MODE === 'persistent-stateful';
+if (!statefulExecution || process.env.E2E_CONTROLLED_EXECUTION !== '1') {
+  throw new Error('The E2E backend may run only as a controlled persistent-stateful child.');
+}
 
 let backendProcess;
 let databaseRuntime;
@@ -30,35 +27,20 @@ process.once('SIGINT', () => stop('SIGINT'));
 process.once('SIGTERM', () => stop('SIGTERM'));
 
 try {
-  if (process.env.E2E_SEALED_EXECUTION === '1' && process.env.E2E_PREPARED_DATABASE !== '1') {
-    throw new Error('Sealed execution requires database preparation before application startup.');
-  }
-  databaseRuntime = statefulExecution
-    ? persistentStatefulRuntime()
-    : process.env.E2E_PREPARED_DATABASE === '1'
-      ? readPreparedDatabaseRuntime()
-      : await provisionDatabaseRuntime(API_PROJECT);
+  databaseRuntime = persistentStatefulRuntime();
   const managementApi = await startManagementApiStub();
   managementServer = managementApi.server;
 
-  if (!statefulExecution) {
-    writeDatabaseRuntimeState(databaseRuntime);
-  }
   console.log(
-    statefulExecution
-      ? `[e2e] database mode=persistent-stateful target=quran_dashboard_test profile=${process.env.Testing__DatabaseActivity__Profile}`
-      : databaseRuntime.mode === 'artifact'
-      ? `[e2e] database mode=artifact artifacts=${COMPACT_ARTIFACT_IDS.join(',')} evidence=canonical`
-      : '[e2e] database mode=clone-local evidence=non-canonical',
+    `[e2e] database mode=persistent-stateful target=quran_dashboard_test profile=${process.env.Testing__DatabaseActivity__Profile}`,
   );
 
   const backendAssembly = process.env.E2E_BACKEND_ASSEMBLY;
-  const backendArguments = backendAssembly
-    ? [backendAssembly]
-    : ['run', '--project', API_PROJECT, '--no-build', '--no-restore', '--no-launch-profile'];
-  if (process.env.E2E_CONTROLLED_EXECUTION === '1') {
-    backendArguments.push('--Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command=Warning');
-  }
+  const backendArguments = buildControlledBackendArguments(
+    backendAssembly,
+    API_PROJECT,
+    process.env.E2E_CONTROLLED_EXECUTION === '1',
+  );
   backendProcess = spawn(
     'dotnet',
     backendArguments,
@@ -111,12 +93,8 @@ function stop(signal) {
 
 function finish(exitCode, message) {
   stopping = true;
-  databaseRuntime?.cleanup();
   managementServer?.closeAllConnections();
   managementServer?.close();
-  if (!statefulExecution && process.env.E2E_PREPARED_DATABASE !== '1') {
-    removeDatabaseRuntimeState();
-  }
   if (message) {
     console.error(message);
   }

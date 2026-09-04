@@ -11,11 +11,15 @@ import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 
 import {
+  buildControlledBackendArguments,
   createControlledEnvironment,
   redactDiagnosticText,
   validateControlledProvisioningReceipt,
 } from '../e2e/harness/controlled-execution-contract.mjs';
 import {
+  appendApplicationShutdownPhase,
+  appendChildExecutionPhases,
+  appendMissingChildFailurePhases,
   inspectRetainedEvidence,
   validatePlaywrightChildResult,
 } from './controlled-playwright-runtime.mjs';
@@ -120,6 +124,18 @@ assert.equal(controlled.NPM_TOKEN, undefined);
 assert.equal(controlled.RANDOM_PASSWORD, undefined);
 assert.equal(controlled.DOCKER_AUTH_CONFIG, undefined);
 
+assert.deepEqual(
+  buildControlledBackendArguments('/workspace/QuranDashboard.Api.dll', '/workspace/api.csproj', true),
+  [
+    '/workspace/QuranDashboard.Api.dll',
+    '--Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command=Warning',
+  ],
+);
+assert.deepEqual(
+  buildControlledBackendArguments(undefined, '/workspace/api.csproj', false),
+  ['run', '--project', '/workspace/api.csproj', '--no-build', '--no-restore', '--no-launch-profile'],
+);
+
 const redacted = redactDiagnosticText(
   [
     'Authorization: Bearer abc.def.ghi',
@@ -166,7 +182,7 @@ assert.doesNotMatch(playwrightConfiguration, /E2E_SEALED_EXECUTION/);
 for (const backendWrapper of ['e2e/run-canonical-backend.mjs', 'e2e/run-backend.mjs']) {
   assert.match(
     readFileSync(resolve(frontendRoot, backendWrapper), 'utf8'),
-    /--Logging:LogLevel:Microsoft\.EntityFrameworkCore\.Database\.Command=Warning/,
+    /buildControlledBackendArguments/,
     backendWrapper,
   );
 }
@@ -220,6 +236,35 @@ try {
     /run ID/i,
   );
 
+  const failedShutdownPhases = [];
+  appendChildExecutionPhases(
+    failedShutdownPhases,
+    childResult,
+    Date.parse('2026-09-04T10:00:00.000Z'),
+    Date.parse('2026-09-04T10:00:04.000Z'),
+  );
+  appendMissingChildFailurePhases(failedShutdownPhases);
+  assert.deepEqual(
+    failedShutdownPhases.map(({ name, status }) => ({ name, status })),
+    [
+      { name: 'applicationStartup', status: 'passed' },
+      { name: 'testExecution', status: 'failed' },
+      { name: 'applicationShutdown', status: 'failed' },
+    ],
+  );
+  const passedShutdownPhases = failedShutdownPhases.slice(0, 2);
+  appendApplicationShutdownPhase(
+    passedShutdownPhases,
+    childResult,
+    Date.parse('2026-09-04T10:00:04.000Z'),
+    'passed',
+  );
+  assert.deepEqual(passedShutdownPhases.at(-1), {
+    name: 'applicationShutdown',
+    status: 'passed',
+    durationMs: 1_000,
+  });
+
   const inspection = inspectRetainedEvidence(evidenceDirectory, ['secret']);
   assert.equal(inspection.status, 'passed', JSON.stringify(inspection));
   assert.deepEqual(inspection.removedRawFiles, ['raw-trace.zip']);
@@ -245,13 +290,26 @@ for (const [name, source] of [
 ]) {
   assert.match(source, /loadControlledProvisioningReceipt/, name);
   assert.match(source, /createControlledPlaywrightEnvironment/, name);
-  assert.match(source, /qdb-controlled-playwright-home-/, name);
+  assert.match(source, /createPrivatePlaywrightRuntime/, name);
+  assert.match(source, /discoverControlledPlaywright/, name);
   assert.match(source, /inspectRetainedEvidence/, name);
   assert.doesNotMatch(source, /stdio:\s*'inherit'/, name);
 }
-assert.match(statefulRunner, /applicationStartup/);
-assert.match(statefulRunner, /applicationShutdown/);
-assert.match(statefulRunner, /testExecution/);
+for (const router of ['scripts/run-focused-playwright.mjs', 'scripts/run-interactive-playwright.mjs']) {
+  assert.match(
+    readFileSync(resolve(frontendRoot, router), 'utf8'),
+    /discoverControlledPlaywright/,
+    router,
+  );
+}
+const controlledRuntimeSource = readFileSync(
+  resolve(frontendRoot, 'scripts/controlled-playwright-runtime.mjs'),
+  'utf8',
+);
+assert.match(controlledRuntimeSource, /qdb-controlled-playwright-home-/);
+assert.match(controlledRuntimeSource, /applicationStartup/);
+assert.match(controlledRuntimeSource, /applicationShutdown/);
+assert.match(controlledRuntimeSource, /testExecution/);
 assert.match(allRunner, /playwright-run\.json/);
 assert.match(allRunner, /QDB_PLAYWRIGHT_AGGREGATE_DIRECTORY/);
 

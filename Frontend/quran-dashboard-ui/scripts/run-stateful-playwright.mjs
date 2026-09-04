@@ -4,23 +4,27 @@ import {
   appendFileSync,
   chmodSync,
   mkdirSync,
-  mkdtempSync,
   readFileSync,
   rmSync,
 } from 'node:fs';
 import { createConnection } from 'node:net';
-import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  redactDiagnosticText,
   sensitiveEnvironmentValues,
 } from '../e2e/harness/controlled-execution-contract.mjs';
 import {
+  appendApplicationShutdownPhase,
+  appendChildExecutionPhases,
+  appendMissingChildFailurePhases,
+  captureSanitizedStream,
   createControlledPlaywrightEnvironment,
+  createPrivatePlaywrightRuntime,
+  discoverControlledPlaywright,
   inspectRetainedEvidence,
   loadControlledProvisioningReceipt,
+  recordSanitizedText,
   sanitizeError,
   validatePlaywrightChildResult,
   writeJson,
@@ -44,12 +48,17 @@ validateArguments(mode, selector, interactiveMode, extraArguments);
 const provisioningReceipt = loadControlledProvisioningReceipt(frontendRoot, repositoryRoot);
 requireTestDatabaseConnection();
 const secretValues = sensitiveEnvironmentValues(process.env);
+const discovered = discoverControlledPlaywright(
+  frontendRoot,
+  provisioningReceipt,
+  mode === '--critical'
+    ? './scripts/discover-playwright-journeys.mjs'
+    : './scripts/discover-playwright-policies.mjs',
+  process.env,
+);
 const scenarios = mode === '--critical'
-  ? selectStatefulCriticalJourneys(discover('./scripts/discover-playwright-journeys.mjs'))
-  : selectStatefulPlaywrightTests(
-      discover('./scripts/discover-playwright-policies.mjs'),
-      mode === '--focused' ? selector : undefined,
-    );
+  ? selectStatefulCriticalJourneys(discovered)
+  : selectStatefulPlaywrightTests(discovered, mode === '--focused' ? selector : undefined);
 if (scenarios.length === 0) {
   throw new Error('Stateful Playwright execution discovered no guarded-read or mutating tests.');
 }
@@ -102,28 +111,7 @@ async function runScenario(scenario, index) {
   const evidenceDirectory = resolve(scenarioDirectory, 'evidence');
   const applicationLog = resolve(evidenceDirectory, 'application.log');
   const apiProcessReceipt = resolve(scenarioDirectory, 'api-process.json');
-  const playwrightOutputDirectory = mkdtempSync(
-    resolve(tmpdir(), 'qdb-controlled-playwright-output-'),
-  );
-  const homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
-  mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
-  chmodSync(scenarioDirectory, 0o700);
-  chmodSync(evidenceDirectory, 0o700);
-  chmodSync(playwrightOutputDirectory, 0o700);
-  chmodSync(homeDirectory, 0o700);
-
-  const controlledEnvironment = createControlledPlaywrightEnvironment(
-    process.env,
-    provisioningReceipt,
-    { evidenceDirectory, homeDirectory, playwrightOutputDirectory },
-  );
-  const environment = buildStatefulPlaywrightEnvironment(controlledEnvironment, scenario, {
-    apiProcessReceipt,
-    backendAssembly: controlledEnvironment.E2E_BACKEND_ASSEMBLY,
-    evidenceDirectory,
-    playwrightOutputDirectory,
-    runId,
-  });
+  const privateRuntime = createPrivatePlaywrightRuntime(evidenceDirectory);
   const result = {
     runId,
     selector: scenario.selector,
@@ -140,12 +128,25 @@ async function runScenario(scenario, index) {
     inspection: null,
   };
   let keeper;
+  let environment;
   let fingerprint;
   let childAttempted = false;
   let apiIdentityVerified = false;
   let initialResetCompleted = false;
 
   try {
+    const controlledEnvironment = createControlledPlaywrightEnvironment(
+      process.env,
+      provisioningReceipt,
+      privateRuntime,
+    );
+    environment = buildStatefulPlaywrightEnvironment(controlledEnvironment, scenario, {
+      apiProcessReceipt,
+      backendAssembly: controlledEnvironment.E2E_BACKEND_ASSEMBLY,
+      evidenceDirectory,
+      playwrightOutputDirectory: privateRuntime.playwrightOutputDirectory,
+      runId,
+    });
     const lockStartedAt = Date.now();
     keeper = await startKeeper(
       scenario.policy === 'mutating' ? 'exclusive' : 'shared',
@@ -197,15 +198,15 @@ async function runScenario(scenario, index) {
         declaredTestCount: 1,
         runId,
       });
-      appendChildPhases(result.phases, playwrightResult, childStartedAt, childCompletedAt);
+      appendChildExecutionPhases(result.phases, playwrightResult, childStartedAt, childCompletedAt);
     } catch (error) {
       playwrightEvidenceError = error;
-      appendMissingChildFailurePhases(result.phases);
     }
 
     const apiReceipt = readApiReceipt(apiProcessReceipt);
     const apiProcessId = validateApiProcessReceipt(apiReceipt, STATEFUL_API_PORT);
     apiIdentityVerified = true;
+    let finalResetPhase;
     if (scenario.policy === 'mutating') {
       const resetStartedAt = Date.now();
       runTestRuntimeJson(buildMutableResetArguments({
@@ -215,14 +216,21 @@ async function runScenario(scenario, index) {
         runId,
       }), environment, applicationLog);
       result.cleanup = 'passed';
-      result.phases.push({
+      finalResetPhase = {
         name: 'finalReset',
         status: 'passed',
         durationMs: Date.now() - resetStartedAt,
-      });
+      };
     } else {
       await assertApiStopped(apiProcessId, STATEFUL_API_PORT);
     }
+    appendApplicationShutdownPhase(
+      result.phases,
+      playwrightResult ?? { completedAt: new Date(childCompletedAt).toISOString() },
+      childCompletedAt,
+      'passed',
+    );
+    if (finalResetPhase) result.phases.push(finalResetPhase);
 
     if (child.keeperLost) {
       throw new Error('TestRuntime keeper exited while the Playwright child was still running.');
@@ -247,8 +255,7 @@ async function runScenario(scenario, index) {
     }
     console.error(`[e2e] ${scenario.selector}: ${result.error}`);
   } finally {
-    rmSync(playwrightOutputDirectory, { recursive: true, force: true });
-    rmSync(homeDirectory, { recursive: true, force: true });
+    privateRuntime.cleanup();
     rmSync(apiProcessReceipt, { force: true });
     if (keeper) {
       const releaseStartedAt = Date.now();
@@ -273,36 +280,14 @@ async function runScenario(scenario, index) {
   return result;
 }
 
-function discover(reporter) {
-  const result = spawnSync(
-    playwright,
-    ['test', '--list', `--reporter=${reporter}`],
-    {
-      cwd: frontendRoot,
-      encoding: 'utf8',
-      env: process.env,
-      maxBuffer: 10 * 1024 * 1024,
-    },
-  );
-  if (result.error) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(redactDiagnosticText(result.stderr ?? 'Playwright discovery failed.', secretValues));
-  }
-  try {
-    return JSON.parse(result.stdout);
-  } catch (error) {
-    throw new Error(`Playwright discovery returned invalid JSON: ${error.message}`);
-  }
-}
-
 function runTestRuntimeJson(arguments_, environment, logPath) {
   const result = spawnSync('dotnet', [environment.E2E_TEST_RUNTIME_ASSEMBLY, ...arguments_], {
     cwd: repositoryRoot,
     encoding: 'utf8',
     env: environment,
   });
-  recordSanitizedText(result.stdout, logPath);
-  recordSanitizedText(result.stderr, logPath);
+  recordSanitizedText(result.stdout, logPath, secretValues);
+  recordSanitizedText(result.stderr, logPath, secretValues);
   if (result.error) throw result.error;
   let report;
   try {
@@ -327,8 +312,8 @@ function runPlaywrightChild(arguments_, environment, keeper, logPath) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
     activePlaywrightChild = child;
-    captureSanitizedStream(child.stdout, logPath);
-    captureSanitizedStream(child.stderr, logPath);
+    captureSanitizedStream(child.stdout, { logPath, secretValues });
+    captureSanitizedStream(child.stderr, { logPath, secretValues });
 
     const finish = (callback) => {
       if (settled) return;
@@ -392,13 +377,13 @@ async function startKeeper(lockMode, runId, environment, logPath) {
     env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
-  captureSanitizedStream(keeper.stderr, logPath);
+  captureSanitizedStream(keeper.stderr, { logPath, secretValues });
   const firstLine = await readFirstLine(keeper.stdout, keeper);
   if (firstLine === null) {
     await waitForExit(keeper);
     throw new Error('TestRuntime keeper returned no acquisition evidence.');
   }
-  recordSanitizedText(firstLine, logPath);
+  recordSanitizedText(firstLine, logPath, secretValues);
   let report;
   try {
     report = JSON.parse(firstLine);
@@ -412,7 +397,7 @@ async function startKeeper(lockMode, runId, environment, logPath) {
     await waitForExit(keeper);
     throw new Error(`TestRuntime ${lockMode} keeper did not acquire its lock.`);
   }
-  captureSanitizedStream(keeper.stdout, logPath);
+  captureSanitizedStream(keeper.stdout, { logPath, secretValues });
   return keeper;
 }
 
@@ -485,63 +470,6 @@ async function assertApiStopped(processId, port) {
       rejectUnverified(new Error(`API port ${port} could not be proven free.`));
     });
   });
-}
-
-function appendChildPhases(phases, childResult, childStartedAt, childCompletedAt) {
-  const applicationsReadyAt = Date.parse(childResult.applicationsReadyAt);
-  const testsCompletedAt = Date.parse(childResult.completedAt);
-  phases.push({
-    name: 'applicationStartup',
-    status: Number.isFinite(applicationsReadyAt) ? 'passed' : 'failed',
-    durationMs: Number.isFinite(applicationsReadyAt)
-      ? Math.max(0, applicationsReadyAt - childStartedAt)
-      : Math.max(0, childCompletedAt - childStartedAt),
-  });
-  phases.push({
-    name: 'testExecution',
-    status: childResult.status,
-    durationMs: Number.isFinite(applicationsReadyAt) && Number.isFinite(testsCompletedAt)
-      ? Math.max(0, testsCompletedAt - applicationsReadyAt)
-      : 0,
-  });
-  phases.push({
-    name: 'applicationShutdown',
-    status: 'passed',
-    durationMs: Number.isFinite(testsCompletedAt)
-      ? Math.max(0, childCompletedAt - testsCompletedAt)
-      : 0,
-  });
-}
-
-function appendMissingChildFailurePhases(phases) {
-  for (const name of ['applicationStartup', 'testExecution', 'applicationShutdown']) {
-    if (!phases.some((phase) => phase.name === name)) {
-      phases.push({ name, status: 'failed', durationMs: 0 });
-    }
-  }
-}
-
-function captureSanitizedStream(stream, logPath) {
-  let pending = '';
-  stream.setEncoding('utf8');
-  stream.on('data', (chunk) => {
-    const lines = `${pending}${chunk}`.split('\n');
-    pending = lines.pop() ?? '';
-    for (const line of lines) recordSanitizedText(line, logPath);
-  });
-  stream.on('end', () => {
-    if (pending) recordSanitizedText(pending, logPath);
-  });
-}
-
-function recordSanitizedText(value, logPath) {
-  if (!value) return;
-  const sanitized = redactDiagnosticText(value, secretValues);
-  appendFileSync(logPath, sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`, {
-    encoding: 'utf8',
-    mode: 0o600,
-  });
-  process.stdout.write(sanitized.endsWith('\n') ? sanitized : `${sanitized}\n`);
 }
 
 function writeAggregate() {

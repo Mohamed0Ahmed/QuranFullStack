@@ -55,20 +55,6 @@ export function sha256Path(path) {
   return hash.digest('hex');
 }
 
-export function harnessSourceFiles(frontendRoot) {
-  return [
-    ...findAllFiles(resolve(frontendRoot, 'e2e')),
-    resolve(frontendRoot, 'package.json'),
-    resolve(frontendRoot, 'playwright.config.ts'),
-    resolve(frontendRoot, 'scripts/discover-playwright-journeys.mjs'),
-    resolve(frontendRoot, 'scripts/provision-sealed-playwright.mjs'),
-    resolve(frontendRoot, 'scripts/run-critical-playwright-journeys.mjs'),
-    resolve(frontendRoot, 'scripts/run-sealed-playwright.mjs'),
-    resolve(frontendRoot, 'scripts/structured-playwright-reporter.mjs'),
-    resolve(frontendRoot, 'scripts/verify-egress-guard-runtime.mjs'),
-  ].sort();
-}
-
 export function controlledHarnessSourceFiles(frontendRoot) {
   const e2eRoot = resolve(frontendRoot, 'e2e');
   const browserSources = findAllFiles(e2eRoot).filter((path) =>
@@ -93,6 +79,8 @@ export function controlledHarnessSourceFiles(frontendRoot) {
     resolve(frontendRoot, 'scripts/provision-controlled-playwright.mjs'),
     resolve(frontendRoot, 'scripts/run-all-playwright.mjs'),
     resolve(frontendRoot, 'scripts/run-canonical-playwright.mjs'),
+    resolve(frontendRoot, 'scripts/run-focused-playwright.mjs'),
+    resolve(frontendRoot, 'scripts/run-interactive-playwright.mjs'),
     resolve(frontendRoot, 'scripts/run-stateful-playwright.mjs'),
     resolve(frontendRoot, 'scripts/stateful-playwright-runtime.mjs'),
     resolve(frontendRoot, 'scripts/structured-playwright-reporter.mjs'),

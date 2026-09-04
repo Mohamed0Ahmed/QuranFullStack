@@ -131,6 +131,17 @@ export function createControlledEnvironment(environment, options) {
   };
 }
 
+export function buildControlledBackendArguments(backendAssembly, apiProject, controlled) {
+  const arguments_ = backendAssembly
+    ? [backendAssembly]
+    : ['run', '--project', apiProject, '--no-build', '--no-restore', '--no-launch-profile'];
+  if (controlled) {
+    if (!backendAssembly) arguments_.push('--');
+    arguments_.push('--Logging:LogLevel:Microsoft.EntityFrameworkCore.Database.Command=Warning');
+  }
+  return arguments_;
+}
+
 export function createCredentialStrippedEnvironment(environment) {
   const safe = {};
   for (const [name, value] of Object.entries(environment)) {

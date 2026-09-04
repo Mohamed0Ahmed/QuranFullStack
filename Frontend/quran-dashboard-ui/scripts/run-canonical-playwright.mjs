@@ -1,13 +1,4 @@
-import { spawnSync } from 'node:child_process';
-import {
-  appendFileSync,
-  chmodSync,
-  mkdirSync,
-  mkdtempSync,
-  readFileSync,
-  rmSync,
-} from 'node:fs';
-import { tmpdir } from 'node:os';
+import { appendFileSync, readFileSync, rmSync } from 'node:fs';
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -17,7 +8,12 @@ import {
   selectCanonicalPlaywrightTests,
 } from './canonical-playwright-runtime.mjs';
 import {
+  appendApplicationShutdownPhase,
+  appendChildExecutionPhases,
+  appendMissingChildFailurePhases,
+  createPrivatePlaywrightRuntime,
   createControlledPlaywrightEnvironment,
+  discoverControlledPlaywright,
   inspectRetainedEvidence,
   loadControlledProvisioningReceipt,
   runWithSanitizedOutput,
@@ -26,7 +22,6 @@ import {
   writeJson,
 } from './controlled-playwright-runtime.mjs';
 import {
-  redactDiagnosticText,
   sensitiveEnvironmentValues,
 } from '../e2e/harness/controlled-execution-contract.mjs';
 
@@ -39,25 +34,25 @@ validateArguments();
 const receipt = loadControlledProvisioningReceipt(frontendRoot, repositoryRoot);
 requireTestDatabaseConnection();
 const secretValues = sensitiveEnvironmentValues(process.env);
+const discovered = discoverControlledPlaywright(
+  frontendRoot,
+  receipt,
+  mode === '--critical'
+    ? './scripts/discover-playwright-journeys.mjs'
+    : './scripts/discover-playwright-policies.mjs',
+  process.env,
+);
+const selectors = mode === '--critical'
+  ? selectCanonicalCriticalJourneys(discovered)
+  : selectCanonicalPlaywrightTests(discovered, mode === '--focused' ? selector : undefined);
+if (selectors.length === 0) {
+  throw new Error('Canonical Playwright execution discovered no canonical-read tests.');
+}
 const runId = `canonical-${Date.now()}-${process.pid}`;
 const partitionRoot = resolvePartitionRoot(runId);
 const evidenceDirectory = resolve(partitionRoot, 'evidence');
 const applicationLog = resolve(evidenceDirectory, 'application.log');
-const playwrightOutputDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-output-'));
-const homeDirectory = mkdtempSync(resolve(tmpdir(), 'qdb-controlled-playwright-home-'));
-mkdirSync(evidenceDirectory, { recursive: true, mode: 0o700 });
-chmodSync(partitionRoot, 0o700);
-chmodSync(evidenceDirectory, 0o700);
-chmodSync(playwrightOutputDirectory, 0o700);
-chmodSync(homeDirectory, 0o700);
-
-const controlledEnvironment = createControlledPlaywrightEnvironment(process.env, receipt, {
-  evidenceDirectory,
-  homeDirectory,
-  playwrightOutputDirectory,
-});
-const environment = buildCanonicalPlaywrightEnvironment(controlledEnvironment);
-environment.QURAN_DASHBOARD_TEST_RUN_ID = runId;
+const privateRuntime = createPrivatePlaywrightRuntime(evidenceDirectory);
 const report = {
   schemaVersion: 1,
   kind: 'canonical-read',
@@ -72,21 +67,20 @@ const report = {
 };
 const startedAt = Date.now();
 let exitCode = 1;
+let environment;
 let activePlaywrightChild = null;
 let interruptionSignal = null;
 process.on('SIGINT', () => requestShutdown('SIGINT'));
 process.on('SIGTERM', () => requestShutdown('SIGTERM'));
 
 try {
-  const selectors = mode === '--critical'
-    ? selectCanonicalCriticalJourneys(discover('./scripts/discover-playwright-journeys.mjs'))
-    : selectCanonicalPlaywrightTests(
-        discover('./scripts/discover-playwright-policies.mjs'),
-        mode === '--focused' ? selector : undefined,
-      );
-  if (selectors.length === 0) {
-    throw new Error('Canonical Playwright execution discovered no canonical-read tests.');
-  }
+  const controlledEnvironment = createControlledPlaywrightEnvironment(
+    process.env,
+    receipt,
+    privateRuntime,
+  );
+  environment = buildCanonicalPlaywrightEnvironment(controlledEnvironment);
+  environment.QURAN_DASHBOARD_TEST_RUN_ID = runId;
 
   const inspectionStartedAt = Date.now();
   const inspection = await runWithSanitizedOutput(
@@ -125,7 +119,13 @@ try {
     declaredTestCount: selectors.length,
     runId,
   });
-  appendChildPhases(report.phases, playwrightResult, childStartedAt, childCompletedAt);
+  appendChildExecutionPhases(report.phases, playwrightResult, childStartedAt, childCompletedAt);
+  appendApplicationShutdownPhase(
+    report.phases,
+    playwrightResult,
+    childCompletedAt,
+    interruptionSignal ? 'failed' : 'passed',
+  );
   if (child.exitCode !== 0 || playwrightResult.status !== 'passed') {
     throw new Error(`Canonical Playwright child failed with status ${child.exitCode}.`);
   }
@@ -139,8 +139,7 @@ try {
   appendFileSync(applicationLog, `${report.error}\n`, { encoding: 'utf8', mode: 0o600 });
   console.error(report.error);
 } finally {
-  rmSync(playwrightOutputDirectory, { recursive: true, force: true });
-  rmSync(homeDirectory, { recursive: true, force: true });
+  privateRuntime.cleanup();
   report.inspection = inspectRetainedEvidence(evidenceDirectory, secretValues);
   if (report.inspection.status !== 'passed') report.status = 'failed';
   if (report.status === 'passed') rmSync(applicationLog, { force: true });
@@ -154,63 +153,11 @@ console.log(
 );
 process.exit(report.status === 'passed' ? 0 : exitCode || 1);
 
-function discover(reporter) {
-  const result = spawnSync(playwright, ['test', '--list', `--reporter=${reporter}`], {
-    cwd: frontendRoot,
-    encoding: 'utf8',
-    env: environment,
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  if (result.error) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(redactDiagnosticText(result.stderr ?? 'Playwright discovery failed.', secretValues));
-  }
-  try {
-    return JSON.parse(result.stdout);
-  } catch (error) {
-    throw new Error(`Playwright discovery returned invalid JSON: ${error.message}`);
-  }
-}
-
 function readPlaywrightResult() {
   try {
     return JSON.parse(readFileSync(resolve(evidenceDirectory, 'playwright-results.json'), 'utf8'));
   } catch {
     throw new Error('Canonical Playwright child returned no valid structured result.');
-  }
-}
-
-function appendChildPhases(phases, childResult, childStartedAt, childCompletedAt) {
-  const applicationsReadyAt = Date.parse(childResult.applicationsReadyAt);
-  const testsCompletedAt = Date.parse(childResult.completedAt);
-  phases.push({
-    name: 'applicationStartup',
-    status: Number.isFinite(applicationsReadyAt) ? 'passed' : 'failed',
-    durationMs: Number.isFinite(applicationsReadyAt)
-      ? Math.max(0, applicationsReadyAt - childStartedAt)
-      : Math.max(0, childCompletedAt - childStartedAt),
-  });
-  phases.push({
-    name: 'testExecution',
-    status: childResult.status,
-    durationMs: Number.isFinite(applicationsReadyAt) && Number.isFinite(testsCompletedAt)
-      ? Math.max(0, testsCompletedAt - applicationsReadyAt)
-      : 0,
-  });
-  phases.push({
-    name: 'applicationShutdown',
-    status: 'passed',
-    durationMs: Number.isFinite(testsCompletedAt)
-      ? Math.max(0, childCompletedAt - testsCompletedAt)
-      : 0,
-  });
-}
-
-function appendMissingChildFailurePhases(phases) {
-  for (const name of ['applicationStartup', 'testExecution', 'applicationShutdown']) {
-    if (!phases.some((phase) => phase.name === name)) {
-      phases.push({ name, status: 'failed', durationMs: 0 });
-    }
   }
 }
 

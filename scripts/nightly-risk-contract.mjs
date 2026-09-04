@@ -20,7 +20,7 @@ const REQUIRED_BROWSER_JOURNEYS = [
   'linking.successful-owner-mobile',
 ];
 const REQUIRED_COMMANDS = new Map([
-  ['sealed-browser-provisioning', { executable: 'npm', arguments: ['run', 'e2e:provision'] }],
+  ['controlled-browser-provisioning', { executable: 'npm', arguments: ['run', 'e2e:provision'] }],
   ['full-chromium-suite', { executable: 'npm', arguments: ['run', 'e2e'] }],
   ['verify-full-canonical-artifact', { executable: 'Backend/scripts/test-artifacts', arguments: ['verify-content-addressed', '--artifact', 'quran-canonical'] }],
   ['phrase-index-build-activation', { executable: 'Backend/scripts/test-backend', arguments: ['phrase-index-rehearsal', '--no-build', '--results-dir', '{NIGHTLY_RESULTS_DIR}/phrase-index-rehearsal'] }],
@@ -131,13 +131,13 @@ function validateRequiredNightlyCommands(manifest, commandIds) {
   requireCondition(browser.diagnosticRetry === true, 'only the full Chromium suite may allow a diagnostic retry.');
   requireCondition(browser.runtimeCleanup === true, 'the full Chromium suite must declare owned-runtime cleanup.');
   requireCondition(
-    JSON.stringify(browser.dependsOn) === JSON.stringify(['sealed-browser-provisioning']),
-    'the full Chromium suite must depend on sealed provisioning.',
+    JSON.stringify(browser.dependsOn) === JSON.stringify(['controlled-browser-provisioning']),
+    'the full Chromium suite must depend on controlled provisioning.',
   );
-  const provisioning = manifest.commands.find((command) => command.id === 'sealed-browser-provisioning');
+  const provisioning = manifest.commands.find((command) => command.id === 'controlled-browser-provisioning');
   requireCondition(
     JSON.stringify(provisioning.provides) === JSON.stringify(['backend-build']),
-    'sealed provisioning must be the only Backend build owner.',
+    'controlled provisioning must be the only Backend build owner.',
   );
   for (const command of manifest.commands.filter((command) => command.phase === 'operational-risk')) {
     requireCondition(
@@ -147,8 +147,8 @@ function validateRequiredNightlyCommands(manifest, commandIds) {
       `${command.id} must declare its expected lane and test class.`,
     );
     requireCondition(
-      Array.isArray(command.dependsOn) && command.dependsOn.includes('sealed-browser-provisioning'),
-      `${command.id} must depend on sealed provisioning.`,
+      Array.isArray(command.dependsOn) && command.dependsOn.includes('controlled-browser-provisioning'),
+      `${command.id} must depend on controlled provisioning.`,
     );
     requireCondition(command.databaseOwning === true, `${command.id} must declare database ownership.`);
   }

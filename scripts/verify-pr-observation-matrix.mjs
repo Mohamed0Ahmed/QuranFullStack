@@ -111,7 +111,7 @@ if (errors.length === 0) {
   );
   check(
     hasNpmScript(browser, 'e2e:critical'),
-    'The critical Chromium job must run sealed critical journeys.',
+    'The critical Chromium job must run controlled critical journeys.',
   );
   check(
     JSON.stringify(browser?.policy?.journeyGroups) === JSON.stringify([
