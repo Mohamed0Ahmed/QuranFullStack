@@ -4,6 +4,7 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Translations;
@@ -15,17 +16,18 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
     private readonly TranslationSyntheticPackage packages = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease =
-            await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(TranslationImportTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(TranslationImportTestFixture),
+            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
 
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratchConnectionString));
         }
         catch
         {
@@ -38,13 +40,7 @@ public sealed class TranslationImportTestFixture : IAsyncLifetime
     {
         rootProvider = null;
         await ownedProviders.DisposeAsync();
-
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
-
+        scratchConnectionString = null;
         packages.Dispose();
     }
 

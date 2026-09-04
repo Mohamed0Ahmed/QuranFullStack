@@ -40,10 +40,10 @@ QuranDashboard.Tests.Api.Linking.LinkingCollectionResetContractTests	Linking	Dat
 QuranDashboard.Tests.Api.Linking.LinkingConfirmationIdempotencyTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Linking.LinkingRecoveryAndAtomicityTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
 QuranDashboard.Tests.Api.Linking.LinkingSuccessfulJourneyTests	Linking	Database	TierB		MutableWriter	CanonicalQuranData,SystemCatalogue,MutableApplicationState	MutableApplicationState	TestDatabase	None	MutableDatabaseCollection	Migrated
-QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests	PhraseSearch	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests	PhraseSearch	Fast	TierB								Unmigrated
-QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateTests	PhraseSearch	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexBuildActivationTests	PhraseSearch	Database	TierB	Cli,Execution							Unmigrated
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests	PhraseSearch	Fast	TierB	Contract	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests	PhraseSearch	Fast	TierB	Contract	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchStateTests	PhraseSearch	Database	TierB	Execution,Schema	DestructiveRehearsal	CanonicalQuranData,SystemCatalogue,MutableApplicationState,SchemaState	CanonicalQuranData	EmptyScratch	PhraseSearchIndexBuild	PhraseSearchApiCollection	Migrated
+QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexBuildActivationTests	PhraseSearch	Database	TierB	Cli,Contract,Execution,Schema	DestructiveRehearsal	CanonicalQuranData,SystemCatalogue,MutableApplicationState,SchemaState	CanonicalQuranData	EmptyScratch	PhraseSearchIndexBuild	PhraseIndexBuildActivationCollection	Migrated
 QuranDashboard.Tests.Quran.PhraseSearch.PhraseIndexFullCanonicalRehearsalTests	PhraseSearch	Release	Release	Cli,Execution							Unmigrated
 QuranDashboard.Tests.Api.RateLimiting.RateLimitingIntegrationTests	RateLimiting	Fast	TierB								Unmigrated
 QuranDashboard.Tests.Api.Testing.DatabaseActivityPolicyTests	ApiBehavior	Fast	TierB	Startup							Unmigrated
@@ -66,10 +66,10 @@ QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleContractTests	MushafR
 QuranDashboard.Tests.Quran.MushafReader.QuranFidelityOracleTests	MushafReader	Database	TierB		CanonicalReader	CanonicalQuranData	None	TestDatabase	None	MushafReaderCollection	Migrated
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisCorruptFeaturesJsonTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.MushafReader.WordAnalysisSegmentFallbackTests	MushafReader	Fast	TierB		FastNoDb	None	None	None	None	None	Migrated
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatValidationFailureTests	Mutashabihat	Database	TierB								Unmigrated
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatImportTests	Mutashabihat	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	MutashabihatImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests	Mutashabihat	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatRefusalForceTests	Mutashabihat	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalRebuild	MutashabihatImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatValidationFailureTests	Mutashabihat	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	MutashabihatImportTestCollection	Migrated
 QuranDashboard.Tests.Quran.Navigation.NavigationDatasetReaderTests	Navigation	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.Navigation.NavigationDefaultPathTests	Navigation	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.Navigation.NavigationImportTests	Navigation	Database	Pipeline	Contract,Execution,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
@@ -80,25 +80,25 @@ QuranDashboard.Tests.Quran.Navigation.NavigationSourcePathTests	Navigation	Datab
 QuranDashboard.Tests.Quran.Navigation.NavigationSourceSafetyTests	Navigation	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
 QuranDashboard.Tests.Quran.Navigation.NavigationValidationFailureTests	Navigation	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalImport	NavigationImportTestCollection	Migrated
 QuranDashboard.Tests.Quran.Navigation.NavigationValidationRuleTests	Navigation	Fast	Pipeline	Contract,Safety,Source	FastNoDb	None	None	None	None	None	Migrated
-QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests	QuranTopicsBook	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTests	Tafsirs	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirManifestReaderTests	Tafsirs	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirRollbackTests	Tafsirs	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirSchemaShapeTests	Tafsirs	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceReaderTests	Tafsirs	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceSafetyTests	Tafsirs	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Tafsirs.TafsirValidationFailureTests	Tafsirs	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationExcludedSourceTests	Translations	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationImportTests	Translations	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationManifestReaderTests	Translations	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationRefusalForceTests	Translations	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationRollbackTests	Translations	Database	TierB								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationSchemaShapeTests	Translations	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests	Translations	Fast	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests	Translations	Database	Pipeline								Unmigrated
-QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests	Translations	Fast	Pipeline								Unmigrated
+QuranDashboard.Tests.Quran.QuranTopicsBook.QuranTopicsBookImportTests	QuranTopicsBook	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	QuranTopicsBookImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirExcludedSourceTests	Tafsirs	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirForceRebuildTests	Tafsirs	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalRebuild	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirImportTests	Tafsirs	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirManifestReaderTests	Tafsirs	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirRollbackTests	Tafsirs	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirSchemaShapeTests	Tafsirs	Database	Pipeline	Contract,Schema	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceReaderTests	Tafsirs	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceSafetyTests	Tafsirs	Database	Pipeline	Safety,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TafsirImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Tafsirs.TafsirValidationFailureTests	Tafsirs	Fast	Pipeline	Contract,Safety,Schema,Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationExcludedSourceTests	Translations	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationImportTests	Translations	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationManifestReaderTests	Translations	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationRefusalForceTests	Translations	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalRebuild	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationRollbackTests	Translations	Database	TierB	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationSchemaShapeTests	Translations	Database	Pipeline	Contract,Schema	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests	Translations	Fast	Pipeline	Source	FastNoDb	None	None	None	None	None	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationSourceSafetyTests	Translations	Database	Pipeline	Safety,Source	DestructiveRehearsal	CanonicalQuranData,SchemaState	CanonicalQuranData	EmptyScratch	CanonicalImport	TranslationImportTestCollection	Migrated
+QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests	Translations	Fast	Pipeline	Contract,Safety,Schema,Source	FastNoDb	None	None	None	None	None	Migrated
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsDeterministicIdTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsFirstOccurrenceTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated
 QuranDashboard.Tests.Quran.WordsDisplay.DisplayWordsIdempotencyTests	WordsDisplay	Database	Pipeline	Contract,Safety,Schema,Source	DestructiveRehearsal	CanonicalQuranData	CanonicalQuranData	EmptyScratch	CanonicalRebuild	WordsDisplayTestCollection	Migrated

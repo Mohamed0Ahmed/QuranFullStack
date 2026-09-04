@@ -4,25 +4,28 @@ using QuranDashboard.Domain.Quran.Ayahs;
 using QuranDashboard.Domain.Quran.MushafPages;
 using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
 public sealed class TafsirImportTestFixture : IAsyncLifetime
 {
-    private readonly List<string> tempDirs = new();
+    private readonly TafsirSyntheticPackage packages = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? rootProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(TafsirImportTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(TafsirImportTestFixture),
+            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
 
         try
         {
-            rootProvider = ownedProviders.Own(BuildServiceProvider(databaseLease.ConnectionString));
+            rootProvider = ownedProviders.Own(BuildServiceProvider(scratchConnectionString));
         }
         catch
         {
@@ -35,33 +38,8 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
     {
         rootProvider = null;
         await ownedProviders.DisposeAsync();
-
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
-
-        DeleteTempDirs();
-    }
-
-    private void DeleteTempDirs()
-    {
-        foreach (var dir in tempDirs)
-        {
-            try
-            {
-                Directory.Delete(dir, recursive: true);
-            }
-            catch (IOException)
-            {
-            }
-            catch (UnauthorizedAccessException)
-            {
-            }
-        }
-
-        tempDirs.Clear();
+        scratchConnectionString = null;
+        packages.Dispose();
     }
 
     public AsyncServiceScope CreateScope()
@@ -164,49 +142,14 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
                 System.Text.Encoding.UTF8.GetBytes(string.Join('|', ayahTexts)))));
     }
 
-    public async Task<string> ComputePackageFileSha256Async(string packageDir, string relativePath)
-    {
-        var fullPath = Path.Combine(packageDir, relativePath.Replace('\\', '/'));
-        return Convert.ToHexString(SHA256.HashData(await File.ReadAllBytesAsync(fullPath)));
-    }
+    public Task<string> ComputePackageFileSha256Async(string packageDir, string relativePath) =>
+        TafsirSyntheticPackage.ComputePackageFileSha256Async(packageDir, relativePath);
 
-    public async Task TamperManifestFieldAsync(string packageDir, string fieldPath, object value)
-    {
-        var manifestPath = Path.Combine(packageDir, "manifest.json");
-        await using var stream = File.OpenRead(manifestPath);
-        using var document = await JsonDocument.ParseAsync(stream);
-        var root = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(document.RootElement.GetRawText())!;
+    public Task TamperManifestFieldAsync(string packageDir, string fieldPath, object value) =>
+        packages.TamperManifestFieldAsync(packageDir, fieldPath, value);
 
-        var rebuilt = new Dictionary<string, object?>();
-        foreach (var (key, element) in root)
-        {
-            rebuilt[key] = key == fieldPath
-                ? value
-                : JsonElementToObject(element);
-        }
-
-        await WriteJsonAsync(manifestPath, rebuilt);
-    }
-
-    public async Task TamperManifestSummaryFieldAsync(string packageDir, string summaryField, object value)
-    {
-        var manifestPath = Path.Combine(packageDir, "manifest.json");
-        await using var stream = File.OpenRead(manifestPath);
-        using var document = await JsonDocument.ParseAsync(stream);
-        var root = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(document.RootElement.GetRawText())!;
-
-        var summary = JsonSerializer.Deserialize<Dictionary<string, object?>>(
-            root["summary"].GetRawText())!;
-        summary[summaryField] = value;
-
-        var rebuilt = new Dictionary<string, object?>();
-        foreach (var (key, element) in root)
-        {
-            rebuilt[key] = key == "summary" ? summary : JsonElementToObject(element);
-        }
-
-        await WriteJsonAsync(manifestPath, rebuilt);
-    }
+    public Task TamperManifestSummaryFieldAsync(string packageDir, string summaryField, object value) =>
+        packages.TamperManifestSummaryFieldAsync(packageDir, summaryField, value);
 
     public async Task<ImportTafsirsResult> RunImportAsync(
         string packageDir,
@@ -236,87 +179,15 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             """);
     }
 
-    public async Task<string> WriteSyntheticPackageAsync(
+    public Task<string> WriteSyntheticPackageAsync(
         IReadOnlyList<SyntheticTafsirSourceSpec>? sources = null,
         IReadOnlyList<string>? excludedSourceKeys = null,
         string manifestType = TafsirSyntheticSeed.ManifestType,
-        bool isFinalImportManifest = true)
-    {
-        var sourceSpecs = sources ?? TafsirSyntheticSeed.DefaultSources;
-        var excluded = excludedSourceKeys ?? Array.Empty<string>();
+        bool isFinalImportManifest = true) =>
+        packages.WriteAsync(sources, excludedSourceKeys, manifestType, isFinalImportManifest);
 
-        var packageDir = Path.Combine(Path.GetTempPath(), $"quran-tafsirs-{Guid.NewGuid():N}");
-        tempDirs.Add(packageDir);
-        Directory.CreateDirectory(packageDir);
-        Directory.CreateDirectory(Path.Combine(packageDir, "sources"));
-
-        await File.WriteAllTextAsync(
-            Path.Combine(packageDir, "README.md"),
-            "Synthetic tafsir source package for tests. Source-safe; not for import into production.");
-        await File.WriteAllTextAsync(
-            Path.Combine(packageDir, "package-report.md"),
-            "# Synthetic tafsir package report\n\nGenerated by TafsirImportTestFixture for tests.");
-
-        var sourceRecords = new List<object>();
-        foreach (var spec in sourceSpecs)
-        {
-            var packageFile = $"sources/{spec.SourceKey}.json";
-            var fullPath = Path.Combine(packageDir, packageFile);
-            await WriteJsonAsync(fullPath, spec.Entries);
-
-            var fileInfo = new FileInfo(fullPath);
-            sourceRecords.Add(BuildSourceRecord(spec, packageFile, fileInfo.Length, ComputeSha256(fullPath)));
-        }
-
-        var manifest = BuildManifest(
-            manifestType,
-            isFinalImportManifest,
-            sourceSpecs,
-            sourceRecords,
-            excluded);
-
-        await WriteJsonAsync(Path.Combine(packageDir, "manifest.json"), manifest);
-        return packageDir;
-    }
-
-    public async Task RefreshManifestChecksumsAsync(string packageDir)
-    {
-        var manifestPath = Path.Combine(packageDir, "manifest.json");
-
-        await using var stream = File.OpenRead(manifestPath);
-        using var document = await JsonDocument.ParseAsync(stream);
-        var root = document.RootElement.Clone();
-        await stream.DisposeAsync();
-
-        var manifest = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(root.GetRawText())!;
-
-        var refreshedSources = new List<object>();
-        foreach (var sourceElement in root.GetProperty("sources").EnumerateArray())
-        {
-            var record = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(sourceElement.GetRawText())!;
-            var packageFile = record["packageFile"].GetString()!;
-            var fullPath = Path.Combine(packageDir, packageFile);
-            var fileInfo = new FileInfo(fullPath);
-
-            var rebuilt = new Dictionary<string, object?>();
-            foreach (var (key, value) in record)
-            {
-                rebuilt[key] = JsonElementToObject(value);
-            }
-
-            rebuilt["fileSizeBytes"] = fileInfo.Length;
-            rebuilt["sha256"] = ComputeSha256(fullPath);
-            refreshedSources.Add(rebuilt);
-        }
-
-        var rebuiltManifest = new Dictionary<string, object?>();
-        foreach (var (key, value) in manifest)
-        {
-            rebuiltManifest[key] = key == "sources" ? refreshedSources : JsonElementToObject(value);
-        }
-
-        await WriteJsonAsync(manifestPath, rebuiltManifest);
-    }
+    public Task RefreshManifestChecksumsAsync(string packageDir) =>
+        packages.RefreshManifestChecksumsAsync(packageDir);
 
     public const short SyntheticSurahNumber = 900;
 
@@ -341,123 +212,6 @@ public sealed class TafsirImportTestFixture : IAsyncLifetime
             .AddInfrastructure(configuration)
             .BuildServiceProvider();
     }
-
-    private static object BuildSourceRecord(
-        SyntheticTafsirSourceSpec spec,
-        string packageFile,
-        long fileSizeBytes,
-        string sha256) => new
-        {
-            sourceKey = spec.SourceKey,
-            languageCode = spec.LanguageCode,
-            languageNameAr = spec.LanguageNameAr,
-            languageNameEn = spec.LanguageNameEn,
-            direction = spec.Direction,
-            displayNameAr = $"تفسير اختباري {spec.SourceKey}",
-            shortNameAr = $"اختبار {spec.SourceKey}",
-            displayNameEn = $"Synthetic tafsir {spec.SourceKey}",
-            shortNameEn = $"Test {spec.SourceKey}",
-            contributorKey = $"{spec.SourceKey}-contributor",
-            contributorNameAr = $"مساهم اختباري {spec.SourceKey}",
-            contributorNameEn = $"Synthetic contributor {spec.SourceKey}",
-            contributorType = "person",
-            resourceKind = "tafsir",
-            tafsirKind = spec.TafsirKind,
-            contentCoverageCount = spec.ContentCoverageCount,
-            sourceFileOriginal = $"/synthetic/provenance/{spec.SourceKey}.json",
-            packageFile,
-            sha256,
-            fileSizeBytes,
-            license = "unknown",
-            provenance = "unknown"
-        };
-
-    private static object BuildManifest(
-        string manifestType,
-        bool isFinalImportManifest,
-        IReadOnlyList<SyntheticTafsirSourceSpec> specs,
-        IReadOnlyList<object> sourceRecords,
-        IReadOnlyList<string> excludedSourceKeys)
-    {
-        var arabicApproved = specs.Count(s => s.LanguageCode == "ar");
-        var languages = specs
-            .GroupBy(s => s.LanguageCode)
-            .Select(g => new
-            {
-                code = g.Key,
-                nameAr = g.First().LanguageNameAr,
-                nameEn = g.First().LanguageNameEn,
-                nativeName = g.First().NativeName,
-                direction = g.First().Direction
-            })
-            .ToList();
-
-        var excludedSummary = excludedSourceKeys
-            .Select(key => new
-            {
-                sourceKey = key,
-                status = "excluded",
-                includeInFutureImport = false,
-                resourceKind = "tafsir",
-                contentCoverageCount = 0,
-                sourceFileOriginal = $"/synthetic/provenance/{key}.json",
-                reviewReason = "synthetic-excluded-for-test"
-            })
-            .ToList();
-
-        return new
-        {
-            manifestType,
-            isFinalImportManifest,
-            createdAtUtc = "2026-06-14T00:00:00Z",
-            sourceRoot = "sources",
-            sourceCount = specs.Count,
-            licenseWarning =
-                "License/provenance is unknown for all sources; synthetic test package, not for publishing.",
-            summary = new
-            {
-                rawInspectedSources = specs.Count + excludedSourceKeys.Count,
-                copiedApprovedTafsirSources = specs.Count,
-                excludedSources = excludedSourceKeys.Count,
-                arabicApprovedCopied = arabicApproved,
-                nonArabicApprovedCopied = specs.Count - arabicApproved,
-                languageCount = languages.Count,
-                contributorCount = specs.Count
-            },
-            selectionRules = new
-            {
-                status = "approved_candidate",
-                includeInFutureImport = true,
-                contentCoverageCount = 6236,
-                resourceKind = "tafsir"
-            },
-            languages,
-            sources = sourceRecords,
-            excludedSourceSummary = excludedSummary
-        };
-    }
-
-    private static string ComputeSha256(string path) =>
-        Convert.ToHexString(SHA256.HashData(File.ReadAllBytes(path)));
-
-    private static async Task WriteJsonAsync(string path, object data)
-    {
-        var json = JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true });
-        await File.WriteAllTextAsync(path, json);
-    }
-
-    private static object? JsonElementToObject(JsonElement element) => element.ValueKind switch
-    {
-        JsonValueKind.String => element.GetString(),
-        JsonValueKind.Number => element.TryGetInt64(out var l) ? l : element.GetDouble(),
-        JsonValueKind.True => true,
-        JsonValueKind.False => false,
-        JsonValueKind.Null => null,
-        JsonValueKind.Array => element.EnumerateArray().Select(JsonElementToObject).ToList(),
-        JsonValueKind.Object => element.EnumerateObject()
-            .ToDictionary(p => p.Name, p => JsonElementToObject(p.Value)),
-        _ => element.GetRawText()
-    };
 }
 
 public sealed record SyntheticTafsirSourceSpec(

@@ -267,6 +267,73 @@ public sealed class TestPolicyContractTests
     }
 
     [Fact]
+    public void CanonicalPipelineRehearsals_UseBoundedScratchRehearsals()
+    {
+        string[] scratchCollections =
+        [
+            "TafsirImportTestCollection",
+            "TranslationImportTestCollection",
+            "MutashabihatImportTestCollection",
+            "QuranTopicsBookImportTestCollection",
+            "PhraseSearchApiCollection",
+            "PhraseIndexBuildActivationCollection",
+        ];
+        string[] fastClasses =
+        [
+            "QuranDashboard.Tests.Quran.Tafsirs.TafsirManifestReaderTests",
+            "QuranDashboard.Tests.Quran.Tafsirs.TafsirSourceReaderTests",
+            "QuranDashboard.Tests.Quran.Tafsirs.TafsirValidationFailureTests",
+            "QuranDashboard.Tests.Quran.Translations.TranslationManifestReaderTests",
+            "QuranDashboard.Tests.Quran.Translations.TranslationSourceReaderTests",
+            "QuranDashboard.Tests.Quran.Translations.TranslationValidationFailureTests",
+            "QuranDashboard.Tests.Quran.Mutashabihat.MutashabihatReaderTests",
+            "QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchConditionalRequestTests",
+            "QuranDashboard.Tests.Api.PhraseSearch.PhraseSearchComputePipelineTests",
+        ];
+
+        var scratchResources = TestGateCatalog.ResourceEntries
+            .Where(entry => scratchCollections.Contains(entry.CollectionName, StringComparer.Ordinal))
+            .ToArray();
+        var scratchClasses = TestGateCatalog.GateEntries
+            .Where(entry => entry.ResourceCollection is not null
+                && scratchCollections.Contains(entry.ResourceCollection, StringComparer.Ordinal))
+            .ToArray();
+        var fastEntries = TestGateCatalog.GateEntries
+            .Where(entry => fastClasses.Contains(entry.ClassName, StringComparer.Ordinal))
+            .ToArray();
+
+        scratchResources.Select(entry => entry.CollectionName).Should().BeEquivalentTo(scratchCollections);
+        scratchResources.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
+            && entry.Policy.ResetBehavior == TestResetBehavior.None
+            && entry.Policy.StartupEffects.Count == 0
+            && entry.Policy.SetupWrites.Contains(TestDataClass.SchemaState));
+        scratchClasses.Should().NotBeEmpty();
+        scratchClasses.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.DestructiveRehearsal
+            && entry.Policy.Target == TestDatabaseTarget.EmptyScratch
+            && new[]
+            {
+                DestructiveRehearsalSubtype.CanonicalImport,
+                DestructiveRehearsalSubtype.CanonicalRebuild,
+                DestructiveRehearsalSubtype.PhraseSearchIndexBuild,
+            }.Contains(entry.Policy.DestructiveSubtype));
+        fastEntries.Select(entry => entry.ClassName).Should().BeEquivalentTo(fastClasses);
+        fastEntries.Should().OnlyContain(entry =>
+            entry.MigrationState == TestPolicyMigrationState.Migrated
+            && entry.Policy != null
+            && entry.Policy.Policy == BackendTestPolicy.FastNoDb
+            && entry.Policy.Reads.Count == 0
+            && entry.Policy.Writes.Count == 0
+            && entry.Policy.Target == TestDatabaseTarget.None
+            && entry.ResourceCollection == null);
+    }
+
+    [Fact]
     public void LinkingMutableWriters_UseTheSinglePersistentMutableDatabaseResource()
     {
         string[] expectedClasses =

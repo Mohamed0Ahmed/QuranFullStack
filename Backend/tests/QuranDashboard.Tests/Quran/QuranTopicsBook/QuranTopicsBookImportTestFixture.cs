@@ -5,6 +5,7 @@ using System.Data.Common;
 using QuranDashboard.DataImporter;
 using QuranDashboard.DataImporter.Import.VerbRunners;
 using QuranDashboard.Domain.Access;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.Process;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 using DataImporterProgram = QuranDashboard.DataImporter.Program;
@@ -14,11 +15,18 @@ namespace QuranDashboard.Tests.Quran.QuranTopicsBook;
 public sealed class QuranTopicsBookImportTestFixture : IAsyncLifetime
 {
     private readonly List<string> tempDirectories = [];
+    private string? scratchConnectionString;
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync()
+    {
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(QuranTopicsBookImportTestFixture),
+            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
+    }
 
     public Task DisposeAsync()
     {
+        scratchConnectionString = null;
         foreach (var directory in tempDirectories)
         {
             try
@@ -38,9 +46,95 @@ public sealed class QuranTopicsBookImportTestFixture : IAsyncLifetime
 
     internal async Task<QuranTopicsBookTestDatabase> LeaseDatabaseAsync()
     {
-        var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(QuranTopicsBookImportTestFixture));
-        return new QuranTopicsBookTestDatabase(lease, CreateTempDirectory());
+        var connectionString = scratchConnectionString
+            ?? throw new InvalidOperationException("QuranTopicsBookImportTestFixture not initialized.");
+        await ResetDatabaseAsync(connectionString);
+        return new QuranTopicsBookTestDatabase(connectionString, CreateTempDirectory());
+    }
+
+    private static async Task ResetDatabaseAsync(string connectionString)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            TRUNCATE
+                abwab_sections,
+                abwab_doors,
+                abwab_door_aliases,
+                abwab_door_relations,
+                abwab_door_inclusions,
+                abwab_door_inclusion_unit_syncs,
+                abwab_templates,
+                abwab_template_nodes,
+                linking_confirmation_jobs,
+                linking_operations,
+                linking_prepared_affected_contributions,
+                linking_prepared_ayah_descriptions,
+                linking_prepared_ayah_words,
+                linking_prepared_ayahs,
+                linking_prepared_units,
+                linking_prepared_sources,
+                linking_prepared_preflights,
+                linking_source_contribution_units,
+                linking_source_contributions,
+                linking_unit_ayah_descriptions,
+                linking_unit_ayah_words,
+                linking_unit_ayahs,
+                linking_units,
+                linking_door_ayah_words,
+                linking_door_ayahs,
+                quran_words_unique_simple,
+                quran_words_unique_tashkeel,
+                quran_words_ordered_simple,
+                quran_words_ordered_tashkeel,
+                quran_word_morphology_segments,
+                quran_word_morphology,
+                quran_stems,
+                quran_lemmas,
+                quran_roots,
+                quran_pos_tags,
+                quran_similar_ayah_links,
+                quran_mutashabihat_occurrences,
+                quran_mutashabihat_groups,
+                quran_full_i3rab_ayah_entries,
+                quran_full_i3rab_entries,
+                quran_full_i3rab_sources,
+                quran_translation_ayah_entries,
+                quran_translation_sources,
+                quran_tafsir_ayah_entries,
+                quran_tafsir_entries,
+                quran_tafsir_sources,
+                quran_mushaf_lines,
+                quran_words,
+                quran_rubs,
+                quran_hizbs,
+                quran_juzs,
+                quran_ayahs,
+                quran_surahs,
+                quran_mushaf_pages,
+                users
+            RESTART IDENTITY CASCADE;
+            """,
+            connection);
+        await command.ExecuteNonQueryAsync();
+
+        await using var dbContext = new QuranDashboardDbContext(
+            new DbContextOptionsBuilder<QuranDashboardDbContext>()
+                .UseNpgsql(connectionString)
+                .Options);
+        foreach (var migrationId in dbContext.Database.GetMigrations())
+        {
+            await using var restoreCmd = new NpgsqlCommand(
+                """
+                INSERT INTO "__EFMigrationsHistory" ("MigrationId", "ProductVersion")
+                VALUES (@migrationId, '10.0.8')
+                ON CONFLICT ("MigrationId") DO NOTHING;
+                """,
+                connection);
+            restoreCmd.Parameters.AddWithValue("migrationId", migrationId);
+            await restoreCmd.ExecuteNonQueryAsync();
+        }
     }
 
     internal QuranDashboardDbContext CreateDbContext(QuranTopicsBookTestDatabase database) =>
@@ -215,14 +309,14 @@ public sealed class QuranTopicsBookImportTestFixture : IAsyncLifetime
 }
 
 internal sealed class QuranTopicsBookTestDatabase(
-    PostgreSqlDatabaseLease lease,
+    string connectionString,
     string tempDirectory) : IAsyncDisposable
 {
-    internal string ConnectionString => lease.ConnectionString;
+    internal string ConnectionString => connectionString;
 
     internal string TempDirectory => tempDirectory;
 
-    public ValueTask DisposeAsync() => lease.DisposeAsync();
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 internal sealed record QuranTopicsBookCommandRun(

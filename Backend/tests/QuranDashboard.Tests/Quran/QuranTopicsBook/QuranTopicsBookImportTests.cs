@@ -341,7 +341,7 @@ public sealed class QuranTopicsBookImportTests(QuranTopicsBookImportTestFixture 
 
         var run = await fixture.RunCommandAsync(database, package.SourcePath, actorUserId);
 
-        run.ExitCode.Should().Be(0);
+        run.ExitCode.Should().Be(0, run.ConsoleOutput);
         (await fixture.ReadTargetCountsAsync(database, ExpectedTargetTables))
             .Should().Equal(ExpectedImportedTargetCounts);
         var doorIds = await AssertPersistedStateAsync(database, actorUserId);

@@ -5,28 +5,36 @@ namespace QuranDashboard.Tests.TestSupport.PostgreSql;
 
 internal static class MigratedScratchDatabase
 {
-    internal static async Task<string> ResolveAndMigrateAsync(
+    internal static Task<string> ResolveAndMigrateAsync(
         string fixtureName,
         DestructiveRehearsalSubtype expectedSubtype,
+        CancellationToken cancellationToken = default) =>
+        ResolveAndMigrateAsync(fixtureName, [expectedSubtype], cancellationToken);
+
+    internal static async Task<string> ResolveAndMigrateAsync(
+        string fixtureName,
+        IReadOnlyCollection<DestructiveRehearsalSubtype> expectedSubtypes,
         CancellationToken cancellationToken = default)
     {
-        var expectedSubtypeWireValue = expectedSubtype switch
+        var expectedSubtypeWireValues = expectedSubtypes.Select(expectedSubtype => expectedSubtype switch
         {
             DestructiveRehearsalSubtype.CanonicalImport => "canonical-import",
             DestructiveRehearsalSubtype.CanonicalRebuild => "canonical-rebuild",
             DestructiveRehearsalSubtype.CanonicalGeneration => "canonical-generation",
+            DestructiveRehearsalSubtype.PhraseSearchIndexBuild => "phrase-search-index-build",
             _ => throw new ArgumentOutOfRangeException(
-                nameof(expectedSubtype),
+                nameof(expectedSubtypes),
                 expectedSubtype,
-                "The migrated canonical-pipeline fixtures require an import, rebuild, or generation subtype."),
-        };
+                "The migrated canonical-pipeline fixtures require an import, rebuild, generation, or phrase-search-index-build subtype."),
+        }).ToHashSet(StringComparer.Ordinal);
+
         var scratch = await ScratchDatabaseExecutionContext.ResolveAsync(
             QuranDashboard.Tests.TestRuntime.TestRuntimeTestPaths.ContractPath,
             cancellationToken: cancellationToken);
-        if (!string.Equals(scratch.Subtype, expectedSubtypeWireValue, StringComparison.Ordinal))
+        if (!expectedSubtypeWireValues.Contains(scratch.Subtype))
         {
             throw new InvalidOperationException(
-                $"{fixtureName} requires the '{expectedSubtypeWireValue}' empty-scratch subtype, "
+                $"{fixtureName} requires one of [{string.Join(", ", expectedSubtypeWireValues)}] empty-scratch subtypes, "
                 + $"but the repository runner supplied '{scratch.Subtype}'.");
         }
 

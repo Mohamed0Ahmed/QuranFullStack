@@ -11,6 +11,7 @@ using QuranDashboard.Domain.Quran.PhraseSearch;
 using QuranDashboard.Infrastructure;
 using QuranDashboard.Infrastructure.Persistence.DataPipelines.Quran.PhraseSearch;
 using QuranDashboard.Infrastructure.Reports.Quran.DataPipelines.PhraseSearch;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 using QuranDashboard.Tests.TestSupport.Process;
 using DataImporterProgram = QuranDashboard.DataImporter.Program;
@@ -151,11 +152,18 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
     private const string SyntheticFingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
 
     private readonly List<string> temporaryDirectories = [];
+    private string? scratchConnectionString;
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync()
+    {
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(PhraseIndexBuildActivationFixture),
+            DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
+    }
 
     public Task DisposeAsync()
     {
+        scratchConnectionString = null;
         foreach (var directory in temporaryDirectories)
         {
             if (Directory.Exists(directory))
@@ -169,10 +177,58 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
 
     internal async Task<PhraseIndexBuildActivationDatabase> LeaseDatabaseAsync()
     {
-        var lease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(nameof(PhraseIndexBuildActivationFixture));
+        var connectionString = scratchConnectionString
+            ?? throw new InvalidOperationException("PhraseIndexBuildActivationFixture not initialized.");
+        await ResetDatabaseAsync(connectionString);
         var reportRoot = Path.Combine(Path.GetTempPath(), $"phrase-index-activation-{Guid.NewGuid():N}");
         temporaryDirectories.Add(reportRoot);
-        return new PhraseIndexBuildActivationDatabase(lease, reportRoot);
+        return new PhraseIndexBuildActivationDatabase(connectionString, reportRoot);
+    }
+
+    private static async Task ResetDatabaseAsync(string connectionString)
+    {
+        await using var connection = new NpgsqlConnection(connectionString);
+        await connection.OpenAsync();
+        await using var command = new NpgsqlCommand(
+            """
+            TRUNCATE
+                quran_phrase_search_tokens,
+                quran_phrase_index_builds,
+                quran_words,
+                quran_ayahs,
+                quran_surahs,
+                quran_mushaf_pages
+            RESTART IDENTITY CASCADE;
+
+            INSERT INTO quran_phrase_index_state (
+                id,
+                source_revision,
+                source_fingerprint,
+                active_build_id,
+                previous_build_id,
+                is_stale,
+                stale_reason,
+                updated_at_utc)
+            VALUES (
+                1,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                FALSE,
+                NULL,
+                CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO UPDATE
+            SET source_revision = 0,
+                source_fingerprint = NULL,
+                active_build_id = NULL,
+                previous_build_id = NULL,
+                is_stale = FALSE,
+                stale_reason = NULL,
+                updated_at_utc = CURRENT_TIMESTAMP;
+            """,
+            connection);
+        await command.ExecuteNonQueryAsync();
     }
 
     internal async Task<PhraseIndexBuildCommandRun> RunBuildAsync(
@@ -379,7 +435,7 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
         var value = await command.ExecuteScalarAsync();
         return value switch
         {
-            DBNull => null,
+            null or DBNull => null,
             Guid buildId => buildId,
             _ => throw new InvalidOperationException("PhraseSearch state has an invalid active build ID."),
         };
@@ -428,13 +484,13 @@ public sealed class PhraseIndexBuildActivationFixture : IAsyncLifetime
     }
 }
 
-internal sealed class PhraseIndexBuildActivationDatabase(PostgreSqlDatabaseLease lease, string reportRoot) : IAsyncDisposable
+internal sealed class PhraseIndexBuildActivationDatabase(string connectionString, string reportRoot) : IAsyncDisposable
 {
-    internal string ConnectionString => lease.ConnectionString;
+    internal string ConnectionString => connectionString;
 
     internal string ReportRoot => reportRoot;
 
-    public ValueTask DisposeAsync() => lease.DisposeAsync();
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
 
 internal sealed record PhraseIndexBuildCommandRun(int ExitCode, string Output, string ReportPath);

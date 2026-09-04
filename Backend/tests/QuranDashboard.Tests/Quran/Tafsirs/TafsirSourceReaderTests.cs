@@ -3,15 +3,17 @@ using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Tafsirs;
 
 namespace QuranDashboard.Tests.Quran.Tafsirs;
 
-public sealed class TafsirSourceReaderTests
+public sealed class TafsirSourceReaderTests : IDisposable
 {
     private readonly JsonTafsirSourceReader reader = new();
-    private readonly TafsirImportTestFixture fixture = new();
+    private readonly TafsirSyntheticPackage packages = new();
+
+    public void Dispose() => packages.Dispose();
 
     [Fact]
     public async Task ReadAsync_parses_object_values_string_pointers_and_inline_markup()
     {
-        var packageDir = await fixture.WriteSyntheticPackageAsync();
+        var packageDir = await packages.WriteAsync();
         var sourcePath = Path.Combine(packageDir, "sources", "ar-test-tafsir.json");
 
         var parsed = await reader.ReadAsync(sourcePath, CancellationToken.None);

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using QuranDashboard.Api.Controllers.System;
 using QuranDashboard.Tests.Api.Access;
 using QuranDashboard.Tests.Smoke;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.PhraseSearch;
@@ -12,16 +13,15 @@ public sealed class PhraseSearchStateFixture : IAsyncLifetime
     private const string SourceFingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private readonly FakeExternalUserProfileSource profileSource = new();
     private readonly TestSqlCommandCapture commandCapture = new();
-    private PostgreSqlDatabaseLease? databaseLease;
     private WebApplicationFactory<HealthController>? apiFactory;
 
     public string ConnectionString { get; private set; } = string.Empty;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(PhraseSearchStateFixture));
-        ConnectionString = databaseLease.ConnectionString;
+        ConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(PhraseSearchStateFixture),
+            DestructiveRehearsalSubtype.PhraseSearchIndexBuild);
     }
 
     public async Task DisposeAsync()
@@ -32,11 +32,7 @@ public sealed class PhraseSearchStateFixture : IAsyncLifetime
             apiFactory = null;
         }
 
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        ConnectionString = string.Empty;
     }
 
     public HttpClient CreateClient()

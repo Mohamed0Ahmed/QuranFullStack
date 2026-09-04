@@ -6,6 +6,7 @@ using QuranDashboard.Domain.Quran.Surahs;
 using QuranDashboard.Domain.Quran.Words;
 using QuranDashboard.Infrastructure.Files.Quran.DataPipelines.Mutashabihat;
 using QuranDashboard.Tests.TestSupport.DependencyInjection;
+using QuranDashboard.Tests.TestSupport.Execution;
 using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Quran.Mutashabihat;
@@ -15,14 +16,15 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
     private readonly List<string> tempSourceDirs = new();
     private readonly OwnedServiceProviderRegistry ownedProviders = new();
 
-    private PostgreSqlDatabaseLease? databaseLease;
+    private string? scratchConnectionString;
     private ServiceProvider? readerProvider;
     private ServiceProvider? importProvider;
 
     public async Task InitializeAsync()
     {
-        databaseLease = await PostgreSqlTestProcess.LeaseMigratedDatabaseAsync(
-            nameof(MutashabihatImportTestFixture));
+        scratchConnectionString = await MigratedScratchDatabase.ResolveAndMigrateAsync(
+            nameof(MutashabihatImportTestFixture),
+            [DestructiveRehearsalSubtype.CanonicalImport, DestructiveRehearsalSubtype.CanonicalRebuild]);
 
         try
         {
@@ -42,12 +44,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
         readerProvider = null;
         importProvider = null;
         await ownedProviders.DisposeAsync();
-
-        if (databaseLease is not null)
-        {
-            await databaseLease.DisposeAsync();
-            databaseLease = null;
-        }
+        scratchConnectionString = null;
 
         DeleteTempSourceDirs();
     }
@@ -84,7 +81,7 @@ public sealed class MutashabihatImportTestFixture : IAsyncLifetime
 
     private ServiceProvider BuildServiceProvider(Action<IServiceCollection>? configure)
     {
-        var connectionString = databaseLease?.ConnectionString
+        var connectionString = scratchConnectionString
             ?? throw new InvalidOperationException(
                 $"{nameof(MutashabihatImportTestFixture)} holds no database lease. Use it as a collection fixture "
                 + $"through [Collection(nameof({nameof(MutashabihatImportTestCollection)}))].");
