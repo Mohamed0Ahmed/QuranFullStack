@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 
 import {
   EXECUTION_GROUPS,
+  createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
@@ -391,26 +392,66 @@ for (const [feature, expectedClasses] of [
   assert.deepEqual(affected.authorizationRequired, []);
 }
 
-const schemaRepositoryPrePr = planPrePrSelection({
-  backendCatalog: repositoryCatalog,
-  backendResources: repositoryResources,
-  affectedFeatures: [],
-  affectedConcerns: ['Schema'],
-  authorizeFullData: false,
+const expectedScratchClasses = [...foundationClasses, ...navigationClasses]
+  .filter((className) => repositoryCatalog.find(
+    (entry) => entry.className === className,
+  ).policy?.backendPolicy === 'DestructiveRehearsal');
+for (const concern of ['Source', 'Schema', 'Contract', 'Safety']) {
+  const concernPrePr = planPrePrSelection({
+    backendCatalog: repositoryCatalog,
+    backendResources: repositoryResources,
+    affectedFeatures: [],
+    affectedConcerns: [concern],
+    authorizeFullData: false,
+  });
+  const scratchClasses = concernPrePr.partitions
+    .flatMap(({ selections }) => selections)
+    .filter(({ group }) => group === 'EmptyScratchDestructiveRehearsal')
+    .map(({ className }) => className);
+  assert.ok(expectedScratchClasses.every((className) => scratchClasses.includes(className)));
+}
+
+const credentialSentinel = 'do-not-retain-this-password';
+const scratchEvidence = createEmptyScratchExecutionEvidence({
+  command: focusedFoundationRebuild.commands[0],
+  runId: '0123456789abcdef0123456789abcdef',
+  keeperStatus: 'acquired',
+  reap: lifecycleResult('reap', false),
+  create: lifecycleResult('create', false),
+  testStatus: 0,
+  cleanup: lifecycleResult('cleanup', true),
+  finalStatus: 0,
 });
-const schemaScratchClasses = schemaRepositoryPrePr.partitions
-  .flatMap(({ selections }) => selections)
-  .filter(({ group }) => group === 'EmptyScratchDestructiveRehearsal')
-  .map(({ className }) => className);
-assert.ok(foundationClasses
-  .filter((className) => repositoryCatalog.find((entry) => entry.className === className).policy?.backendPolicy === 'DestructiveRehearsal')
-  .every((className) => schemaScratchClasses.includes(className)));
-assert.ok(navigationClasses
-  .filter((className) => repositoryCatalog.find((entry) => entry.className === className).policy?.backendPolicy === 'DestructiveRehearsal')
-  .every((className) => schemaScratchClasses.includes(className)));
+assert.equal(scratchEvidence.evidenceType, 'empty-scratch-test-execution');
+assert.equal(scratchEvidence.scope.className, 'QuranDashboard.Tests.Quran.Import.ForceReloadTests');
+assert.equal(scratchEvidence.scratch.runId, '0123456789abcdef0123456789abcdef');
+assert.equal(scratchEvidence.scratch.subtype, 'canonical-rebuild');
+assert.equal(scratchEvidence.lifecycle.test.status, 0);
+assert.equal(scratchEvidence.lifecycle.cleanup.removed, true);
+assert.equal(scratchEvidence.lifecycle.cleanup.dumpFilesRetained, 0);
+assert.equal(scratchEvidence.succeeded, true);
+assert.ok(!JSON.stringify(scratchEvidence).includes(credentialSentinel));
 
 console.log('Repository test policy runner contract passed.');
 
 function row(...columns) {
   return columns.join('\t');
+}
+
+function lifecycleResult(mode, removed) {
+  return {
+    status: 0,
+    report: {
+      succeeded: true,
+      connectionString: `Password=${credentialSentinel}`,
+      scratch: {
+        mode,
+        database: 'quran_test_scratch_0123456789abcdef0123456789abcdef',
+        validated: true,
+        removed,
+        dumpFilesRetained: 0,
+        payload: credentialSentinel,
+      },
+    },
+  };
 }

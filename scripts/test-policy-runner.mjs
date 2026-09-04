@@ -75,6 +75,66 @@ export const EXECUTION_GROUPS = Object.freeze([
 ]);
 const ALL_GROUPS = [...EXECUTION_GROUPS, 'LegacyUnmigrated'];
 
+export function createEmptyScratchExecutionEvidence({
+  command,
+  runId,
+  keeperStatus,
+  keeperExitStatus = null,
+  reap = null,
+  create = null,
+  testStatus = null,
+  cleanup = null,
+  finalStatus,
+}) {
+  const createScratch = create?.report?.scratch;
+  const cleanupScratch = cleanup?.report?.scratch;
+
+  return {
+    evidenceVersion: 1,
+    evidenceType: 'empty-scratch-test-execution',
+    scope: command.selection ?? {
+      group: command.group,
+    },
+    scratch: {
+      runId,
+      subtype: command.scratchSubtype ?? null,
+      database: createScratch?.database ?? cleanupScratch?.database ?? null,
+    },
+    lifecycle: {
+      keeper: {
+        status: keeperStatus,
+        exitStatus: keeperExitStatus,
+      },
+      reap: summarizeScratchLifecycleResult(reap),
+      create: summarizeScratchLifecycleResult(create),
+      test: testStatus === null
+        ? null
+        : { status: testStatus, succeeded: testStatus === 0 },
+      cleanup: summarizeScratchLifecycleResult(cleanup),
+    },
+    finalStatus,
+    succeeded: finalStatus === 0,
+  };
+}
+
+function summarizeScratchLifecycleResult(result) {
+  if (result === null) {
+    return null;
+  }
+
+  const scratch = result.report?.scratch;
+  return {
+    status: result.status,
+    succeeded: result.report?.succeeded === true,
+    mode: scratch?.mode ?? null,
+    database: scratch?.database ?? null,
+    receiptRecorded: scratch?.receiptRecorded ?? null,
+    validated: scratch?.validated ?? null,
+    removed: scratch?.removed ?? null,
+    dumpFilesRetained: scratch?.dumpFilesRetained ?? null,
+  };
+}
+
 export function parseBackendPolicyCatalog(source) {
   const lines = source.replace(/\r/g, '').trimEnd().split('\n');
   if (lines.length < 2) {
@@ -431,6 +491,8 @@ function backendSelection(entry, resourceCatalog, selectorType, selector) {
     selectorType,
     selector,
     className: entry.className,
+    feature: entry.feature,
+    concerns: [...entry.concerns].sort(),
     group: backendExecutionGroup(entry, resourceCatalog),
     destructiveSubtype: entry.policy?.destructiveSubtype ?? null,
     legacyLane: entry.migrationState === 'Unmigrated'
@@ -540,23 +602,40 @@ function selectionCommand(selection) {
       'Backend/scripts/test-backend',
       arguments_,
       selection.group,
+      { selection: backendSelectionEvidence(selection) },
     );
   }
 
   const option = selection.selectorType === 'method' ? '--test' : '--class';
+  const executionMetadata = {
+    selection: backendSelectionEvidence(selection),
+    ...(selection.group === 'EmptyScratchDestructiveRehearsal'
+      ? { scratchSubtype: toScratchSubtype(selection.destructiveSubtype) }
+      : selection.group === 'FullDataDestructiveRehearsal'
+          && ['PhraseSearchIndexBuild', 'Recovery'].includes(selection.destructiveSubtype)
+        ? { rehearsalSubtype: toScratchSubtype(selection.destructiveSubtype) }
+        : {}),
+  };
   return command(
     `backend-${selection.selectorType}-${selection.selector}`,
     '.',
     'Backend/scripts/test-backend',
     ['feature', option, selection.selector, '--no-build'],
     selection.group,
-    selection.group === 'EmptyScratchDestructiveRehearsal'
-      ? { scratchSubtype: toScratchSubtype(selection.destructiveSubtype) }
-      : selection.group === 'FullDataDestructiveRehearsal'
-          && ['PhraseSearchIndexBuild', 'Recovery'].includes(selection.destructiveSubtype)
-        ? { rehearsalSubtype: toScratchSubtype(selection.destructiveSubtype) }
-        : {},
+    executionMetadata,
   );
+}
+
+function backendSelectionEvidence(selection) {
+  return {
+    kind: selection.kind,
+    selectorType: selection.selectorType,
+    selector: selection.selector,
+    className: selection.className,
+    feature: selection.feature,
+    concerns: selection.concerns,
+    group: selection.group,
+  };
 }
 
 function toScratchSubtype(subtype) {

@@ -13,10 +13,7 @@ public sealed class NavigationValidationRuleTests
     public void Invalid_sajda_type_in_source_dto_fails_with_nav_sajda_type()
     {
         var runner = new NavigationMetadataValidationRunner(new NavigationMetadataAssembler());
-        var ayahIds = NavigationSyntheticSeed.DefaultAyahs.ToDictionary(
-            ayah => ayah.VerseKey,
-            ayah => ayah.Id,
-            StringComparer.Ordinal);
+        var ayahIds = BuildAyahIdLookup();
 
         var source = BuildSourceFromSpec(NavigationSyntheticSeed.InvalidSajdaTypePackageSpec);
 
@@ -34,10 +31,7 @@ public sealed class NavigationValidationRuleTests
     public void Non_contiguous_juz_numbers_in_source_dto_fails_with_nav_json_shape()
     {
         var runner = new NavigationMetadataValidationRunner(new NavigationMetadataAssembler());
-        var ayahIds = NavigationSyntheticSeed.DefaultAyahs.ToDictionary(
-            ayah => ayah.VerseKey,
-            ayah => ayah.Id,
-            StringComparer.Ordinal);
+        var ayahIds = BuildAyahIdLookup();
 
         var act = () => runner.AssembleAndValidate(
             BuildSourceFromSpec(NavigationSyntheticSeed.NonContiguousJuzNumbersPackageSpec),
@@ -52,10 +46,7 @@ public sealed class NavigationValidationRuleTests
     [Fact]
     public void Unresolved_verse_key_fails_with_nav_verse_keys_resolve()
     {
-        var ayahIds = NavigationSyntheticSeed.DefaultAyahs.ToDictionary(
-            ayah => ayah.VerseKey,
-            ayah => ayah.Id,
-            StringComparer.Ordinal);
+        var ayahIds = BuildAyahIdLookup();
 
         var source = BuildSourceWithSajdaVerseKey(NavigationSyntheticSeed.SyntheticVerseKey(99));
 
@@ -72,10 +63,7 @@ public sealed class NavigationValidationRuleTests
     [Fact]
     public void Incomplete_juz_coverage_fails_with_nav_range_coverage_juz()
     {
-        var ayahIds = NavigationSyntheticSeed.DefaultAyahs.ToDictionary(
-            ayah => ayah.VerseKey,
-            ayah => ayah.Id,
-            StringComparer.Ordinal);
+        var ayahIds = BuildAyahIdLookup();
 
         var act = () => assembler.Assemble(
             BuildSourceFromSpec(NavigationSyntheticSeed.JuzGapPackageSpec),
@@ -96,6 +84,12 @@ public sealed class NavigationValidationRuleTests
                 new SyntheticNavigationSajdaSpec(2, NavigationSyntheticSeed.SyntheticVerseKey(5), "required")
             ]
         });
+
+    private static IReadOnlyDictionary<string, int> BuildAyahIdLookup() =>
+        NavigationSyntheticSeed.DefaultAyahs.ToDictionary(
+            ayah => ayah.VerseKey,
+            ayah => ayah.Id,
+            StringComparer.Ordinal);
 
     private static NavigationMetadataSourceData BuildSourceFromSpec(SyntheticNavigationPackageSpec spec) =>
         new(

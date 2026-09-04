@@ -7,6 +7,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
+  createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
@@ -127,40 +128,66 @@ async function executeEmptyScratch(command) {
   const runId = createScratchRunId();
   const keeper = await startScratchKeeper(runId);
   if (!keeper) {
+    console.log(JSON.stringify(createEmptyScratchExecutionEvidence({
+      command,
+      runId,
+      keeperStatus: 'failed',
+      finalStatus: 3,
+    })));
     return 3;
   }
 
   let created = false;
-  let commandStatus = 1;
-  let cleanupStatus = 0;
+  let executionStatus = 1;
+  let testStatus = null;
+  let reap = null;
+  let creation = null;
+  let cleanup = null;
+  let keeperExitStatus = null;
   try {
-    const reap = runScratchLifecycle('reap', runId);
+    reap = runScratchLifecycle('reap', runId);
     if (reap.status !== 0) {
-      return reap.status;
-    }
+      executionStatus = reap.status;
+    } else {
+      creation = runScratchLifecycle('create', runId, command.scratchSubtype);
+      if (creation.status !== 0) {
+        executionStatus = creation.status;
+      } else {
+        created = true;
 
-    const creation = runScratchLifecycle('create', runId, command.scratchSubtype);
-    if (creation.status !== 0) {
-      return creation.status;
+        const environment = {
+          ...process.env,
+          QURAN_DASHBOARD_TEST_RUN_ID: runId,
+          QURAN_DASHBOARD_TEST_LOCK_COMMAND: SCRATCH_LOCK_COMMAND,
+          QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE: command.scratchSubtype,
+        };
+        testStatus = executeCommand(command, environment);
+        executionStatus = testStatus;
+      }
     }
-    created = true;
-
-    const environment = {
-      ...process.env,
-      QURAN_DASHBOARD_TEST_RUN_ID: runId,
-      QURAN_DASHBOARD_TEST_LOCK_COMMAND: SCRATCH_LOCK_COMMAND,
-      QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE: command.scratchSubtype,
-    };
-    commandStatus = executeCommand(command, environment);
   } finally {
     if (created) {
-      cleanupStatus = runScratchLifecycle('cleanup', runId).status;
+      cleanup = runScratchLifecycle('cleanup', runId);
     }
     keeper.stdin.end();
-    await waitForExit(keeper);
+    keeperExitStatus = await waitForExit(keeper);
   }
 
-  return cleanupStatus === 0 ? commandStatus : cleanupStatus;
+  const finalStatus = cleanup !== null && cleanup.status !== 0
+    ? cleanup.status
+    : executionStatus;
+  console.log(JSON.stringify(createEmptyScratchExecutionEvidence({
+    command,
+    runId,
+    keeperStatus: 'acquired',
+    keeperExitStatus,
+    reap,
+    create: creation,
+    testStatus,
+    cleanup,
+    finalStatus,
+  })));
+  return finalStatus;
 }
 
 async function executeFullRehearsal(command) {
@@ -221,9 +248,15 @@ function runScratchLifecycle(action, runId, subtype = null) {
   }
   if (result.error) {
     console.error(`[scripts/test] scratch ${action} could not start: ${result.error.message}`);
-    return { status: 1 };
+    return { status: 1, report: null };
   }
-  return { status: result.status ?? 1 };
+  let report = null;
+  try {
+    report = result.stdout ? JSON.parse(result.stdout) : null;
+  } catch {
+    console.error(`[scripts/test] scratch ${action} returned invalid JSON evidence.`);
+  }
+  return { status: result.status ?? 1, report };
 }
 
 async function startScratchKeeper(runId) {

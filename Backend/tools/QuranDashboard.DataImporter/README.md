@@ -42,7 +42,8 @@ Running with no verb or an unknown verb prints usage and exits non-zero.
   `quran-foundation` and also requires the sibling
   `masaq-corpus-aligned/masaq-search-words.dashboard-ready.json` source.
 - `resources/` is **local and gitignored** — packages are not in CI/other clones. Repo root
-  is auto-detected (the folder containing both `resources/` and `Backend/`).
+  is auto-detected from the tracked `Backend/QuranDashboard.sln` and `scripts/test` sentinels, so
+  default paths can be resolved even before a local `resources/` directory is provisioned.
 - `export-abwab-snapshot` defaults to `resources/exports/abwab/`. It writes a timestamped
   format-v4 snapshot, a SHA-256 sidecar, and JSON plus Markdown audit reports. It never accepts
   a connection string as a CLI argument and refuses to overwrite any artifact. Earlier v3

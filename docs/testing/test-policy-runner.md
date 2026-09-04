@@ -71,6 +71,11 @@ rehearsals stay outside ordinary pre-PR execution unless the affected feature, a
 State, produced/consumed contract, or safety-critical scope selects them; the partition does not authorize
 or select an unrelated full-data pipeline.
 
+After each empty-scratch command, the runner emits one `empty-scratch-test-execution` JSON record that
+binds the selected feature, concerns, exact class or method, run ID, subtype, lifecycle step statuses, test
+outcome, and verified cleanup result. It copies only scratch identities and booleans from lower-level
+reports; connection strings, credentials, database rows, dumps, and other payloads are never retained.
+
 Migrated full-data PhraseSearch index and recovery selections use the manual full Rehearsal Database
 capability only after `--authorize-full-data`. The root runner asks TestRuntime to validate the dedicated
 rehearsal connection, recompute its Protected State fingerprint, verify its subtype, provenance, migration,

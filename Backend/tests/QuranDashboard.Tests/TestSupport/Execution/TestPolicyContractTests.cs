@@ -258,7 +258,11 @@ public sealed class TestPolicyContractTests
             resource.StatePolicy.Should().Be("FreshLeasePerCase");
             resource.MigrationState.Should().Be(TestPolicyMigrationState.Migrated);
             resource.Policy.Should().NotBeNull();
-            resource.Policy!.SetupWrites.Should().BeEquivalentTo([TestDataClass.SchemaState]);
+            resource.Policy!.SetupWrites.Should().BeEquivalentTo([
+                TestDataClass.SystemCatalogue,
+                TestDataClass.MutableApplicationState,
+                TestDataClass.SchemaState,
+            ]);
             resource.Policy.ResetBehavior.Should().Be(TestResetBehavior.None);
             resource.Policy.Target.Should().Be(TestDatabaseTarget.EmptyScratch);
             resource.Policy.StartupEffects.Should().BeEmpty();
