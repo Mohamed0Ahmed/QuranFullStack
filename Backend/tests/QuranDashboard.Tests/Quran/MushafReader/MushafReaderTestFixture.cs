@@ -63,7 +63,7 @@ public sealed class MushafReaderTestFixture : IAsyncLifetime
         apiFactory ??= SmokeApiHost.Build(
             database.BaseConnectionString,
             new FakeExternalUserProfileSource(),
-            new SmokeSqlCommandCapture(),
+            new TestSqlCommandCapture(),
             readOnlySharedState: true);
         return SmokeApiHost.CreateClient(apiFactory);
     }

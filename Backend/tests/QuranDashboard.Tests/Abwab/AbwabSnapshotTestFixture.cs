@@ -109,7 +109,7 @@ public sealed class AbwabSnapshotTestFixture : IAsyncLifetime
         apiFactory = SmokeApiHost.Build(
             TargetConnectionString,
             new FakeExternalUserProfileSource(),
-            new SmokeSqlCommandCapture());
+            new TestSqlCommandCapture());
     }
 
     public async Task DisposeAsync()

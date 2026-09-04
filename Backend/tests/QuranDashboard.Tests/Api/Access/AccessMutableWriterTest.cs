@@ -10,8 +10,8 @@ using QuranDashboard.Infrastructure.Access;
 using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.TestRuntime;
 using QuranDashboard.Tests.TestRuntime;
-using QuranDashboard.Tests.Smoke;
 using QuranDashboard.Tests.TestSupport.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Api.Access;
 
@@ -37,12 +37,13 @@ public sealed class AccessTestFixture : IAsyncLifetime
     private string controlConnectionString = string.Empty;
     private string applicationConnectionString = string.Empty;
     private IReadOnlyCollection<DatabaseBackgroundActivity> scenarioBackgroundActivities = [];
+    private IReadOnlyCollection<string> scenarioOwnerEmails = [];
     private ProtectedStateFingerprintReport? verifiedBoundaryFingerprint;
     private bool scenarioActive;
 
     public FakeExternalUserProfileSource ProfileSource { get; } = new();
 
-    internal SmokeSqlCommandCapture CommandCapture { get; } = new();
+    internal TestSqlCommandCapture CommandCapture { get; } = new();
 
     private string targetConnectionString = string.Empty;
 
@@ -153,7 +154,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
     }
 
     public async Task BeginScenarioAsync(
-        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null)
+        IReadOnlyCollection<DatabaseBackgroundActivity>? backgroundActivities = null,
+        IReadOnlyCollection<string>? additionalOwnerEmails = null)
     {
         if (scenarioActive)
         {
@@ -165,9 +167,10 @@ public sealed class AccessTestFixture : IAsyncLifetime
         try
         {
             scenarioBackgroundActivities = backgroundActivities?.ToArray() ?? [];
+            scenarioOwnerEmails = additionalOwnerEmails?.ToArray() ?? [];
             ProfileSource.Reset();
             queryProvider = BuildQueryProvider();
-            apiFactory = BuildApiFactory(scenarioBackgroundActivities);
+            apiFactory = BuildApiFactory(scenarioBackgroundActivities, scenarioOwnerEmails);
             _ = apiFactory.Services;
             scenarioActive = true;
         }
@@ -194,8 +197,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
     public async Task RestartScenarioAsync()
     {
         var backgroundActivities = scenarioBackgroundActivities;
+        var ownerEmails = scenarioOwnerEmails;
         await EndScenarioAsync();
-        await BeginScenarioAsync(backgroundActivities);
+        await BeginScenarioAsync(backgroundActivities, ownerEmails);
     }
 
     public async Task RestartScenarioApiAsync()
@@ -207,7 +211,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
         await StopScenarioApiAsync();
         queryProvider = BuildQueryProvider();
-        apiFactory = BuildApiFactory(scenarioBackgroundActivities);
+        apiFactory = BuildApiFactory(scenarioBackgroundActivities, scenarioOwnerEmails);
         _ = apiFactory.Services;
     }
 
@@ -365,7 +369,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
             "The Access MutableWriter query provider is stopped outside an active scenario.");
 
     private WebApplicationFactory<AccessController> BuildApiFactory(
-        IReadOnlyCollection<DatabaseBackgroundActivity> backgroundActivities)
+        IReadOnlyCollection<DatabaseBackgroundActivity> backgroundActivities,
+        IReadOnlyCollection<string> additionalOwnerEmails)
     {
         return new WebApplicationFactory<AccessController>()
             .WithWebHostBuilder(builder =>
@@ -392,11 +397,14 @@ public sealed class AccessTestFixture : IAsyncLifetime
                         ["Auth:InteractiveClientId"] = TestJwtTokens.TestClientId,
                         ["OwnerBootstrap:Emails:0"] = OwnerEmail,
                         ["OwnerBootstrap:Emails:1"] = SecondOwnerEmail,
-                        ["OwnerBootstrap:Emails:2"] = FakeExternalUserProfileSource.EmailFor(
-                            SmokePersonas.OwnerSub),
                         ["Cors:AllowedOrigins:0"] = "https://localhost",
                         ["Access:PermissionCatalogueStartupSync:Enabled"] = "false",
                     };
+                    var ownerEmailIndex = 2;
+                    foreach (var ownerEmail in additionalOwnerEmails)
+                    {
+                        settings[$"OwnerBootstrap:Emails:{ownerEmailIndex++}"] = ownerEmail;
+                    }
                     activityIndex = 0;
                     foreach (var activity in backgroundActivities)
                     {

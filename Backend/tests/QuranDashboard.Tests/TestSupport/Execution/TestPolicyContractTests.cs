@@ -247,11 +247,13 @@ public sealed class TestPolicyContractTests
             "QuranDashboard.Tests.Smoke.SmokeAccessAdministrationAuthorizationTests",
             "QuranDashboard.Tests.Smoke.SmokeAbwabWriteAuthorizationTests",
             "QuranDashboard.Tests.Smoke.SmokeAuthPipelineTests",
-            "QuranDashboard.Tests.Smoke.SmokeBootGuardTests",
+            "QuranDashboard.Tests.Smoke.SmokeMutableBootGuardTests",
         ];
         string[] readerClasses =
         [
+            "QuranDashboard.Tests.Smoke.SmokeAuthPipelineReadTests",
             "QuranDashboard.Tests.Smoke.SmokeCoverageParityTests",
+            "QuranDashboard.Tests.Smoke.SmokeReadOnlyBootGuardTests",
             "QuranDashboard.Tests.Smoke.SmokeRoutePipelineTests",
         ];
 

@@ -3,31 +3,18 @@ using QuranDashboard.Api.Access;
 using QuranDashboard.Api.RateLimiting;
 using QuranDashboard.Infrastructure.Testing.DatabaseActivity;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.Smoke.Data;
 
 namespace QuranDashboard.Tests.Smoke;
 
 // These guard the composition the rest of the smoke tier assumes. If one fails, every later smoke
 // result is meaningless — the host booted as something other than the API under Testing.
 [Collection(nameof(MutableDatabaseCollection))]
-public sealed class SmokeBootGuardTests(AccessTestFixture fixture)
+public sealed class SmokeMutableBootGuardTests(AccessTestFixture fixture)
     : SmokeMutableWriterTest(fixture)
 {
     [Fact]
-    public async Task DashboardInfo_ReportsTestingEnvironment()
-    {
-        using var client = CreateClient();
-
-        using var response = await client.GetAsync("/api/dashboard/info");
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        document.RootElement.GetProperty("data").GetProperty("environment").GetString()
-            .Should().Be("Testing");
-    }
-
-    [Fact]
-    public void DbContextConnection_TargetsTheContainer_NotTheLocalDatabase()
+    public void DbContextConnection_TargetsThePersistentCapability_NotTheDevelopmentDatabase()
     {
         using var scope = ApiServices.CreateScope();
         var effective = scope.ServiceProvider.GetRequiredService<QuranDashboardDbContext>()
@@ -49,16 +36,6 @@ public sealed class SmokeBootGuardTests(AccessTestFixture fixture)
     }
 
     [Fact]
-    public void RateLimiting_IsInheritedOff()
-    {
-        // Asserted rather than configured: base appsettings.json already ships Enabled=false, and the
-        // partitioner short-circuits on it. Overriding it here would hide the day someone flips the
-        // default and throttles the route sweep instead.
-        ApiServices.GetRequiredService<IOptions<RateLimitingOptions>>().Value.Enabled
-            .Should().BeFalse();
-    }
-
-    [Fact]
     public void MutableSmokeHost_DisablesPermissionCatalogueStartupSynchronization()
     {
         ApiServices.GetRequiredService<IOptions<PermissionCatalogueStartupOptions>>().Value.Enabled
@@ -67,15 +44,44 @@ public sealed class SmokeBootGuardTests(AccessTestFixture fixture)
             .AllowPermissionCatalogueSynchronization.Should().BeFalse();
     }
 
+}
+
+[Collection(nameof(SmokeDataCollection))]
+public sealed class SmokeReadOnlyBootGuardTests(SmokeDataFixture fixture)
+{
+    [Fact]
+    public async Task DashboardInfo_ReportsTestingEnvironment()
+    {
+        using var client = fixture.CreateClient();
+
+        using var response = await client.GetAsync("/api/dashboard/info");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+
+        using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        document.RootElement.GetProperty("data").GetProperty("environment").GetString()
+            .Should().Be("Testing");
+    }
+
+    [Fact]
+    public void RateLimiting_IsInheritedOff()
+    {
+        // Asserted rather than configured: base appsettings.json already ships Enabled=false, and the
+        // partitioner short-circuits on it. Overriding it here would hide the day someone flips the
+        // default and throttles the route sweep instead.
+        fixture.ApiServices.GetRequiredService<IOptions<RateLimitingOptions>>().Value.Enabled
+            .Should().BeFalse();
+    }
+
     [Fact]
     public async Task Health_Returns200_WithHealthyDatabaseAndPersistentCatalogue()
     {
-        using var client = CreateClient();
+        using var client = fixture.CreateClient();
 
         using var response = await client.GetAsync("/api/health");
 
-        // The controller answers 503 when unhealthy, so a 200 here is real evidence that the container
-        // connection and the migrations both work.
+        // The controller answers 503 when unhealthy, so a 200 proves the persistent capability connection,
+        // migrations, and System Catalogue checks all succeeded through the read-only host.
         response.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using var document = JsonDocument.Parse(await response.Content.ReadAsStringAsync());

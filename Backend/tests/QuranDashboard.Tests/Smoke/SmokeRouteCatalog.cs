@@ -30,23 +30,22 @@ internal sealed record SmokeRouteAccess(SmokeRouteAccessKind Kind, string? Permi
 // summary that is itself the payload. Each variant below states the one thing it reads, so an assertion
 // is never a generic hunt for a non-empty anything.
 //
-// Every pinned count names a manifest table, never a literal: the dump and the numbers asserted against
-// it then move together, and a count typed from memory cannot drift away from the artifact. Where the
-// answer is one word's own occurrence count, which no manifest table records, the variant asserts a
-// property real data produces rather than inventing a literal to pin.
+// Every pinned count names a table in the reviewed oracle, never an inline literal. Where the answer is
+// one word's own occurrence count, which the oracle does not record, the variant asserts a property real
+// Canonical Quran Data produces rather than inventing a literal to pin.
 internal abstract record SmokeSeededPayload
 {
     private SmokeSeededPayload() { }
 
-    // data.totalCount equals the table's manifest row count, and data.items carries at least one row.
-    internal sealed record PagedTable(string ManifestTable) : SmokeSeededPayload;
+    // data.totalCount equals the table's reviewed oracle row count, and data.items carries at least one row.
+    internal sealed record PagedTable(string OracleTable) : SmokeSeededPayload;
 
     // data.items carries at least one row, with the total left unpinned: on the id-scoped reads the total
-    // is one word's occurrence count, which no manifest table records and which only a literal could fix.
+    // is one word's occurrence count, which the oracle does not record and which only a literal could fix.
     internal sealed record NonEmptyPage : SmokeSeededPayload;
 
-    // data.<Property> is an array whose length equals the table's manifest row count.
-    internal sealed record CountedCollection(string Property, string ManifestTable) : SmokeSeededPayload;
+    // data.<Property> is an array whose length equals the table's reviewed oracle row count.
+    internal sealed record CountedCollection(string Property, string OracleTable) : SmokeSeededPayload;
 
     // data.<Property> is a non-empty array. Used where the row count of no single table is the answer.
     internal sealed record NonEmptyCollection(string Property) : SmokeSeededPayload;
@@ -389,8 +388,8 @@ internal static class SmokeRouteCatalog
             ParityOnly = true,
         },
 
-        // System routes. Health answers 503 when the container-backed check fails, so 200 is real
-        // evidence; session mutations use their dedicated authenticated-action classifications.
+        // System routes. Health answers 503 when the Test Database Capability check fails, so 200 is
+        // real evidence; session mutations use their dedicated authenticated-action classifications.
         new("api/health", "/api/health", HttpStatusCode.OK),
         new("api/dashboard/info", "/api/dashboard/info", HttpStatusCode.OK),
         new("api/access/me", "/api/access/me", HttpStatusCode.Unauthorized, SmokeRouteAccess.AuthenticatedOnly),

@@ -23,7 +23,7 @@ public sealed class DatabaseActivityProfileFixture : IAsyncLifetime
 
     public string Login => login;
 
-    internal SmokeSqlCommandCapture CommandCapture { get; } = new();
+    internal TestSqlCommandCapture CommandCapture { get; } = new();
 
     public async Task InitializeAsync()
     {

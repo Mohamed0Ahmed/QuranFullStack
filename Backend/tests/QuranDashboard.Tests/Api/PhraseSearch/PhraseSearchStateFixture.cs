@@ -11,7 +11,7 @@ public sealed class PhraseSearchStateFixture : IAsyncLifetime
     private const int ActiveBuildFormatVersion = 2;
     private const string SourceFingerprint = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     private readonly FakeExternalUserProfileSource profileSource = new();
-    private readonly SmokeSqlCommandCapture commandCapture = new();
+    private readonly TestSqlCommandCapture commandCapture = new();
     private PostgreSqlDatabaseLease? databaseLease;
     private WebApplicationFactory<HealthController>? apiFactory;
 

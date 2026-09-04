@@ -54,7 +54,7 @@ public sealed class PreviousReleaseMigrationUpgradeRehearsalTests
                     application = SmokeApiHost.Build(
                         server.ConnectionString,
                         new FakeExternalUserProfileSource(),
-                        new SmokeSqlCommandCapture());
+                        new TestSqlCommandCapture());
                     using var client = SmokeApiHost.CreateClient(application);
                     (await client.GetAsync("/api/health")).StatusCode.Should().Be(HttpStatusCode.OK);
                 },

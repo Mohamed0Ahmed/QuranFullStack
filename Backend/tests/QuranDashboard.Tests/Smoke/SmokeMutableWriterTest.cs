@@ -3,6 +3,7 @@ using QuranDashboard.Application.Abstractions.Access;
 using QuranDashboard.Application.Abstractions.Security.Permissions;
 using QuranDashboard.Domain.Access;
 using QuranDashboard.Tests.Api.Access;
+using QuranDashboard.Tests.TestSupport.PostgreSql;
 
 namespace QuranDashboard.Tests.Smoke;
 
@@ -12,11 +13,12 @@ public abstract class SmokeMutableWriterTest(AccessTestFixture fixture) : IAsync
 
     protected FakeExternalUserProfileSource ProfileSource => Fixture.ProfileSource;
 
-    private protected SmokeSqlCommandCapture CommandCapture => Fixture.CommandCapture;
+    private protected TestSqlCommandCapture CommandCapture => Fixture.CommandCapture;
 
     protected IServiceProvider ApiServices => Fixture.ApiServices;
 
-    public Task InitializeAsync() => Fixture.BeginScenarioAsync();
+    public Task InitializeAsync() => Fixture.BeginScenarioAsync(
+        additionalOwnerEmails: [FakeExternalUserProfileSource.EmailFor(SmokePersonas.OwnerSub)]);
 
     public Task DisposeAsync() => Fixture.EndScenarioAsync();
 
