@@ -34,7 +34,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
     private ServiceProvider? queryProvider;
     private string controlConnectionString = string.Empty;
     private string applicationConnectionString = string.Empty;
-    private string expectedFingerprint = string.Empty;
+    private ProtectedStateFingerprintReport? verifiedBoundaryFingerprint;
     private bool scenarioActive;
 
     public FakeExternalUserProfileSource ProfileSource { get; } = new();
@@ -104,9 +104,9 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
             await using var fingerprintConnection = new NpgsqlConnection(controlConnectionString);
             await fingerprintConnection.OpenAsync();
-            expectedFingerprint = (await ProtectedStateFingerprint.ComputeAsync(
+            verifiedBoundaryFingerprint = await ProtectedStateFingerprint.ComputeAsync(
                 fingerprintConnection,
-                contract)).Fingerprint;
+                contract);
 
             var applicationBuilder = new NpgsqlConnectionStringBuilder(targetConnectionString)
             {
@@ -133,6 +133,7 @@ public sealed class AccessTestFixture : IAsyncLifetime
         try
         {
             await EndScenarioAsync();
+            await VerifyFinalProtectedStateAsync();
         }
         finally
         {
@@ -251,9 +252,14 @@ public sealed class AccessTestFixture : IAsyncLifetime
     public async Task<string> ComputeProtectedStateFingerprintAsync()
     {
         var activeContract = contract ?? throw new InvalidOperationException("The database contract is unavailable.");
+        var boundaryFingerprint = verifiedBoundaryFingerprint
+            ?? throw new InvalidOperationException("The verified Protected State boundary is unavailable.");
         await using var connection = new NpgsqlConnection(controlConnectionString);
         await connection.OpenAsync();
-        return (await ProtectedStateFingerprint.ComputeAsync(connection, activeContract)).Fingerprint;
+        return (await ProtectedStateFingerprint.ComputeWithVerifiedCanonicalAsync(
+            connection,
+            activeContract,
+            boundaryFingerprint.Components.CanonicalQuranData)).Fingerprint;
     }
 
     public async Task<User?> GetUserBySubAsync(string logtoSub)
@@ -378,6 +384,8 @@ public sealed class AccessTestFixture : IAsyncLifetime
             ?? throw new InvalidOperationException("The database contract validation is unavailable.");
         var activeTarget = targetValidation
             ?? throw new InvalidOperationException("The Test Database target validation is unavailable.");
+        var boundaryFingerprint = verifiedBoundaryFingerprint
+            ?? throw new InvalidOperationException("The verified Protected State boundary is unavailable.");
         var inspection = await DatabaseInspector.InspectAsync(
             activeContract,
             activeValidation,
@@ -390,12 +398,30 @@ public sealed class AccessTestFixture : IAsyncLifetime
             inspection,
             RunId,
             LockCommand,
-            expectedFingerprint,
+            boundaryFingerprint,
             phase);
         if (!report.Succeeded)
         {
             throw new InvalidOperationException(
                 $"Access MutableWriter {phase} reset failed: {ViolationSummary(report.Violations)}");
+        }
+    }
+
+    private async Task VerifyFinalProtectedStateAsync()
+    {
+        var activeContract = contract ?? throw new InvalidOperationException("The database contract is unavailable.");
+        var boundaryFingerprint = verifiedBoundaryFingerprint
+            ?? throw new InvalidOperationException("The verified Protected State boundary is unavailable.");
+        await using var connection = new NpgsqlConnection(controlConnectionString);
+        await connection.OpenAsync();
+        var finalFingerprint = await ProtectedStateFingerprint.ComputeAsync(connection, activeContract);
+        if (!string.Equals(
+                finalFingerprint.Fingerprint,
+                boundaryFingerprint.Fingerprint,
+                StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Protected State changed between the MutableWriter invocation boundaries.");
         }
     }
 

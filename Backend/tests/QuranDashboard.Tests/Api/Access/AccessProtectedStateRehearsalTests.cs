@@ -325,7 +325,7 @@ public sealed class AuthorizationStateResolverRehearsalTests(LegacyAccessTestFix
 [Collection(nameof(AccessProtectedStateRehearsalCollection))]
 public sealed class DeviceSessionLifecycleRehearsalTests(LegacyAccessTestFixture fixture)
 {
-    private const string SessionsPath = "/api/access/device-sessions";
+    private const string SessionsPath = "/api/auth/sessions";
     private const string MePath = "/api/access/me";
     private const string IdentityEvidenceHeader = "X-Interactive-Identity-Evidence";
 

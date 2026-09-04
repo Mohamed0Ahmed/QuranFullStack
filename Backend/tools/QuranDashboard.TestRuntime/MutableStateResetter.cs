@@ -50,6 +50,7 @@ internal static class MutableStateResetter
             apiProcessId,
             phase,
             inProcessApiHostWasDisposed: false,
+            verifiedCanonicalQuranDataFingerprint: null,
             cancellationToken);
 
     internal static Task<TestRuntimeReport> ExecuteAfterInProcessApiStoppedAsync(
@@ -59,7 +60,7 @@ internal static class MutableStateResetter
         TestRuntimeReport inspection,
         string runId,
         string lockCommand,
-        string expectedFingerprint,
+        ProtectedStateFingerprintReport verifiedBoundaryFingerprint,
         string phase,
         CancellationToken cancellationToken = default) =>
         // In-process TestServer hosts have no dedicated PID or listening port. Their lifecycle owner
@@ -71,11 +72,12 @@ internal static class MutableStateResetter
             inspection,
             runId,
             lockCommand,
-            expectedFingerprint,
+            verifiedBoundaryFingerprint.Fingerprint,
             apiPort: null,
             apiProcessId: null,
             phase,
             inProcessApiHostWasDisposed: true,
+            verifiedBoundaryFingerprint.Components.CanonicalQuranData,
             cancellationToken);
 
     private static async Task<TestRuntimeReport> ExecuteCoreAsync(
@@ -90,6 +92,7 @@ internal static class MutableStateResetter
         int? apiProcessId,
         string phase,
         bool inProcessApiHostWasDisposed,
+        string? verifiedCanonicalQuranDataFingerprint,
         CancellationToken cancellationToken)
     {
         var resetTables = contract.DataClasses.MutableApplicationState
@@ -227,7 +230,11 @@ internal static class MutableStateResetter
                 violations: violations);
         }
 
-        var before = await ProtectedStateFingerprint.ComputeAsync(connection, contract, cancellationToken);
+        var before = await ComputeProtectedStateFingerprintAsync(
+            connection,
+            contract,
+            verifiedCanonicalQuranDataFingerprint,
+            cancellationToken);
         if (!string.Equals(before.Fingerprint, expectedFingerprint, StringComparison.OrdinalIgnoreCase))
         {
             return CreateReport(
@@ -394,7 +401,11 @@ internal static class MutableStateResetter
                                  && sequencesBefore.All(sequence =>
                                      sequencesAfter.TryGetValue(sequence.Key, out var value)
                                      && value == sequence.Value);
-        var after = await ProtectedStateFingerprint.ComputeAsync(connection, contract, cancellationToken);
+        var after = await ComputeProtectedStateFingerprintAsync(
+            connection,
+            contract,
+            verifiedCanonicalQuranDataFingerprint,
+            cancellationToken);
         var protectedStateMatches = string.Equals(
             before.Fingerprint,
             after.Fingerprint,
@@ -468,6 +479,21 @@ internal static class MutableStateResetter
             after.Fingerprint,
             capabilityWasDirty: capabilityWasDirty,
             violations: violationsAfter);
+    }
+
+    private static Task<ProtectedStateFingerprintReport> ComputeProtectedStateFingerprintAsync(
+        NpgsqlConnection connection,
+        DatabaseContract contract,
+        string? verifiedCanonicalQuranDataFingerprint,
+        CancellationToken cancellationToken)
+    {
+        return verifiedCanonicalQuranDataFingerprint is null
+            ? ProtectedStateFingerprint.ComputeAsync(connection, contract, cancellationToken)
+            : ProtectedStateFingerprint.ComputeWithVerifiedCanonicalAsync(
+                connection,
+                contract,
+                verifiedCanonicalQuranDataFingerprint,
+                cancellationToken);
     }
 
     private static TestRuntimeReport CreateReport(

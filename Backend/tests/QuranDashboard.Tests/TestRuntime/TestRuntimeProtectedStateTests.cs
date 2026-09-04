@@ -81,6 +81,50 @@ public sealed class TestRuntimeProtectedStateTests(TestRuntimeResetFixture fixtu
         await AssertProtectedSequenceCounterChangesInRolledBackTransactionAsync();
     }
 
+    [Fact]
+    public async Task Fingerprint_WithVerifiedCanonicalBoundary_RechecksCatalogueAndSchemaWithoutRescanningCanonicalData()
+    {
+        var contract = DatabaseContractReader.Read(TestRuntimeTestPaths.ContractPath);
+        await using var connection = new NpgsqlConnection(fixture.ConnectionString);
+        await connection.OpenAsync();
+        await using var transaction = await connection.BeginTransactionAsync();
+        try
+        {
+            var baseline = await ProtectedStateFingerprint.ComputeAsync(connection, transaction, contract);
+            var unchanged = await ProtectedStateFingerprint.ComputeWithVerifiedCanonicalAsync(
+                connection,
+                transaction,
+                contract,
+                baseline.Components.CanonicalQuranData);
+
+            unchanged.Should().BeEquivalentTo(baseline);
+
+            await ExecuteAsync(
+                connection,
+                transaction,
+                "UPDATE public.roles SET display_name = display_name || '-changed' WHERE id = 1");
+            await ExecuteAsync(
+                connection,
+                transaction,
+                "CREATE INDEX ticket_158_schema_probe ON public.linking_data_state (generation)");
+
+            var changed = await ProtectedStateFingerprint.ComputeWithVerifiedCanonicalAsync(
+                connection,
+                transaction,
+                contract,
+                baseline.Components.CanonicalQuranData);
+
+            changed.Fingerprint.Should().NotBe(baseline.Fingerprint);
+            changed.Components.CanonicalQuranData.Should().Be(baseline.Components.CanonicalQuranData);
+            changed.Components.SystemCatalogue.Should().NotBe(baseline.Components.SystemCatalogue);
+            changed.Components.SchemaState.Should().NotBe(baseline.Components.SchemaState);
+        }
+        finally
+        {
+            await transaction.RollbackAsync();
+        }
+    }
+
     private async Task AssertProtectedSequenceCounterChangesInRolledBackTransactionAsync()
     {
         await using var connection = new NpgsqlConnection(fixture.ConnectionString);
