@@ -3,12 +3,15 @@ import { readFileSync } from 'node:fs';
 
 import {
   EXECUTION_GROUPS,
+  EXECUTION_PHASES,
+  PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS,
   assessScratchLifecycleResult,
   createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
   planPrePrSelection,
+  summarizeExecutionTiming,
 } from './test-policy-runner.mjs';
 
 const header = [
@@ -198,6 +201,47 @@ assert.deepEqual(
   ordinaryPrePr.commands.find(({ id }) => id === 'playwright-stateful-critical').arguments,
   ['run', 'e2e:stateful:critical'],
 );
+assert.ok(ordinaryPrePr.commands.some(({ id }) => id === 'playwright-provision'));
+assert.deepEqual(
+  ordinaryPrePr.commands.find(({ id }) => id === 'playwright-provision').arguments,
+  ['run', 'e2e:provision'],
+);
+
+// Controlled Playwright provisioning hashes the built Backend and Frontend outputs, so every command
+// that rebuilds them must run before the receipt is written, and nothing may rebuild them afterwards.
+const prePrIds = ordinaryPrePr.commands.map(({ id }) => id);
+const provisionIndex = prePrIds.indexOf('playwright-provision');
+for (const rebuildingId of ['backend-build', 'frontend-pre-pr']) {
+  assert.ok(
+    prePrIds.indexOf(rebuildingId) < provisionIndex,
+    `${rebuildingId} must run before playwright-provision invalidates its receipt`,
+  );
+}
+for (const controlledId of ['playwright-canonical-critical', 'playwright-stateful-critical']) {
+  assert.ok(
+    prePrIds.indexOf(controlledId) > provisionIndex,
+    `${controlledId} must run after playwright-provision`,
+  );
+}
+
+// Every planned command declares the phase its elapsed time is attributed to, so the runner can report
+// provisioning separately from the active gate the 12-minute target measures.
+assert.deepEqual(EXECUTION_PHASES, ['provisioning', 'activeGate']);
+for (const planned of [...ordinaryPrePr.commands, ...focused.commands]) {
+  assert.ok(
+    EXECUTION_PHASES.includes(planned.phase),
+    `${planned.id} must declare an execution phase`,
+  );
+}
+assert.equal(
+  ordinaryPrePr.commands.find(({ id }) => id === 'playwright-provision').phase,
+  'provisioning',
+);
+assert.equal(
+  ordinaryPrePr.commands.find(({ id }) => id === 'backend-build').phase,
+  'activeGate',
+);
+
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('FullImport')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('LegacyFull')));
 assert.ok(!ordinaryPrePr.commands.some(({ id }) => id.includes('EmptyMigration')));
@@ -584,6 +628,134 @@ assert.deepEqual(
   ['scratch.receipt.mismatch'],
 );
 assert.ok(!JSON.stringify(failedScratchEvidence).includes(credentialSentinel));
+
+assert.equal(PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS, 12 * 60 * 1000);
+
+const timing = summarizeExecutionTiming({
+  mode: 'pre-pr',
+  totalWallMilliseconds: 900_000,
+  records: [
+    { id: 'backend-build', phase: 'activeGate', status: 0, durationMilliseconds: 60_000 },
+    {
+      id: 'backend-class-Tests.EmptyMigration',
+      phase: 'activeGate',
+      group: 'EmptyScratchDestructiveRehearsal',
+      status: 0,
+      durationMilliseconds: 100_000,
+      lockWaitMilliseconds: 40_000,
+    },
+    { id: 'playwright-provision', phase: 'provisioning', status: 0, durationMilliseconds: 300_000 },
+    { id: 'playwright-canonical-critical', phase: 'activeGate', status: 0, durationMilliseconds: 200_000 },
+  ],
+});
+
+assert.equal(timing.evidenceType, 'test-execution-timing');
+assert.equal(timing.mode, 'pre-pr');
+assert.equal(timing.lockWaitMilliseconds, 40_000);
+assert.equal(timing.provisioningMilliseconds, 300_000);
+// Active gate time excludes both provisioning and the lock wait inside an active-gate command.
+assert.equal(timing.activeGateMilliseconds, 320_000);
+assert.equal(timing.totalWallMilliseconds, 900_000);
+assert.equal(timing.unattributedMilliseconds, 240_000);
+assert.deepEqual(timing.activeGateTarget, {
+  applies: true,
+  targetMilliseconds: 720_000,
+  withinTarget: true,
+});
+assert.equal(timing.commands.length, 4);
+
+// Validating a manually provisioned capability is provisioning time even when the command that waits
+// for it belongs to the active gate: it must never be charged to the 12-minute target.
+const capabilityTiming = summarizeExecutionTiming({
+  mode: 'pre-pr',
+  totalWallMilliseconds: 100_000,
+  records: [
+    {
+      id: 'backend-class-Tests.FullIndex',
+      phase: 'activeGate',
+      group: 'FullDataDestructiveRehearsal',
+      status: 0,
+      durationMilliseconds: 100_000,
+      lockWaitMilliseconds: 5_000,
+      capabilityMilliseconds: 30_000,
+    },
+  ],
+});
+assert.equal(capabilityTiming.lockWaitMilliseconds, 5_000);
+assert.equal(capabilityTiming.provisioningMilliseconds, 30_000);
+assert.equal(capabilityTiming.activeGateMilliseconds, 65_000);
+assert.equal(capabilityTiming.unattributedMilliseconds, 0);
+
+assert.throws(
+  () => summarizeExecutionTiming({
+    mode: 'pre-pr',
+    totalWallMilliseconds: 10,
+    records: [{
+      id: 'backend-build',
+      phase: 'activeGate',
+      status: 0,
+      durationMilliseconds: 10,
+      lockWaitMilliseconds: 4,
+      capabilityMilliseconds: 7,
+    }],
+  }),
+  /more lock wait and capability time than elapsed/i,
+);
+
+const overTarget = summarizeExecutionTiming({
+  mode: 'pre-pr',
+  totalWallMilliseconds: 2_000_000,
+  records: [
+    { id: 'playwright-provision', phase: 'provisioning', status: 0, durationMilliseconds: 900_000 },
+    { id: 'backend-build', phase: 'activeGate', status: 0, durationMilliseconds: 720_001 },
+  ],
+});
+assert.equal(overTarget.activeGateTarget.withinTarget, false);
+// Provisioning alone never pushes the reported active gate over the target.
+assert.equal(overTarget.provisioningMilliseconds, 900_000);
+
+// The 12-minute target is a pre-PR statement; focused selections report the same times without it.
+const focusedTiming = summarizeExecutionTiming({
+  mode: 'focused',
+  totalWallMilliseconds: 5_000,
+  records: [{ id: 'backend-build', phase: 'activeGate', status: 0, durationMilliseconds: 4_000 }],
+});
+assert.deepEqual(focusedTiming.activeGateTarget, {
+  applies: false,
+  targetMilliseconds: null,
+  withinTarget: null,
+});
+
+assert.throws(
+  () => summarizeExecutionTiming({
+    mode: 'pre-pr',
+    totalWallMilliseconds: 10,
+    records: [{ id: 'backend-build', phase: 'warmup', status: 0, durationMilliseconds: 10 }],
+  }),
+  /unknown execution phase/i,
+);
+assert.throws(
+  () => summarizeExecutionTiming({
+    mode: 'pre-pr',
+    totalWallMilliseconds: 10,
+    records: [{
+      id: 'backend-build',
+      phase: 'activeGate',
+      status: 0,
+      durationMilliseconds: 10,
+      lockWaitMilliseconds: 11,
+    }],
+  }),
+  /more lock wait than elapsed/i,
+);
+assert.throws(
+  () => summarizeExecutionTiming({
+    mode: 'pre-pr',
+    totalWallMilliseconds: 10,
+    records: [{ id: 'backend-build', phase: 'activeGate', status: 0, durationMilliseconds: -1 }],
+  }),
+  /must not be negative/i,
+);
 
 console.log('Repository test policy runner contract passed.');
 

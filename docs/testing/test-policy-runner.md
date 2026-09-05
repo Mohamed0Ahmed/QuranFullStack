@@ -45,7 +45,11 @@ stopped before verified final cleanup. Per-child private evidence is aggregated 
 Playwright output.
 
 Pre-PR mode always plans the required Backend tier, contract, Frontend policy/build, Playwright
-typecheck, persistent canonical-read critical Chromium gate, and the stateful critical gate.
+typecheck, controlled Playwright provisioning, the persistent canonical-read critical Chromium gate, and
+the stateful critical gate. Provisioning is planned deliberately after `backend-build` and
+`frontend-pre-pr`: the controlled receipt hashes the built Backend and Frontend outputs, so any command
+that rebuilds them after the receipt is written would invalidate it and the controlled Playwright lanes
+would refuse to start.
 The direct `Backend/scripts/test-backend pre-pr` delegate execs this coordinator. Empty-scratch
 rehearsals stay out of ordinary pre-PR unless an affected feature or concern selects them.
 Add only the affected pipeline/contract scope:
@@ -95,3 +99,36 @@ and freshness markers, and retain the cluster-wide exclusive lock around the exa
 or stale capability state fails only that selected command with manual provisioning or refresh guidance.
 The runner never provisions or removes the target, and a failed target stays available for explicit
 inspection; database removal requires the separately confirmed TestRuntime cleanup command.
+
+## Reported timing
+
+Every planned command declares the phase its elapsed time belongs to. `playwright-provision` is
+`provisioning`; every other command is `activeGate`. After the last command -- and also after a command
+that fails -- the runner emits one `test-execution-timing` JSON record. It reports these four times
+separately:
+
+| Reported time | What it covers |
+| --- | --- |
+| `lockWaitMilliseconds` | Advisory-lock contention, as measured by the TestRuntime keepers the runner starts |
+| `provisioningMilliseconds` | Capability/manual provisioning and capability validation, excluding lock wait |
+| `activeGateMilliseconds` | Build, preflight, resets, application startup/shutdown, tests, and final cleanup, excluding lock wait and capability validation |
+| `totalWallMilliseconds` | Wall time for the whole invocation |
+
+Lock wait is taken from the `advisoryLock.waitMilliseconds` the keeper itself reports, not from how long
+the keeper process took to start: process startup, connection, and contract inspection are the command's
+own cost, not contention. A command may also spend part of its elapsed time validating a manually
+provisioned capability -- `rehearsal hold` recomputes the Protected State fingerprint before it takes the
+lock -- and that portion is reported as provisioning even though the command belongs to the active gate.
+
+The runner reports the lock wait it starts itself. A lock a child process acquires for its own lifetime
+-- a Backend writer lane, or a controlled Playwright lane -- is reported by that child's own evidence
+record, not aggregated here.
+
+`unattributedMilliseconds` reports whatever wall time the per-command records do not account for, so the
+figures above are never made to add up by construction. The record also carries `activeGateTarget` and
+the per-command breakdown in `commands`.
+
+`activeGateTarget` records the 12-minute target: it `applies` only in pre-PR mode, and `withinTarget`
+compares it against `activeGateMilliseconds` alone. Lock contention and manual provisioning are
+operational evidence and never count toward it, and the target is measured rather than allowed to weaken
+correctness or safety.

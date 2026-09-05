@@ -14,6 +14,7 @@ import {
   parseBackendResourceCatalog,
   planFocusedSelection,
   planPrePrSelection,
+  summarizeExecutionTiming,
 } from './test-policy-runner.mjs';
 
 const REPOSITORY_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -95,20 +96,62 @@ if (hasWithheldFullData) {
   console.error('Safe selected checks will continue; review the targets, then rerun with --authorize-full-data.');
 }
 
+const executionRecords = [];
+const runStartedAt = performance.now();
+let executionStatus = 0;
 for (const command of materializedPlan.commands) {
   const group = command.group ? ` group=${command.group}` : '';
-  console.log(`[scripts/test] ${command.id}${group}`);
-  const status = command.group === 'EmptyScratchDestructiveRehearsal'
+  console.log(`[scripts/test] ${command.id}${group} phase=${command.phase}`);
+  const commandStartedAt = performance.now();
+  const outcome = command.group === 'EmptyScratchDestructiveRehearsal'
     ? await executeEmptyScratch(command)
     : command.group === 'FullDataDestructiveRehearsal' && command.rehearsalSubtype
       ? await executeFullRehearsal(command)
-    : executeCommand(command, {
+    : commandOutcome(executeCommand(command, {
       ...process.env,
       QURAN_DASHBOARD_TEST_RUN_ID: createScratchRunId(),
-    });
-  if (status !== 0) {
-    process.exit(status);
+    }));
+  executionRecords.push({
+    id: command.id,
+    phase: command.phase,
+    group: command.group,
+    status: outcome.status,
+    durationMilliseconds: performance.now() - commandStartedAt,
+    lockWaitMilliseconds: outcome.lockWaitMilliseconds,
+    capabilityMilliseconds: outcome.capabilityMilliseconds,
+  });
+  if (outcome.status !== 0) {
+    executionStatus = outcome.status;
+    break;
   }
+}
+
+try {
+  console.log(JSON.stringify(summarizeExecutionTiming({
+    mode: options.mode,
+    records: executionRecords,
+    totalWallMilliseconds: performance.now() - runStartedAt,
+  })));
+} catch (error) {
+  // Timing is evidence about the run, not the run's verdict. A defect here must never turn a passing
+  // gate into a crash, nor a failing one into a pass.
+  console.error(`[scripts/test] execution timing evidence could not be summarized: ${error.message}`);
+  if (executionStatus === 0) {
+    executionStatus = 1;
+  }
+}
+
+if (executionStatus !== 0) {
+  process.exit(executionStatus);
+}
+
+if (hasWithheldFullData) {
+  console.error('Safe checks completed, but full-data rehearsals remain withheld.');
+  process.exit(2);
+}
+
+function commandOutcome(status, { lockWaitMilliseconds = 0, capabilityMilliseconds = 0 } = {}) {
+  return { status, lockWaitMilliseconds, capabilityMilliseconds };
 }
 
 function executeCommand(command, environment = process.env) {
@@ -127,14 +170,18 @@ function executeCommand(command, environment = process.env) {
 async function executeEmptyScratch(command) {
   if (!command.scratchSubtype) {
     console.error(`[scripts/test] ${command.id} has no approved empty-scratch subtype.`);
-    return 2;
+    return commandOutcome(2);
   }
 
   const totalStartedAt = performance.now();
   const runId = createScratchRunId();
   const keeperStartedAt = performance.now();
-  const keeper = await startScratchKeeper(runId);
+  const acquisition = await startScratchKeeper(runId);
   const keeperDurationMilliseconds = performance.now() - keeperStartedAt;
+  // The keeper interval also covers process startup, connection, and contract inspection. Only the
+  // advisory wait TestRuntime itself measured is lock contention; the rest belongs to the command.
+  const lockWaitMilliseconds = acquisition?.lockWaitMilliseconds ?? 0;
+  const keeper = acquisition?.keeper;
   if (!keeper) {
     console.log(JSON.stringify(createEmptyScratchExecutionEvidence({
       command,
@@ -144,7 +191,7 @@ async function executeEmptyScratch(command) {
       totalDurationMilliseconds: performance.now() - totalStartedAt,
       finalStatus: 3,
     })));
-    return 3;
+    return commandOutcome(3);
   }
 
   let created = false;
@@ -206,7 +253,7 @@ async function executeEmptyScratch(command) {
     totalDurationMilliseconds: performance.now() - totalStartedAt,
     finalStatus,
   })));
-  return finalStatus;
+  return commandOutcome(finalStatus, { lockWaitMilliseconds });
 }
 
 async function executeFullRehearsal(command) {
@@ -214,13 +261,21 @@ async function executeFullRehearsal(command) {
     console.error(
       `[scripts/test] ${command.id} is not an index/recovery full-data rehearsal supported by this explicit capability.`,
     );
-    return 2;
+    return commandOutcome(2);
   }
 
   const runId = createScratchRunId();
-  const keeper = await startFullRehearsalKeeper(runId, command.rehearsalSubtype);
+  const keeperStartedAt = performance.now();
+  const acquisition = await startFullRehearsalKeeper(runId, command.rehearsalSubtype);
+  const keeperDurationMilliseconds = performance.now() - keeperStartedAt;
+  // `rehearsal hold` recomputes the Protected State fingerprint and verifies the subtype, provenance,
+  // migration, and freshness markers of a manually provisioned database before it takes the lock. That
+  // validation is provisioning time; the advisory wait inside it is lock contention.
+  const lockWaitMilliseconds = acquisition?.lockWaitMilliseconds ?? 0;
+  const capabilityMilliseconds = Math.max(0, keeperDurationMilliseconds - lockWaitMilliseconds);
+  const keeper = acquisition?.keeper;
   if (!keeper) {
-    return 3;
+    return commandOutcome(3, { lockWaitMilliseconds, capabilityMilliseconds });
   }
 
   let commandStatus = 1;
@@ -238,7 +293,7 @@ async function executeFullRehearsal(command) {
     keeper.stdin.end();
     await waitForExit(keeper);
   }
-  return commandStatus;
+  return commandOutcome(commandStatus, { lockWaitMilliseconds, capabilityMilliseconds });
 }
 
 function runScratchLifecycle(action, runId, subtype = null) {
@@ -341,7 +396,7 @@ async function startScratchKeeper(runId) {
   }
 
   keeper.stdout.pipe(process.stdout);
-  return keeper;
+  return { keeper, lockWaitMilliseconds: report.advisoryLock?.waitMilliseconds ?? 0 };
 }
 
 async function startFullRehearsalKeeper(runId, subtype) {
@@ -383,11 +438,35 @@ async function startFullRehearsalKeeper(runId, subtype) {
       || report.advisoryLock?.status !== 'acquired') {
     keeper.stdin.end();
     await waitForExit(keeper);
+    reportUnavailableFullRehearsal(subtype, report);
     return null;
   }
 
   keeper.stdout.pipe(process.stdout);
-  return keeper;
+  return { keeper, lockWaitMilliseconds: report.advisoryLock?.waitMilliseconds ?? 0 };
+}
+
+// The full Rehearsal Database is a manually provisioned capability. When it is absent or stale the
+// selected lane must fail on its own with enough detail to provision it -- never by silently degrading
+// or by rebuilding a database the runner does not own.
+function reportUnavailableFullRehearsal(subtype, report) {
+  const capabilityState = report.fullRehearsal?.capabilityState ?? 'unavailable';
+  console.error(
+    `[scripts/test] the ${subtype} full Rehearsal Database is not usable (capabilityState=${capabilityState}).`,
+  );
+  if (report.advisoryLock?.status && report.advisoryLock.status !== 'acquired') {
+    console.error(`[scripts/test]   advisory lock: ${report.advisoryLock.status}`);
+  }
+  for (const violation of report.violations ?? []) {
+    console.error(`[scripts/test]   violation: ${violation.code ?? violation}`);
+  }
+  for (const guidance of report.fullRehearsal?.guidance ?? []) {
+    console.error(`[scripts/test]   ${guidance}`);
+  }
+  console.error(
+    '[scripts/test] Provision or refresh it manually, then rerun this lane with --authorize-full-data.',
+  );
+  console.error('[scripts/test] Only this lane failed; no other selection was affected.');
 }
 
 function readFirstLine(stream, child) {
@@ -423,11 +502,6 @@ function waitForExit(child) {
 
 function createScratchRunId() {
   return randomBytes(16).toString('hex');
-}
-
-if (hasWithheldFullData) {
-  console.error('Safe checks completed, but full-data rehearsals remain withheld.');
-  process.exit(2);
 }
 
 function resolvePlaywrightSelections(selectors) {

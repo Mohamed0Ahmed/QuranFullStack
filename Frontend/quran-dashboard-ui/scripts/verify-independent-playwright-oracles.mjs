@@ -17,7 +17,17 @@ assert.match(phraseSearch.review.method, /not generated from the runtime databas
 assertSourceIdentities(phraseSearch.sourceIdentities);
 assert.equal(phraseSearch.query.raw, 'بسم الله الرحمن الرحيم');
 assert.deepEqual(phraseSearch.repetitions.verseKeys, ['1:1', '27:30']);
-assert.deepEqual(phraseSearch.similarity.verseKeys, ['1:1', '27:30', '11:41']);
+// The reviewed similarity set is every verse the locked query matches within its declared difference
+// budget: 11:41 differs at positions 3-4, and 2:163, 41:2 and 59:22 differ at positions 1-2. Restating it
+// here keeps a correction to the oracle from passing unreviewed.
+assert.deepEqual(phraseSearch.similarity.verseKeys, [
+  '1:1',
+  '27:30',
+  '11:41',
+  '2:163',
+  '41:2',
+  '59:22',
+]);
 
 for (const [name, oracle] of Object.entries({ quran, phraseSearch })) {
   const serialized = JSON.stringify(oracle);

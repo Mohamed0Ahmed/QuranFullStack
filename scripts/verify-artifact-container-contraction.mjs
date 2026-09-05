@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -16,10 +17,22 @@ function read(relativePath) {
   return readFileSync(resolve(REPOSITORY_ROOT, relativePath), 'utf8');
 }
 
-function assertMissing(relativePath) {
-  assert.equal(
-    existsSync(resolve(REPOSITORY_ROOT, relativePath)),
-    false,
+// The contraction is a repository-content claim, so it is asserted against tracked files. Untracked
+// build residue (a stale `bin`/`obj` left by a checkout that predates the cutover) is a local artifact
+// of the developer's own machine, not a retired path this repository still ships.
+const trackedPaths = execFileSync('git', ['ls-files', '-z'], {
+  cwd: REPOSITORY_ROOT,
+  encoding: 'utf8',
+  maxBuffer: 64 * 1024 * 1024,
+}).split('\0').filter(Boolean);
+
+function assertNotTracked(relativePath) {
+  const retained = trackedPaths.filter((tracked) =>
+    tracked === relativePath || tracked.startsWith(`${relativePath}/`),
+  );
+  assert.deepEqual(
+    retained,
+    [],
     `${relativePath} must be removed with the artifact/container lifecycle`,
   );
 }
@@ -40,7 +53,7 @@ const retiredPaths = [
   'Frontend/quran-dashboard-ui/e2e/harness/database-contract.mjs',
 ];
 for (const relativePath of retiredPaths) {
-  assertMissing(relativePath);
+  assertNotTracked(relativePath);
 }
 
 assert.equal(

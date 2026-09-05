@@ -75,6 +75,105 @@ export const EXECUTION_GROUPS = Object.freeze([
 ]);
 const ALL_GROUPS = [...EXECUTION_GROUPS];
 
+// Every planned command is attributed to exactly one phase. `provisioning` covers the manually
+// provisioned capabilities the architecture keeps outside the suite execution cost; `activeGate` covers
+// build, preflight, resets, application startup/shutdown, tests, and final cleanup.
+export const EXECUTION_PHASES = Object.freeze(['provisioning', 'activeGate']);
+
+// The 12-minute target applies only to active pre-PR gate time -- never to lock contention or to
+// capability/manual provisioning.
+export const PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS = 12 * 60 * 1000;
+
+export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds }) {
+  if (!['focused', 'pre-pr'].includes(mode)) {
+    throw new Error('Execution timing requires a focused or pre-pr mode.');
+  }
+  if (!Array.isArray(records)) {
+    throw new Error('Execution timing requires an array of executed command records.');
+  }
+
+  const commands = records.map((record) => {
+    if (!EXECUTION_PHASES.includes(record.phase)) {
+      throw new Error(`Unknown execution phase for ${record.id}: ${record.phase}`);
+    }
+    const durationMilliseconds = requireNonNegativeDuration(
+      record.durationMilliseconds,
+      `${record.id} elapsed time`,
+    );
+    const lockWaitMilliseconds = requireNonNegativeDuration(
+      record.lockWaitMilliseconds ?? 0,
+      `${record.id} lock wait`,
+    );
+    // A command may spend part of its elapsed time validating a manually provisioned capability even
+    // when the command itself belongs to the active gate. That portion is reported as provisioning.
+    const capabilityMilliseconds = requireNonNegativeDuration(
+      record.capabilityMilliseconds ?? 0,
+      `${record.id} capability validation`,
+    );
+    if (lockWaitMilliseconds > durationMilliseconds) {
+      throw new Error(`${record.id} reported more lock wait than elapsed time.`);
+    }
+    if (lockWaitMilliseconds + capabilityMilliseconds > durationMilliseconds) {
+      throw new Error(`${record.id} reported more lock wait and capability time than elapsed time.`);
+    }
+    return {
+      id: record.id,
+      phase: record.phase,
+      group: record.group ?? null,
+      status: record.status ?? null,
+      durationMilliseconds,
+      lockWaitMilliseconds,
+      capabilityMilliseconds,
+    };
+  });
+
+  const remainingMilliseconds = (entry) =>
+    entry.durationMilliseconds - entry.lockWaitMilliseconds - entry.capabilityMilliseconds;
+  const sumOf = (entries, project) => entries.reduce((total, entry) => total + project(entry), 0);
+
+  const lockWaitMilliseconds = sumOf(commands, (entry) => entry.lockWaitMilliseconds);
+  const provisioningMilliseconds = sumOf(commands, (entry) => entry.capabilityMilliseconds)
+    + sumOf(commands.filter((entry) => entry.phase === 'provisioning'), remainingMilliseconds);
+  const activeGateMilliseconds = sumOf(
+    commands.filter((entry) => entry.phase === 'activeGate'),
+    remainingMilliseconds,
+  );
+  const totalWall = requireNonNegativeDuration(totalWallMilliseconds, 'total wall time');
+  const applies = mode === 'pre-pr';
+
+  return {
+    evidenceVersion: 1,
+    evidenceType: 'test-execution-timing',
+    mode,
+    lockWaitMilliseconds,
+    provisioningMilliseconds,
+    activeGateMilliseconds,
+    totalWallMilliseconds: totalWall,
+    unattributedMilliseconds: Math.max(
+      0,
+      totalWall - lockWaitMilliseconds - provisioningMilliseconds - activeGateMilliseconds,
+    ),
+    activeGateTarget: {
+      applies,
+      targetMilliseconds: applies ? PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS : null,
+      withinTarget: applies
+        ? activeGateMilliseconds <= PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS
+        : null,
+    },
+    commands,
+  };
+}
+
+function requireNonNegativeDuration(value, subject) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    throw new Error(`${subject} must be a finite number of milliseconds.`);
+  }
+  if (value < 0) {
+    throw new Error(`${subject} must not be negative.`);
+  }
+  return Math.round(value);
+}
+
 export function assessScratchLifecycleResult({
   action,
   runId,
@@ -549,6 +648,17 @@ export function planPrePrSelection({
     ...executablePartitions.flatMap(({ selections }) => selections.map(selectionCommand)),
     command('frontend-pre-pr', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'test:pre-pr']),
     command('playwright-typecheck', 'Frontend/quran-dashboard-ui', 'npm', ['run', 'e2e:typecheck']),
+    // Controlled provisioning hashes the built Backend and Frontend outputs, so it must run after
+    // `backend-build` and `frontend-pre-pr` have finished rebuilding them and before any controlled
+    // Playwright lane validates the receipt.
+    command(
+      'playwright-provision',
+      'Frontend/quran-dashboard-ui',
+      'npm',
+      ['run', 'e2e:provision'],
+      null,
+      { phase: 'provisioning' },
+    ),
     command(
       'playwright-canonical-critical',
       'Frontend/quran-dashboard-ui',
@@ -762,7 +872,7 @@ function backendBuildCommand() {
 }
 
 function command(id, cwd, executable, arguments_, group = null, metadata = {}) {
-  return { id, cwd, executable, arguments: arguments_, group, ...metadata };
+  return { id, cwd, executable, arguments: arguments_, group, phase: 'activeGate', ...metadata };
 }
 
 function requireBackendClass(catalog, className) {
