@@ -1,9 +1,9 @@
 {
   "contractVersion": 1,
   "review": {
-    "reviewedOn": "2026-08-31",
+    "reviewedOn": "2026-09-05",
     "authority": "source-review",
-    "method": "Exact query, occurrence, context, and similarity expectations reviewed against the pinned Quran Foundation word source and completed PhraseSearch index report; this oracle is not generated from the runtime database."
+    "method": "Exact query, occurrence, context, and similarity expectations reviewed against the pinned Quran Foundation word source and completed PhraseSearch index report; this oracle is not generated from the runtime database. Corrected 2026-09-05 (similarity): verseKeys listed only 1:1, 27:30 and 11:41. At maximumDifferences 2 the anchor has four similarity edges, not one. The previous list captured only the edge differing at positions {3,4} (11:41) and omitted three edges differing at positions {1,2}: 2:163, 41:2 and 59:22, each sharing exactly two of the four words. Anchor occurrences 1:1 and 27:30 plus those four give the six ayahs the results summary reports. matchedCount and differencePositions still describe the 11:41 edge and are unchanged. Corrected 2026-09-05: repetitions.displayText carried a spurious alef (الرحمان) that appears in none of the 106141 indexed phrase variants. The repetitions list renders the simple text mode, which is the page default, and the repetitions endpoint returns بسم الله الرحمن الرحيم for this query with occurrenceCount 2 across ayahs 1:1 and 27:30. Occurrence expectations were already correct and are unchanged."
   },
   "sourceIdentities": [
     {
@@ -28,7 +28,7 @@
     "selectedQuranWordIds": [1, 2, 3, 4]
   },
   "repetitions": {
-    "displayText": "بسم الله الرحمان الرحيم",
+    "displayText": "بسم الله الرحمن الرحيم",
     "verseKeys": ["1:1", "27:30"]
   },
   "context": {
@@ -38,7 +38,7 @@
   "similarity": {
     "maximumDifferences": 2,
     "minimumMatchedWords": 2,
-    "verseKeys": ["1:1", "27:30", "11:41"],
+    "verseKeys": ["1:1", "27:30", "11:41", "2:163", "41:2", "59:22"],
     "nonIdenticalVerseKey": "11:41",
     "matchedCount": 2,
     "differencePositions": [3, 4],
