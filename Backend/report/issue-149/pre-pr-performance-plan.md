@@ -534,7 +534,14 @@ Recorded, not resolved. None blocks P0–P7.
    toward the makespan.
 5. **N's saving is unmeasured.** Its mechanism is sound and its digest is identical by construction, but
    the magnitude is unknown until P7.
-6. **`SmokeDataReadTests`' 51.1 s is unexplained** (§7, P0). It is not a fingerprint.
+6. **`SmokeDataReadTests` is not a fingerprint.** A focused `scripts/test` run of that class on
+   2026-09-05 (`issue-173-from-149`, `quran_dashboard_test`) measured **14.221 s** command wall, **0**
+   full fingerprints, **0** verified-canonical fingerprints, and **1 shared lease** (5 ms wait).
+   Sub-phases: fixtureInit **2.370 s**, testBody **6.032 s**, boundaryCheck **0**, perTestReset **0**.
+   The remaining ~5.8 s sits outside those four buckets (process startup, discovery, and the
+   GuardedReader `inspect` preflight). The earlier **51.1 s** figure was a different run's wall time,
+   not Protected State verification (`TestRuntime inspect` was already known to be ~3.66 s; a full
+   fingerprint in the same session cost ~39.7 s).
 7. **No CI exists.** There is no Actions/GitLab/Jenkins/CircleCI configuration in the repository;
    `pr-observation-matrix.json` is a provider-neutral specification and
    `scripts/run-pr-observation-job.mjs:34-44` executes exactly one job per invocation. The aggregate
