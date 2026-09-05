@@ -86,6 +86,8 @@ const controlled = createControlledEnvironment(
     ConnectionStrings__QuranDashboardDb: 'Password=development-secret',
     ConnectionStrings__QuranDashboardTest: connectionString,
     DISPLAY: ':1',
+    QURAN_DASHBOARD_RUN_EVIDENCE_PATH: '/workspace/evidence/events.ndjson',
+    QURAN_DASHBOARD_TEST_COMMAND_ID: 'playwright-stateful',
     WAYLAND_DISPLAY: 'wayland-0',
     XAUTHORITY: '/run/user/1000/xauthority',
     XDG_RUNTIME_DIR: '/run/user/1000',
@@ -133,6 +135,11 @@ assert.equal(controlled.DISPLAY, ':1');
 assert.equal(controlled.WAYLAND_DISPLAY, 'wayland-0');
 assert.equal(controlled.XAUTHORITY, '/run/user/1000/xauthority');
 assert.equal(controlled.XDG_RUNTIME_DIR, '/run/user/1000');
+assert.equal(
+  controlled.QURAN_DASHBOARD_RUN_EVIDENCE_PATH,
+  '/workspace/evidence/events.ndjson',
+);
+assert.equal(controlled.QURAN_DASHBOARD_TEST_COMMAND_ID, 'playwright-stateful');
 
 assert.deepEqual(
   buildControlledBackendArguments('/workspace/QuranDashboard.Api.dll', '/workspace/api.csproj', true),
