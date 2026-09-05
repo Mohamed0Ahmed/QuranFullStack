@@ -97,7 +97,13 @@ public sealed class TestRuntimeProtectedStateTests(TestRuntimeResetFixture fixtu
                 contract,
                 baseline.Components.CanonicalQuranData);
 
-            unchanged.Should().BeEquivalentTo(baseline);
+            unchanged.Should().BeEquivalentTo(
+                baseline,
+                options => options
+                    .Excluding(report => report.ComputationKind)
+                    .Excluding(report => report.DurationMilliseconds));
+            unchanged.ComputationKind.Should().Be("verifiedCanonical");
+            baseline.ComputationKind.Should().Be("full");
 
             await ExecuteAsync(
                 connection,
@@ -183,6 +189,8 @@ public sealed class TestRuntimeProtectedStateTests(TestRuntimeResetFixture fixtu
         error.ToString().Should().BeEmpty();
         using var document = JsonDocument.Parse(output.ToString());
         var fingerprint = document.RootElement.GetProperty("protectedStateFingerprint");
+        fingerprint.GetProperty("computationKind").GetString().Should().Be("full");
+        fingerprint.GetProperty("durationMilliseconds").GetInt64().Should().BeGreaterThanOrEqualTo(0);
         return new FingerprintResult(
             fingerprint.GetProperty("fingerprint").GetString()!,
             fingerprint.GetProperty("components").GetProperty("canonicalQuranData").GetString()!,

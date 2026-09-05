@@ -2,18 +2,24 @@
 
 import { spawn, spawnSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { appendFileSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 
 import {
+  RUN_EVIDENCE_COMMAND_ID_ENVIRONMENT_VARIABLE,
+  RUN_EVIDENCE_PATH_ENVIRONMENT_VARIABLE,
   assessScratchLifecycleResult,
+  captureMachineLoad,
   createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
   planPrePrSelection,
+  readRunEvidenceEvents,
+  retainExecutionStatusAfterTimingFailure,
   summarizeExecutionTiming,
 } from './test-policy-runner.mjs';
 
@@ -96,6 +102,15 @@ if (hasWithheldFullData) {
   console.error('Safe selected checks will continue; review the targets, then rerun with --authorize-full-data.');
 }
 
+const evidenceDirectory = mkdtempSync(join(tmpdir(), 'qd-run-evidence-'));
+const evidencePath = join(evidenceDirectory, 'events.ndjson');
+writeFileSync(evidencePath, '');
+const machineLoad = captureMachineLoad();
+const evidenceEnvironment = {
+  ...process.env,
+  [RUN_EVIDENCE_PATH_ENVIRONMENT_VARIABLE]: evidencePath,
+};
+
 const executionRecords = [];
 const runStartedAt = performance.now();
 let executionStatus = 0;
@@ -103,14 +118,19 @@ for (const command of materializedPlan.commands) {
   const group = command.group ? ` group=${command.group}` : '';
   console.log(`[scripts/test] ${command.id}${group} phase=${command.phase}`);
   const commandStartedAt = performance.now();
+  const commandEnvironment = {
+    ...evidenceEnvironment,
+    [RUN_EVIDENCE_COMMAND_ID_ENVIRONMENT_VARIABLE]: command.id,
+  };
   const outcome = command.group === 'EmptyScratchDestructiveRehearsal'
-    ? await executeEmptyScratch(command)
+    ? await executeEmptyScratch(command, commandEnvironment)
     : command.group === 'FullDataDestructiveRehearsal' && command.rehearsalSubtype
-      ? await executeFullRehearsal(command)
+      ? await executeFullRehearsal(command, commandEnvironment)
     : commandOutcome(executeCommand(command, {
-      ...process.env,
+      ...commandEnvironment,
       QURAN_DASHBOARD_TEST_RUN_ID: createScratchRunId(),
     }));
+  collectTrxTestCases(command, evidencePath);
   executionRecords.push({
     id: command.id,
     phase: command.phase,
@@ -131,14 +151,14 @@ try {
     mode: options.mode,
     records: executionRecords,
     totalWallMilliseconds: performance.now() - runStartedAt,
+    events: readRunEvidenceEvents(evidencePath),
+    machineLoad,
   })));
 } catch (error) {
   // Timing is evidence about the run, not the run's verdict. A defect here must never turn a passing
   // gate into a crash, nor a failing one into a pass.
   console.error(`[scripts/test] execution timing evidence could not be summarized: ${error.message}`);
-  if (executionStatus === 0) {
-    executionStatus = 1;
-  }
+  executionStatus = retainExecutionStatusAfterTimingFailure(executionStatus);
 }
 
 if (executionStatus !== 0) {
@@ -155,7 +175,13 @@ function commandOutcome(status, { lockWaitMilliseconds = 0, capabilityMillisecon
 }
 
 function executeCommand(command, environment = process.env) {
-  const result = spawnSync(command.executable, command.arguments, {
+  const arguments_ = [...command.arguments];
+  if (isBackendTestDelegate(command)) {
+    const resultsDir = backendResultsDirectory(command);
+    mkdirSync(resultsDir, { recursive: true });
+    arguments_.push('--results-dir', resultsDir);
+  }
+  const result = spawnSync(command.executable, arguments_, {
     cwd: command.cwd,
     env: environment,
     stdio: 'inherit',
@@ -167,7 +193,7 @@ function executeCommand(command, environment = process.env) {
   return result.status ?? 1;
 }
 
-async function executeEmptyScratch(command) {
+async function executeEmptyScratch(command, environment = process.env) {
   if (!command.scratchSubtype) {
     console.error(`[scripts/test] ${command.id} has no approved empty-scratch subtype.`);
     return commandOutcome(2);
@@ -176,7 +202,7 @@ async function executeEmptyScratch(command) {
   const totalStartedAt = performance.now();
   const runId = createScratchRunId();
   const keeperStartedAt = performance.now();
-  const acquisition = await startScratchKeeper(runId);
+  const acquisition = await startScratchKeeper(runId, environment);
   const keeperDurationMilliseconds = performance.now() - keeperStartedAt;
   // The keeper interval also covers process startup, connection, and contract inspection. Only the
   // advisory wait TestRuntime itself measured is lock contention; the rest belongs to the command.
@@ -203,31 +229,31 @@ async function executeEmptyScratch(command) {
   let cleanup = null;
   let keeperExitStatus = null;
   try {
-    reap = runScratchLifecycle('reap', runId);
+    reap = runScratchLifecycle('reap', runId, null, environment);
     if (reap.status !== 0) {
       executionStatus = reap.status;
     } else {
-      creation = runScratchLifecycle('create', runId, command.scratchSubtype);
+      creation = runScratchLifecycle('create', runId, command.scratchSubtype, environment);
       if (creation.status !== 0) {
         executionStatus = creation.status;
       } else {
         created = true;
 
-        const environment = {
-          ...process.env,
+        const testEnvironment = {
+          ...environment,
           QURAN_DASHBOARD_TEST_RUN_ID: runId,
           QURAN_DASHBOARD_TEST_LOCK_COMMAND: SCRATCH_LOCK_COMMAND,
           QURAN_DASHBOARD_TEST_SCRATCH_SUBTYPE: command.scratchSubtype,
         };
         const testStartedAt = performance.now();
-        testStatus = executeCommand(command, environment);
+        testStatus = executeCommand(command, testEnvironment);
         testDurationMilliseconds = performance.now() - testStartedAt;
         executionStatus = testStatus;
       }
     }
   } finally {
     if (created) {
-      cleanup = runScratchLifecycle('cleanup', runId, command.scratchSubtype);
+      cleanup = runScratchLifecycle('cleanup', runId, command.scratchSubtype, environment);
     }
     keeper.stdin.end();
     keeperExitStatus = await waitForExit(keeper);
@@ -256,7 +282,7 @@ async function executeEmptyScratch(command) {
   return commandOutcome(finalStatus, { lockWaitMilliseconds });
 }
 
-async function executeFullRehearsal(command) {
+async function executeFullRehearsal(command, environment = process.env) {
   if (!['phrase-search-index-build', 'recovery'].includes(command.rehearsalSubtype)) {
     console.error(
       `[scripts/test] ${command.id} is not an index/recovery full-data rehearsal supported by this explicit capability.`,
@@ -266,7 +292,7 @@ async function executeFullRehearsal(command) {
 
   const runId = createScratchRunId();
   const keeperStartedAt = performance.now();
-  const acquisition = await startFullRehearsalKeeper(runId, command.rehearsalSubtype);
+  const acquisition = await startFullRehearsalKeeper(runId, command.rehearsalSubtype, environment);
   const keeperDurationMilliseconds = performance.now() - keeperStartedAt;
   // `rehearsal hold` recomputes the Protected State fingerprint and verifies the subtype, provenance,
   // migration, and freshness markers of a manually provisioned database before it takes the lock. That
@@ -280,13 +306,13 @@ async function executeFullRehearsal(command) {
 
   let commandStatus = 1;
   try {
-    const environment = {
-      ...process.env,
+    const testEnvironment = {
+      ...environment,
       QURAN_DASHBOARD_TEST_RUN_ID: runId,
       QURAN_DASHBOARD_TEST_LOCK_COMMAND: FULL_REHEARSAL_LOCK_COMMAND,
       QURAN_DASHBOARD_TEST_FULL_REHEARSAL_SUBTYPE: command.rehearsalSubtype,
     };
-    commandStatus = executeCommand(command, environment);
+    commandStatus = executeCommand(command, testEnvironment);
   } finally {
     // Full Rehearsal Databases are manually provisioned capabilities. Success and failure both
     // preserve the database; only `TestRuntime rehearsal cleanup apply` may remove it.
@@ -296,7 +322,7 @@ async function executeFullRehearsal(command) {
   return commandOutcome(commandStatus, { lockWaitMilliseconds, capabilityMilliseconds });
 }
 
-function runScratchLifecycle(action, runId, subtype = null) {
+function runScratchLifecycle(action, runId, subtype = null, environment = process.env) {
   const startedAt = performance.now();
   const arguments_ = [
     TEST_RUNTIME_ASSEMBLY,
@@ -312,7 +338,7 @@ function runScratchLifecycle(action, runId, subtype = null) {
   }
   const result = spawnSync('dotnet', arguments_, {
     cwd: REPOSITORY_ROOT,
-    env: process.env,
+    env: environment,
     encoding: 'utf8',
   });
   if (result.stdout) {
@@ -355,7 +381,7 @@ function runScratchLifecycle(action, runId, subtype = null) {
   });
 }
 
-async function startScratchKeeper(runId) {
+async function startScratchKeeper(runId, environment = process.env) {
   const keeper = spawn('dotnet', [
     TEST_RUNTIME_ASSEMBLY,
     'lock',
@@ -369,7 +395,7 @@ async function startScratchKeeper(runId) {
     '--release-on-stdin-close',
   ], {
     cwd: REPOSITORY_ROOT,
-    env: process.env,
+    env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   keeper.stderr.pipe(process.stderr);
@@ -399,7 +425,7 @@ async function startScratchKeeper(runId) {
   return { keeper, lockWaitMilliseconds: report.advisoryLock?.waitMilliseconds ?? 0 };
 }
 
-async function startFullRehearsalKeeper(runId, subtype) {
+async function startFullRehearsalKeeper(runId, subtype, environment = process.env) {
   const keeper = spawn('dotnet', [
     TEST_RUNTIME_ASSEMBLY,
     'rehearsal',
@@ -413,7 +439,7 @@ async function startFullRehearsalKeeper(runId, subtype) {
     '--release-on-stdin-close',
   ], {
     cwd: REPOSITORY_ROOT,
-    env: process.env,
+    env: environment,
     stdio: ['pipe', 'pipe', 'pipe'],
   });
   keeper.stderr.pipe(process.stderr);
@@ -502,6 +528,59 @@ function waitForExit(child) {
 
 function createScratchRunId() {
   return randomBytes(16).toString('hex');
+}
+
+function isBackendTestDelegate(command) {
+  return command.executable === 'Backend/scripts/test-backend'
+    || command.executable.endsWith('/test-backend');
+}
+
+function backendResultsDirectory(command) {
+  return join(evidenceDirectory, command.id.replace(/[^A-Za-z0-9._-]+/g, '_'));
+}
+
+function collectTrxTestCases(command, path) {
+  if (!isBackendTestDelegate(command)) {
+    return;
+  }
+
+  let files;
+  try {
+    files = readdirSync(backendResultsDirectory(command)).filter((name) => name.endsWith('.trx'));
+  } catch {
+    return;
+  }
+
+  for (const file of files) {
+    const trx = readFileSync(join(backendResultsDirectory(command), file), 'utf8');
+    for (const match of trx.matchAll(/<UnitTestResult\b([^>]*)\/?>/g)) {
+      const outcome = /outcome="([^"]*)"/.exec(match[1])?.[1];
+      if (outcome !== 'Passed' && outcome !== 'Failed') {
+        continue;
+      }
+      const testName = decodeTrxAttribute(/testName="([^"]*)"/.exec(match[1])?.[1]);
+      if (!testName) {
+        continue;
+      }
+      try {
+        appendFileSync(path, `${JSON.stringify({ event: 'testCase', id: testName, commandId: command.id })}\n`);
+      } catch {
+        // Telemetry must never change the command verdict.
+      }
+    }
+  }
+}
+
+function decodeTrxAttribute(value) {
+  if (!value) {
+    return value;
+  }
+  return value
+    .replaceAll('&quot;', '"')
+    .replaceAll('&apos;', "'")
+    .replaceAll('&lt;', '<')
+    .replaceAll('&gt;', '>')
+    .replaceAll('&amp;', '&');
 }
 
 function resolvePlaywrightSelections(selectors) {

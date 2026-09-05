@@ -279,6 +279,7 @@ async function runScenario(scenario, index) {
       'applicationShutdown',
       'lockRelease',
     ]);
+    recordStatefulJourneyPhases(scenario.selector, result.phases);
     result.inspection = inspectRetainedEvidence(evidenceDirectory, secretValues);
     if (result.inspection.status !== 'passed') result.status = 'failed';
     if (result.status === 'passed') rmSync(applicationLog, { force: true });
@@ -482,6 +483,25 @@ async function assertApiStopped(processId, port) {
 
 function writeAggregate() {
   writeJson(resolve(aggregateRoot, 'stateful-results.json'), aggregate);
+}
+
+function recordStatefulJourneyPhases(journey, phases) {
+  const path = process.env.QURAN_DASHBOARD_RUN_EVIDENCE_PATH;
+  if (!path) return;
+  for (const phase of phases) {
+    if (phase.name !== 'applicationStartup' && phase.name !== 'testExecution') continue;
+    try {
+      appendFileSync(`${path}`, `${JSON.stringify({
+        event: 'journeyPhase',
+        commandId: process.env.QURAN_DASHBOARD_TEST_COMMAND_ID,
+        journey,
+        name: phase.name,
+        durationMilliseconds: phase.durationMs ?? 0,
+      })}\n`);
+    } catch {
+      // Telemetry must never change the journey verdict.
+    }
+  }
 }
 
 function resolveAggregateRoot(runId) {

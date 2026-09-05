@@ -131,6 +131,7 @@ internal static partial class AdvisoryLockProtocol
                         acquisitionTimeout,
                         stopwatch.Elapsed,
                         []);
+                    RecordLease(report);
                     return new AdvisoryLockAcquisition(new AdvisoryLockLease(connection, ownership), report);
                 }
 
@@ -272,6 +273,9 @@ internal static partial class AdvisoryLockProtocol
         wait.Ticks == 0 ? 0 : Math.Max(1, (long)wait.TotalMilliseconds),
         ownership.KeeperProcessId,
         holders);
+
+    private static void RecordLease(AdvisoryLockReport report) =>
+        RunEvidenceTelemetry.RecordLease(report.Mode, report.WaitMilliseconds, report.Command);
 
     private static bool IsValidMetadataToken(string? value, int maximumLength) =>
         !string.IsNullOrWhiteSpace(value)

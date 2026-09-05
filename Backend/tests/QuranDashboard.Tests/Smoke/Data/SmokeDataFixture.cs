@@ -16,12 +16,17 @@ public sealed class SmokeDataFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await database.InitializeAsync();
-        apiFactory = SmokeApiHost.Build(
-            database.BaseConnectionString,
-            profileSource,
-            commandCapture,
-            readOnlySharedState: true);
+        await QuranDashboard.TestRuntime.RunEvidenceTelemetry.MeasureSubPhaseAsync(
+            "fixtureInit",
+            async () =>
+            {
+                await database.InitializeAsync();
+                apiFactory = SmokeApiHost.Build(
+                    database.BaseConnectionString,
+                    profileSource,
+                    commandCapture,
+                    readOnlySharedState: true);
+            });
     }
 
     public async Task DisposeAsync()

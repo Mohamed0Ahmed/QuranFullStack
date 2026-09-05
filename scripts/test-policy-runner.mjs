@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { cpus, loadavg } from 'node:os';
+
 const BACKEND_HEADER = [
   'FullyQualifiedClassName',
   'Feature',
@@ -84,12 +87,62 @@ export const EXECUTION_PHASES = Object.freeze(['provisioning', 'activeGate']);
 // capability/manual provisioning.
 export const PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS = 12 * 60 * 1000;
 
-export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds }) {
+export const RUN_EVIDENCE_PATH_ENVIRONMENT_VARIABLE = 'QURAN_DASHBOARD_RUN_EVIDENCE_PATH';
+export const RUN_EVIDENCE_COMMAND_ID_ENVIRONMENT_VARIABLE = 'QURAN_DASHBOARD_TEST_COMMAND_ID';
+const RUNNER_KEEPER_LOCK_COMMANDS = new Set(['scratch-rehearsal', 'full-rehearsal']);
+const FINGERPRINT_KINDS = ['full', 'verifiedCanonical'];
+const LEASE_KINDS = ['exclusive', 'shared'];
+const SUB_PHASE_NAMES = ['fixtureInit', 'boundaryCheck', 'perTestReset', 'testBody'];
+
+export function captureMachineLoad(now = () => new Date()) {
+  const [loadAverage1m, loadAverage5m, loadAverage15m] = loadavg();
+  return {
+    capturedAt: now().toISOString(),
+    loadAverage1m,
+    loadAverage5m,
+    loadAverage15m,
+    cpuCount: cpus().length,
+  };
+}
+
+export function retainExecutionStatusAfterTimingFailure(executionStatus) {
+  return executionStatus;
+}
+
+export function readRunEvidenceEvents(path) {
+  let source;
+  try {
+    source = readFileSync(path, 'utf8');
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+  return source.split('\n').filter(Boolean).map((line, index) => {
+    try {
+      return JSON.parse(line);
+    } catch {
+      throw new Error(`Run evidence line ${index + 1} is not JSON.`);
+    }
+  });
+}
+
+export function summarizeExecutionTiming({
+  mode,
+  records,
+  totalWallMilliseconds,
+  events = [],
+  machineLoad = null,
+}) {
   if (!['focused', 'pre-pr'].includes(mode)) {
     throw new Error('Execution timing requires a focused or pre-pr mode.');
   }
   if (!Array.isArray(records)) {
     throw new Error('Execution timing requires an array of executed command records.');
+  }
+  if (!Array.isArray(events)) {
+    throw new Error('Execution timing requires an array of evidence events.');
   }
 
   const commands = records.map((record) => {
@@ -116,6 +169,8 @@ export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds 
     if (lockWaitMilliseconds + capabilityMilliseconds > durationMilliseconds) {
       throw new Error(`${record.id} reported more lock wait and capability time than elapsed time.`);
     }
+    const subPhases = record.subPhases ?? subPhasesForCommand(record.id, events);
+    const journeys = record.journeys ?? journeysForCommand(record.id, events);
     return {
       id: record.id,
       phase: record.phase,
@@ -124,6 +179,8 @@ export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds 
       durationMilliseconds,
       lockWaitMilliseconds,
       capabilityMilliseconds,
+      ...(subPhases ? { subPhases } : {}),
+      ...(journeys ? { journeys } : {}),
     };
   });
 
@@ -140,6 +197,12 @@ export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds 
   );
   const totalWall = requireNonNegativeDuration(totalWallMilliseconds, 'total wall time');
   const applies = mode === 'pre-pr';
+  const fingerprints = summarizeFingerprints(events);
+  const leases = summarizeLeases(events);
+  const inChildLockWaitMilliseconds = sumOf(
+    events.filter((event) => event.event === 'lease' && !RUNNER_KEEPER_LOCK_COMMANDS.has(event.command)),
+    (event) => requireNonNegativeDuration(event.waitMilliseconds ?? 0, 'in-child lock wait'),
+  );
 
   return {
     evidenceVersion: 1,
@@ -153,6 +216,15 @@ export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds 
       0,
       totalWall - lockWaitMilliseconds - provisioningMilliseconds - activeGateMilliseconds,
     ),
+    fingerprints,
+    leases,
+    inChildLockWaitMilliseconds,
+    testCaseIds: [...new Set(
+      events
+        .filter((event) => event.event === 'testCase' && typeof event.id === 'string' && event.id.length > 0)
+        .map((event) => event.id),
+    )].sort((left, right) => left.localeCompare(right)),
+    machineLoad,
     activeGateTarget: {
       applies,
       targetMilliseconds: applies ? PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS : null,
@@ -162,6 +234,95 @@ export function summarizeExecutionTiming({ mode, records, totalWallMilliseconds 
     },
     commands,
   };
+}
+
+function summarizeFingerprints(events) {
+  const summary = {
+    full: { count: 0, totalMilliseconds: 0 },
+    verifiedCanonical: { count: 0, totalMilliseconds: 0 },
+  };
+  for (const event of events) {
+    if (event.event !== 'fingerprint') {
+      continue;
+    }
+    if (!FINGERPRINT_KINDS.includes(event.kind)) {
+      throw new Error(`Unknown fingerprint kind: ${event.kind}`);
+    }
+    const durationMilliseconds = requireNonNegativeDuration(
+      event.durationMilliseconds,
+      `${event.kind} fingerprint duration`,
+    );
+    summary[event.kind].count += 1;
+    summary[event.kind].totalMilliseconds += durationMilliseconds;
+  }
+  return summary;
+}
+
+function summarizeLeases(events) {
+  const summary = {
+    exclusive: { count: 0, waitMilliseconds: 0 },
+    shared: { count: 0, waitMilliseconds: 0 },
+  };
+  for (const event of events) {
+    if (event.event !== 'lease') {
+      continue;
+    }
+    if (!LEASE_KINDS.includes(event.kind)) {
+      throw new Error(`Unknown lease kind: ${event.kind}`);
+    }
+    summary[event.kind].count += 1;
+    summary[event.kind].waitMilliseconds += requireNonNegativeDuration(
+      event.waitMilliseconds ?? 0,
+      `${event.kind} lease wait`,
+    );
+  }
+  return summary;
+}
+
+function subPhasesForCommand(commandId, events) {
+  const matches = events.filter((event) => event.event === 'subPhase' && event.commandId === commandId);
+  if (matches.length === 0) {
+    return null;
+  }
+  const subPhases = {
+    fixtureInitMilliseconds: 0,
+    boundaryCheckMilliseconds: 0,
+    perTestResetMilliseconds: 0,
+    testBodyMilliseconds: 0,
+  };
+  for (const event of matches) {
+    if (!SUB_PHASE_NAMES.includes(event.name)) {
+      throw new Error(`Unknown command sub-phase: ${event.name}`);
+    }
+    subPhases[`${event.name}Milliseconds`] += requireNonNegativeDuration(
+      event.durationMilliseconds,
+      `${event.name} sub-phase`,
+    );
+  }
+  return subPhases;
+}
+
+function journeysForCommand(commandId, events) {
+  const matches = events.filter((event) => event.event === 'journeyPhase' && event.commandId === commandId);
+  if (matches.length === 0) {
+    return null;
+  }
+  const journeys = [];
+  for (const event of matches) {
+    let journey = journeys.find((candidate) => candidate.selector === event.journey);
+    if (!journey) {
+      journey = { selector: event.journey, phases: [] };
+      journeys.push(journey);
+    }
+    journey.phases.push({
+      name: event.name,
+      durationMilliseconds: requireNonNegativeDuration(
+        event.durationMilliseconds,
+        `${event.journey} ${event.name}`,
+      ),
+    });
+  }
+  return journeys;
 }
 
 function requireNonNegativeDuration(value, subject) {

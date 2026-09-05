@@ -6,11 +6,13 @@ import {
   EXECUTION_PHASES,
   PRE_PR_ACTIVE_GATE_TARGET_MILLISECONDS,
   assessScratchLifecycleResult,
+  captureMachineLoad,
   createEmptyScratchExecutionEvidence,
   parseBackendPolicyCatalog,
   parseBackendResourceCatalog,
   planFocusedSelection,
   planPrePrSelection,
+  retainExecutionStatusAfterTimingFailure,
   summarizeExecutionTiming,
 } from './test-policy-runner.mjs';
 
@@ -756,6 +758,159 @@ assert.throws(
   }),
   /must not be negative/i,
 );
+
+const mutableWriterClassCount = repositoryCatalog.filter((row) => row.policy.backendPolicy === 'MutableWriter').length;
+const ordinaryPrePrFullFingerprintCallSites = (mutableWriterClassCount * 2) + (8 * 5);
+assert.equal(mutableWriterClassCount, 28);
+assert.equal(ordinaryPrePrFullFingerprintCallSites, 96);
+
+const fullFingerprintEvents = Array.from({ length: 96 }, (_, index) => ({
+  event: 'fingerprint',
+  kind: 'full',
+  durationMilliseconds: 1_000 + index,
+}));
+const verifiedCanonicalEvents = [
+  { event: 'fingerprint', kind: 'verifiedCanonical', durationMilliseconds: 40 },
+  { event: 'fingerprint', kind: 'verifiedCanonical', durationMilliseconds: 60 },
+];
+const instrumentedTiming = summarizeExecutionTiming({
+  mode: 'pre-pr',
+  totalWallMilliseconds: 900_000,
+  records: [
+    { id: 'backend-build', phase: 'activeGate', status: 0, durationMilliseconds: 60_000 },
+    {
+      id: 'backend-class-Tests.AccessMutable',
+      phase: 'activeGate',
+      group: 'MutableWriter',
+      status: 0,
+      durationMilliseconds: 120_000,
+      lockWaitMilliseconds: 0,
+      subPhases: {
+        fixtureInitMilliseconds: 80_000,
+        boundaryCheckMilliseconds: 42_000,
+        perTestResetMilliseconds: 5_000,
+        testBodyMilliseconds: 3_000,
+      },
+    },
+    {
+      id: 'backend-class-Tests.SmokeDataReadTests',
+      phase: 'activeGate',
+      group: 'GuardedReader',
+      status: 0,
+      durationMilliseconds: 51_100,
+      lockWaitMilliseconds: 0,
+      subPhases: {
+        fixtureInitMilliseconds: 8_000,
+        boundaryCheckMilliseconds: 0,
+        perTestResetMilliseconds: 0,
+        testBodyMilliseconds: 43_100,
+      },
+    },
+    {
+      id: 'playwright-stateful-critical',
+      phase: 'activeGate',
+      status: 0,
+      durationMilliseconds: 200_000,
+      journeys: [
+        {
+          selector: 'mutating-one',
+          phases: [
+            { name: 'applicationStartup', durationMilliseconds: 12_000 },
+            { name: 'testExecution', durationMilliseconds: 8_000 },
+          ],
+        },
+      ],
+    },
+  ],
+  events: [
+    ...fullFingerprintEvents,
+    ...verifiedCanonicalEvents,
+    { event: 'lease', kind: 'exclusive', waitMilliseconds: 25, command: 'access-mutable' },
+    { event: 'lease', kind: 'shared', waitMilliseconds: 7, command: 'guarded-reader' },
+    { event: 'lease', kind: 'exclusive', waitMilliseconds: 40_000, command: 'scratch-rehearsal' },
+    { event: 'testCase', id: 'QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests.PersistentDatabase_MatchesTheIndependentReaderOracle' },
+    { event: 'testCase', id: 'QuranDashboard.Tests.Api.Access.AccessRolesTests.Owner_CanReadRoles' },
+    {
+      event: 'journeyPhase',
+      journey: 'mutating-one',
+      name: 'applicationStartup',
+      durationMilliseconds: 12_000,
+    },
+    {
+      event: 'journeyPhase',
+      journey: 'mutating-one',
+      name: 'testExecution',
+      durationMilliseconds: 8_000,
+    },
+  ],
+  machineLoad: {
+    capturedAt: '2026-09-05T00:00:00.000Z',
+    loadAverage1m: 1.5,
+    loadAverage5m: 1.25,
+    loadAverage15m: 1.1,
+    cpuCount: 8,
+  },
+});
+
+assert.equal(instrumentedTiming.lockWaitMilliseconds, 0);
+assert.equal(instrumentedTiming.provisioningMilliseconds, 0);
+assert.equal(instrumentedTiming.activeGateMilliseconds, 431_100);
+assert.equal(instrumentedTiming.totalWallMilliseconds, 900_000);
+assert.deepEqual(instrumentedTiming.fingerprints, {
+  full: { count: 96, totalMilliseconds: 96_000 + ((95 * 96) / 2) },
+  verifiedCanonical: { count: 2, totalMilliseconds: 100 },
+});
+assert.equal(instrumentedTiming.fingerprints.full.count, ordinaryPrePrFullFingerprintCallSites);
+assert.deepEqual(instrumentedTiming.leases, {
+  exclusive: { count: 2, waitMilliseconds: 40_025 },
+  shared: { count: 1, waitMilliseconds: 7 },
+});
+assert.equal(instrumentedTiming.inChildLockWaitMilliseconds, 32);
+assert.deepEqual(instrumentedTiming.testCaseIds, [
+  'QuranDashboard.Tests.Api.Access.AccessRolesTests.Owner_CanReadRoles',
+  'QuranDashboard.Tests.Smoke.Data.SmokeDataReadTests.PersistentDatabase_MatchesTheIndependentReaderOracle',
+]);
+assert.deepEqual(
+  instrumentedTiming.commands.find((command) => command.id === 'backend-class-Tests.SmokeDataReadTests').subPhases,
+  {
+    fixtureInitMilliseconds: 8_000,
+    boundaryCheckMilliseconds: 0,
+    perTestResetMilliseconds: 0,
+    testBodyMilliseconds: 43_100,
+  },
+);
+assert.ok(
+  instrumentedTiming.commands.find((command) => command.id === 'backend-class-Tests.SmokeDataReadTests')
+    .subPhases.testBodyMilliseconds > 3_660,
+);
+assert.deepEqual(
+  instrumentedTiming.commands.find((command) => command.id === 'playwright-stateful-critical').journeys,
+  [
+    {
+      selector: 'mutating-one',
+      phases: [
+        { name: 'applicationStartup', durationMilliseconds: 12_000 },
+        { name: 'testExecution', durationMilliseconds: 8_000 },
+      ],
+    },
+  ],
+);
+assert.deepEqual(instrumentedTiming.machineLoad, {
+  capturedAt: '2026-09-05T00:00:00.000Z',
+  loadAverage1m: 1.5,
+  loadAverage5m: 1.25,
+  loadAverage15m: 1.1,
+  cpuCount: 8,
+});
+
+const load = captureMachineLoad();
+assert.equal(typeof load.capturedAt, 'string');
+assert.equal(typeof load.loadAverage1m, 'number');
+assert.equal(typeof load.cpuCount, 'number');
+assert.ok(load.cpuCount > 0);
+
+assert.equal(retainExecutionStatusAfterTimingFailure(0), 0);
+assert.equal(retainExecutionStatusAfterTimingFailure(4), 4);
 
 console.log('Repository test policy runner contract passed.');
 

@@ -63,6 +63,11 @@ public sealed class AccessTestFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await RunEvidenceTelemetry.MeasureSubPhaseAsync("fixtureInit", InitializeCoreAsync);
+    }
+
+    private async Task InitializeCoreAsync()
+    {
         targetConnectionString = Environment.GetEnvironmentVariable(
                 TestRuntimeCommand.DefaultConnectionStringEnvironmentVariable)
             ?? throw new InvalidOperationException(
@@ -468,15 +473,17 @@ public sealed class AccessTestFixture : IAsyncLifetime
             activeValidation,
             activeTarget,
             CancellationToken.None);
-        var report = await MutableStateResetter.ExecuteAfterInProcessApiStoppedAsync(
-            activeContract,
-            activeValidation,
-            activeTarget,
-            inspection,
-            RunId,
-            LockCommand,
-            boundaryFingerprint,
-            phase);
+        var report = await RunEvidenceTelemetry.MeasureSubPhaseAsync(
+            "perTestReset",
+            () => MutableStateResetter.ExecuteAfterInProcessApiStoppedAsync(
+                activeContract,
+                activeValidation,
+                activeTarget,
+                inspection,
+                RunId,
+                LockCommand,
+                boundaryFingerprint,
+                phase));
         if (!report.Succeeded)
         {
             throw new InvalidOperationException(
@@ -485,6 +492,11 @@ public sealed class AccessTestFixture : IAsyncLifetime
     }
 
     private async Task VerifyFinalProtectedStateAsync()
+    {
+        await RunEvidenceTelemetry.MeasureSubPhaseAsync("boundaryCheck", VerifyFinalProtectedStateCoreAsync);
+    }
+
+    private async Task VerifyFinalProtectedStateCoreAsync()
     {
         var activeContract = contract ?? throw new InvalidOperationException("The database contract is unavailable.");
         var boundaryFingerprint = verifiedBoundaryFingerprint

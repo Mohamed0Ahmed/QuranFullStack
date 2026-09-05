@@ -120,9 +120,21 @@ own cost, not contention. A command may also spend part of its elapsed time vali
 provisioned capability -- `rehearsal hold` recomputes the Protected State fingerprint before it takes the
 lock -- and that portion is reported as provisioning even though the command belongs to the active gate.
 
-The runner reports the lock wait it starts itself. A lock a child process acquires for its own lifetime
--- a Backend writer lane, or a controlled Playwright lane -- is reported by that child's own evidence
-record, not aggregated here.
+The runner reports the lock wait it starts itself in `lockWaitMilliseconds`. Lock waits a child
+process acquires for its own lifetime -- a Backend writer lane, or a controlled Playwright lane --
+are aggregated separately as `inChildLockWaitMilliseconds`.
+
+The same record also carries, from recorded events rather than arithmetic:
+
+| Field | What it covers |
+| --- | --- |
+| `fingerprints.full` | Count and total milliseconds of full Protected State fingerprints |
+| `fingerprints.verifiedCanonical` | Count and total milliseconds of verified-canonical fingerprints |
+| `leases.exclusive` / `leases.shared` | Advisory-lease counts and waits by kind |
+| `testCaseIds` | Exact executed test-case IDs, sorted for later set-equality comparison |
+| `commands[].subPhases` | Fixture init, boundary checks, per-test reset, and test body |
+| `commands[].journeys` | Stateful-lane per-journey `applicationStartup` and `testExecution` |
+| `machineLoad` | Load averages and CPU count captured at run start |
 
 `unattributedMilliseconds` reports whatever wall time the per-command records do not account for, so the
 figures above are never made to add up by construction. The record also carries `activeGateTarget` and

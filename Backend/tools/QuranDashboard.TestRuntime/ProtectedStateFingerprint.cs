@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Data;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using Npgsql;
@@ -20,7 +21,9 @@ internal sealed record ProtectedStateFingerprintReport(
     int SystemCatalogueTableCount,
     int SchemaTableCount,
     int ProtectedSequenceCount,
-    int DumpFilesRetained);
+    int DumpFilesRetained,
+    string ComputationKind = "full",
+    long DurationMilliseconds = 0);
 
 internal static class ProtectedStateFingerprint
 {
@@ -109,6 +112,33 @@ internal static class ProtectedStateFingerprint
     }
 
     private static async Task<ProtectedStateFingerprintReport> ComputeAsync(
+        NpgsqlConnection connection,
+        NpgsqlTransaction transaction,
+        DatabaseContract contract,
+        bool useReaderRole,
+        string? verifiedCanonicalQuranDataFingerprint,
+        CancellationToken cancellationToken)
+    {
+        var computationKind = verifiedCanonicalQuranDataFingerprint is null ? "full" : "verifiedCanonical";
+        var stopwatch = Stopwatch.StartNew();
+        var report = await ComputeCoreAsync(
+            connection,
+            transaction,
+            contract,
+            useReaderRole,
+            verifiedCanonicalQuranDataFingerprint,
+            cancellationToken);
+        stopwatch.Stop();
+        var timed = report with
+        {
+            ComputationKind = computationKind,
+            DurationMilliseconds = stopwatch.ElapsedMilliseconds,
+        };
+        RunEvidenceTelemetry.RecordFingerprint(computationKind, timed.DurationMilliseconds);
+        return timed;
+    }
+
+    private static async Task<ProtectedStateFingerprintReport> ComputeCoreAsync(
         NpgsqlConnection connection,
         NpgsqlTransaction transaction,
         DatabaseContract contract,
